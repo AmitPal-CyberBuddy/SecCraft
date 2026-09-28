@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion'
-import { BookOpen, Terminal, Filter, Hash, Sparkles, Zap, Target, Search } from 'lucide-react'
+import { BookOpen, Terminal, Filter, Hash, Sparkles, Zap, Target, Search, Bot, Activity } from 'lucide-react'
 import { lazy, Suspense } from 'react'
 
 const Flashcards = lazy(() => import('@/components/learning/Flashcards').then(m => ({ default: m.Flashcards })))
 const PcapUploader = lazy(() => import('@/components/lab/PcapUploader').then(m => ({ default: m.PcapUploader })))
 const TerminalEmulator = lazy(() => import('@/components/terminal/TerminalEmulator').then(m => ({ default: m.TerminalEmulator })))
+const AiTutor = lazy(() => import('@/components/ai/AiTutor').then(m => ({ default: m.AiTutor })))
+const PerformanceMonitoring = lazy(() => import('@/components/monitoring/PerformanceMonitoring').then(m => ({ default: m.PerformanceMonitoring })))
 
 export function Reference() {
   const commands = [
@@ -172,6 +174,14 @@ export function Reference() {
 
           <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Flashcards SM-2…</div>}>
             <Flashcards />
+          </Suspense>
+
+          <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading AI Tutor…</div>}>
+            <AiTutor />
+          </Suspense>
+
+          <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Performance Monitoring…</div>}>
+            <PerformanceMonitoring />
           </Suspense>
 
           <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Terminal…</div>}>
