@@ -1,11 +1,12 @@
 import { ReportEditor } from '@/components/report/ReportEditor'
-import { Certificate } from '@/components/certificate/Certificate'
-import { EvidenceVault } from '@/components/evidence/EvidenceVault'
-import { ReportPdfExport } from '@/components/pdf/ReportPdfExport'
-import { TeamClassrooms } from '@/components/team/TeamClassrooms'
 import { FileText, Shield, Target, Sparkles, Trophy, Download, Users } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
+
+const Certificate = lazy(() => import('@/components/certificate/Certificate').then(m => ({ default: m.Certificate })))
+const EvidenceVault = lazy(() => import('@/components/evidence/EvidenceVault').then(m => ({ default: m.EvidenceVault })))
+const ReportPdfExport = lazy(() => import('@/components/pdf/ReportPdfExport').then(m => ({ default: m.ReportPdfExport })))
+const TeamClassrooms = lazy(() => import('@/components/team/TeamClassrooms').then(m => ({ default: m.TeamClassrooms })))
 
 export function Reports() {
   const [activeTab, setActiveTab] = useState<'editor' | 'certificate' | 'vault' | 'pdf' | 'teams'>('editor')
@@ -52,10 +53,10 @@ export function Reports() {
         </div>
       </motion.div>
 
-      {activeTab === 'certificate' && <Certificate />}
-      {activeTab === 'vault' && <EvidenceVault />}
-      {activeTab === 'pdf' && <ReportPdfExport />}
-      {activeTab === 'teams' && <TeamClassrooms />}
+      {activeTab === 'certificate' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Certificate QR…</div>}><Certificate /></Suspense>}
+      {activeTab === 'vault' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Vault…</div>}><EvidenceVault /></Suspense>}
+      {activeTab === 'pdf' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading PDF/A Export…</div>}><ReportPdfExport /></Suspense>}
+      {activeTab === 'teams' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Teams…</div>}><TeamClassrooms /></Suspense>}
 
       {activeTab === 'editor' && (
         <>

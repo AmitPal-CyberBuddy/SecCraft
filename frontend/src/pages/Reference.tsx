@@ -1,5 +1,10 @@
 import { motion } from 'framer-motion'
 import { BookOpen, Terminal, Filter, Hash, Sparkles, Zap, Target, Search } from 'lucide-react'
+import { lazy, Suspense } from 'react'
+
+const Flashcards = lazy(() => import('@/components/learning/Flashcards').then(m => ({ default: m.Flashcards })))
+const PcapUploader = lazy(() => import('@/components/lab/PcapUploader').then(m => ({ default: m.PcapUploader })))
+const TerminalEmulator = lazy(() => import('@/components/terminal/TerminalEmulator').then(m => ({ default: m.TerminalEmulator })))
 
 export function Reference() {
   const commands = [
@@ -165,6 +170,18 @@ export function Reference() {
             </div>
           </motion.div>
 
+          <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Flashcards SM-2…</div>}>
+            <Flashcards />
+          </Suspense>
+
+          <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Terminal…</div>}>
+            <TerminalEmulator />
+          </Suspense>
+
+          <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading PcapUploader…</div>}>
+            <PcapUploader />
+          </Suspense>
+
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -176,8 +193,8 @@ export function Reference() {
                 <Sparkles className="w-4 h-4 text-cyan-400" />
               </div>
               <div className="text-[11px] leading-relaxed">
-                <div className="font-bold text-slate-300 mb-1">Pro Tip</div>
-                <div className="text-slate-500">Use PcapInspector filter presets for quick analysis. Combine filters with <span className="font-mono text-cyan-400 bg-[#020617] px-1 py-0.5 rounded border border-[#1e293b]">&&</span> and <span className="font-mono text-cyan-400 bg-[#020617] px-1 py-0.5 rounded border border-[#1e293b]">||</span> for advanced queries.</div>
+                <div className="font-bold text-slate-300 mb-1">Pro Tip — Enterprise</div>
+                <div className="text-slate-500">Use PcapInspector filter presets for quick analysis. Combine filters with <span className="font-mono text-cyan-400 bg-[#020617] px-1 py-0.5 rounded border border-[#1e293b]">&&</span> and <span className="font-mono text-cyan-400 bg-[#020617] px-1 py-0.5 rounded border border-[#1e293b]">||</span> for advanced queries. Flashcards SM-2 spaced repetition 30+ terms 50+ commands 20+ filters • Notes & Bookmarks per lesson • Cmd+K search • Terminal 50+ cmds • Evidence vault SHA256 • Certificate QR • Daily challenges • Teams • JWT • PWA offline • Real jsPDF PDF/A • Production</div>
               </div>
             </div>
           </motion.div>

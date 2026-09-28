@@ -2,12 +2,14 @@ import { useProgressStore } from '@/store/useProgressStore'
 import { ProgressRing } from '@/components/dashboard/ProgressRing'
 import { ContinueCard } from '@/components/dashboard/ContinueCard'
 import { LevelBadge, CertificationPayoff, XpProgressBar } from '@/components/gamification/LevelBadge'
-import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard'
-import { DailyChallenges } from '@/components/gamification/DailyChallenges'
 import { Link } from 'react-router-dom'
 import { BookOpen, FlaskConical, Swords, Trophy, Radio, Shield, Zap, Target, Clock, Activity, Wifi, TrendingUp, Award, Users, ChevronRight, Sparkles, ArrowRight, Star, Flame, Crown, BarChart3 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import modules from '@/content/modules.json'
+import { lazy, Suspense } from 'react'
+
+const AnalyticsDashboard = lazy(() => import('@/components/analytics/AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard })))
+const DailyChallenges = lazy(() => import('@/components/gamification/DailyChallenges').then(m => ({ default: m.DailyChallenges })))
 
 export function Dashboard() {
   const getOverall = useProgressStore(s => s.getOverallProgress())
@@ -460,7 +462,9 @@ export function Dashboard() {
       </div>
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="min-w-0 w-full">
-        <DailyChallenges />
+        <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Daily Challenges…</div>}>
+          <DailyChallenges />
+        </Suspense>
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 min-w-0">
@@ -469,7 +473,9 @@ export function Dashboard() {
           <h3 className="font-heading font-bold text-[16px] text-slate-100">Enterprise Analytics — Classroom Ready</h3>
           <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 font-mono">Instructor View</span>
         </div>
-        <AnalyticsDashboard />
+        <Suspense fallback={<div className="p-6 text-center text-[13px] text-slate-500 font-mono">Loading Analytics…</div>}>
+          <AnalyticsDashboard />
+        </Suspense>
       </motion.div>
 
       <motion.div

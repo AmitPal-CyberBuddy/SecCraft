@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
 import { FlaskConical, Search, Filter, Radio, Wifi, FileCode, Activity, Zap, ChevronRight, Sparkles, Target, Layers, Terminal, Upload, Shield } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { TerminalEmulator } from '@/components/terminal/TerminalEmulator'
-import { PcapUploader } from '@/components/lab/PcapUploader'
-import { EvidenceVault } from '@/components/evidence/EvidenceVault'
+
+const TerminalEmulator = lazy(() => import('@/components/terminal/TerminalEmulator').then(m => ({ default: m.TerminalEmulator })))
+const PcapUploader = lazy(() => import('@/components/lab/PcapUploader').then(m => ({ default: m.PcapUploader })))
+const EvidenceVault = lazy(() => import('@/components/evidence/EvidenceVault').then(m => ({ default: m.EvidenceVault })))
 
 interface PcapInfo {
   id: string
@@ -155,9 +156,9 @@ export function Labs() {
         </div>
       </motion.div>
 
-      {activeTab === 'upload' && <PcapUploader />}
-      {activeTab === 'terminal' && <TerminalEmulator />}
-      {activeTab === 'vault' && <EvidenceVault />}
+      {activeTab === 'upload' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading PcapUploader…</div>}><PcapUploader /></Suspense>}
+      {activeTab === 'terminal' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Terminal 50+ cmds…</div>}><TerminalEmulator /></Suspense>}
+      {activeTab === 'vault' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Evidence Vault SHA256…</div>}><EvidenceVault /></Suspense>}
 
       {activeTab === 'pcaps' && (
         <>

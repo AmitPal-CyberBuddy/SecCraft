@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -12,6 +12,8 @@ import { AttackDefenseRetest } from '@/components/lab/AttackDefenseRetest'
 import { ReadingProgress, LessonReadingProgress } from '@/components/learning/ReadingProgress'
 import { motion, AnimatePresence } from 'framer-motion'
 import modules from '@/content/modules.json'
+
+const NotesBookmarks = lazy(() => import('@/components/learning/NotesBookmarks').then(m => ({ default: m.NotesBookmarks })))
 import { ArrowLeft, BookOpen, FlaskConical, CheckCircle, Clock, Shield, FileText, Swords, Radio, AlertTriangle, Wifi, Target, Sparkles, ChevronRight, Layers, Award, Zap, List, Eye, Type, Maximize2 } from 'lucide-react'
 
 const lessonMap: Record<string, string[]> = {
@@ -1260,6 +1262,10 @@ export function ModuleDetail() {
         </motion.div>
       </AnimatePresence>
 
+      <Suspense fallback={<div className="p-6 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Notes & Bookmarks…</div>}>
+        <NotesBookmarks moduleId={id || ''} lessonId={lessons[activeLesson] || ''} />
+      </Suspense>
+
       <div className="flex flex-col sm:flex-row justify-between gap-4 pt-6 border-t border-[#1e293b]/60">
         <Link to="/modules" className="inline-flex items-center gap-2 text-[12px] text-slate-500 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[#0f172a]/60 border border-transparent hover:border-[#1e293b]/60">
           <ArrowLeft className="w-4 h-4" />
@@ -1267,7 +1273,7 @@ export function ModuleDetail() {
         </Link>
         <div className="flex items-center gap-2 text-[11px] text-slate-600 font-mono px-3 py-2 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40">
           <Radio className="w-3 h-3" />
-          Module {module.id} • {progress}% • {module.status}
+          Module {module.id} • {progress}% • {module.status} • Notes • Bookmarks • Enterprise
         </div>
       </div>
     </div>

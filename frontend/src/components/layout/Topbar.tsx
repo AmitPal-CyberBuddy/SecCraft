@@ -2,6 +2,7 @@ import { useProgressStore } from '@/store/useProgressStore'
 import { Menu, X, Search, Bell, Command, Zap, Trophy, Target, Moon, Sun } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
+import { NotificationCenter } from '@/components/notifications/NotificationCenter'
 
 interface Props {
   onMenuToggle?: () => void
@@ -16,6 +17,7 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
   const level = useProgressStore(s => s.getLevel())
   const xpToNext = useProgressStore(s => s.getXpToNextLevel())
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+  const [notifOpen, setNotifOpen] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem('wififorge-theme') as 'dark' | 'light' | null
@@ -34,6 +36,7 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
   }
 
   return (
+    <>
     <header className="h-[56px] xs:h-[60px] md:h-[64px] bg-[#020617]/80 backdrop-blur-2xl border-b border-[#1e293b]/60 sticky top-0 z-20 flex items-center justify-between px-3 xs:px-4 md:px-6 relative min-w-0 w-full">
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-r from-white/[0.01] via-transparent to-violet-500/[0.02] pointer-events-none" />
@@ -133,10 +136,11 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
           {theme === 'dark' ? <Moon className="w-4 h-4 text-slate-500 group-hover:text-slate-300" /> : <Sun className="w-4 h-4 text-amber-400" />}
         </motion.button>
 
-        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} aria-label="Notifications" className="w-11 h-11 xs:w-9 xs:h-9 rounded-xl bg-[#0f172a] border border-[#1e293b] flex items-center justify-center hover:bg-[#1e293b] hover:border-[#334155] active:bg-[#1e293b] transition-all duration-200 group relative overflow-hidden shrink-0 touch-manipulation">
+        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setNotifOpen(!notifOpen)} aria-label="Notifications" className="w-11 h-11 xs:w-9 xs:h-9 rounded-xl bg-[#0f172a] border border-[#1e293b] flex items-center justify-center hover:bg-[#1e293b] hover:border-[#334155] active:bg-[#1e293b] transition-all duration-200 group relative overflow-hidden shrink-0 touch-manipulation">
           <div className="absolute inset-0 bg-gradient-to-br from-violet-500/0 to-violet-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
           <Bell className="w-4 h-4 text-slate-500 group-hover:text-slate-300 relative z-10 group-hover:scale-110 transition-all duration-200" />
-          <div className="absolute top-1 right-1 w-2 h-2 bg-cyan-400 rounded-full border border-[#0f172a] shadow-glow-cyan" />
+          <div className="absolute top-1 right-1 w-2 h-2 bg-cyan-400 rounded-full border border-[#0f172a] shadow-glow-cyan animate-pulse" />
+          <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 border-2 border-[#0f172a] flex items-center justify-center text-[10px] font-bold text-white">3</div>
         </motion.button>
 
         <motion.button onClick={openSearch} whileTap={{ scale: 0.95 }} className="hidden sm:flex w-9 h-9 rounded-xl bg-gradient-to-br from-[#1e293b] to-[#0f172a] border border-[#334155]/60 items-center justify-center shadow-soft hover:border-[#475569]/60 hover:from-[#25354f] hover:to-[#1e293b] transition-all duration-200 group cursor-pointer shrink-0 touch-manipulation">
@@ -144,5 +148,7 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
         </motion.button>
       </div>
     </header>
+    <NotificationCenter open={notifOpen} onClose={() => setNotifOpen(false)} />
+    </>
   )
 }
