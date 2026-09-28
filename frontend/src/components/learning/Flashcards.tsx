@@ -30,7 +30,7 @@ export function Flashcards({ className = '' }: { className?: string }) {
   const [flipped, setFlipped] = useState(false)
   const [stats, setStats] = useState({ correct: 0, wrong: 0 })
 
-  useEffect(() => { localStorage.setItem('wififorge-flashcards', JSON.stringify(cards)) }, [cards])
+  useEffect(() => { try { if (typeof localStorage !== 'undefined') localStorage.setItem('wififorge-flashcards', JSON.stringify(cards)) } catch {} }, [cards])
 
   const card = cards[current]
   if (!card) return null

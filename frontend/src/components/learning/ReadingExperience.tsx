@@ -1,25 +1,35 @@
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Type, Eye, Maximize2, Clock, BookOpen, Zap, Accessibility, Sun, Moon } from 'lucide-react'
+import { Type, Clock, BookOpen, Accessibility } from 'lucide-react'
+
+function safeGet(key: string, fallback: string) { try { if (typeof localStorage === 'undefined') return fallback; return localStorage.getItem(key) || fallback } catch { return fallback } }
+function safeSet(key: string, val: string) { try { if (typeof localStorage !== 'undefined') localStorage.setItem(key, val) } catch {} }
 
 export function ReadingExperience({ content, className = '' }: { content: string; className?: string }) {
-  const [fontSize, setFontSize] = useState(() => parseInt(localStorage.getItem('wififorge-font-size') || '14'))
-  const [lineHeight, setLineHeight] = useState(() => parseFloat(localStorage.getItem('wififorge-line-height') || '1.7'))
-  const [dyslexia, setDyslexia] = useState(() => localStorage.getItem('wififorge-dyslexia') === 'true')
-  const [highContrast, setHighContrast] = useState(() => localStorage.getItem('wififorge-high-contrast') === 'true')
+  const [fontSize, setFontSize] = useState(() => {
+    try { const v = parseInt(safeGet('wififorge-font-size', '14')); return isNaN(v) ? 14 : Math.min(22, Math.max(12, v)) } catch { return 14 }
+  })
+  const [lineHeight, setLineHeight] = useState(() => {
+    try { const v = parseFloat(safeGet('wififorge-line-height', '1.7')); return isNaN(v) ? 1.7 : Math.min(2.2, Math.max(1.2, v)) } catch { return 1.7 }
+  })
+  const [dyslexia, setDyslexia] = useState(() => { try { return safeGet('wififorge-dyslexia', 'false') === 'true' } catch { return false } })
+  const [highContrast, setHighContrast] = useState(() => { try { return safeGet('wififorge-high-contrast', 'false') === 'true' } catch { return false } })
 
-  const wordCount = content.split(/\s+/).length
-  const readingTime = Math.ceil(wordCount / 200) // 200 wpm
+  const wordCount = content ? content.split(/\s+/).filter(Boolean).length : 0
+  const readingTime = Math.max(1, Math.ceil(wordCount / 200))
 
   useEffect(() => {
-    localStorage.setItem('wififorge-font-size', fontSize.toString())
-    localStorage.setItem('wififorge-line-height', lineHeight.toString())
-    localStorage.setItem('wififorge-dyslexia', dyslexia.toString())
-    localStorage.setItem('wififorge-high-contrast', highContrast.toString())
-    document.documentElement.style.setProperty('--reading-font-size', `${fontSize}px`)
-    document.documentElement.style.setProperty('--reading-line-height', lineHeight.toString())
-    document.documentElement.classList.toggle('dyslexia', dyslexia)
-    document.documentElement.classList.toggle('high-contrast', highContrast)
+    safeSet('wififorge-font-size', fontSize.toString())
+    safeSet('wififorge-line-height', lineHeight.toString())
+    safeSet('wififorge-dyslexia', dyslexia.toString())
+    safeSet('wififorge-high-contrast', highContrast.toString())
+    try {
+      if (typeof document !== 'undefined') {
+        document.documentElement.style.setProperty('--reading-font-size', `${fontSize}px`)
+        document.documentElement.style.setProperty('--reading-line-height', lineHeight.toString())
+        document.documentElement.classList.toggle('dyslexia', dyslexia)
+        document.documentElement.classList.toggle('high-contrast', highContrast)
+      }
+    } catch {}
   }, [fontSize, lineHeight, dyslexia, highContrast])
 
   return (
@@ -86,8 +96,6 @@ export function ReadingExperience({ content, className = '' }: { content: string
       <style>{`
         .dyslexia { font-family: 'OpenDyslexic', 'Comic Sans MS', cursive !important; }
         .high-contrast { filter: contrast(1.2) brightness(1.1); }
-        .high-contrast .bg-[#0f172a] { background: #000 !important; border-color: #fff !important; }
-        .high-contrast .text-slate-400, .high-contrast .text-slate-500 { color: #fff !important; }
       `}</style>
     </div>
   )

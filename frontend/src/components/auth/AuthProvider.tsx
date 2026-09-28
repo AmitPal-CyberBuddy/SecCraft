@@ -29,30 +29,36 @@ const mockUsers: Record<string, { password: string; user: User }> = {
   'admin': { password: 'admin', user: { id: '3', username: 'admin', email: 'admin@wififorge.local', role: 'admin', team: 'admin', xp: 9999, level: 15 } },
 }
 
+function safeGet(k: string) { try { if (typeof localStorage === 'undefined') return null; return localStorage.getItem(k) } catch { return null } }
+function safeSet(k: string, v: string) { try { if (typeof localStorage !== 'undefined') localStorage.setItem(k, v) } catch {} }
+function safeRemove(k: string) { try { if (typeof localStorage !== 'undefined') localStorage.removeItem(k) } catch {} }
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
 
   useEffect(() => {
-    const saved = localStorage.getItem('wififorge-auth')
-    if (saved) {
-      try {
+    try {
+      const saved = safeGet('wififorge-auth')
+      if (saved) {
         const parsed = JSON.parse(saved)
-        setUser(parsed.user)
-        setToken(parsed.token)
-      } catch {}
-    }
+        if (parsed?.user) {
+          setUser(parsed.user)
+          setToken(parsed.token)
+        }
+      }
+    } catch {}
   }, [])
 
   const login = async (username: string, password: string) => {
-    await new Promise(r => setTimeout(r, 600)) // simulate network
+    await new Promise(r => setTimeout(r, 600))
     const key = username.toLowerCase().split('.')[0]
     const entry = mockUsers[key] || mockUsers[username.toLowerCase()]
     if (entry && entry.password === password) {
       const tok = `wififorge_jwt_${btoa(`${entry.user.id}:${Date.now()}`)}_${Math.random().toString(36).slice(2)}`
       setUser(entry.user)
       setToken(tok)
-      localStorage.setItem('wififorge-auth', JSON.stringify({ user: entry.user, token: tok }))
+      safeSet('wififorge-auth', JSON.stringify({ user: entry.user, token: tok }))
       return true
     }
     return false
@@ -61,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null)
     setToken(null)
-    localStorage.removeItem('wififorge-auth')
+    safeRemove('wififorge-auth')
   }
 
   return (

@@ -20,15 +20,17 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
   const [notifOpen, setNotifOpen] = useState(false)
 
   useEffect(() => {
-    const saved = localStorage.getItem('wififorge-theme') as 'dark' | 'light' | null
-    if (saved) setTheme(saved)
+    try {
+      const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('wififorge-theme') as 'dark' | 'light' | null : null
+      if (saved) setTheme(saved)
+    } catch {}
   }, [])
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark'
     setTheme(next)
-    localStorage.setItem('wififorge-theme', next)
-    document.documentElement.classList.toggle('light', next === 'light')
+    try { if (typeof localStorage !== 'undefined') localStorage.setItem('wififorge-theme', next) } catch {}
+    try { document.documentElement.classList.toggle('light', next === 'light') } catch {}
   }
 
   const openSearch = () => {

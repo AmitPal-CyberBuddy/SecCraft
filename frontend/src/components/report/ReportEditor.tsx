@@ -82,7 +82,7 @@ ${finding.retest}
   }
 
   const save = () => {
-    localStorage.setItem('wififorge-report-draft', JSON.stringify(finding))
+    try { localStorage.setItem('wififorge-report-draft', JSON.stringify(finding)) } catch {}
     alert('Draft saved to localStorage')
   }
 

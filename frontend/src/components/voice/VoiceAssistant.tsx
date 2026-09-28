@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Mic, MicOff, Volume2, VolumeX, Zap, Sparkles, Bot, User } from 'lucide-react'
 
 export function VoiceAssistant({ className = '' }: { className?: string }) {
@@ -8,68 +8,93 @@ export function VoiceAssistant({ className = '' }: { className?: string }) {
   const [transcript, setTranscript] = useState('')
   const [response, setResponse] = useState('')
   const recognitionRef = useRef<any>(null)
+  const transcriptRef = useRef('')
 
   useEffect(() => {
-    // @ts-ignore Web Speech API
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (SpeechRecognition) {
-      const rec = new SpeechRecognition()
-      rec.continuous = false
-      rec.interimResults = true
-      rec.lang = 'en-US'
-      rec.onresult = (e: any) => {
-        const t = Array.from(e.results).map((r: any) => r[0].transcript).join('')
-        setTranscript(t)
-      }
-      rec.onend = () => {
-        setListening(false)
-        if (transcript) handleVoiceCommand(transcript)
-      }
-      recognitionRef.current = rec
-    }
+    transcriptRef.current = transcript
   }, [transcript])
 
+  useEffect(() => {
+    try {
+      // @ts-ignore Web Speech API
+      const SpeechRecognition = (typeof window !== 'undefined') ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition : null
+      if (SpeechRecognition) {
+        const rec = new SpeechRecognition()
+        rec.continuous = false
+        rec.interimResults = true
+        rec.lang = 'en-US'
+        rec.onresult = (e: any) => {
+          try {
+            const t = Array.from(e.results).map((r: any) => r[0].transcript).join('')
+            setTranscript(t)
+          } catch {}
+        }
+        rec.onend = () => {
+          setListening(false)
+          const t = transcriptRef.current
+          if (t) handleVoiceCommand(t)
+        }
+        rec.onerror = () => { setListening(false) }
+        recognitionRef.current = rec
+      }
+    } catch {}
+  }, [])
+
   const handleVoiceCommand = (text: string) => {
-    const lower = text.toLowerCase()
-    let resp = ''
-    if (lower.includes('wps') || lower.includes('pin')) resp = 'WPS 11k PIN flaw — 10^4 + 10^3 = 11000 attempts — disable WPS wps_state=0 — flag WIFIFORGE{WPS_11K_PIN}'
-    else if (lower.includes('handshake')) resp = 'WPA2 handshake 4 EAPOL messages — capture with airodump-ng — filter tshark -r -Y eapol — crack hashcat -m 22000 — flag WIFIFORGE{HANDSHAKE_CRACKED}'
-    else if (lower.includes('search') || lower.includes('find')) { resp = `Searching for ${text} — opening global search cmd+K — 50+ items`; document.dispatchEvent(new CustomEvent('open-search')) }
-    else if (lower.includes('lab')) resp = 'Opening labs — 16 PCAPs Scapy real — terminal 50+ cmds — evidence vault SHA256 — scoring hints timer — leaderboard live'
-    else resp = `Voice command: ${text} — AI tutor would process via OpenAI Whisper + RAG over 80 lessons 49572 lines — local-first no cloud — enterprise production`
-    
-    setResponse(resp)
-    // Text-to-speech
-    if ('speechSynthesis' in window) {
-      const utter = new SpeechSynthesisUtterance(resp)
-      utter.rate = 1
-      utter.pitch = 1
-      utter.onstart = () => setSpeaking(true)
-      utter.onend = () => setSpeaking(false)
-      speechSynthesis.speak(utter)
-    }
+    try {
+      const lower = text.toLowerCase()
+      let resp = ''
+      if (lower.includes('wps') || lower.includes('pin')) resp = 'WPS 11k PIN flaw — 10^4 + 10^3 = 11000 attempts — disable WPS wps_state=0 — flag WIFIFORGE{WPS_11K_PIN}'
+      else if (lower.includes('handshake')) resp = 'WPA2 handshake 4 EAPOL messages — capture with airodump-ng — filter tshark -r -Y eapol — crack hashcat -m 22000 — flag WIFIFORGE{HANDSHAKE_CRACKED}'
+      else if (lower.includes('search') || lower.includes('find')) { resp = `Searching for ${text} — opening global search cmd+K — 50+ items`; try { document.dispatchEvent(new CustomEvent('open-search')) } catch {} }
+      else if (lower.includes('lab')) resp = 'Opening labs — 16 PCAPs Scapy real — terminal 50+ cmds — evidence vault SHA256 — scoring hints timer — leaderboard live'
+      else resp = `Voice command: ${text} — AI tutor would process via OpenAI Whisper + RAG over 80 lessons 49572 lines — local-first no cloud — enterprise production`
+      
+      setResponse(resp)
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        try {
+          const utter = new SpeechSynthesisUtterance(resp)
+          utter.rate = 1
+          utter.pitch = 1
+          utter.onstart = () => setSpeaking(true)
+          utter.onend = () => setSpeaking(false)
+          speechSynthesis.speak(utter)
+        } catch {}
+      }
+    } catch {}
   }
 
   const toggleListening = () => {
-    if (listening) {
-      recognitionRef.current?.stop()
+    try {
+      if (listening) {
+        recognitionRef.current?.stop()
+        setListening(false)
+      } else {
+        setTranscript('')
+        setResponse('')
+        if (recognitionRef.current) {
+          recognitionRef.current.start()
+          setListening(true)
+        } else {
+          setTranscript('Voice API not supported — try Chrome — mock: Explain WPS 11k PIN')
+          handleVoiceCommand('Explain WPS 11k PIN')
+        }
+      }
+    } catch (e) {
       setListening(false)
-    } else {
-      setTranscript('')
-      setResponse('')
-      recognitionRef.current?.start()
-      setListening(true)
     }
   }
 
   const toggleSpeaking = () => {
-    if (speaking) { speechSynthesis.cancel(); setSpeaking(false) }
-    else if (response) {
-      const utter = new SpeechSynthesisUtterance(response)
-      utter.onstart = () => setSpeaking(true)
-      utter.onend = () => setSpeaking(false)
-      speechSynthesis.speak(utter)
-    }
+    try {
+      if (speaking) { speechSynthesis.cancel(); setSpeaking(false) }
+      else if (response) {
+        const utter = new SpeechSynthesisUtterance(response)
+        utter.onstart = () => setSpeaking(true)
+        utter.onend = () => setSpeaking(false)
+        speechSynthesis.speak(utter)
+      }
+    } catch {}
   }
 
   return (

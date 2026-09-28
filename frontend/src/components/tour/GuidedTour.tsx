@@ -35,7 +35,7 @@ export function GuidedTour() {
         { element: '[data-tour=\"reports\"]', popover: { title: 'Reports & Certificate — Audit Ready', description: 'VAPT structure, evidence-based, Attack→Defense→Retest, PDF/A jsPDF real CVSS risk matrix compliance, certificate QR verified flag WIFIFORGE{FINAL_RECON_ASSESSMENT_COMPLETE}', side: 'top', align: 'start' } },
       ],
       onDestroyStarted: () => {
-        localStorage.setItem('wififorge-tour-seen', 'true')
+        try { localStorage.setItem('wififorge-tour-seen', 'true') } catch {}
         setHasSeenTour(true)
         driverObj.destroy()
       },
@@ -58,7 +58,7 @@ export function GuidedTour() {
                   <div className="text-[11px] text-slate-500">Take 60s guided tour — 20 modules, labs, terminal, vault, cert</div>
                 </div>
               </div>
-              <button onClick={() => { setShowPrompt(false); localStorage.setItem('wififorge-tour-seen', 'true'); setHasSeenTour(true) }} className="w-6 h-6 rounded-lg bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] transition-colors">
+              <button onClick={() => { setShowPrompt(false); try { localStorage.setItem('wififorge-tour-seen', 'true') } catch {}; setHasSeenTour(true) }} className="w-6 h-6 rounded-lg bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] transition-colors">
                 <X className="w-3 h-3 text-slate-400" />
               </button>
             </div>
@@ -66,7 +66,7 @@ export function GuidedTour() {
               <button onClick={startTour} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-[12px] flex items-center justify-center gap-1.5 shadow-glow-violet touch-manipulation">
                 <Sparkles className="w-4 h-4" />Start Tour — 60s
               </button>
-              <button onClick={() => { setShowPrompt(false); localStorage.setItem('wififorge-tour-seen', 'true'); setHasSeenTour(true) }} className="px-4 py-2.5 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] text-slate-400 hover:text-slate-200 transition-colors">Skip</button>
+              <button onClick={() => { setShowPrompt(false); try { localStorage.setItem('wififorge-tour-seen', 'true') } catch {}; setHasSeenTour(true) }} className="px-4 py-2.5 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] text-slate-400 hover:text-slate-200 transition-colors">Skip</button>
             </div>
             <div className="mt-2 text-[10px] text-slate-600 font-mono">Enterprise • Zero-cost • Local-first • Offline • 20 modules • 80 lessons • 16 PCAPs • 50+ cmds • Cmd+K • Terminal • Vault • Cert • Daily • Teams • JWT • PWA</div>
           </motion.div>

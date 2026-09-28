@@ -1,23 +1,31 @@
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Accessibility, Type, Eye, Sun, Moon, Volume2, Keyboard, CheckCircle, Zap } from 'lucide-react'
+import { Accessibility, Type, Keyboard, CheckCircle, Zap } from 'lucide-react'
+
+function safeGet(k: string, f: string) { try { if (typeof localStorage === 'undefined') return f; return localStorage.getItem(k) || f } catch { return f } }
+function safeSet(k: string, v: string) { try { if (typeof localStorage !== 'undefined') localStorage.setItem(k, v) } catch {} }
 
 export function AccessibilityPanel({ className = '' }: { className?: string }) {
-  const [fontSize, setFontSize] = useState(() => parseInt(localStorage.getItem('wififorge-a11y-font-size') || '14'))
-  const [dyslexia, setDyslexia] = useState(() => localStorage.getItem('wififorge-a11y-dyslexia') === 'true')
-  const [highContrast, setHighContrast] = useState(() => localStorage.getItem('wififorge-a11y-high-contrast') === 'true')
-  const [reduceMotion, setReduceMotion] = useState(() => localStorage.getItem('wififorge-a11y-reduce-motion') === 'true')
+  const [fontSize, setFontSize] = useState(() => {
+    try { const n = parseInt(safeGet('wififorge-a11y-font-size', '14')); return isNaN(n) ? 14 : Math.min(22, Math.max(12, n)) } catch { return 14 }
+  })
+  const [dyslexia, setDyslexia] = useState(() => { try { return safeGet('wififorge-a11y-dyslexia', 'false') === 'true' } catch { return false } })
+  const [highContrast, setHighContrast] = useState(() => { try { return safeGet('wififorge-a11y-high-contrast', 'false') === 'true' } catch { return false } })
+  const [reduceMotion, setReduceMotion] = useState(() => { try { return safeGet('wififorge-a11y-reduce-motion', 'false') === 'true' } catch { return false } })
   const [screenReader, setScreenReader] = useState(false)
 
   useEffect(() => {
-    localStorage.setItem('wififorge-a11y-font-size', fontSize.toString())
-    localStorage.setItem('wififorge-a11y-dyslexia', dyslexia.toString())
-    localStorage.setItem('wififorge-a11y-high-contrast', highContrast.toString())
-    localStorage.setItem('wififorge-a11y-reduce-motion', reduceMotion.toString())
-    document.documentElement.style.setProperty('--a11y-font-size', `${fontSize}px`)
-    document.documentElement.classList.toggle('dyslexia', dyslexia)
-    document.documentElement.classList.toggle('high-contrast', highContrast)
-    document.documentElement.classList.toggle('reduce-motion', reduceMotion)
+    safeSet('wififorge-a11y-font-size', fontSize.toString())
+    safeSet('wififorge-a11y-dyslexia', dyslexia.toString())
+    safeSet('wififorge-a11y-high-contrast', highContrast.toString())
+    safeSet('wififorge-a11y-reduce-motion', reduceMotion.toString())
+    try {
+      if (typeof document !== 'undefined') {
+        document.documentElement.style.setProperty('--a11y-font-size', `${fontSize}px`)
+        document.documentElement.classList.toggle('dyslexia', dyslexia)
+        document.documentElement.classList.toggle('high-contrast', highContrast)
+        document.documentElement.classList.toggle('reduce-motion', reduceMotion)
+      }
+    } catch {}
   }, [fontSize, dyslexia, highContrast, reduceMotion])
 
   return (

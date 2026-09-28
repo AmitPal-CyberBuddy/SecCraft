@@ -11,23 +11,31 @@ interface ThemeCtx {
 
 const Ctx = createContext<ThemeCtx>({ theme: 'dark', resolved: 'dark', setTheme: () => {} })
 
+function safeGet(k: string): string | null { try { if (typeof localStorage === 'undefined') return null; return localStorage.getItem(k) } catch { return null } }
+function safeSet(k: string, v: string) { try { if (typeof localStorage !== 'undefined') localStorage.setItem(k, v) } catch {} }
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    const saved = localStorage.getItem('wififorge-theme') as Theme | null
-    return saved || 'dark'
+    try {
+      const saved = safeGet('wififorge-theme') as Theme | null
+      return saved || 'dark'
+    } catch { return 'dark' }
   })
   const [resolved, setResolved] = useState<'dark' | 'light'>('dark')
 
   useEffect(() => {
-    const sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    const res = theme === 'system' ? (sysDark ? 'dark' : 'light') : theme
-    setResolved(res)
-    document.documentElement.classList.toggle('light', res === 'light')
-    document.documentElement.setAttribute('data-theme', res)
-    localStorage.setItem('wififorge-theme', theme)
-    // Update theme-color meta
-    const meta = document.querySelector('meta[name="theme-color"]')
-    if (meta) meta.setAttribute('content', res === 'light' ? '#f8fafc' : '#020617')
+    try {
+      const sysDark = typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)').matches : true
+      const res = theme === 'system' ? (sysDark ? 'dark' : 'light') : theme
+      setResolved(res)
+      if (typeof document !== 'undefined') {
+        document.documentElement.classList.toggle('light', res === 'light')
+        document.documentElement.setAttribute('data-theme', res)
+        const meta = document.querySelector('meta[name="theme-color"]')
+        if (meta) meta.setAttribute('content', res === 'light' ? '#f8fafc' : '#020617')
+      }
+      safeSet('wififorge-theme', theme)
+    } catch {}
   }, [theme])
 
   const setTheme = (t: Theme) => setThemeState(t)

@@ -30,8 +30,8 @@ export function NotesBookmarks({ moduleId, lessonId, className = '' }: { moduleI
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState<'notes' | 'bookmarks'>('notes')
 
-  const saveNotes = (n: Note[]) => { setNotes(n); localStorage.setItem('wififorge-notes', JSON.stringify(n)) }
-  const saveBookmarks = (b: BookmarkItem[]) => { setBookmarks(b); localStorage.setItem('wififorge-bookmarks', JSON.stringify(b)) }
+  const saveNotes = (n: Note[]) => { setNotes(n); try { localStorage.setItem('wififorge-notes', JSON.stringify(n)) } catch {} }
+  const saveBookmarks = (b: BookmarkItem[]) => { setBookmarks(b); try { localStorage.setItem('wififorge-bookmarks', JSON.stringify(b)) } catch {} }
 
   const addNote = () => {
     if (!newNote.trim()) return

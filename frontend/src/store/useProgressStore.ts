@@ -345,24 +345,35 @@ export const useProgressStore = create<ProgressState>()(
       name: 'wififorge-progress',
       version: 2,
       migrate: (persistedState: any, version: number) => {
-        if (version === 0 || !persistedState.totalXp) {
-          // Migrate old state: recalculate XP
-          const lessons = persistedState.completedLessons || []
-          const labs = persistedState.completedLabs || []
-          const quizzes = persistedState.quizScores || []
-          const totalXp = lessons.length * POINTS.LESSON + labs.length * POINTS.LAB + quizzes.length * POINTS.QUIZ
-          return {
-            ...persistedState,
-            totalXp,
-            achievements: persistedState.achievements || [],
-            lastEarnedPoints: null,
-            completedLessons: lessons.map((l: any) => ({ ...l, points: l.points || POINTS.LESSON })),
-            completedLabs: labs.map((l: any) => ({ ...l, points: l.points || POINTS.LAB })),
-            quizScores: quizzes.map((q: any) => ({ ...q, points: q.points || POINTS.QUIZ })),
+        try {
+          if (!persistedState) return persistedState
+          if (version === 0 || !persistedState.totalXp) {
+            const lessons = persistedState.completedLessons || []
+            const labs = persistedState.completedLabs || []
+            const quizzes = persistedState.quizScores || []
+            const totalXp = lessons.length * POINTS.LESSON + labs.length * POINTS.LAB + quizzes.length * POINTS.QUIZ
+            return {
+              ...persistedState,
+              totalXp,
+              achievements: persistedState.achievements || [],
+              lastEarnedPoints: null,
+              completedLessons: lessons.map((l: any) => ({ ...l, points: l.points || POINTS.LESSON })),
+              completedLabs: labs.map((l: any) => ({ ...l, points: l.points || POINTS.LAB })),
+              quizScores: quizzes.map((q: any) => ({ ...q, points: q.points || POINTS.QUIZ })),
+            }
           }
+          return persistedState
+        } catch {
+          return persistedState
         }
-        return persistedState
-      }
+      },
+      // Handle corrupted storage gracefully
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          console.warn('WiFiForge progress rehydrate error — clearing corrupted storage', error)
+          try { localStorage.removeItem('wififorge-progress') } catch {}
+        }
+      },
     }
   )
 )
