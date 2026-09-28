@@ -5,6 +5,8 @@ import { ScrollToTop } from '@/components/layout/ScrollToTop'
 import { PointsToast } from '@/components/gamification/PointsToast'
 import { GlobalSearch } from '@/components/search/GlobalSearch'
 import { KeyboardShortcuts } from '@/components/shortcuts/KeyboardShortcuts'
+import { ErrorBoundary } from '@/components/error/ErrorBoundary'
+import { OfflineIndicator } from '@/components/offline/OfflineIndicator'
 import { Dashboard } from '@/pages/Dashboard'
 import { LearningPath } from '@/pages/LearningPath'
 import { Modules } from '@/pages/Modules'
@@ -39,27 +41,30 @@ function App() {
 
   return (
     <BrowserRouter>
-      <ScrollToTop />
-      <PointsToast />
-      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
-      <KeyboardShortcuts />
-      <Suspense fallback={null}>
-        <GuidedTour />
-      </Suspense>
-      <Shell>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/path" element={<LearningPath />} />
-          <Route path="/modules" element={<Modules />} />
-          <Route path="/modules/:id" element={<ModuleDetail />} />
-          <Route path="/labs" element={<Labs />} />
-          <Route path="/challenges" element={<Challenges />} />
-          <Route path="/challenges/:id" element={<ChallengeDetail />} />
-          <Route path="/reference" element={<Reference />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
-      </Shell>
+      <ErrorBoundary>
+        <ScrollToTop />
+        <PointsToast />
+        <OfflineIndicator />
+        <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
+        <KeyboardShortcuts />
+        <Suspense fallback={null}>
+          <GuidedTour />
+        </Suspense>
+        <Shell>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/path" element={<LearningPath />} />
+            <Route path="/modules" element={<Modules />} />
+            <Route path="/modules/:id" element={<ModuleDetail />} />
+            <Route path="/labs" element={<Labs />} />
+            <Route path="/challenges" element={<Challenges />} />
+            <Route path="/challenges/:id" element={<ChallengeDetail />} />
+            <Route path="/reference" element={<Reference />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/settings" element={<Settings />} />
+          </Routes>
+        </Shell>
+      </ErrorBoundary>
     </BrowserRouter>
   )
 }
