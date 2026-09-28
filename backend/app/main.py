@@ -1,12 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import content, progress, labs, pcaps, enterprise
+from app.routers import content, progress, labs, pcaps, enterprise, auth
 from app.core.database import init_db
 
 app = FastAPI(
     title="WiFiForge API — Enterprise v2.1",
-    description="Wireless Pentest Academy — Backend API • Enterprise-ready • Multi-user JWT foundation • Analytics • Audit logs • PWA offline-first",
+    description="Wireless Pentest Academy — Backend API • Enterprise-ready • Multi-user JWT + OAuth • Analytics • Audit logs • PWA offline-first • Teams • Rate limit • Docker • Nginx TLS • CI/CD",
     version="2.1.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
 )
 
 # CORS for local dev + production
@@ -24,6 +27,7 @@ app.include_router(progress.router, prefix="/api", tags=["progress"])
 app.include_router(labs.router, prefix="/api", tags=["labs"])
 app.include_router(pcaps.router, prefix="/api", tags=["pcaps"])
 app.include_router(enterprise.router, prefix="/api", tags=["enterprise"])
+app.include_router(auth.router, prefix="/api", tags=["auth"])
 
 @app.on_event("startup")
 async def startup_event():

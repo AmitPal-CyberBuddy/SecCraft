@@ -3,6 +3,7 @@ import { ProgressRing } from '@/components/dashboard/ProgressRing'
 import { ContinueCard } from '@/components/dashboard/ContinueCard'
 import { LevelBadge, CertificationPayoff, XpProgressBar } from '@/components/gamification/LevelBadge'
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard'
+import { DailyChallenges } from '@/components/gamification/DailyChallenges'
 import { Link } from 'react-router-dom'
 import { BookOpen, FlaskConical, Swords, Trophy, Radio, Shield, Zap, Target, Clock, Activity, Wifi, TrendingUp, Award, Users, ChevronRight, Sparkles, ArrowRight, Star, Flame, Crown, BarChart3 } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -457,6 +458,10 @@ export function Dashboard() {
           </motion.div>
         ))}
       </div>
+
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="min-w-0 w-full">
+        <DailyChallenges />
+      </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 min-w-0">
         <div className="flex items-center gap-2 mb-4">

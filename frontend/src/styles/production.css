@@ -1,4 +1,41 @@
-/* Production-Ready Responsive System — Finer Elements Polish */
+/* Production-Ready Responsive System — Finer Elements Polish + Enterprise Light/Dark Theme */
+
+/* CSS Variables — Enterprise Theme System */
+:root {
+  --bg-primary: #020617;
+  --bg-secondary: #0f172a;
+  --bg-tertiary: #1e293b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --border-primary: #1e293b;
+  --border-secondary: #334155;
+}
+
+[data-theme="light"], .light {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --border-primary: #e2e8f0;
+  --border-secondary: #cbd5e1;
+}
+
+.light body {
+  background: #f8fafc !important;
+  color: #0f172a;
+}
+
+.light .bg-\[\#020617\] { background-color: #ffffff !important; }
+.light .bg-\[\#0f172a\] { background-color: #ffffff !important; border-color: #e2e8f0 !important; }
+.light .bg-\[\#020617\]\/60 { background-color: rgba(255,255,255,0.8) !important; }
+.light .bg-\[\#0f172a\]\/80 { background-color: rgba(255,255,255,0.9) !important; }
+.light .text-slate-100, .light .text-slate-200 { color: #0f172a !important; }
+.light .text-slate-300 { color: #334155 !important; }
+.light .text-slate-400 { color: #64748b !important; }
+.light .text-slate-500 { color: #94a3b8 !important; }
+.light .border-\[\#1e293b\] { border-color: #e2e8f0 !important; }
+.light .border-\[\#334155\] { border-color: #cbd5e1 !important; }
 
 /* Base responsive reset */
 * {

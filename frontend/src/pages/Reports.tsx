@@ -1,12 +1,14 @@
 import { ReportEditor } from '@/components/report/ReportEditor'
 import { Certificate } from '@/components/certificate/Certificate'
 import { EvidenceVault } from '@/components/evidence/EvidenceVault'
-import { FileText, Shield, Target, Sparkles, Trophy } from 'lucide-react'
+import { ReportPdfExport } from '@/components/pdf/ReportPdfExport'
+import { TeamClassrooms } from '@/components/team/TeamClassrooms'
+import { FileText, Shield, Target, Sparkles, Trophy, Download, Users } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 
 export function Reports() {
-  const [activeTab, setActiveTab] = useState<'editor' | 'certificate' | 'vault'>('editor')
+  const [activeTab, setActiveTab] = useState<'editor' | 'certificate' | 'vault' | 'pdf' | 'teams'>('editor')
 
   return (
     <div className="max-w-[1200px] mx-auto space-y-4 xs:space-y-6 md:space-y-8 min-w-0 w-full">
@@ -38,10 +40,13 @@ export function Reports() {
             { id: 'editor', label: 'Report Editor', icon: FileText },
             { id: 'certificate', label: 'Certificate', icon: Trophy },
             { id: 'vault', label: 'Evidence Vault', icon: Shield },
+            { id: 'pdf', label: 'PDF Export', icon: Download },
+            { id: 'teams', label: 'Teams', icon: Users },
           ].map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-medium transition-all shrink-0 touch-manipulation min-h-[44px] ${activeTab === tab.id ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>
+            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center gap-2 px-3 xs:px-4 py-2.5 rounded-lg text-[12px] xs:text-[13px] font-medium transition-all shrink-0 touch-manipulation min-h-[44px] ${activeTab === tab.id ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>
               <tab.icon className="w-4 h-4" />
-              {tab.label}
+              <span className="hidden xs:inline">{tab.label}</span>
+              <span className="xs:hidden">{tab.label.split(' ')[0]}</span>
             </button>
           ))}
         </div>
@@ -49,6 +54,8 @@ export function Reports() {
 
       {activeTab === 'certificate' && <Certificate />}
       {activeTab === 'vault' && <EvidenceVault />}
+      {activeTab === 'pdf' && <ReportPdfExport />}
+      {activeTab === 'teams' && <TeamClassrooms />}
 
       {activeTab === 'editor' && (
         <>
