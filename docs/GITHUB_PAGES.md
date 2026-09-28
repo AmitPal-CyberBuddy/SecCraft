@@ -35,13 +35,15 @@ FastAPI proxy for `/api`. Use `VITE_BASE=/ npm run dev` to work at the domain ro
 
 ## Enabling Pages (one time)
 
-1. **Settings → Pages → Build and deployment → Source: _GitHub Actions_**
-   — or let the first workflow run do it (`actions/configure-pages` is configured
-   with `enablement: true`).
-2. Push/merge the `pages.yml` workflow to `main`. Every subsequent push to `main`
-   redeploys; **Settings → Pages** shows the live URL.
+1. **Settings → Pages → Build and deployment → Source: _GitHub Actions_ → Save.**
+   This is the only manual step — the site cannot be created by a token
+   (`actions/configure-pages` with `enablement: true` is rejected on this repo with
+   *Resource not accessible by integration*, so the workflow assumes Pages already exists).
+2. Re-run the **Deploy Frontend to GitHub Pages** workflow (Actions → that run → *Re-run all jobs*).
 3. Verify a deep link, e.g. `https://amitpal-cyberbuddy.github.io/WiFiForge/labs`
    (GitHub returns 404 for the path, the page still renders).
+
+After that, every push to `main` redeploys automatically.
 
 ## What works on Pages
 
