@@ -2,8 +2,9 @@ import { useProgressStore } from '@/store/useProgressStore'
 import { ProgressRing } from '@/components/dashboard/ProgressRing'
 import { ContinueCard } from '@/components/dashboard/ContinueCard'
 import { LevelBadge, CertificationPayoff, XpProgressBar } from '@/components/gamification/LevelBadge'
+import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard'
 import { Link } from 'react-router-dom'
-import { BookOpen, FlaskConical, Swords, Trophy, Radio, Shield, Zap, Target, Clock, Activity, Wifi, TrendingUp, Award, Users, ChevronRight, Sparkles, ArrowRight, Star, Flame, Crown } from 'lucide-react'
+import { BookOpen, FlaskConical, Swords, Trophy, Radio, Shield, Zap, Target, Clock, Activity, Wifi, TrendingUp, Award, Users, ChevronRight, Sparkles, ArrowRight, Star, Flame, Crown, BarChart3 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import modules from '@/content/modules.json'
 
@@ -457,20 +458,29 @@ export function Dashboard() {
         ))}
       </div>
 
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 min-w-0">
+        <div className="flex items-center gap-2 mb-4">
+          <BarChart3 className="w-5 h-5 text-violet-400" />
+          <h3 className="font-heading font-bold text-[16px] text-slate-100">Enterprise Analytics — Classroom Ready</h3>
+          <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 font-mono">Instructor View</span>
+        </div>
+        <AnalyticsDashboard />
+      </motion.div>
+
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.6 }}
-        className="flex flex-col sm:flex-row items-center justify-center gap-3 text-[11px] text-slate-600 font-mono pt-2 pb-4"
+        className="flex flex-col sm:flex-row items-center justify-center gap-3 text-[11px] text-slate-600 font-mono pt-2 pb-4 min-w-0"
       >
         <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
           <Zap className="w-3 h-3 text-amber-400" />
-          <span>Zero-cost • Local-first • Offline • No cloud • Kali-ready</span>
+          <span>Enterprise • Zero-cost • Local-first • Offline • Kali-ready • Production</span>
         </div>
         <span className="hidden sm:inline w-1 h-1 rounded-full bg-slate-700" />
         <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
           <Users className="w-3 h-3 text-slate-500" />
-          <span>20 modules • 18 labs • 15 challenges • 16 PCAPs</span>
+          <span>20 modules • 18 labs • 15 challenges • 16 PCAPs • Cmd+K search • Terminal • Vault • Certificate</span>
         </div>
       </motion.div>
     </div>

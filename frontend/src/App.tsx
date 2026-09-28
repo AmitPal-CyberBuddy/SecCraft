@@ -1,7 +1,10 @@
+import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Shell } from '@/components/layout/Shell'
 import { ScrollToTop } from '@/components/layout/ScrollToTop'
 import { PointsToast } from '@/components/gamification/PointsToast'
+import { GlobalSearch } from '@/components/search/GlobalSearch'
+import { KeyboardShortcuts } from '@/components/shortcuts/KeyboardShortcuts'
 import { Dashboard } from '@/pages/Dashboard'
 import { LearningPath } from '@/pages/LearningPath'
 import { Modules } from '@/pages/Modules'
@@ -14,10 +17,30 @@ import { Settings } from '@/pages/Settings'
 import { Reports } from '@/pages/Reports'
 
 function App() {
+  const [searchOpen, setSearchOpen] = useState(false)
+
+  useEffect(() => {
+    const handleOpenSearch = () => setSearchOpen(true)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setSearchOpen(o => !o)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('open-search', handleOpenSearch as any)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('open-search', handleOpenSearch as any)
+    }
+  }, [])
+
   return (
     <BrowserRouter>
       <ScrollToTop />
       <PointsToast />
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <KeyboardShortcuts />
       <Shell>
         <Routes>
           <Route path="/" element={<Dashboard />} />
