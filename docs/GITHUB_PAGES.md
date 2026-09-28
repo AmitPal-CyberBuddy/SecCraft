@@ -35,7 +35,7 @@ FastAPI proxy for `/api`. Use `VITE_BASE=/ npm run dev` to work at the domain ro
 
 ## Enabling Pages (one time)
 
-1. **Settings → Pages → Build and deployment → Source: _GitHub Actions_ → Save.**
+1. **[Settings → Pages](https://github.com/AmitPal-CyberBuddy/WiFiForge/settings/pages) → Build and deployment → Source: _GitHub Actions_ → Save.**
    This is the only manual step — the site cannot be created by a token
    (`actions/configure-pages` with `enablement: true` is rejected on this repo with
    *Resource not accessible by integration*, so the workflow assumes Pages already exists).

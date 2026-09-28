@@ -114,6 +114,8 @@ npm run preview:pages   # http://localhost:4173/WiFiForge/
 ```
 
 Notes, custom domains and troubleshooting: [`docs/GITHUB_PAGES.md`](docs/GITHUB_PAGES.md).
+First-time setup (one click): **[Settings → Pages → Source: _GitHub Actions_](https://github.com/AmitPal-CyberBuddy/WiFiForge/settings/pages)**,
+then re-run the *Deploy Frontend to GitHub Pages* workflow.
 The FastAPI backend stays local — Pages serves the bundled lessons, labs and mock data;
 live PCAP parsing still needs the local stack.
 
