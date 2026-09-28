@@ -1,5 +1,5 @@
 import { ReportEditor } from '@/components/report/ReportEditor'
-import { FileText, Shield, Target, Sparkles, Trophy, Download, Users, MessageSquare, BarChart3 } from 'lucide-react'
+import { FileText, Shield, Target, Sparkles, Trophy, Download, Users, MessageSquare, BarChart3, Layout, Clock } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useState, lazy, Suspense } from 'react'
 
@@ -9,9 +9,11 @@ const ReportPdfExport = lazy(() => import('@/components/pdf/ReportPdfExport').th
 const TeamClassrooms = lazy(() => import('@/components/team/TeamClassrooms').then(m => ({ default: m.TeamClassrooms })))
 const CvssCalculator = lazy(() => import('@/components/security/CvssCalculator').then(m => ({ default: m.CvssCalculator })))
 const DiscussionForum = lazy(() => import('@/components/forum/DiscussionForum').then(m => ({ default: m.DiscussionForum })))
+const ReportTemplates = lazy(() => import('@/components/report/ReportTemplates').then(m => ({ default: m.ReportTemplates })))
+const TimelineViz = lazy(() => import('@/components/report/TimelineViz').then(m => ({ default: m.TimelineViz })))
 
 export function Reports() {
-  const [activeTab, setActiveTab] = useState<'editor' | 'certificate' | 'vault' | 'pdf' | 'cvss' | 'forum' | 'teams'>('editor')
+  const [activeTab, setActiveTab] = useState<'editor' | 'certificate' | 'vault' | 'pdf' | 'cvss' | 'forum' | 'teams' | 'templates' | 'timeline'>('editor')
 
   return (
     <div className="max-w-[1200px] mx-auto space-y-4 xs:space-y-6 md:space-y-8 min-w-0 w-full">
@@ -45,6 +47,8 @@ export function Reports() {
             { id: 'vault', label: 'Evidence Vault', icon: Shield },
             { id: 'pdf', label: 'PDF Export', icon: Download },
             { id: 'cvss', label: 'CVSS', icon: BarChart3 },
+            { id: 'templates', label: 'Templates', icon: Layout },
+            { id: 'timeline', label: 'Timeline', icon: Clock },
             { id: 'forum', label: 'Forum', icon: MessageSquare },
             { id: 'teams', label: 'Teams', icon: Users },
           ].map(tab => (
@@ -61,6 +65,8 @@ export function Reports() {
       {activeTab === 'vault' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Vault…</div>}><EvidenceVault /></Suspense>}
       {activeTab === 'pdf' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading PDF/A Export…</div>}><ReportPdfExport /></Suspense>}
       {activeTab === 'cvss' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading CVSS…</div>}><CvssCalculator /></Suspense>}
+      {activeTab === 'templates' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Templates…</div>}><ReportTemplates /></Suspense>}
+      {activeTab === 'timeline' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Timeline…</div>}><TimelineViz /></Suspense>}
       {activeTab === 'forum' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Forum…</div>}><DiscussionForum /></Suspense>}
       {activeTab === 'teams' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Teams…</div>}><TeamClassrooms /></Suspense>}
 

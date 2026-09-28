@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import modules from '@/content/modules.json'
 
 const NotesBookmarks = lazy(() => import('@/components/learning/NotesBookmarks').then(m => ({ default: m.NotesBookmarks })))
+const ReadingExperience = lazy(() => import('@/components/learning/ReadingExperience').then(m => ({ default: m.ReadingExperience })))
 import { ArrowLeft, BookOpen, FlaskConical, CheckCircle, Clock, Shield, FileText, Swords, Radio, AlertTriangle, Wifi, Target, Sparkles, ChevronRight, Layers, Award, Zap, List, Eye, Type, Maximize2 } from 'lucide-react'
 
 const lessonMap: Record<string, string[]> = {
@@ -1261,6 +1262,10 @@ export function ModuleDetail() {
           )}
         </motion.div>
       </AnimatePresence>
+
+      <Suspense fallback={<div className="p-6 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Reading Experience…</div>}>
+        <ReadingExperience content={lessonContent || ''} />
+      </Suspense>
 
       <Suspense fallback={<div className="p-6 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Notes & Bookmarks…</div>}>
         <NotesBookmarks moduleId={id || ''} lessonId={lessons[activeLesson] || ''} />
