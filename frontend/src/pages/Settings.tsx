@@ -1,6 +1,6 @@
 import { useProgressStore, LEVELS } from '@/store/useProgressStore'
 import { motion } from 'framer-motion'
-import { Settings as SettingsIcon, Download, Trash2, FlaskConical, Wifi, Shield, Zap, Sparkles, Award, Target, Trophy, Star, Crown, Moon, Sun, LogIn, LogOut, Users, Lock, BarChart3, Bell, Keyboard, Smartphone, Clock, Flag } from 'lucide-react'
+import { Settings as SettingsIcon, Download, Trash2, FlaskConical, Wifi, Shield, Zap, Sparkles, Award, Target, Trophy, Star, Crown, Moon, Sun, LogIn, LogOut, Users, Lock, BarChart3, Bell, Keyboard, Smartphone, Clock, Flag, Code, Plus } from 'lucide-react'
 import { LevelBadge, CertificationPayoff } from '@/components/gamification/LevelBadge'
 import { useTheme } from '@/components/theme/ThemeProvider'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -9,6 +9,8 @@ import { useState, lazy, Suspense } from 'react'
 const TwoFactorAuth = lazy(() => import('@/components/security/TwoFactorAuth').then(m => ({ default: m.TwoFactorAuth })))
 const AuditTrail = lazy(() => import('@/components/security/AuditTrail').then(m => ({ default: m.AuditTrail })))
 const TimelineViz = lazy(() => import('@/components/report/TimelineViz').then(m => ({ default: m.TimelineViz })))
+const CustomModuleCreator = lazy(() => import('@/components/admin/CustomModuleCreator').then(m => ({ default: m.CustomModuleCreator })))
+const ApiSdkDocs = lazy(() => import('@/components/admin/ApiSdkDocs').then(m => ({ default: m.ApiSdkDocs })))
 
 export function Settings() {
   const reset = useProgressStore(s => s.resetProgress)
@@ -116,6 +118,14 @@ export function Settings() {
 
       <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Timeline…</div>}>
         <TimelineViz />
+      </Suspense>
+
+      <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Custom Module Creator…</div>}>
+        <CustomModuleCreator />
+      </Suspense>
+
+      <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading API SDK Docs…</div>}>
+        <ApiSdkDocs />
       </Suspense>
 
       <LevelBadge />
