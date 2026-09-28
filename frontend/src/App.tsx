@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Shell } from '@/components/layout/Shell'
 import { ScrollToTop } from '@/components/layout/ScrollToTop'
@@ -15,6 +15,8 @@ import { ChallengeDetail } from '@/pages/ChallengeDetail'
 import { Reference } from '@/pages/Reference'
 import { Settings } from '@/pages/Settings'
 import { Reports } from '@/pages/Reports'
+
+const GuidedTour = lazy(() => import('@/components/tour/GuidedTour').then(m => ({ default: m.GuidedTour })))
 
 function App() {
   const [searchOpen, setSearchOpen] = useState(false)
@@ -41,6 +43,9 @@ function App() {
       <PointsToast />
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
       <KeyboardShortcuts />
+      <Suspense fallback={null}>
+        <GuidedTour />
+      </Suspense>
       <Shell>
         <Routes>
           <Route path="/" element={<Dashboard />} />

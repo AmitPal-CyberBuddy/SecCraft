@@ -1,5 +1,5 @@
 import { ReportEditor } from '@/components/report/ReportEditor'
-import { FileText, Shield, Target, Sparkles, Trophy, Download, Users } from 'lucide-react'
+import { FileText, Shield, Target, Sparkles, Trophy, Download, Users, MessageSquare, BarChart3 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useState, lazy, Suspense } from 'react'
 
@@ -7,9 +7,11 @@ const Certificate = lazy(() => import('@/components/certificate/Certificate').th
 const EvidenceVault = lazy(() => import('@/components/evidence/EvidenceVault').then(m => ({ default: m.EvidenceVault })))
 const ReportPdfExport = lazy(() => import('@/components/pdf/ReportPdfExport').then(m => ({ default: m.ReportPdfExport })))
 const TeamClassrooms = lazy(() => import('@/components/team/TeamClassrooms').then(m => ({ default: m.TeamClassrooms })))
+const CvssCalculator = lazy(() => import('@/components/security/CvssCalculator').then(m => ({ default: m.CvssCalculator })))
+const DiscussionForum = lazy(() => import('@/components/forum/DiscussionForum').then(m => ({ default: m.DiscussionForum })))
 
 export function Reports() {
-  const [activeTab, setActiveTab] = useState<'editor' | 'certificate' | 'vault' | 'pdf' | 'teams'>('editor')
+  const [activeTab, setActiveTab] = useState<'editor' | 'certificate' | 'vault' | 'pdf' | 'cvss' | 'forum' | 'teams'>('editor')
 
   return (
     <div className="max-w-[1200px] mx-auto space-y-4 xs:space-y-6 md:space-y-8 min-w-0 w-full">
@@ -42,6 +44,8 @@ export function Reports() {
             { id: 'certificate', label: 'Certificate', icon: Trophy },
             { id: 'vault', label: 'Evidence Vault', icon: Shield },
             { id: 'pdf', label: 'PDF Export', icon: Download },
+            { id: 'cvss', label: 'CVSS', icon: BarChart3 },
+            { id: 'forum', label: 'Forum', icon: MessageSquare },
             { id: 'teams', label: 'Teams', icon: Users },
           ].map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center gap-2 px-3 xs:px-4 py-2.5 rounded-lg text-[12px] xs:text-[13px] font-medium transition-all shrink-0 touch-manipulation min-h-[44px] ${activeTab === tab.id ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>
@@ -56,6 +60,8 @@ export function Reports() {
       {activeTab === 'certificate' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Certificate QR…</div>}><Certificate /></Suspense>}
       {activeTab === 'vault' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Vault…</div>}><EvidenceVault /></Suspense>}
       {activeTab === 'pdf' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading PDF/A Export…</div>}><ReportPdfExport /></Suspense>}
+      {activeTab === 'cvss' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading CVSS…</div>}><CvssCalculator /></Suspense>}
+      {activeTab === 'forum' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Forum…</div>}><DiscussionForum /></Suspense>}
       {activeTab === 'teams' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Teams…</div>}><TeamClassrooms /></Suspense>}
 
       {activeTab === 'editor' && (

@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
-import { FlaskConical, Search, Filter, Radio, Wifi, FileCode, Activity, Zap, ChevronRight, Sparkles, Target, Layers, Terminal, Upload, Shield } from 'lucide-react'
+import { FlaskConical, Search, Filter, Radio, Wifi, FileCode, Activity, Zap, ChevronRight, Sparkles, Target, Layers, Terminal, Upload, Shield, Trophy, Clock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const TerminalEmulator = lazy(() => import('@/components/terminal/TerminalEmulator').then(m => ({ default: m.TerminalEmulator })))
 const PcapUploader = lazy(() => import('@/components/lab/PcapUploader').then(m => ({ default: m.PcapUploader })))
 const EvidenceVault = lazy(() => import('@/components/evidence/EvidenceVault').then(m => ({ default: m.EvidenceVault })))
+const LabScoring = lazy(() => import('@/components/lab/LabScoring').then(m => ({ default: m.LabScoring })))
+const RealtimeLeaderboard = lazy(() => import('@/components/analytics/RealtimeLeaderboard').then(m => ({ default: m.RealtimeLeaderboard })))
 
 interface PcapInfo {
   id: string
@@ -21,7 +23,7 @@ export function Labs() {
   const [parserInfo, setParserInfo] = useState<any>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterType, setFilterType] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'pcaps' | 'upload' | 'terminal' | 'vault'>('pcaps')
+  const [activeTab, setActiveTab] = useState<'pcaps' | 'upload' | 'terminal' | 'vault' | 'scoring' | 'leaderboard'>('pcaps')
 
   useEffect(() => {
     fetch('/api/pcaps')
@@ -145,6 +147,8 @@ export function Labs() {
             { id: 'upload', label: 'Upload Custom', icon: Upload, count: null },
             { id: 'terminal', label: 'Terminal', icon: Terminal, count: '50+' },
             { id: 'vault', label: 'Evidence Vault', icon: Shield, count: '5' },
+            { id: 'scoring', label: 'Scoring', icon: Trophy, count: null },
+            { id: 'leaderboard', label: 'Live Board', icon: Clock, count: 'Live' },
           ].map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center gap-1.5 xs:gap-2 px-3 xs:px-4 py-2.5 rounded-lg text-[12px] xs:text-[13px] font-medium transition-all shrink-0 touch-manipulation min-h-[44px] xs:min-h-0 ${activeTab === tab.id ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>
               <tab.icon className="w-4 h-4" />
@@ -159,6 +163,8 @@ export function Labs() {
       {activeTab === 'upload' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading PcapUploader…</div>}><PcapUploader /></Suspense>}
       {activeTab === 'terminal' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Terminal 50+ cmds…</div>}><TerminalEmulator /></Suspense>}
       {activeTab === 'vault' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Evidence Vault SHA256…</div>}><EvidenceVault /></Suspense>}
+      {activeTab === 'scoring' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Lab Scoring…</div>}><LabScoring labId="lab-02-beacon" /></Suspense>}
+      {activeTab === 'leaderboard' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Realtime Leaderboard…</div>}><RealtimeLeaderboard /></Suspense>}
 
       {activeTab === 'pcaps' && (
         <>

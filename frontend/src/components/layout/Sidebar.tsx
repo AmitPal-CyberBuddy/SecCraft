@@ -19,6 +19,9 @@ interface Props {
   isMobile?: boolean
 }
 
+// data-tour for guided tour
+
+
 export function Sidebar({ onClose, isMobile }: Props) {
   const location = useLocation()
   const overall = useProgressStore(s => s.getOverallProgress())
@@ -61,7 +64,7 @@ export function Sidebar({ onClose, isMobile }: Props) {
       </div>
 
       {/* Progress bar — production ready, responsive, finer details */}
-      <div className="relative px-4 xs:px-5 py-3.5 xs:py-4 border-b border-[#1e293b]/40 shrink-0">
+      <div data-tour="sidebar" className="relative px-4 xs:px-5 py-3.5 xs:py-4 border-b border-[#1e293b]/40 shrink-0">
         <div className="flex items-center justify-between mb-2.5 min-w-0">
           <span className="text-[11px] font-medium text-slate-400 tracking-wide truncate">Overall Progress</span>
           <span className="text-[11px] font-mono font-semibold text-cyan-400 shrink-0">{overall}%</span>

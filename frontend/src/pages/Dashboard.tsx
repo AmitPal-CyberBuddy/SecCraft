@@ -10,6 +10,8 @@ import { lazy, Suspense } from 'react'
 
 const AnalyticsDashboard = lazy(() => import('@/components/analytics/AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard })))
 const DailyChallenges = lazy(() => import('@/components/gamification/DailyChallenges').then(m => ({ default: m.DailyChallenges })))
+const BadgesShowcase = lazy(() => import('@/components/gamification/BadgesShowcase').then(m => ({ default: m.BadgesShowcase })))
+const RealtimeLeaderboard = lazy(() => import('@/components/analytics/RealtimeLeaderboard').then(m => ({ default: m.RealtimeLeaderboard })))
 
 export function Dashboard() {
   const getOverall = useProgressStore(s => s.getOverallProgress())
@@ -39,7 +41,7 @@ export function Dashboard() {
   ]
 
   return (
-    <div className="space-y-4 xs:space-y-5 sm:space-y-6 md:space-y-8 max-w-[1400px] mx-auto min-w-0 w-full min-w-0 w-full px-0">
+    <div className="space-y-4 xs:space-y-5 sm:space-y-6 md:space-y-8 max-w-[1400px] mx-auto min-w-0 w-full min-w-0 w-full px-0" data-tour="dashboard-stats">
       {/* Header — production ready responsive */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -461,13 +463,25 @@ export function Dashboard() {
         ))}
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="min-w-0 w-full">
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="min-w-0 w-full" data-tour="daily">
         <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Daily Challenges…</div>}>
           <DailyChallenges />
         </Suspense>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 min-w-0">
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.48 }} className="min-w-0 w-full">
+        <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Badges…</div>}>
+          <BadgesShowcase />
+        </Suspense>
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="min-w-0 w-full">
+        <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Realtime Leaderboard…</div>}>
+          <RealtimeLeaderboard />
+        </Suspense>
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.52 }} className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 min-w-0" data-tour="reports">
         <div className="flex items-center gap-2 mb-4">
           <BarChart3 className="w-5 h-5 text-violet-400" />
           <h3 className="font-heading font-bold text-[16px] text-slate-100">Enterprise Analytics — Classroom Ready</h3>
