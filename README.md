@@ -8,10 +8,16 @@ Forge. Break. Fix. Retest.<br/>
 <sub>Understand the Protocol. Test the Implementation.</sub></p>
 
 <p align="center">
+  <a href="https://amitpal-cyberbuddy.github.io/WiFiForge/"><img src="https://img.shields.io/badge/Live%20Demo-amitpal--cyberbuddy.github.io%2FWiFiForge-22d3ee?style=flat-square" /></a>
   <img src="https://img.shields.io/badge/Stack-Vite%20%2B%20React%20%2B%20FastAPI-22d3ee?style=flat-square" />
   <img src="https://img.shields.io/badge/Cost-%E2%82%B90%20%2F%20%240-34d399?style=flat-square" />
   <img src="https://img.shields.io/badge/Mode-Local--First-0f172a?style=flat-square" />
   <img src="https://img.shields.io/badge/License-MIT-a78bfa?style=flat-square" />
+</p>
+
+<p align="center">
+  <a href="https://amitpal-cyberbuddy.github.io/WiFiForge/"><strong>▶ Open the academy in your browser →</strong></a><br/>
+  <sub>Deployed automatically from <code>main</code> by GitHub Actions — no server, no cost, works offline after the first visit.</sub>
 </p>
 
 ---
@@ -27,6 +33,7 @@ Learn → Understand → Observe → Enumerate → Test → Validate → Evidenc
 ```
 
 - Runs at `http://localhost:3000` on Kali Linux
+- **Live in the browser:** <https://amitpal-cyberbuddy.github.io/WiFiForge/> (GitHub Pages, auto-deployed from `main`)
 - Zero-cost: Vite + React + FastAPI + SQLite + Docker (optional)
 - No physical Wi-Fi hardware required for Phase 1-5 (PCAPs, configs, logs)
 - Hardware labs clearly separated and gated (`RF_REQUIRED` badge)
@@ -86,13 +93,29 @@ WiFiForge/
 # frontend
 cd frontend
 npm install
-npm run dev # http://localhost:3000
+npm run dev # http://localhost:3000/WiFiForge/
 
 # backend
 cd backend
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
+
+### 🌐 Web deployment (GitHub Pages)
+
+The SPA is published to <https://amitpal-cyberbuddy.github.io/WiFiForge/> by
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml) on every push to `main`.
+
+```bash
+# build + serve exactly how Pages will (sub-path, 404.html fallback)
+cd frontend
+npm run build
+npm run preview:pages   # http://localhost:4173/WiFiForge/
+```
+
+Notes, custom domains and troubleshooting: [`docs/GITHUB_PAGES.md`](docs/GITHUB_PAGES.md).
+The FastAPI backend stays local — Pages serves the bundled lessons, labs and mock data;
+live PCAP parsing still needs the local stack.
 
 ### 🛡️ Safety
 

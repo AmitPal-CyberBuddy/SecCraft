@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { Keyboard, X, Command, Zap } from 'lucide-react'
 
 const shortcuts = [
@@ -20,6 +21,7 @@ const shortcuts = [
 
 export function KeyboardShortcuts() {
   const [open, setOpen] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -30,15 +32,15 @@ export function KeyboardShortcuts() {
         setOpen(o => !o)
       }
       if (e.key === 'Escape' && open) setOpen(false)
-      // G + D etc quick nav
+      // G + D etc quick nav — client-side so the router basename (Pages sub-path) is respected
       if (e.key.toLowerCase() === 'g' && !e.metaKey && !e.ctrlKey) {
         const nextHandler = (ev: KeyboardEvent) => {
           const k = ev.key.toLowerCase()
-          if (k === 'd') window.location.href = '/'
-          if (k === 'm') window.location.href = '/modules'
-          if (k === 'l') window.location.href = '/labs'
-          if (k === 'c') window.location.href = '/challenges'
-          if (k === 'r') window.location.href = '/reports'
+          if (k === 'd') navigate('/')
+          if (k === 'm') navigate('/modules')
+          if (k === 'l') navigate('/labs')
+          if (k === 'c') navigate('/challenges')
+          if (k === 'r') navigate('/reports')
           document.removeEventListener('keydown', nextHandler)
         }
         document.addEventListener('keydown', nextHandler, { once: true })
@@ -47,7 +49,7 @@ export function KeyboardShortcuts() {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [open])
+  }, [open, navigate])
 
   return (
     <>
