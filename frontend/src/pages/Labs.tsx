@@ -107,7 +107,7 @@ export function Labs() {
             <div className="min-w-0">
               <h1 className="font-heading font-bold text-[22px] xs:text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none truncate">Labs</h1>
               <p className="text-[12px] xs:text-[13px] text-slate-400 mt-1.5 flex flex-wrap items-center gap-2">
-                <span className="hidden sm:inline">Hands-on • Simulated + Hardware • Real PCAP engine • Terminal • Vault</span>
+                <span className="hidden sm:inline">Hands-on • Simulated captures & configs • Offline decode • Terminal • Evidence vault</span>
                 <span className="sm:hidden">{TOTAL_PCAPS} PCAPs • Terminal • Vault</span>
                 <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
                   <Activity className="w-3 h-3" />
@@ -333,7 +333,7 @@ export function Labs() {
           <div className="text-[11px] xs:text-[12px] leading-relaxed min-w-0">
             <div className="font-semibold text-slate-300 mb-1">How these labs work</div>
             <div className="text-slate-500 font-mono leading-relaxed break-words">
-              <span className="text-emerald-400 font-medium">SIMULATED</span> captures + hostapd configs generated and verified offline — zero-cost • <span className="text-cyan-400 font-medium">Custom capture</span> get the SHA-256 in-browser, then parse with the local API or your own tshark • <span className="text-violet-400 font-medium">Terminal</span> {TERMINAL_COMMAND_COUNT} simulated commands with real syntax • <span className="text-amber-400 font-medium">Vault</span> hash + claim + filter + frames • <span className="text-pink-400 font-medium">{TOTAL_PCAPS} captures</span>
+              <span className="text-emerald-400 font-medium">SIMULATED</span> captures + hostapd configs generated and verified offline — zero-cost • <span className="text-cyan-400 font-medium">Custom capture</span> — hash it in-browser, then decode it with the local API or your own tshark • <span className="text-violet-400 font-medium">Terminal</span> {TERMINAL_COMMAND_COUNT} simulated commands with real syntax • <span className="text-amber-400 font-medium">Vault</span> hash + claim + filter + frames • <span className="text-pink-400 font-medium">{TOTAL_PCAPS} captures</span>
             </div>
           </div>
         </div>
