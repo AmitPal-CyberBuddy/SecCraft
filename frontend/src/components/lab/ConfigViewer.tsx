@@ -43,17 +43,17 @@ export function ConfigViewer({ title, config, issues = [], onFix }: Props) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className="rounded-2xl bg-[#0f172a] border border-[#1e293b] overflow-hidden hover:border-[#334155]/60 transition-all duration-300 relative group"
+      className="rounded-2xl bg-[#0f172a] border border-[#1e293b] overflow-hidden hover:border-[#334155]/60 transition-all duration-300 relative group min-w-0 w-full"
     >
       <div className="absolute inset-0 bg-gradient-to-br from-violet-500/[0.02] via-transparent to-cyan-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       
-      <div className="relative flex items-center justify-between p-5 border-b border-[#1e293b]/60 bg-[#020617]/40">
-        <div className="flex items-center gap-3">
+      <div className="relative flex flex-col xs:flex-row xs:items-center justify-between gap-3 p-4 xs:p-5 border-b border-[#1e293b]/60 bg-[#020617]/40 min-w-0">
+        <div className="flex items-center gap-2 xs:gap-3 min-w-0">
           <div className="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
             <FileCode className="w-5 h-5 text-violet-400" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
               <span className="text-[13px] font-bold text-slate-100">{title}</span>
               {issues.length > 0 ? (
                 <span className="text-[10px] px-2.5 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-mono font-medium tracking-widest flex items-center gap-1">
@@ -70,7 +70,7 @@ export function ConfigViewer({ title, config, issues = [], onFix }: Props) {
             <div className="text-[11px] text-slate-500 font-mono mt-0.5">Config audit • Security analysis • Hardening</div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}

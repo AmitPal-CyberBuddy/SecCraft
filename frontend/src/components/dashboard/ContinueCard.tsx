@@ -25,12 +25,12 @@ export function ContinueCard({ moduleId, title, description, progress, lessonsCo
       
       <div className="relative">
         <div className="flex items-start justify-between mb-5">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 xs:gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/15 to-violet-500/10 border border-cyan-500/20 flex items-center justify-center group-hover:scale-110 group-hover:rotate-1 transition-all duration-300 shadow-glow-cyan/20">
               <BookOpen className="w-5 h-5 text-cyan-400" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
                 <span className="text-[11px] text-cyan-400 font-bold tracking-widest uppercase">Continue Learning</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-glow-cyan" />
               </div>
@@ -41,7 +41,7 @@ export function ContinueCard({ moduleId, title, description, progress, lessonsCo
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
             <span className="text-[10px] px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono font-medium tracking-widest flex items-center gap-1">
               <Zap className="w-3 h-3" />
               ACTIVE

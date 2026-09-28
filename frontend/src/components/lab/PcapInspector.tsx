@@ -46,19 +46,19 @@ interface Props {
 }
 
 const filterPresets = [
-  { label: 'All', value: '' },
-  { label: 'Beacons', value: 'wlan.fc.type_subtype==8' },
-  { label: 'Probe Req', value: 'wlan.fc.type_subtype==4' },
-  { label: 'Probe Resp', value: 'wlan.fc.type_subtype==5' },
-  { label: 'EAPOL', value: 'eapol' },
-  { label: 'EAP', value: 'eap' },
-  { label: 'RADIUS', value: 'radius' },
-  { label: 'Auth', value: 'wlan.fc.type_subtype==11' },
-  { label: 'Deauth', value: 'wlan.fc.type_subtype==12' },
-  { label: 'Disassoc', value: 'wlan.fc.type_subtype==10' },
-  { label: 'Assoc Req', value: 'wlan.fc.type_subtype==0' },
-  { label: 'Assoc Resp', value: 'wlan.fc.type_subtype==1' },
-  { label: 'WPS', value: 'wps' },
+  { label: 'All', short: 'All', value: '' },
+  { label: 'Beacons', short: 'Beacon', value: 'wlan.fc.type_subtype==8' },
+  { label: 'Probe Req', short: 'Probe', value: 'wlan.fc.type_subtype==4' },
+  { label: 'Probe Resp', short: 'Resp', value: 'wlan.fc.type_subtype==5' },
+  { label: 'EAPOL', short: 'EAPOL', value: 'eapol' },
+  { label: 'EAP', short: 'EAP', value: 'eap' },
+  { label: 'RADIUS', short: 'RADIUS', value: 'radius' },
+  { label: 'Auth', short: 'Auth', value: 'wlan.fc.type_subtype==11' },
+  { label: 'Deauth', short: 'Deauth', value: 'wlan.fc.type_subtype==12' },
+  { label: 'Disassoc', short: 'Disas', value: 'wlan.fc.type_subtype==10' },
+  { label: 'Assoc Req', short: 'Assoc', value: 'wlan.fc.type_subtype==0' },
+  { label: 'Assoc Resp', short: 'AssocR', value: 'wlan.fc.type_subtype==1' },
+  { label: 'WPS', short: 'WPS', value: 'wps' },
 ]
 
 export function PcapInspector({ pcapId, initialFilter = '', onFrameSelect }: Props) {
@@ -145,12 +145,12 @@ export function PcapInspector({ pcapId, initialFilter = '', onFrameSelect }: Pro
         <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/[0.03] via-transparent to-violet-500/[0.02] opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
         <div className="relative">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 xs:gap-3 min-w-0">
               <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
                 <Radio className="w-5 h-5 text-cyan-400" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
                   <span className="text-[13px] font-bold text-slate-100 font-mono">{pcapId}.pcapng</span>
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-glow-emerald" />
                 </div>
@@ -165,7 +165,7 @@ export function PcapInspector({ pcapId, initialFilter = '', onFrameSelect }: Pro
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
               <span className={`text-[10px] px-2.5 py-1 rounded-full border font-mono font-medium backdrop-blur-sm tracking-widest ${
                 data?.method === 'tshark' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-glow-emerald' : 
                 data?.method === 'scapy' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20 shadow-glow-cyan' : 
@@ -331,7 +331,7 @@ export function PcapInspector({ pcapId, initialFilter = '', onFrameSelect }: Pro
             <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/[0.03] to-transparent" />
             <div className="relative">
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 xs:gap-3 min-w-0">
                   <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
                     <CheckCircle className="w-4 h-4 text-cyan-400" />
                   </div>

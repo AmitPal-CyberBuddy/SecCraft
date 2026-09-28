@@ -1,0 +1,520 @@
+/* Production-Ready Responsive System — Finer Elements Polish */
+
+/* Base responsive reset */
+* {
+  min-width: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Container queries for finer responsiveness */
+@container (max-width: 320px) {
+  .container-responsive {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+/* Finer breakpoints - production ready */
+@media (max-width: 320px) {
+  /* Ultra small screens - 320px (iPhone SE, small Android) */
+  body {
+    font-size: 13px;
+  }
+  
+  /* Ensure no horizontal overflow on 320px */
+  .max-w-\[1400px\], .max-w-\[1200px\], .max-w-\[800px\] {
+    max-width: 100vw;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  
+  /* Cards padding reduced on tiny screens */
+  .rounded-2xl {
+    border-radius: 14px;
+  }
+  
+  .p-6 {
+    padding: 14px !important;
+  }
+  
+  .p-5 {
+    padding: 12px !important;
+  }
+  
+  .p-4 {
+    padding: 10px !important;
+  }
+  
+  /* Text scaling for tiny screens */
+  .text-\[28px\] { font-size: 22px !important; }
+  .text-\[32px\] { font-size: 24px !important; }
+  .text-\[26px\] { font-size: 20px !important; }
+  .text-\[20px\] { font-size: 16px !important; }
+  .text-\[18px\] { font-size: 14px !important; }
+  .text-\[16px\] { font-size: 13px !important; }
+  .text-\[15px\] { font-size: 12px !important; }
+  .text-\[14px\] { font-size: 12px !important; }
+  .text-\[13px\] { font-size: 11px !important; }
+  
+  /* Badge and pill responsiveness */
+  .rounded-full {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  /* Grid single column on tiny */
+  .grid-cols-2, .grid-cols-3, .grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Flex wrap on tiny */
+  .flex {
+    flex-wrap: wrap;
+  }
+  
+  /* Hide non-essential on tiny */
+  .hidden-xs {
+    display: none !important;
+  }
+}
+
+@media (min-width: 321px) and (max-width: 375px) {
+  /* Small screens - 375px (iPhone 12 mini, etc) */
+  .p-6 {
+    padding: 16px !important;
+  }
+  
+  .text-\[28px\] { font-size: 24px !important; }
+  .text-\[32px\] { font-size: 26px !important; }
+  
+  .grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .grid-cols-3, .grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (min-width: 376px) and (max-width: 640px) {
+  /* Mobile - 640px */
+  .grid-cols-3, .grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .lg\:col-span-5, .lg\:col-span-4, .lg\:col-span-3, .lg\:col-span-8 {
+    grid-column: span 1 / span 1 !important;
+  }
+}
+
+/* Touch targets - production ready */
+@media (max-width: 768px) and (hover: none) {
+  /* Ensure touch targets are at least 44px on mobile */
+  button:not(.markdown *):not(.prose *),
+  a:not(.markdown *):not(.prose *),
+  [role="button"]:not(.markdown *):not(.prose *) {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+  
+  /* Smaller badges and pills can be smaller */
+  .rounded-full.text-\[10px\],
+  .rounded-full.text-\[11px\],
+  .rounded-full.text-\[9px\] {
+    min-height: auto;
+    min-width: auto;
+  }
+  
+  /* Inputs need proper height */
+  input, textarea, select {
+    min-height: 44px;
+    font-size: 16px !important; /* Prevent zoom on iOS */
+  }
+  
+  /* Remove hover effects that cause sticky hover on mobile */
+  .hover\:bg-\[\#111d33\]:hover,
+  .hover\:bg-\[\#1e293b\]:hover,
+  .hover\:bg-\[\#25354f\]:hover {
+    background-color: initial;
+  }
+}
+
+/* Production polish for finer elements */
+
+/* Badges and pills - responsive, no overflow */
+.badge-responsive {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(9px, 2.5vw, 11px);
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+/* Tiny icons - ensure they scale */
+.icon-responsive {
+  width: clamp(12px, 3vw, 16px);
+  height: clamp(12px, 3vw, 16px);
+  flex-shrink: 0;
+}
+
+/* Card padding responsive */
+.card-responsive {
+  padding: clamp(12px, 3vw, 24px);
+  border-radius: clamp(12px, 2vw, 16px);
+}
+
+/* Text responsive with clamp */
+.text-responsive-xs {
+  font-size: clamp(10px, 2.5vw, 12px);
+}
+
+.text-responsive-sm {
+  font-size: clamp(11px, 2.8vw, 13px);
+}
+
+.text-responsive-base {
+  font-size: clamp(13px, 3.2vw, 15px);
+  line-height: clamp(1.5, 4vw, 1.8);
+}
+
+.text-responsive-lg {
+  font-size: clamp(16px, 4vw, 20px);
+  line-height: clamp(1.2, 3vw, 1.4);
+}
+
+.text-responsive-xl {
+  font-size: clamp(20px, 5vw, 28px);
+  line-height: clamp(1.1, 3vw, 1.2);
+}
+
+/* Grid responsive - production ready */
+.grid-responsive {
+  display: grid;
+  gap: clamp(12px, 2vw, 24px);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .grid-responsive {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-responsive {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .grid-responsive {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Flex responsive */
+.flex-responsive {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(8px, 2vw, 16px);
+}
+
+.flex-responsive > * {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Button responsive - production ready */
+.btn-responsive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: clamp(8px, 2vw, 12px) clamp(12px, 3vw, 20px);
+  font-size: clamp(12px, 2.8vw, 14px);
+  font-weight: 500;
+  border-radius: clamp(10px, 2vw, 12px);
+  min-height: 44px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .btn-responsive {
+    min-height: auto;
+    white-space: normal;
+  }
+}
+
+/* Input responsive */
+.input-responsive {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  font-size: 16px; /* Prevent zoom on iOS */
+  border-radius: 12px;
+  max-width: 100%;
+}
+
+@media (min-width: 768px) {
+  .input-responsive {
+    font-size: 13px;
+    min-height: auto;
+  }
+}
+
+/* Code block responsive */
+.code-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  font-size: clamp(11px, 2.5vw, 13px);
+  line-height: 1.6;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+@media (max-width: 640px) {
+  .code-responsive {
+    margin-left: -8px;
+    margin-right: -8px;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 11px;
+  }
+}
+
+/* Table responsive - production ready */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
+  border: 1px solid #1e293b;
+}
+
+.table-responsive table {
+  width: 100%;
+  min-width: 500px;
+  border-collapse: collapse;
+}
+
+@media (max-width: 640px) {
+  .table-responsive {
+    margin-left: -12px;
+    margin-right: -12px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+  
+  .table-responsive table {
+    min-width: 400px;
+    font-size: 12px;
+  }
+}
+
+/* Production-ready focus states */
+.focus-ring {
+  outline: none;
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid rgba(34, 211, 238, 0.5);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Production-ready loading states */
+.skeleton-responsive {
+  background: linear-gradient(90deg, #0f172a 25%, #1e293b 50%, #0f172a 75%);
+  background-size: 200% 100%;
+  animation: skeleton 1.5s infinite;
+  border-radius: 8px;
+  min-height: 20px;
+}
+
+/* Production-ready empty states */
+.empty-state-responsive {
+  padding: clamp(24px, 5vw, 48px);
+  text-align: center;
+  border-radius: 16px;
+  border: 1px dashed #334155;
+  background: #0f172a/60;
+}
+
+/* Ensure no layout shift */
+.no-layout-shift {
+  contain: layout;
+}
+
+/* Production-ready z-index system */
+.z-production {
+  z-index: 10;
+}
+
+.z-production-high {
+  z-index: 20;
+}
+
+.z-production-max {
+  z-index: 50;
+}
+
+/* Production-ready animations - reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .animate-pulse,
+  .animate-pulse-subtle,
+  .animate-shimmer {
+    animation: none !important;
+  }
+}
+
+/* Production-ready print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .rounded-2xl, .rounded-xl {
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Fix for iOS Safari 100vh issue */
+@supports (-webkit-touch-callout: none) {
+  .min-h-screen {
+    min-height: -webkit-fill-available;
+  }
+  
+  .h-screen {
+    height: -webkit-fill-available;
+  }
+}
+
+/* Production-ready scrollbar - finer */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Ensure all containers respect max-width */
+.container-production {
+  width: 100%;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: clamp(12px, 3vw, 32px);
+  padding-right: clamp(12px, 3vw, 32px);
+  min-width: 0;
+}
+
+/* Production-ready card system */
+.card-production {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 16px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  .card-production {
+    padding: 16px;
+    border-radius: 14px;
+  }
+}
+
+@media (max-width: 375px) {
+  .card-production {
+    padding: 12px;
+    border-radius: 12px;
+  }
+}
+
+/* Production-ready text truncation */
+.truncate-production {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.line-clamp-2-production {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Fix for flex children overflow */
+.flex-min-w-0 > * {
+  min-width: 0;
+}

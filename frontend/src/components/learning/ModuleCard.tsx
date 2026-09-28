@@ -78,7 +78,7 @@ export function ModuleCard({ id, title, phase, difficulty, estimated_hours, stat
       <div className="relative p-5">
         {/* Header badges */}
         <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
             <div className={`
               px-2.5 py-1 rounded-full bg-[#020617]/80 border text-[10px] font-semibold tracking-widest backdrop-blur-sm
               ${phaseStyle.border} ${phaseStyle.text}
@@ -151,7 +151,7 @@ export function ModuleCard({ id, title, phase, difficulty, estimated_hours, stat
         {/* Progress */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
               <div className={`
                 w-6 h-6 rounded-full flex items-center justify-center border transition-all duration-300
                 ${isCompleted 

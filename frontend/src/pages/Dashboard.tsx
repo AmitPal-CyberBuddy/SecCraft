@@ -35,17 +35,17 @@ export function Dashboard() {
   ]
 
   return (
-    <div className="space-y-6 md:space-y-8 max-w-[1400px] mx-auto">
-      {/* Header */}
+    <div className="space-y-4 xs:space-y-5 sm:space-y-6 md:space-y-8 max-w-[1400px] mx-auto min-w-0 w-full min-w-0 w-full px-0">
+      {/* Header — production ready responsive */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
+        className="flex flex-col md:flex-row md:items-center justify-between gap-3 xs:gap-4 min-w-0"
       >
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="font-heading font-bold text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 xs:gap-3 min-w-0">
+            <h1 className="font-heading font-bold text-[22px] xs:text-[26px] sm:text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none truncate">
               Dashboard
             </h1>
             <div className="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20">
@@ -59,7 +59,7 @@ export function Dashboard() {
             <span className="hidden sm:inline text-slate-500">Your wireless PT journey • 20 modules • Zero-cost</span>
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
           <motion.div
             whileHover={{ scale: 1.02 }}
             className="px-3 md:px-4 py-2 rounded-xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm flex items-center gap-2.5 hover:bg-[#111d33]/80 hover:border-[#334155]/60 transition-all duration-200"
@@ -72,13 +72,13 @@ export function Dashboard() {
       </motion.div>
 
       {/* Top Stats Bento */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 min-w-0 gap-4 md:gap-6">
         {/* Overall Progress - Large */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-          className="lg:col-span-5 rounded-2xl bg-[#0f172a] border border-[#1e293b] p-6 md:p-7 relative overflow-hidden group hover:border-[#334155] hover:bg-[#111d33] transition-all duration-300 ease-smooth"
+          className="col-span-1 lg:col-span-5 min-w-0 rounded-2xl bg-[#0f172a] border border-[#1e293b] p-6 md:p-7 relative overflow-hidden group hover:border-[#334155] hover:bg-[#111d33] transition-all duration-300 ease-smooth"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-violet-500/5 opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
           <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl group-hover:bg-cyan-500/10 transition-colors duration-500" />
@@ -138,7 +138,7 @@ export function Dashboard() {
         </motion.div>
 
         {/* Stats Grid + Level */}
-        <div className="lg:col-span-4 grid grid-cols-1 gap-4">
+        <div className="col-span-1 lg:col-span-4 min-w-0 grid grid-cols-1 gap-4">
           <LevelBadge />
           {stats.map((stat, idx) => (
             <motion.div
@@ -156,7 +156,7 @@ export function Dashboard() {
                 'from-violet-500/5 to-transparent'
               }`} />
               <div className="relative flex items-center justify-between">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 xs:gap-3 min-w-0">
                   <div className={`
                     w-9 h-9 rounded-xl border flex items-center justify-center transition-all duration-300 group-hover:scale-110
                     ${stat.color === 'cyan' ? 'bg-cyan-500/10 border-cyan-500/20 group-hover:bg-cyan-500/15' :
@@ -187,7 +187,7 @@ export function Dashboard() {
         </div>
 
         {/* Methodology + Skills + Payoff */}
-        <div className="lg:col-span-3 space-y-4">
+        <div className="col-span-1 lg:col-span-3 min-w-0 space-y-4">
           <CertificationPayoff />
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -249,12 +249,12 @@ export function Dashboard() {
       </div>
 
       {/* Continue + Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 min-w-0 gap-4 md:gap-6">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          className="lg:col-span-8"
+          className="col-span-1 lg:col-span-8 min-w-0"
         >
           <ContinueCard
             moduleId={currentModule.id}
@@ -271,7 +271,7 @@ export function Dashboard() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          className="lg:col-span-4 rounded-2xl bg-[#0f172a] border border-[#1e293b] p-6 relative overflow-hidden group hover:border-[#334155]/80 transition-all duration-300"
+          className="col-span-1 lg:col-span-4 min-w-0 rounded-2xl bg-[#0f172a] border border-[#1e293b] p-6 relative overflow-hidden group hover:border-[#334155]/80 transition-all duration-300"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-white/[0.01] to-transparent pointer-events-none" />
           <div className="relative">
@@ -338,7 +338,7 @@ export function Dashboard() {
         <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/[0.02] via-transparent to-violet-500/[0.02] opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
         <div className="relative">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 xs:gap-3 min-w-0">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500/15 to-violet-500/10 border border-cyan-500/20 flex items-center justify-center">
                 <Radio className="w-4 h-4 text-cyan-400" />
               </div>
@@ -403,7 +403,7 @@ export function Dashboard() {
       </motion.div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {[
           { to: '/modules', icon: BookOpen, title: 'Browse Modules', desc: '20 modules • 6 phases', color: 'cyan', stats: '20 total' },
           { to: '/labs', icon: FlaskConical, title: 'Hands-on Labs', desc: 'PCAP • Config • Simulated', color: 'emerald', stats: '16 PCAPs' },
@@ -440,7 +440,7 @@ export function Dashboard() {
                 }`} />
               </div>
               <div className="relative flex-1 min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
                   <span className="text-[14px] font-semibold text-slate-100 group-hover:text-white transition-colors">{action.title}</span>
                   <Sparkles className="w-3 h-3 text-slate-600 group-hover:text-cyan-400 opacity-0 group-hover:opacity-100 transition-all duration-300" />
                 </div>
@@ -463,12 +463,12 @@ export function Dashboard() {
         transition={{ duration: 0.5, delay: 0.6 }}
         className="flex flex-col sm:flex-row items-center justify-center gap-3 text-[11px] text-slate-600 font-mono pt-2 pb-4"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
           <Zap className="w-3 h-3 text-amber-400" />
           <span>Zero-cost • Local-first • Offline • No cloud • Kali-ready</span>
         </div>
         <span className="hidden sm:inline w-1 h-1 rounded-full bg-slate-700" />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
           <Users className="w-3 h-3 text-slate-500" />
           <span>20 modules • 18 labs • 15 challenges • 16 PCAPs</span>
         </div>

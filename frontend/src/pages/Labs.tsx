@@ -92,7 +92,7 @@ export function Labs() {
   const typeFilters = [...new Set(labs.map(l => l.type))]
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-6 md:space-y-8">
+    <div className="max-w-[1400px] mx-auto min-w-0 w-full space-y-6 md:space-y-8">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -101,7 +101,7 @@ export function Labs() {
         className="flex flex-col lg:flex-row lg:items-end justify-between gap-6"
       >
         <div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 xs:gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/15 to-cyan-500/10 border border-emerald-500/20 flex items-center justify-center">
               <FlaskConical className="w-5 h-5 text-emerald-400" />
             </div>
@@ -117,7 +117,7 @@ export function Labs() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
           <motion.div
             whileHover={{ scale: 1.02 }}
             className="px-4 py-2.5 rounded-xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm flex items-center gap-2.5"
@@ -145,7 +145,7 @@ export function Labs() {
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.03] via-transparent to-cyan-500/[0.03] opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
         <div className="relative">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 xs:gap-3 min-w-0">
               <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
                 <Radio className="w-4 h-4 text-emerald-400" />
               </div>
@@ -154,7 +154,7 @@ export function Labs() {
                 <p className="text-[11px] text-slate-500 font-mono">Phase C+D+E+F • Zero-cost • Local-first</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
               <span className="text-[11px] px-2.5 py-1 rounded-full bg-[#020617] border border-[#1e293b] text-slate-500 font-mono">
                 {filteredPcaps.length} shown
               </span>
@@ -179,7 +179,7 @@ export function Labs() {
                   <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover/pcap:opacity-100 transition-opacity duration-300" />
                   <div className="relative flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
                         <FileCode className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                         <span className="text-[12px] font-mono font-medium text-slate-200 truncate group-hover/pcap:text-slate-100 transition-colors">{p.filename}</span>
                       </div>
@@ -289,7 +289,7 @@ export function Labs() {
                 
                 <div className="relative">
                   <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 xs:gap-3 min-w-0">
                       <div className={`
                         w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-1
                         ${lab.color === 'cyan' ? 'bg-cyan-500/10 border-cyan-500/20 group-hover:bg-cyan-500/15' :
@@ -316,7 +316,7 @@ export function Labs() {
                         <div className="text-[12px] font-semibold text-slate-200 group-hover:text-slate-100 transition-colors">{lab.type}</div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
                       <span className={`text-[10px] px-2.5 py-1 rounded-full border font-mono font-medium backdrop-blur-sm ${
                         lab.status === 'SIMULATED' 
                           ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 

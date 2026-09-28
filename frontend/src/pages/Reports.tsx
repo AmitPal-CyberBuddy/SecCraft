@@ -11,7 +11,7 @@ export function Reports() {
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         className="flex flex-col lg:flex-row lg:items-end justify-between gap-6"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 xs:gap-3 min-w-0">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/15 to-cyan-500/10 border border-violet-500/20 flex items-center justify-center">
             <FileText className="w-5 h-5 text-violet-400" />
           </div>
@@ -30,7 +30,7 @@ export function Reports() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-4"
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"
       >
         {[
           { icon: Shield, title: 'VAPT Structure', desc: 'Title, Severity, Description, Technical Details, Affected Component, Evidence, Impact, Recommendation, References, Retest', color: 'violet' },

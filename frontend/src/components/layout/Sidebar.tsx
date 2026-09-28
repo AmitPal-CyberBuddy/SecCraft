@@ -25,45 +25,46 @@ export function Sidebar({ onClose, isMobile }: Props) {
   const streak = useProgressStore(s => s.streak)
 
   return (
-    <aside className="w-full h-screen bg-[#0a1020]/95 backdrop-blur-2xl border-r border-[#1e293b]/60 flex flex-col relative overflow-hidden">
+    <aside className="w-full h-screen h-[100dvh] bg-[#0a1020]/95 backdrop-blur-2xl border-r border-[#1e293b]/60 flex flex-col relative overflow-hidden">
       {/* Subtle gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] via-transparent to-transparent pointer-events-none" />
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
       
-      {/* Logo */}
-      <div className="relative h-[72px] px-5 flex items-center gap-3 border-b border-[#1e293b]/60 shrink-0">
-        <div className="w-9 h-9 rounded-xl bg-[#020617] border border-[#1e293b] flex items-center justify-center relative overflow-hidden shadow-soft group">
+      {/* Logo — production ready, responsive down to 320px */}
+      <div className="relative h-[60px] xs:h-[64px] md:h-[72px] px-4 xs:px-5 flex items-center gap-2.5 xs:gap-3 border-b border-[#1e293b]/60 shrink-0 min-w-0">
+        <div className="w-9 h-9 rounded-xl bg-[#020617] border border-[#1e293b] flex items-center justify-center relative overflow-hidden shadow-soft group shrink-0">
           <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 via-violet-500/10 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
           <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/0 to-cyan-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <Radio className="w-5 h-5 text-cyan-400 relative z-10 group-hover:scale-110 transition-transform duration-300" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-heading font-bold text-[17px] leading-none tracking-tight">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-heading font-bold text-[16px] xs:text-[17px] leading-none tracking-tight truncate">
               <span className="text-slate-100">WiFi</span><span className="text-cyan-400">Forge</span>
             </span>
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-subtle" />
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
           </div>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-[9px] tracking-[0.18em] text-slate-500 font-semibold uppercase">Wireless PT Academy</span>
-            <span className="text-[8px] px-1 py-0 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">v2.0</span>
+          <div className="flex items-center gap-1.5 xs:gap-2 mt-1 min-w-0">
+            <span className="text-[8px] xs:text-[9px] tracking-[0.15em] xs:tracking-[0.18em] text-slate-500 font-semibold uppercase truncate">Wireless PT Academy</span>
+            <span className="text-[7px] xs:text-[8px] px-1 py-0 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono shrink-0">v2.1</span>
           </div>
         </div>
         {isMobile && (
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] hover:border-[#475569] transition-all duration-200 group"
+            aria-label="Close menu"
+            className="w-11 h-11 xs:w-8 xs:h-8 rounded-xl xs:rounded-lg bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] hover:border-[#475569] active:bg-[#1e293b] transition-all duration-200 group shrink-0 touch-manipulation"
           >
-            <X className="w-4 h-4 text-slate-400 group-hover:text-slate-200 group-hover:rotate-90 transition-all duration-200" />
+            <X className="w-5 h-5 xs:w-4 xs:h-4 text-slate-400 group-hover:text-slate-200 group-hover:rotate-90 transition-all duration-200" />
           </button>
         )}
       </div>
 
-      {/* Progress bar */}
-      <div className="relative px-5 py-4 border-b border-[#1e293b]/40 shrink-0">
-        <div className="flex items-center justify-between mb-2.5">
-          <span className="text-[11px] font-medium text-slate-400 tracking-wide">Overall Progress</span>
-          <span className="text-[11px] font-mono font-semibold text-cyan-400">{overall}%</span>
+      {/* Progress bar — production ready, responsive, finer details */}
+      <div className="relative px-4 xs:px-5 py-3.5 xs:py-4 border-b border-[#1e293b]/40 shrink-0">
+        <div className="flex items-center justify-between mb-2.5 min-w-0">
+          <span className="text-[11px] font-medium text-slate-400 tracking-wide truncate">Overall Progress</span>
+          <span className="text-[11px] font-mono font-semibold text-cyan-400 shrink-0">{overall}%</span>
         </div>
         <div className="relative h-1.5 bg-[#020617] rounded-full overflow-hidden border border-[#1e293b]/50">
           <motion.div
@@ -76,17 +77,22 @@ export function Sidebar({ onClose, isMobile }: Props) {
           </motion.div>
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer" />
         </div>
-        <div className="flex items-center gap-3 mt-3">
-          <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+        <div className="flex items-center gap-2 xs:gap-3 mt-3 flex-wrap">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <div className="w-5 h-5 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
               <Zap className="w-3 h-3 text-amber-400" />
             </div>
-            <span className="text-[10px] text-slate-500 font-mono">{streak}d streak</span>
+            <span className="text-[10px] text-slate-500 font-mono truncate">{streak}d streak</span>
           </div>
-          <div className="h-3 w-px bg-[#1e293b]" />
-          <div className="flex items-center gap-1.5">
-            <Activity className="w-3 h-3 text-emerald-400" />
-            <span className="text-[10px] text-slate-500 font-mono">16 PCAPs live</span>
+          <div className="hidden xs:flex h-3 w-px bg-[#1e293b] shrink-0" />
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Activity className="w-3 h-3 text-emerald-400 shrink-0" />
+            <span className="text-[10px] text-slate-500 font-mono truncate">16 PCAPs live</span>
+          </div>
+          <div className="hidden xs:flex h-3 w-px bg-[#1e293b] shrink-0" />
+          <div className="flex items-center gap-1 text-[10px] font-mono text-slate-500 truncate">
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse shrink-0" />
+            <span className="truncate">Production</span>
           </div>
         </div>
       </div>

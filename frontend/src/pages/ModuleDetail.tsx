@@ -351,94 +351,89 @@ export function ModuleDetail() {
   const pc = phaseColors[module.phase] || phaseColors[1]
 
   return (
-    <div className="max-w-[1200px] mx-auto space-y-6">
-      {/* Header */}
+    <div className="max-w-[1200px] mx-auto space-y-4 xs:space-y-5 sm:space-y-6 min-w-0 w-full">
+      {/* Header — production ready responsive, finer elements */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="relative rounded-2xl bg-[#0f172a] border border-[#1e293b] p-6 overflow-hidden group"
+        className="relative rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 sm:p-6 overflow-hidden group min-w-0 w-full"
       >
         <div className={`absolute inset-0 bg-gradient-to-br ${pc.bg} opacity-60 group-hover:opacity-80 transition-opacity duration-500`} />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-        <div className="relative flex flex-col lg:flex-row lg:items-center gap-4">
-          <Link to="/modules" className="w-9 h-9 rounded-xl bg-[#020617]/60 border border-[#1e293b]/60 backdrop-blur-sm flex items-center justify-center hover:bg-[#1e293b]/80 hover:border-[#334155]/60 transition-all duration-200 group/link shrink-0">
-            <ArrowLeft className="w-4 h-4 text-slate-400 group-hover/link:text-slate-200 group-hover/link:-translate-x-0.5 transition-all duration-200" />
+        <div className="relative flex flex-col lg:flex-row lg:items-center gap-3 xs:gap-4 min-w-0">
+          <Link to="/modules" className="w-11 h-11 xs:w-9 xs:h-9 rounded-xl bg-[#020617]/60 border border-[#1e293b]/60 backdrop-blur-sm flex items-center justify-center hover:bg-[#1e293b]/80 hover:border-[#334155]/60 active:bg-[#1e293b] transition-all duration-200 group/link shrink-0 touch-manipulation">
+            <ArrowLeft className="w-5 h-5 xs:w-4 xs:h-4 text-slate-400 group-hover/link:text-slate-200 group-hover/link:-translate-x-0.5 transition-all duration-200" />
           </Link>
           <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-[#020617]/60 border border-[#1e293b]/60 text-slate-500 backdrop-blur-sm">{module.id}</span>
-              <span className={`text-[10px] px-2.5 py-1 rounded-full border font-mono font-medium backdrop-blur-sm tracking-widest ${module.status === 'simulated' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
-                {module.status === 'simulated' ? '● SIMULATED' : '◐ HARDWARE'}
+            <div className="flex flex-wrap items-center gap-1.5 xs:gap-2 mb-2 min-w-0">
+              <span className="text-[10px] xs:text-[11px] font-mono px-2 xs:px-2.5 py-1 rounded-full bg-[#020617]/60 border border-[#1e293b]/60 text-slate-500 backdrop-blur-sm shrink-0">{module.id}</span>
+              <span className={`text-[9px] xs:text-[10px] px-2 xs:px-2.5 py-1 rounded-full border font-mono font-medium backdrop-blur-sm tracking-widest shrink-0 ${module.status === 'simulated' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
+                {module.status === 'simulated' ? '● SIM' : '◐ RF'}
+                <span className="hidden xs:inline">{module.status === 'simulated' ? 'ULATED' : ' HARDWARE'}</span>
               </span>
-              <span className={`text-[10px] px-2.5 py-1 rounded-full bg-[#020617]/60 border ${pc.border} ${pc.text} font-mono backdrop-blur-sm`}>PHASE {module.phase}</span>
-              <span className="text-[11px] px-2.5 py-1 rounded-full bg-[#1e293b]/60 border border-[#334155]/60 text-slate-400 font-mono">{module.difficulty}</span>
+              <span className={`text-[9px] xs:text-[10px] px-2 xs:px-2.5 py-1 rounded-full bg-[#020617]/60 border ${pc.border} ${pc.text} font-mono backdrop-blur-sm shrink-0`}>P{module.phase}</span>
+              <span className="text-[10px] xs:text-[11px] px-2 xs:px-2.5 py-1 rounded-full bg-[#1e293b]/60 border border-[#334155]/60 text-slate-400 font-mono shrink-0 truncate max-w-[120px] xs:max-w-none">{module.difficulty}</span>
             </div>
-            <h1 className="font-heading font-bold text-[22px] md:text-[26px] text-slate-100 leading-tight tracking-tight">{module.title}</h1>
-            <p className="text-[13px] text-slate-400 mt-2 max-w-[700px] leading-relaxed">{module.description}</p>
+            <h1 className="font-heading font-bold text-[18px] xs:text-[20px] sm:text-[22px] md:text-[26px] text-slate-100 leading-tight tracking-tight min-w-0 break-words">{module.title}</h1>
+            <p className="text-[12px] xs:text-[13px] text-slate-400 mt-2 max-w-[700px] leading-relaxed min-w-0 break-words line-clamp-3 xs:line-clamp-none">{module.description}</p>
           </div>
-          <div className="flex items-center gap-4 shrink-0">
-            <div className="text-center">
-              <div className="text-[11px] font-semibold tracking-widest text-slate-500 uppercase">Progress</div>
-              <div className="text-[28px] font-bold text-slate-100 font-mono leading-none mt-1">{progress}%</div>
-              <div className="w-28 h-1.5 bg-[#020617] rounded-full mt-2 border border-[#1e293b]/50 overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                  className="h-full bg-gradient-to-r from-cyan-400 to-violet-400 rounded-full"
-                />
+          <div className="flex items-center gap-3 xs:gap-4 shrink-0 self-start lg:self-center">
+            <div className="text-center min-w-0">
+              <div className="text-[10px] xs:text-[11px] font-semibold tracking-widest text-slate-500 uppercase">Progress</div>
+              <div className="text-[24px] xs:text-[28px] font-bold text-slate-100 font-mono leading-none mt-1">{progress}%</div>
+              <div className="w-20 xs:w-28 h-1.5 bg-[#020617] rounded-full mt-2 border border-[#1e293b]/50 overflow-hidden">
+                <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }} className="h-full bg-gradient-to-r from-cyan-400 to-violet-400 rounded-full" />
               </div>
             </div>
-            <div className="hidden sm:flex w-14 h-14 rounded-2xl bg-gradient-to-br from-[#1e293b] to-[#0f172a] border border-[#334155]/60 items-center justify-center">
-              <BookOpen className={`w-7 h-7 ${pc.text}`} />
+            <div className="hidden xs:flex w-12 h-12 xs:w-14 xs:h-14 rounded-2xl bg-gradient-to-br from-[#1e293b] to-[#0f172a] border border-[#334155]/60 items-center justify-center shrink-0">
+              <BookOpen className={`w-6 h-6 xs:w-7 xs:h-7 ${pc.text}`} />
             </div>
           </div>
         </div>
       </motion.div>
 
-      {/* Tabs */}
+      {/* Tabs — production ready responsive, finer elements, scrollable on mobile */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-        className="flex flex-wrap gap-1 p-1 rounded-xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm w-fit"
+        className="w-full overflow-x-auto scrollbar-thin pb-1 -mx-1 px-1"
       >
-        {[
-          { id: 'overview', label: 'Overview', icon: Layers, count: null },
-          { id: 'theory', label: 'Theory', icon: BookOpen, count: lessons.length },
-          { id: 'lab', label: 'Lab', icon: FlaskConical, count: labs.length },
-          { id: 'quiz', label: 'Quiz', icon: Swords, count: quizzes.length },
-          { id: 'report', label: 'Report', icon: FileText, count: null },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 ${
-              activeTab === tab.id 
-                ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' 
-                : 'text-slate-500 hover:text-slate-300 hover:bg-[#1e293b]/50'
-            }`}
-          >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
-            {tab.count !== null && (
-              <span className={`text-[10px] px-1.5 py-0 rounded-full font-mono border ${activeTab === tab.id ? 'bg-[#020617] border-[#334155] text-slate-300' : 'bg-[#020617] border-[#1e293b] text-slate-500'}`}>
-                {tab.count}
-              </span>
-            )}
-            {activeTab === tab.id && (
-              <motion.div
-                layoutId="active-tab"
-                className="absolute inset-0 rounded-lg bg-[#1e293b] border border-[#334155] -z-10"
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              />
-            )}
-          </button>
-        ))}
+        <div className="flex gap-1 p-1 rounded-xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm w-fit min-w-0">
+          {[
+            { id: 'overview', label: 'Overview', short: 'Over', icon: Layers, count: null },
+            { id: 'theory', label: 'Theory', short: 'Theory', icon: BookOpen, count: lessons.length },
+            { id: 'lab', label: 'Lab', short: 'Lab', icon: FlaskConical, count: labs.length },
+            { id: 'quiz', label: 'Quiz', short: 'Quiz', icon: Swords, count: quizzes.length },
+            { id: 'report', label: 'Report', short: 'Report', icon: FileText, count: null },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setActiveTab(tab.id as any)
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }}
+              className={`relative flex items-center gap-1.5 xs:gap-2 px-3 xs:px-4 py-2.5 xs:py-2 rounded-lg text-[12px] xs:text-[13px] font-medium transition-all duration-200 shrink-0 touch-manipulation min-h-[44px] xs:min-h-0 ${
+                activeTab === tab.id 
+                  ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' 
+                  : 'text-slate-500 hover:text-slate-300 hover:bg-[#1e293b]/50 active:bg-[#1e293b]/80 border border-transparent'
+              }`}
+            >
+              <tab.icon className="w-4 h-4 shrink-0" />
+              <span className="hidden xs:inline">{tab.label}</span>
+              <span className="xs:hidden">{tab.short}</span>
+              {tab.count !== null && (
+                <span className={`text-[10px] px-1.5 py-0 rounded-full font-mono border shrink-0 ${activeTab === tab.id ? 'bg-[#020617] border-[#334155] text-slate-300' : 'bg-[#020617] border-[#1e293b] text-slate-500'}`}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </motion.div>
 
-      {/* Content */}
+      {/* Content — production ready */}
       <AnimatePresence mode="wait">
         <motion.div
           key={activeTab}
@@ -446,6 +441,7 @@ export function ModuleDetail() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          className="min-w-0 w-full"
         >
           {/* Overview */}
           {activeTab === 'overview' && (

@@ -34,7 +34,7 @@ export function Modules() {
   }))
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-6 md:space-y-8">
+    <div className="max-w-[1400px] mx-auto min-w-0 w-full space-y-6 md:space-y-8">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -43,7 +43,7 @@ export function Modules() {
         className="flex flex-col lg:flex-row lg:items-end justify-between gap-6"
       >
         <div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 xs:gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/15 to-violet-500/10 border border-cyan-500/20 flex items-center justify-center">
               <BookOpen className="w-5 h-5 text-cyan-400" />
             </div>
@@ -215,7 +215,7 @@ export function Modules() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.15 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5"
+        className="grid grid-cols-1 xs:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5"
       >
         <AnimatePresence mode="popLayout">
           {filtered.map((m, idx) => (

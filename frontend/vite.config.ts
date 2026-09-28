@@ -24,4 +24,12 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    target: 'esnext',
+    chunkSizeWarningLimit: 600,
+  },
+  preview: {
+    host: '0.0.0.0',
+    port: 3000,
+  },
 })

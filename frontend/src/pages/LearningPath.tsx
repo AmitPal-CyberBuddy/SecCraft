@@ -22,7 +22,7 @@ export function LearningPath() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="flex items-center gap-3"
+        className="flex items-center gap-2 xs:gap-3 min-w-0"
       >
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/15 to-cyan-500/10 border border-violet-500/20 flex items-center justify-center">
           <Target className="w-5 h-5 text-violet-400" />
@@ -42,7 +42,7 @@ export function LearningPath() {
         <div className="absolute inset-0 bg-gradient-to-br from-violet-500/[0.02] via-transparent to-cyan-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         <div className="relative">
           <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 xs:gap-3 min-w-0">
               <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
                 <BookOpen className="w-4 h-4 text-violet-400" />
               </div>
@@ -77,7 +77,7 @@ export function LearningPath() {
                     {phase.id}
                   </div>
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
                       <span className="text-[14px] font-bold text-slate-100">Phase {phase.id} — {phase.name}</span>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full border font-mono ${phase.border} ${phase.text} bg-[#020617]/60`}>
                         {phase.modules.length} modules
@@ -168,13 +168,13 @@ export function LearningPath() {
         className="rounded-2xl bg-[#020617]/60 border border-[#1e293b]/40 p-5 backdrop-blur-sm"
       >
         <div className="flex flex-wrap items-center gap-4 text-[11px] font-mono text-slate-500">
-          <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-400" /> Completed</span>
+          <span className="flex items-center gap-1.5 xs:gap-2 min-w-0"><CheckCircle className="w-4 h-4 text-emerald-400" /> Completed</span>
           <span className="w-1 h-1 rounded-full bg-slate-700" />
-          <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 text-cyan-400" /> In Progress</span>
+          <span className="flex items-center gap-1.5 xs:gap-2 min-w-0"><Loader2 className="w-4 h-4 text-cyan-400" /> In Progress</span>
           <span className="w-1 h-1 rounded-full bg-slate-700" />
-          <span className="flex items-center gap-2"><Circle className="w-4 h-4 text-slate-600" /> Not Started</span>
+          <span className="flex items-center gap-1.5 xs:gap-2 min-w-0"><Circle className="w-4 h-4 text-slate-600" /> Not Started</span>
           <span className="w-1 h-1 rounded-full bg-slate-700" />
-          <span className="flex items-center gap-2"><Lock className="w-4 h-4 text-slate-600" /> Locked</span>
+          <span className="flex items-center gap-1.5 xs:gap-2 min-w-0"><Lock className="w-4 h-4 text-slate-600" /> Locked</span>
           <span className="w-1 h-1 rounded-full bg-slate-700" />
           <span className="text-emerald-400">SIMULATED</span> = No hardware
           <span className="w-1 h-1 rounded-full bg-slate-700" />
