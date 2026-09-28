@@ -33,15 +33,39 @@ working deployment.
 Plain `npm run dev` still serves the app at the same base (`/WiFiForge/`) with the
 FastAPI proxy for `/api`. Use `VITE_BASE=/ npm run dev` to work at the domain root.
 
-## Enabling Pages (one time)
+## Enabling Pages (one time) — DONE
 
-1. **[Settings → Pages](https://github.com/AmitPal-CyberBuddy/WiFiForge/settings/pages) → Build and deployment → Source: _GitHub Actions_ → Save.**
-   This is the only manual step — the site cannot be created by a token
-   (`actions/configure-pages` with `enablement: true` is rejected on this repo with
-   *Resource not accessible by integration*, so the workflow assumes Pages already exists).
-2. Re-run the **Deploy Frontend to GitHub Pages** workflow (Actions → that run → *Re-run all jobs*).
-3. Verify a deep link, e.g. `https://amitpal-cyberbuddy.github.io/WiFiForge/labs`
-   (GitHub returns 404 for the path, the page still renders).
+Pages is enabled on this repo: **Source: _GitHub Actions_**, `build_type: workflow`.
+Nothing more to configure there.
+
+> Enabling Pages **publishes nothing by itself.** Until one run of this workflow
+> completes successfully, `https://amitpal-cyberbuddy.github.io/WiFiForge/` serves
+> GitHub's default *404 — There isn't a GitHub Pages site here.* That is the state
+> this repo was in: every deploy attempt ran *before* Pages existed and died with
+> `Failed to create deployment (status: 404)`.
+
+The `github-pages` environment is restricted to the **`main`** branch, so a deploy
+can only be triggered from `main` — not from a feature branch, and not by
+`actions/configure-pages` running as a bot token.
+
+## Publishing / redeploying
+
+Any one of these runs `pages.yml` on `main` and publishes:
+
+1. **Push (or merge a PR) to `main`** — automatic, this is the normal path.
+2. **Actions → _Deploy Frontend to GitHub Pages_ → a run → _Re-run all jobs_** —
+   re-publishes the existing `main` without a new commit. Use this to recover from
+   the 404 state above.
+3. **Actions → _Deploy Frontend to GitHub Pages_ → _Run workflow_ → branch `main`**
+   (`workflow_dispatch`).
+
+Then verify a deep link, e.g. `https://amitpal-cyberbuddy.github.io/WiFiForge/labs`
+(GitHub returns a 404 *status*, the SPA shell still renders).
+
+The workflow now guards both ends of this: a **pre-flight** step fails fast with a
+plain instruction if Pages is missing or not set to GitHub Actions, and a
+post-deploy **Verify the site actually serves** step polls the live URL so a green
+run can never again mean "deployed nothing".
 
 After that, every push to `main` redeploys automatically.
 
@@ -72,6 +96,9 @@ cd frontend && npm run dev        # proxies /api → :8000
 
 | Symptom | Cause / fix |
 | --- | --- |
+| Site shows GitHub's default *404 — There isn't a GitHub Pages site here* | Pages is enabled but **nothing has ever published**. Check `gh api repos/AmitPal-CyberBuddy/WiFiForge/pages --jq '.status'` — `null` means never deployed. Trigger a run on `main` (push, *Re-run all jobs*, or *Run workflow*). |
+| Deploy job: `Failed to create deployment (status: 404)` | The run executed **before** Pages was enabled, or Source is *Deploy from a branch* instead of *GitHub Actions*. Enable Pages with Source: GitHub Actions, then re-run. The pre-flight step now reports this before the build. |
+| Deploy job: *branch not allowed* / environment rejected | The `github-pages` environment only permits `main`. Deploys cannot run from `arena/*` or other feature branches. |
 | Blank page, 404s for `/assets/*` | Built with the wrong base — set `VITE_BASE=/WiFiForge/` (the workflow does this from the repo name) |
 | Deep link shows GitHub's 404 | `404.html` missing from `dist` — it is emitted by the Vite plugin; check the build log |
 | Styles/fonts missing | `index.html` still points at root-absolute `/favicon.svg` — the plugin re-points `public/` files at the base |
