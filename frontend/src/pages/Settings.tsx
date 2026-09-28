@@ -1,6 +1,6 @@
 import { useProgressStore, LEVELS } from '@/store/useProgressStore'
 import { motion } from 'framer-motion'
-import { Settings as SettingsIcon, Download, Trash2, FlaskConical, Wifi, Shield, Zap, Sparkles, Award, Target, Trophy, Star, Crown, Moon, Sun, LogIn, LogOut, Users, Lock, BarChart3, Bell, Keyboard, Smartphone, Clock, Flag, Code, Plus } from 'lucide-react'
+import { Settings as SettingsIcon, Download, Trash2, FlaskConical, Wifi, Shield, Zap, Sparkles, Award, Target, Trophy, Star, Crown, Moon, Sun, LogIn, LogOut, Users, Lock, BarChart3, Bell, Keyboard, Smartphone, Clock, Flag, Code, Plus, Mic, Accessibility } from 'lucide-react'
 import { LevelBadge, CertificationPayoff } from '@/components/gamification/LevelBadge'
 import { useTheme } from '@/components/theme/ThemeProvider'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -11,6 +11,8 @@ const AuditTrail = lazy(() => import('@/components/security/AuditTrail').then(m 
 const TimelineViz = lazy(() => import('@/components/report/TimelineViz').then(m => ({ default: m.TimelineViz })))
 const CustomModuleCreator = lazy(() => import('@/components/admin/CustomModuleCreator').then(m => ({ default: m.CustomModuleCreator })))
 const ApiSdkDocs = lazy(() => import('@/components/admin/ApiSdkDocs').then(m => ({ default: m.ApiSdkDocs })))
+const VoiceAssistant = lazy(() => import('@/components/voice/VoiceAssistant').then(m => ({ default: m.VoiceAssistant })))
+const AccessibilityPanel = lazy(() => import('@/components/accessibility/AccessibilityPanel').then(m => ({ default: m.AccessibilityPanel })))
 
 export function Settings() {
   const reset = useProgressStore(s => s.resetProgress)
@@ -126,6 +128,14 @@ export function Settings() {
 
       <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading API SDK Docs…</div>}>
         <ApiSdkDocs />
+      </Suspense>
+
+      <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Voice Assistant…</div>}>
+        <VoiceAssistant />
+      </Suspense>
+
+      <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Accessibility…</div>}>
+        <AccessibilityPanel />
       </Suspense>
 
       <LevelBadge />
