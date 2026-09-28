@@ -57,7 +57,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar */}
       <div className="relative z-30">
-        {/* Mobile overlay - production ready with proper backdrop */}
+        {/* Mobile overlay */}
         <AnimatePresence>
           {sidebarOpen && isMobile && (
             <motion.div
@@ -84,7 +84,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {/* Main content - production ready responsive */}
+      {/* Main content */}
       <div className={`relative z-10 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] min-w-0 ${isMobile ? 'pl-0' : 'pl-[280px]'}`}>
         <Topbar 
           onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 

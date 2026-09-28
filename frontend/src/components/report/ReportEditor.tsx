@@ -15,22 +15,69 @@ interface Finding {
   retest: string
 }
 
-const defaultFinding: Finding = {
-  title: "Insecure Wi-Fi Configuration: WPS Enabled + PMF Disabled",
-  severity: "Medium",
-  description: "The wireless network LAB-WIFI (BSSID AA:BB:CC:DD:EE:FF, Channel 6) is configured with WPS enabled and PMF disabled. WPS introduces PIN brute-force risk (11k max), PMF disabled allows deauthentication spoofing.",
-  technicalDetails: "WPS PIN 8-digit with halves flaw: first half 10^4 + second half 10^3 = 11k max, not 10^8. WPS IE 221 OUI 00:50:F2:04 present in beacon. PMF (802.11w) disabled, management frames unauthenticated, attacker can spoof deauth.",
-  affectedComponent: "SSID: LAB-WIFI, BSSID: AA:BB:CC:DD:EE:FF, Channel: 6, Band: 2.4GHz, Security: WPA2-PSK CCMP",
-  evidence: "PCAP: beacon-only.pcapng Frame 1 Beacon SSID LAB-WIFI BSSID AA:BB:CC:DD:EE:FF Ch6 Open\nConfig: hostapd.conf wps_state=2, ieee80211w=0, ht_capab 40MHz\nWireshark: wlan.fc.type_subtype==8, wps filter shows WPS IE",
-  impact: "WPS PIN brute-force → PSK recovery → network access. PMF disabled → DoS via deauth flood, handshake capture facilitation, Evil Twin facilitation. 40MHz in 2.4GHz → interference, bad practice.",
-  recommendation: "Disable WPS: wps_state=0. Enable PMF required: ieee80211w=2. Use 20MHz only in 2.4GHz: ht_capab=[HT20]. Strong PSK 20+ chars random, not in wordlists. Consider WPA3-only with SAE and PMF required.",
-  references: "802.11-2020 spec, OWASP Wireless, NIST SP 800-153, hostapd docs",
-  retest: "After fix: Verify beacon no WPS IE (filter wps), verify RSN capabilities MFPR=1 PMF required, verify 20MHz only, verify offline audit with authorized wordlist fails, verify deauth spoof fails (hardware lab).",
+/**
+ * The editor starts empty on purpose: a report containing someone else's sample BSSID and findings is
+ * the fastest way to send a wrong report. "Load worked example" fills the form from the capture that
+ * actually ships in this build (public/pcaps/beacon-only.pcapng, decoded in public/lab-data/), so the
+ * example values are demonstrably true for that file.
+ */
+const emptyFinding: Finding = {
+  title: '',
+  severity: 'Medium',
+  description: '',
+  technicalDetails: '',
+  affectedComponent: '',
+  evidence: '',
+  impact: '',
+  recommendation: '',
+  references: '',
+  retest: '',
+}
+
+interface LabFrame {
+  number: number
+  ssid?: string
+  bssid?: string
+  channel?: number
+  akm_names?: string[]
+  cipher_names?: string[]
+  mfpc?: boolean
+  mfpr?: boolean
 }
 
 export function ReportEditor() {
-  const [finding, setFinding] = useState<Finding>(defaultFinding)
+  const [finding, setFinding] = useState<Finding>(emptyFinding)
   const [preview, setPreview] = useState(false)
+  const [exampleState, setExampleState] = useState<'idle' | 'loading' | 'error'>('idle')
+
+  /** Fill the form from the real beacon-only.pcapng in this build — no invented values. */
+  const loadWorkedExample = async () => {
+    setExampleState('loading')
+    try {
+      const res = await fetch(`${import.meta.env.BASE_URL}lab-data/beacon-only.json`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json() as { frames: LabFrame[] }
+      const beacon = data.frames.find(f => f.bssid) || data.frames[0]
+      const akms = beacon.akm_names?.join(' + ') || 'none advertised'
+      const ciphers = beacon.cipher_names?.join(' + ') || 'none advertised'
+      const pmf = beacon.mfpr ? 'required (MFPR=1)' : beacon.mfpc ? 'capable only (MFPC=1, MFPR=0)' : 'not advertised'
+      setFinding({
+        title: `PMF capable but not required on ${beacon.ssid || '(hidden SSID)'}`,
+        severity: 'Medium',
+        description: `The beacon for ${beacon.ssid || '(hidden)'} (BSSID ${beacon.bssid}, channel ${beacon.channel}) advertises RSN with ${akms} / ${ciphers} and PMF ${pmf}. Because management frames are not protected, deauthentication and disassociation frames can be spoofed against clients of this BSS.`,
+        technicalDetails: `Decoded from beacon-only.pcapng frame ${beacon.number}: RSNE AKM list ${akms}, pairwise/group ciphers ${ciphers}, RSN capabilities MFPC=${beacon.mfpc ? 1 : 0} MFPR=${beacon.mfpr ? 1 : 0}. The capture is a passive beacon sample, so no client authentication is present in it.`,
+        affectedComponent: `SSID: ${beacon.ssid || '(hidden)'}, BSSID: ${beacon.bssid}, Channel: ${beacon.channel}`,
+        evidence: `PCAP: beacon-only.pcapng (SHA-256 in frontend/public/pcaps/MANIFEST.md)\nFrame ${beacon.number} Beacon — SSID ${beacon.ssid || '(empty)'}, BSSID ${beacon.bssid}, Ch ${beacon.channel}\nDisplay filter: wlan.fc.type_subtype==8 && wlan.rsn.capabilities\nLimit of this evidence: PMF capability is read from the beacon; whether clients negotiate PMF requires the association frames.`,
+        impact: 'Spoofed deauthentication/disassociation frames can disrupt client connectivity (availability impact) and are used to force handshake capture during an authorised test.',
+        recommendation: 'If clients support it, set ieee80211w=2 (PMF required) in hostapd; otherwise document the capability gap and the compensating controls (WIDS, MFP-capable clients, WPA3-only where possible).',
+        references: 'IEEE 802.11-2020 §9.4.2.24 (RSN capabilities), hostapd.conf ieee80211w, NIST SP 800-153',
+        retest: 'Re-capture a beacon and an association exchange after the change: MFPR must be 1 and the association response must show PMF negotiated; confirm a spoofed deauth no longer terminates the session in the RF lab.',
+      })
+      setExampleState('idle')
+    } catch {
+      setExampleState('error')
+    }
+  }
 
   const update = (field: keyof Finding, value: string) => {
     setFinding({...finding, [field]: value})
@@ -82,8 +129,7 @@ ${finding.retest}
   }
 
   const save = () => {
-    try { localStorage.setItem('wififorge-report-draft', JSON.stringify(finding)) } catch {}
-    alert('Draft saved to localStorage')
+    try { localStorage.setItem('wififorge-report-draft', JSON.stringify(finding)) } catch { /* storage blocked */ }
   }
 
   return (
@@ -95,7 +141,7 @@ ${finding.retest}
           </div>
           <div>
             <h3 className="font-heading font-bold text-[16px] text-slate-100">Finding Editor</h3>
-            <p className="text-[11px] text-slate-500 font-mono">Professional Wireless Report • VAPT structure</p>
+            <p className="text-[11px] text-slate-500 font-mono">VAPT finding structure • your words, your evidence</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -111,6 +157,16 @@ ${finding.retest}
           >
             {preview ? <Eye className="w-4 h-4" /> : <Code className="w-4 h-4" />}
             {preview ? 'Preview' : 'Edit'}
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={loadWorkedExample}
+            title="Fill the form from the beacon-only.pcapng that ships with this build"
+            className="px-4 py-2 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] font-medium text-slate-300 hover:text-slate-100 hover:bg-[#25354f] flex items-center gap-2 transition-all duration-200"
+          >
+            <Sparkles className="w-4 h-4" />
+            {exampleState === 'loading' ? 'Loading…' : exampleState === 'error' ? 'Example unavailable' : 'Load worked example (lab data)'}
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.02 }}
@@ -152,7 +208,7 @@ ${finding.retest}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="sm:col-span-2">
                     <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Title</label>
-                    <input value={finding.title} onChange={e => update('title', e.target.value)} className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:bg-[#0a1020] focus:outline-none hover:border-[#334155]/60 transition-all duration-200" />
+                    <input value={finding.title} onChange={e => update('title', e.target.value)} placeholder="Finding title — state the weakness, not the tool" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:bg-[#0a1020] focus:outline-none hover:border-[#334155]/60 transition-all duration-200" />
                   </div>
                   <div>
                     <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Severity</label>
@@ -167,17 +223,17 @@ ${finding.retest}
 
                 <div>
                   <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Description</label>
-                  <textarea value={finding.description} onChange={e => update('description', e.target.value)} rows={3} className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
+                  <textarea value={finding.description} onChange={e => update('description', e.target.value)} rows={3} placeholder="What is the weakness, on which BSSID/SSID, observed how?" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
                 </div>
 
                 <div>
                   <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Technical Details</label>
-                  <textarea value={finding.technicalDetails} onChange={e => update('technicalDetails', e.target.value)} rows={3} className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
+                  <textarea value={finding.technicalDetails} onChange={e => update('technicalDetails', e.target.value)} rows={3} placeholder="Protocol detail: frame numbers, fields, config lines" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
                 </div>
 
                 <div>
                   <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Affected Component</label>
-                  <input value={finding.affectedComponent} onChange={e => update('affectedComponent', e.target.value)} className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[12px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none hover:border-[#334155]/60 transition-all duration-200" />
+                  <input value={finding.affectedComponent} onChange={e => update('affectedComponent', e.target.value)} placeholder="SSID / BSSID / channel / hostapd.conf line" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[12px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none hover:border-[#334155]/60 transition-all duration-200" />
                 </div>
               </div>
             </div>
@@ -193,27 +249,27 @@ ${finding.retest}
                 
                 <div>
                   <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Evidence</label>
-                  <textarea value={finding.evidence} onChange={e => update('evidence', e.target.value)} rows={4} className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[11px] font-mono text-slate-300 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
+                  <textarea value={finding.evidence} onChange={e => update('evidence', e.target.value)} rows={4} placeholder="Artifact + SHA-256 + filter + frame numbers + what it does NOT prove" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[11px] font-mono text-slate-300 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
                 </div>
 
                 <div>
                   <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Impact</label>
-                  <textarea value={finding.impact} onChange={e => update('impact', e.target.value)} rows={2} className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
+                  <textarea value={finding.impact} onChange={e => update('impact', e.target.value)} rows={2} placeholder="What an attacker gains — data, access, availability" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
                 </div>
 
                 <div>
                   <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Recommendation</label>
-                  <textarea value={finding.recommendation} onChange={e => update('recommendation', e.target.value)} rows={2} className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
+                  <textarea value={finding.recommendation} onChange={e => update('recommendation', e.target.value)} rows={2} placeholder="Exact change plus the standard/property it maps to" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">References</label>
-                    <input value={finding.references} onChange={e => update('references', e.target.value)} className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[11px] text-slate-400 focus:border-cyan-500/30 focus:outline-none hover:border-[#334155]/60 transition-all duration-200" />
+                    <input value={finding.references} onChange={e => update('references', e.target.value)} placeholder="Spec section, vendor doc, framework control" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[11px] text-slate-400 focus:border-cyan-500/30 focus:outline-none hover:border-[#334155]/60 transition-all duration-200" />
                   </div>
                   <div>
                     <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Retest</label>
-                    <input value={finding.retest} onChange={e => update('retest', e.target.value)} className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[11px] text-slate-400 focus:border-cyan-500/30 focus:outline-none hover:border-[#334155]/60 transition-all duration-200" />
+                    <input value={finding.retest} onChange={e => update('retest', e.target.value)} placeholder="The exact check that proves the fix (command, filter, expected output)" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[11px] text-slate-400 focus:border-cyan-500/30 focus:outline-none hover:border-[#334155]/60 transition-all duration-200" />
                   </div>
                 </div>
               </div>

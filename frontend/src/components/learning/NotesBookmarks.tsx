@@ -120,7 +120,7 @@ export function NotesBookmarks({ moduleId, lessonId, className = '' }: { moduleI
             <div className="p-6 text-center rounded-xl bg-[#020617]/40 border border-dashed border-[#1e293b]/40">
               <Bookmark className="w-6 h-6 text-slate-600 mx-auto mb-2" />
               <div className="text-[13px] text-slate-500">No bookmarks yet</div>
-              <div className="text-[11px] text-slate-600 mt-1">Bookmark lessons, labs, commands, filters — quick access sidebar — enterprise</div>
+              <div className="text-[11px] text-slate-600 mt-1">Bookmark lessons, labs, commands and filters — kept in this browser</div>
             </div>
           ) : bookmarks.map(b => (
             <div key={b.id} className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 flex items-center gap-3">

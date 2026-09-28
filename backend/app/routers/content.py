@@ -21,20 +21,14 @@ def get_modules_path():
 async def list_modules():
     path = get_modules_path()
     if not path.exists():
-        # Return hardcoded minimal for Phase A
-        return [
-            {
-                "id": "02-wifi-fundamentals",
-                "title": "Wi-Fi Fundamentals",
-                "phase": 1,
-                "difficulty": "Beginner",
-                "estimated_hours": 2,
-                "prerequisites": ["01-intro-wireless"],
-                "status": "simulated",
-                "skills": ["ssid", "bssid", "ap", "channels"],
-                "description": "SSID, BSSID, AP, client, WLAN, channels, 2.4/5/6 GHz"
-            }
-        ]
+        # No content in this checkout — say so instead of inventing a module list.
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Module content not found. Expected frontend/src/content/modules.json (or content/modules.json). "
+                "Serve the API from a full checkout of the repository."
+            ),
+        )
     with open(path) as f:
         data = json.load(f)
     return data

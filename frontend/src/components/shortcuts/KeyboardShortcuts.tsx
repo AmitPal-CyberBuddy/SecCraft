@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Keyboard, X, Command, Zap } from 'lucide-react'
 
 const shortcuts = [
-  { keys: ['⌘', 'K'], desc: 'Global search — 50+ items', section: 'Navigation' },
+  { keys: ['⌘', 'K'], desc: 'Global search — modules, lessons, commands, filters', section: 'Navigation' },
   { keys: ['G', 'D'], desc: 'Go to Dashboard', section: 'Navigation' },
   { keys: ['G', 'M'], desc: 'Go to Modules', section: 'Navigation' },
   { keys: ['G', 'L'], desc: 'Go to Labs — PCAP + Terminal + Vault', section: 'Navigation' },
@@ -67,8 +67,8 @@ export function KeyboardShortcuts() {
                     <Keyboard className="w-4 h-4 text-violet-400" />
                   </div>
                   <div>
-                    <h3 className="font-heading font-bold text-[14px] text-slate-100">Keyboard Shortcuts — Enterprise</h3>
-                    <p className="text-[11px] text-slate-500 font-mono">Production-ready • Vim-style • Zero-latency</p>
+                    <h3 className="font-heading font-bold text-[14px] text-slate-100">Keyboard shortcuts</h3>
+                    <p className="text-[11px] text-slate-500 font-mono">Vim-style navigation • handled in the browser</p>
                   </div>
                 </div>
                 <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] transition-colors touch-manipulation">
@@ -100,7 +100,7 @@ export function KeyboardShortcuts() {
 
               <div className="p-4 border-t border-[#1e293b] bg-[#020617]/40 flex items-center gap-2 text-[11px] text-slate-500 shrink-0">
                 <Zap className="w-3.5 h-3.5 text-amber-400" />
-                <span>Pro tip: <span className="text-slate-400 font-mono">⌘K</span> fuzzy searches 50+ items — modules, lessons, commands, filters • Enterprise-ready</span>
+                <span>Pro tip: <span className="text-slate-400 font-mono">⌘K</span> fuzzy-searches the local index — modules, lessons, commands and filters.</span>
               </div>
             </motion.div>
           </motion.div>

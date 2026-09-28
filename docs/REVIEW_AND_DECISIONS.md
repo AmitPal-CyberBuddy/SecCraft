@@ -21,7 +21,7 @@ only acceptable if an artefact in this repository can be used to verify it.*
 | F5 | **Regulatory guidance** directed learners to set a domain (`iw reg set …`, 162 occurrences) as generic preparation instead of reading it (`iw reg get`) and treating domain choice as jurisdictional. | repo-wide grep |
 | F6 | **The captures could not support the exercises.** All 16 `frontend/public/pcaps/**` files were 129–1 900 byte classic libpcap files with the `.pcapng` extension, hand-built frames, **no real EAPOL/RADIUS structure** (RADIUS payloads were not even encapsulated in IP/UDP), and no valid MIC/PMKID/authenticator material. Challenge answers referenced frames that did not contain the claimed values (e.g. a hidden SSID "revealed" in a frame whose SSID IE was empty). | byte-level inventory of all 16 files; decode of every frame |
 | F7 | **Claims misaligned with data**: `Reference.tsx` advertised 50+ commands / 20+ filters while shipping 6 and 8; the static feature roadmap was platform-heavy (leaderboards, XP shop, marketplace, mobile apps) and contradicted the zero-cost learning goal. | `Reference.tsx`, `AUDIT_AND_ROADMAP.md` |
-| F8 | **Existing systems were sound and worth keeping**: routing (10 routes), visual identity, zustand progress store, `PcapInspector`/`ReconMap`/`HandshakeDiagram`/`ConfigViewer`/`AttackDefenseRetest`, `EvidenceVault`, the GitHub Pages workflow, the tshark→scapy→mock parser fallback chain. | `App.tsx`, component inventory, `.github/workflows/pages.yml` |
+| F8 | **Existing systems were sound and worth keeping**: routing (10 routes), visual identity, zustand progress store, `PcapInspector`/`ReconMap`/`HandshakeDiagram`/`ConfigViewer`/`AttackDefenseRetest`, `EvidenceVault`, the GitHub Pages workflow, and the tshark→scapy parser chain (its third fallback is now the verified offline dataset, not fabricated frames — see §6). | `App.tsx`, component inventory, `.github/workflows/pages.yml` |
 
 ---
 
@@ -31,7 +31,7 @@ Legend: **Implemented** (in this pass) · **Modified** (kept, changed) · **Merg
 
 | # | Suggestion | Disposition | What was done / why |
 | --- | --- | --- | --- |
-| 1 | Prioritise learning value; demote social features, leaderboards, mentor matching, XP shop, seasonal events, mobile/desktop apps, plugin marketplace, GraphQL, LTI/SCORM, AI tutor, advanced analytics | **Implemented** | Removed the real-time leaderboard from the Labs tabs and the Dashboard; XP/points and badges stay as quiet progress *feedback*, not the product. `AUDIT_AND_ROADMAP.md` replaced by this document + a learning roadmap. Social/mentor/marketplace/LTI items are **rejected for this repository** (no server, zero-cost, local-first). The AI tutor and voice assistant remain dormant components — not on any navigation path — and are documented as out of scope rather than deleted, since removing them is the maintainer's call. |
+| 1 | Prioritise learning value; demote social features, leaderboards, mentor matching, XP shop, seasonal events, mobile/desktop apps, plugin marketplace, GraphQL, LTI/SCORM, AI tutor, advanced analytics | **Implemented** | Removed the real-time leaderboard from the Labs tabs and the Dashboard; XP/points and badges stay as quiet progress *feedback*, not the product. `AUDIT_AND_ROADMAP.md` replaced by this document + a learning roadmap. Social/mentor/marketplace/LTI items are **rejected for this repository** (no server, zero-cost, local-first). The AI tutor and voice assistant were later deleted as part of the no-dummy-data pass (§6). |
 | 2 | Teach a decision loop (Observe→Interpret→Hypothesise→Test→Evidence→Conclude) | **Implemented** | `frontend/src/content/scenarios.json` (35 scenarios) + `DecisionPractice` component rendered inside each module's Lab tab and in the engagement pack; the loop is also the spine of `docs/VAPT_METHODOLOGY.md`. Used only where it materially helps (analysis, evidence, severity, retest decisions) — not bolted onto every lesson. |
 | 3 | More scenario-based exercises (what to investigate, what counts as evidence, which tool, what the result means) | **Implemented** | The 35 scenarios are typed `choice` / `evidence` / `free` (written answer + model answer + rubric); they are attached to modules via `decision_practice` and are distinct from the 15 artefact challenges. |
 | 4 | Clear SIMULATION / HYBRID / RF_REQUIRED distinction, never implying PCAP simulation = RF testing | **Implemented** | `lab_requirement` is now authoritative in `modules.json`; `TierBadge`/`TierLegend` render 🟢/🟡/🔴 with the explicit limit of each tier; `docs/SIMULATION_VS_HARDWARE.md` rewritten; per-capture "real vs synthetic" lists live in `lab-artifacts.json`/`MANIFEST.md`. |
@@ -48,7 +48,7 @@ Legend: **Implemented** (in this pass) · **Modified** (kept, changed) · **Merg
 | 15 | Evidence as a first-class skill (PCAP, filters, tshark output, config, auth exchange, RADIUS log, screenshot, hash, timestamp, BSSID/SSID/client, reproduction steps) | **Implemented** | `EvidenceVault` rewritten: real SHA-256 computed in-browser, artefact type, claim, filter, frames, copy/export, and a warning when a claim has no hash. Every module declares an `evidence_focus`; every challenge declares a `deliverable`; the checklist demands evidence per item. |
 | 16 | Retesting beyond a text section, only where the lab can truly validate | **Implemented** | Each module carries a `retest_focus` stating the *same-test-repeated* comparison (PMF deauth, WPS IE removal, PSK rotation vs. old capture, certificate validation vs. TLS alert, secret rotation, isolation/segmentation re-test). `AttackDefenseRetest` is reused rather than duplicated. |
 | 17 | "Professional Reasoning" prompt layer with non-trivia questions | **Implemented** | The scenario set includes exactly the suggested class of questions: MFPC-without-MFPR, AKM choice before test selection, rogue vs. legitimate neighbour, password recovery ≠ compromise, what to do after PEAP, what evidence a segmentation claim needs — plus severity and retest judgement calls. |
-| 18 | Do not let gamification become the product | **Implemented** | Leaderboard removed (Labs, Dashboard); the "XP shop" tab remains only where it already was, unlinked from learning gates; points remain as light feedback. This document records the intent so future work does not reintroduce it as a headline feature. |
+| 18 | Do not let gamification become the product | **Implemented** | Leaderboard removed (Labs, Dashboard); the XP shop and CTF tabs have since been removed entirely (§6); points remain as light feedback. This document records the intent so future work does not reintroduce it as a headline feature. |
 | 19 | Evaluate the name against the existing "WifiForge" project; no automatic rename | **Evaluated — no change** | No rename performed, per the instruction. A name collision with the existing open-source WifiForge project is plausible and matters only for distribution/branding, not for learning value. If the maintainer wants separation, options to put to the owner: keep "WiFiForge" with a distinguishing subtitle ("Wireless PT Academy"), or rename the display title/logo string only (no route/URL changes) after checking the Pages URL. Recorded in the roadmap as an owner decision. |
 | 20 | Do not rebuild working systems; reuse; no duplicate content; no unnecessary dependencies; preserve identity, routes, content structure, Pages deploy, local-first/zero-cost | **Implemented** | Reused: routes, theme/identity, progress store, PcapInspector/ReconMap/HandshakeDiagram/ConfigViewer/AttackDefenseRetest, EvidenceVault (extended, not replaced), tshark→scapy→mock backend chain, Pages workflow. No new runtime dependency added (build uses the existing Vite/React stack); artefacts are static files, so local-first and zero-cost are unchanged. The only structural change is that lessons are now generated from `modules.json` metadata instead of a duplicated inline map. |
 | 21 | Add important improvements the user missed | **Implemented** (see §2) | The artefact pipeline (real cryptographic captures + a 142-check verifier), generated-and-verified challenge answers, RFC-2759-correct MS-CHAPv2 material, hashcat 22000 unification, per-capture real/synthetic honesty, a build-green TypeScript contract for content (`lib/api.ts`), and an instructor answer key separated from learner content. |
@@ -124,3 +124,66 @@ PY
 6. **Accessibility pass** on the new components (keyboard traversal for the scenario cards and checklist,
    ARIA labels on the evidence vault).
 7. **Owner decision on naming** (item 19) and on removing the dormant AI/voice components.
+
+---
+
+## 6. Round 3 — "no dummy data on the hosted build" + extra security (owner request)
+
+Requirement, verbatim: *"Also make sure I don't want any dummy data on the hosted one, if nothing is
+there then use proper msg for that scenario specific. also take extra messaures regarding security."*
+
+### 6.1 What was removed or replaced
+
+| Hosted surface | Before | Now |
+| --- | --- | --- |
+| Analytics / activity feed | seeded XP, fake module table, leaderboard-style rows | every number derived from local completion records; empty state names what to complete first |
+| Notification centre | pre-written feed | derived from your completions, achievements and their timestamps; explicit "nothing recorded yet" state |
+| Audit trail panel | "entries" describing work that never happened | panel deleted; Settings → Security posture + Local data & privacy show what is actually stored |
+| Certificate / completion record | "verified", QR claims, fixed XP ceiling | `CERT_*` thresholds, `LOCAL-<progress>-<xp>-<date>` id, print/clipboard, "not accredited" |
+| Report PDF export | random 64-hex digest, eight sample findings, a flag | exports **your** evidence-vault records and finding draft; the SHA-256 shown is of the exported file itself |
+| Team/classroom, forum, CTF board, XP shop, AI tutor, voice assistant, API/SDK docs, 2FA, OAuth | fabricated data or claims for features that do not exist | components deleted; routes/tabs removed |
+| Achievement definitions | "complete all 80 lessons" | thresholds reference `TOTAL_LESSONS`/`TOTAL_MODULES` from content |
+| Lab scoring | three WPS answers shown for every lab, invented score % | objective/artefact/prompts come from that lab's catalogue entry; completion XP goes through the real progress store |
+| Compliance/CVSS/percentages | fixed numbers in copy | CVSS 3.1 calculator, derived stats only |
+| Backend `/api/*` | mock frames, mock analytics, "verified" certificates, fake PDF jobs, printed demo passwords | offline-dataset decoding, derived counts from SQLite, explicit 404/501/503 with the reason, PBKDF2 demo accounts behind `WIFIFORGE_DEMO_USERS=1` |
+| Static shell | Google Fonts, "Enterprise v2.1" title, 80-lesson description | own font stack (zero third-party requests), content-derived title/description/manifest |
+
+Empty states were written per scenario, not generically: no parser and no dataset (inspector),
+no local API running (Labs list), no evidence records (vault, PDF export, timeline), no progress yet
+(dashboard, analytics, notifications, badges), no labs for a module (module view).
+
+### 6.2 Security measures added
+
+1. **Content-Security-Policy in the shipped HTML** (`default-src 'self'`, `object-src 'none'`,
+   `frame-ancestors 'none'`, `script-src 'self'`, `connect-src 'self'`, no inline scripts) — GitHub
+   Pages cannot send headers, so the policy travels with the document; `dist/_headers` carries the full
+   header set for hosts that can, and `nginx.conf` does the same for self-hosting
+   (`X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: no-referrer`, `Permissions-Policy`, COOP/CORP,
+   HSTS, `server_tokens off`).
+2. **Zero third-party requests**: Google Fonts removed; the build **fails** if any external request
+   pattern (link/script/img/CSS `url()`/`fetch`/`import`/`Worker`) appears in `dist`.
+3. **Backend CORS narrowed** to an explicit allowlist from `WIFIFORGE_ALLOWED_ORIGINS` (no wildcard
+   origins, no wildcard methods/headers) and the `https://*.e2b.app` wildcard is gone.
+4. **Auth hardened**: no default/persisted secret (503 without `WIFIFORGE_JWT_SECRET`), PBKDF2-SHA256
+   password hashing with constant-time comparison, short token TTL, honest 501 for OAuth.
+5. **Uploads**: size cap, extension + magic-number check, hashed; parsing happens locally and a file
+   that only matches a bundled dataset is reported as *not parsed* rather than described by proxy.
+6. **Supply chain**: GitHub Actions pinned to commit SHAs, `npm ci` from the lockfile, `npm audit`
+   in CI, `permissions: contents: read` for CI jobs, and a hygiene job that fails if a `.env` is
+   tracked. `docker-compose.yml` no longer ships a default JWT secret.
+7. **Automated guarantee**: `scripts/verify-no-dummy-data.py` (wired into CI and the Pages deploy)
+   fails the build on mock datasets, placeholder hashes, unearned claims ("production-ready",
+   "enterprise-ready", SSO/SAML/LDAP, blockchain) or any third-party request.
+8. **Data handling**: all learner data stays in `localStorage`; the panel in Settings lists each key
+   with its measured size and can clear it; no analytics, no telemetry, no server-side profile.
+9. **SECURITY.md** documents the guarantees, the non-claims, the reporting route and a self-hosting
+   hardening checklist.
+
+### 6.3 Verification for this round
+
+```bash
+python3 scripts/verify-lab-artifacts.py      # 142/142
+python3 scripts/verify-no-dummy-data.py      # no dummy data, no external requests, no unearned claims
+cd frontend && npx tsc -p tsconfig.app.json --noEmit && npm run build
+grep -rn "fonts.googleapis\|Sentry\|leaderboard" frontend/src frontend/index.html   # expect nothing
+```

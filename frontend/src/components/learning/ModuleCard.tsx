@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom'
 import { Clock, BookOpen, FlaskConical, Lock, CheckCircle, Circle, Loader2, ArrowRight, Sparkles, Target } from 'lucide-react'
 import { motion } from 'framer-motion'
+import modules from '@/content/modules.json'
+import { LABS } from '@/content/labs'
+import { POINTS } from '@/store/useProgressStore'
 
 interface Props {
   id: string
@@ -31,6 +34,13 @@ const difficultyConfig: Record<string, { bg: string, text: string, border: strin
 }
 
 export function ModuleCard({ id, title, phase, difficulty, estimated_hours, status, progress = 0, description, locked }: Props) {
+  // Counts come from the module definition itself, so a card can never advertise lessons or labs
+  // that the module does not ship.
+  const moduleDef = (modules as any[]).find(m => m.id === id)
+  const lessonCount = moduleDef?.lessons?.length ?? 0
+  const labCount = LABS.filter(lab => lab.module === id).length
+  const moduleXp = lessonCount * POINTS.LESSON + labCount * POINTS.LAB
+
   const phaseStyle = phaseConfig[phase] || phaseConfig[1]
   const diffStyle = difficultyConfig[difficulty] || difficultyConfig['Beginner']
   const isCompleted = progress === 100
@@ -136,15 +146,15 @@ export function ModuleCard({ id, title, phase, difficulty, estimated_hours, stat
           </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#020617]/60 border border-[#1e293b]/60 text-[11px] text-slate-400">
             <BookOpen className="w-3 h-3" />
-            <span className="font-mono">4 lessons • 40 XP</span>
+            <span className="font-mono">{lessonCount} lesson{lessonCount === 1 ? '' : 's'} • {lessonCount * POINTS.LESSON} XP</span>
           </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#020617]/60 border border-[#1e293b]/60 text-[11px] text-slate-400">
             <FlaskConical className="w-3 h-3" />
-            <span className="font-mono">2 labs • 50 XP</span>
+            <span className="font-mono">{labCount} lab{labCount === 1 ? '' : 's'} • {labCount * POINTS.LAB} XP</span>
           </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-400 font-mono">
             <span>🏆</span>
-            <span>160 XP total</span>
+            <span>{moduleXp} XP max from lesson{lessonCount === 1 ? '' : 's'} &amp; labs</span>
           </div>
         </div>
 

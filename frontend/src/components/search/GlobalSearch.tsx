@@ -206,7 +206,7 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
             </div>
             <div className="flex items-center gap-1.5">
               <Zap className="w-3 h-3 text-amber-400" />
-              <span>{searchData.length} items • Production search</span>
+              <span>{searchData.length} items • local index</span>
             </div>
           </div>
         </motion.div>

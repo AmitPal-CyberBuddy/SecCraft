@@ -3,6 +3,7 @@ import { Menu, X, Search, Bell, Command, Zap, Trophy, Target, Moon, Sun } from '
 import { motion } from 'framer-motion'
 import { useState, useEffect, useMemo } from 'react'
 import { NotificationCenter } from '@/components/notifications/NotificationCenter'
+import { TOTAL_PCAPS } from '@/content/stats'
 
 interface Props {
   onMenuToggle?: () => void
@@ -82,9 +83,9 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
               <span className="hidden md:inline-flex text-[9px] px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono font-medium shrink-0">ACTIVE</span>
             </div>
             <div className="hidden md:flex items-center gap-2 mt-0.5 min-w-0">
-              <span className="text-[11px] text-slate-500 font-mono truncate">Kali • Local Lab</span>
+              <span className="text-[11px] text-slate-500 font-mono truncate">local-first • no account</span>
               <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0" />
-              <span className="text-[10px] text-slate-600 font-mono truncate">16 PCAPs • Enterprise</span>
+              <span className="text-[10px] text-slate-600 font-mono truncate">{TOTAL_PCAPS} captures • offline dataset</span>
             </div>
           </div>
           <div className="flex sm:hidden items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 shrink-0">

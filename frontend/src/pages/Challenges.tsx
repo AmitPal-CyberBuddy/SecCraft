@@ -1,18 +1,17 @@
 import { useState, useMemo, lazy, Suspense } from 'react'
 import { ChallengeCard } from '@/components/challenge/ChallengeCard'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Filter, Swords, Trophy, Target, Sparkles, Layers, Clock, Award, Flag, ShoppingBag } from 'lucide-react'
+import { Search, Filter, Swords, Trophy, Target, Sparkles, Layers, Clock, Award } from 'lucide-react'
 import challenges from '@/content/challenges.json'
+import { ACHIEVEMENTS_DEF } from '@/store/useProgressStore'
 
-const CtfMode = lazy(() => import('@/components/ctf/CtfMode').then(m => ({ default: m.CtfMode })))
-const XpShop = lazy(() => import('@/components/gamification/XpShop').then(m => ({ default: m.XpShop })))
 const BadgesShowcase = lazy(() => import('@/components/gamification/BadgesShowcase').then(m => ({ default: m.BadgesShowcase })))
 
 export function Challenges() {
   const [filterLevel, setFilterLevel] = useState<string | null>(null)
   const [filterDiff, setFilterDiff] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeTab, setActiveTab] = useState<'challenges' | 'ctf' | 'shop' | 'badges'>('challenges')
+  const [activeTab, setActiveTab] = useState<'challenges' | 'badges'>('challenges')
 
   const filtered = useMemo(() => {
     return challenges.filter(c => {
@@ -74,14 +73,12 @@ export function Challenges() {
         </div>
       </motion.div>
 
-      {/* Enterprise Tabs — CTF + Shop + Badges */}
+      {/* Tabs — challenges and achievements */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="w-full overflow-x-auto scrollbar-thin pb-1">
         <div className="flex gap-1 p-1 rounded-xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm w-fit">
           {[
             { id: 'challenges', label: 'Challenges', icon: Swords, count: challenges.length },
-            { id: 'ctf', label: 'CTF Mode', icon: Flag, count: '8' },
-            { id: 'shop', label: 'XP Shop', icon: ShoppingBag, count: null },
-            { id: 'badges', label: 'Badges', icon: Award, count: '20' },
+            { id: 'badges', label: 'Achievements', icon: Award, count: ACHIEVEMENTS_DEF.length },
           ].map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-medium transition-all shrink-0 touch-manipulation min-h-[44px] ${activeTab === tab.id ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>
               <tab.icon className="w-4 h-4" />
@@ -92,9 +89,7 @@ export function Challenges() {
         </div>
       </motion.div>
 
-      {activeTab === 'ctf' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading CTF Mode…</div>}><CtfMode /></Suspense>}
-      {activeTab === 'shop' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading XP Shop…</div>}><XpShop /></Suspense>}
-      {activeTab === 'badges' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Badges…</div>}><BadgesShowcase /></Suspense>}
+                  {activeTab === 'badges' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Badges…</div>}><BadgesShowcase /></Suspense>}
 
       {activeTab === 'challenges' && (
       <>

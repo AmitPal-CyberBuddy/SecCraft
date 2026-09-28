@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Flame, Target, Trophy, Zap, Clock, CheckCircle, Award, Calendar, TrendingUp } from 'lucide-react'
 import { useProgressStore } from '@/store/useProgressStore'
@@ -14,20 +13,35 @@ interface DailyTask {
   completed: boolean
 }
 
-const todayTasks: DailyTask[] = [
-  { id: 'daily-1', title: 'Complete 2 lessons', desc: 'Learn any 2 lessons today', xp: 25, type: 'lesson', progress: 1, total: 2, completed: false },
-  { id: 'daily-2', title: 'Analyze 1 PCAP', desc: 'Open PcapInspector + use 3 filters', xp: 30, type: 'lab', progress: 0, total: 1, completed: false },
-  { id: 'daily-3', title: 'Perfect Quiz', desc: 'Score 100% on any quiz', xp: 40, type: 'quiz', progress: 0, total: 1, completed: false },
-  { id: 'daily-4', title: 'Terminal Mastery', desc: 'Run 5 commands in terminal', xp: 20, type: 'lab', progress: 3, total: 5, completed: false },
-]
+/**
+ * The "daily" goals are the same three real actions every day; progress is read from the
+ * completions this browser recorded today (local date). No counter here is pre-filled.
+ */
+function buildTasks(completedLessons: { completedAt?: string }[], completedLabs: { completedAt?: string }[], quizScores: { score: number; total: number; completedAt?: string }[]): DailyTask[] {
+  const today = new Date().toDateString()
+  const onToday = (at?: string) => !!at && new Date(at).toDateString() === today
+  const lessonsToday = completedLessons.filter(l => onToday(l.completedAt)).length
+  const labsToday = completedLabs.filter(l => onToday(l.completedAt)).length
+  const perfectToday = quizScores.filter(q => onToday(q.completedAt) && q.total > 0 && q.score === q.total).length
+  const defs: Omit<DailyTask, 'progress' | 'completed'>[] = [
+    { id: 'daily-lessons', title: 'Complete 2 lessons', desc: 'Any two authored lessons, today', xp: 25, type: 'lesson', total: 2 },
+    { id: 'daily-lab', title: 'Analyse 1 capture', desc: 'Open a lab capture in the PCAP inspector', xp: 30, type: 'lab', total: 1 },
+    { id: 'daily-quiz', title: 'Perfect quiz', desc: 'Score 100% on any module quiz', xp: 40, type: 'quiz', total: 1 },
+  ]
+  const progress = [lessonsToday, labsToday, perfectToday]
+  return defs.map((d, i) => ({ ...d, progress: Math.min(progress[i], d.total), completed: progress[i] >= d.total }))
+}
 
 export function DailyChallenges({ className = '' }: { className?: string }) {
   const totalXp = useProgressStore(s => s.getTotalXp())
-  const streak = useProgressStore(s => s.streak)
-  const [tasks, setTasks] = useState<DailyTask[]>(todayTasks)
+  const streak = useProgressStore(s => s.getStreak())
+  const completedLessons = useProgressStore(s => s.completedLessons)
+  const completedLabs = useProgressStore(s => s.completedLabs)
+  const quizScores = useProgressStore(s => s.quizScores)
+  const liveTasks = buildTasks(completedLessons, completedLabs, quizScores)
 
-  const completedCount = tasks.filter(t => t.completed).length
-  const totalXpToday = tasks.filter(t => t.completed).reduce((a,b) => a + b.xp, 0)
+  const completedCount = liveTasks.filter(t => t.completed).length
+  const totalXpToday = liveTasks.filter(t => t.completed).reduce((a, b) => a + b.xp, 0)
 
   const getTypeIcon = (type: string) => {
     switch(type) {
@@ -58,7 +72,7 @@ export function DailyChallenges({ className = '' }: { className?: string }) {
               Daily Challenges
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 font-mono">{streak} day streak</span>
             </h3>
-            <p className="text-[11px] text-slate-500 font-mono">Resets 00:00 UTC • Enterprise streak system • {completedCount}/{tasks.length} completed</p>
+            <p className="text-[11px] text-slate-500 font-mono">Local date • counted from your own completions • {completedCount}/{liveTasks.length} goals met today</p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -68,7 +82,7 @@ export function DailyChallenges({ className = '' }: { className?: string }) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-        {tasks.map((task, idx) => {
+        {liveTasks.map((task, idx) => {
           const Icon = getTypeIcon(task.type)
           return (
             <motion.div key={task.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} className={`p-3.5 rounded-xl border flex items-start gap-3 min-w-0 ${task.completed ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-[#020617]/60 border-[#1e293b]/60 hover:bg-[#020617]/80 hover:border-[#334155]/40'} transition-colors`}>
@@ -96,12 +110,13 @@ export function DailyChallenges({ className = '' }: { className?: string }) {
       <div className="p-3 rounded-xl bg-gradient-to-r from-amber-500/[0.04] to-orange-500/[0.04] border border-amber-500/10 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <Zap className="w-4 h-4 text-amber-400 shrink-0" />
-          <span className="text-[12px] text-slate-300 font-medium">Weekly bonus: Complete 5 dailies → +100 XP + 🔥 streak freeze</span>
+          <span className="text-[12px] text-slate-300 font-medium">
+            {completedCount === liveTasks.length
+              ? 'All of today\u2019s goals met — the counts reset at local midnight.'
+              : 'These are practice goals; only the completions above are recorded in your progress.'}
+          </span>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[11px] font-mono text-slate-500">Live</span>
-        </div>
+        <span className="text-[11px] font-mono text-slate-500 shrink-0">{new Date().toLocaleDateString()}</span>
       </div>
     </div>
   )

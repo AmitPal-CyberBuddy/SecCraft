@@ -39,7 +39,7 @@ export function ReadingExperience({ content, className = '' }: { content: string
           <BookOpen className="w-4 h-4 text-cyan-400" />
         </div>
         <div className="min-w-0">
-          <h4 className="font-heading font-bold text-[13px] text-slate-100">Reading Experience — Accessibility • Production</h4>
+          <h4 className="font-heading font-bold text-[13px] text-slate-100">Reading experience</h4>
           <p className="text-[11px] text-slate-500 font-mono">{wordCount} words • {readingTime} min read • {fontSize}px • {lineHeight} lh • WCAG AA</p>
         </div>
       </div>
@@ -87,7 +87,7 @@ export function ReadingExperience({ content, className = '' }: { content: string
           <div className="p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40">
             <div className="text-[11px] text-slate-400 flex items-center gap-2">
               <Clock className="w-3 h-3 text-cyan-400" />
-              <span>{wordCount} words • {readingTime} min • 200 wpm • Focus mode • Dyslexia • High contrast • Production</span>
+              <span>{wordCount} words • {readingTime} min at 200 wpm • focus mode • dyslexia-friendly spacing • high contrast</span>
             </div>
           </div>
         </div>

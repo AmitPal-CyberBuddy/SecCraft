@@ -2,6 +2,10 @@ import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
 import { FlaskConical, Search, Filter, Radio, Wifi, FileCode, Activity, Zap, ChevronRight, Sparkles, Target, Layers, Terminal, Upload, Shield, Trophy, Clock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import modules from '@/content/modules.json'
+import { LABS } from '@/content/labs'
+import { TOTAL_PCAPS } from '@/content/stats'
+import artifacts from '@/content/lab-artifacts.json'
+import { TERMINAL_COMMAND_COUNT } from '@/components/terminal/commandCount'
 import { TierBadge } from '@/components/common/TierBadge'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -27,6 +31,7 @@ export function Labs() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterType, setFilterType] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'pcaps' | 'upload' | 'terminal' | 'vault' | 'scoring'>('pcaps')
+  const [selectedLabId, setSelectedLabId] = useState<string>(LABS[0]?.id ?? '')
 
   useEffect(() => {
     fetch('/api/pcaps')
@@ -36,24 +41,20 @@ export function Labs() {
         setParserInfo(data.parser)
       })
       .catch(() => {
-        setPcaps([
-          { id: "beacon-only", filename: "beacon-only.pcapng", module: "wifi-fundamentals", type: "wifi-fundamentals", frames: 4, sha256: "fcfe987b2efb920fd079694ff540431095a52f007c711c26873df082973cd94e", real: "Beacon/probe fixed fields, IEs, RSNE (AKM, ciphers, MFPC/MFPR bits), country/VHT/HE/capability IEs" },
-          { id: "recon-lab", filename: "recon-lab.pcapng", module: "recon", type: "recon", frames: 17, sha256: "0a761e2ccc8f9d272294f1683e122a3de59dd541fd8b14ad94b696530b14cc14", real: "6 BSSs incl. an ESS, a hidden BSS revealed in the probe response, directed probes leaking a PNL, randomised client MAC" },
-          { id: "traffic-analysis", filename: "traffic-analysis.pcapng", module: "traffic", type: "traffic", frames: 19, sha256: "14aa765ff29f4d368e976d78be390fa46361a0dab1170aaa4277237427bbe102", real: "Full association state machine, EAPOL-Key M1\u2013M4 with MICs computed from the lab PSK, DHCP/ARP/ICMP/DNS/HTTP payloads" },
-          { id: "wpa2-handshake", filename: "wpa2-handshake.pcapng", module: "wpa2", type: "wpa2", frames: 13, sha256: "3dc9b2feccbb98d1a0e4a3bedb0f1cd9ac6836f5e4009de0b07c73f2d4678f55", real: "M1\u2013M4 for one client and M1\u2013M2 for a second; MICs, nonces and replay counters consistent with the lab PSK" },
-          { id: "pmkid", filename: "pmkid.pcapng", module: "wpa2", type: "wpa2", frames: 6, sha256: "963fbe2082c279a3ee31546d21c609fdaf0f823a81deeb255d0b0b2a8fdcb2df", real: "PMKID = HMAC-SHA1-128(PMK, \"PMK Name\" | AA | SPA) inside a real EAPOL-Key M1 header" },
-          { id: "wps-beacon", filename: "wps-beacon.pcapng", module: "wps", type: "wps", frames: 9, sha256: "6f3042407c26ced16864290d7e71bf265f3ad4c9d46018d9e32022c5ee0d6488", real: "WPS IE attributes (version, config methods, AP setup locked, selected registrar, device password id) for an unlocked and a locked AP; EAP-WSC identity/M1 framing" },
-          { id: "wpa3-transition", filename: "wpa3-transition.pcapng", module: "wpa3", type: "wpa3", frames: 11, sha256: "ac8b81adfd8c06d2024bfeb591d6b7dda943ab244ea9b5530ee3ac7a2acfbf4d", real: "RSNE with AKM PSK+SAE and MFPC-only; a WPA2 PSK 4-way handshake captured against the transition BSS (the downgrade path)" },
-          { id: "wpa3-only", filename: "wpa3-only.pcapng", module: "wpa3", type: "wpa3", frames: 6, sha256: "b9416f4d9bcf0f80c0527888b644175faf2ff8bb3bf2b276ee2f56221670fc69", real: "RSNE with AKM SAE and MFPR set; no PSK handshake exists in the capture" },
-          { id: "deauth", filename: "deauth.pcapng", module: "deauth", type: "deauth", frames: 22, sha256: "5fe8081c3e9a1553fafc9a2c3f06c016094da92c6a530015088149a9e26b2c8b", real: "Deauthentication/disassociation frames with reason codes 1/7/8/15, broadcast and directed floods, SA Query action frames" },
-          { id: "rogue-ap", filename: "rogue-ap.pcapng", module: "rogue", type: "rogue", frames: 17, sha256: "7d7128f5facf88ea17e68e0832a6758fed7d91dd2594c27593a8d526a9ad702f", real: "Rogue twin with locally-administered BSSID, different AKM, IE fingerprint and a 50 TU beacon interval; client 4-way handshake against the twin with the weak lab PSK" },
-          { id: "captive-portal", filename: "captive-portal.pcapng", module: "captive", type: "captive", frames: 13, sha256: "cfadbea0646f6ee1c637a5ac3870b518de48178ea8939da69ed7bf95ad539736", real: "Open BSS, DHCP, HTTP 302 redirect to the portal, cleartext POST credentials, session cookie, client-to-client ARP (no isolation)" },
-          { id: "radius", filename: "radius.pcapng", module: "radius", type: "radius", frames: 9, sha256: "d39ca4a57b765cff9ead3f39666f27fbd3cf669bd4810a51dd15293ec3ab8015", real: "RADIUS over IPv4/UDP 1812-1813 with verifiable Message-Authenticator (Access-Request) and Response Authenticator (Accept/Challenge/Accounting), Tunnel-Private-Group-Id VLAN 100, MS-MPPE keys, a rogue NAS with a wrong Message-Authenticator, and real MS-CHAPv2 challenge/response material" },
-          { id: "enterprise", filename: "enterprise.pcapng", module: "enterprise", type: "enterprise", frames: 11, sha256: "54870cc3b57be9c9e50b5f0075f892562c3c37e4502f4ba2b1c6ccbb29ef060f", real: "802.1X/EAPOL-Start \u2192 EAP-Identity \u2192 PEAP \u2192 MSK \u2192 PMK \u2192 4-way handshake, anonymous outer identity, MICs consistent with the documented lab MSK" },
-          { id: "eap", filename: "eap.pcapng", module: "eap", type: "eap", frames: 12, sha256: "c61499225e963629c7ed993728b1a8a6e155fd553525b1ac02386ba288bf8026", real: "PEAP / EAP-TLS / EAP-TTLS outer exchanges, and MS-CHAPv2 Challenge/Response/Success with values derived from the documented lab password (crackable material)" },
-          { id: "corporate-attacks", filename: "corporate-attacks.pcapng", module: "corporate", type: "corporate", frames: 19, sha256: "fa975f25e9cdf33f2c6aaa874739c04fb956c20b7d12b5ebf3f20378cac3b1b7", real: "Full chain: deauth, evil twin with weak PSK handshake, MS-CHAPv2 capture, guest\u2192corp segmentation success" },
-          { id: "methodology", filename: "methodology.pcapng", module: "methodology", type: "methodology", frames: 29, sha256: "08928da3074d001bdbb8920536ae49eddd1a2ab2088d3870dcb25fe7799eda3c", real: "Multi-BSS engagement capture: ESS, hidden BSS reveal, weak-PSK handshake, PMF-disabled deauth, rogue twin, 802.1X/PEAP, MS-CHAPv2, segmentation and isolation evidence" }
-        ])
+        // No local parser API (this is the hosted static build): list the captures from the artefact
+        // metadata that ships with the app instead of a hand-copied table.
+        const shipped = Object.entries(artifacts.artifacts as Record<string, { group: string; frames: number; sha256: string; path: string; real: string }>)
+          .map(([id, meta]) => ({
+            id,
+            filename: `${id}.pcapng`,
+            module: meta.group,
+            type: meta.group,
+            frames: meta.frames,
+            sha256: meta.sha256,
+            real: meta.real,
+          }))
+        setPcaps(shipped)
+        setParserInfo({ method: 'wififorge-labkit', note: 'bundled offline dataset' })
       })
   }, [])
 
@@ -65,27 +66,7 @@ export function Labs() {
     return map
   }, [])
 
-  const labs = [
-    { id: 'lab-02-beacon', module: '02-wifi-fundamentals', title: 'Beacon Frame Analysis', type: 'PCAP Analysis', status: 'SIMULATED', difficulty: 'Beginner', pcap: 'beacon-only', color: 'cyan' },
-    { id: 'lab-02-config', module: '02-wifi-fundamentals', title: 'Config Audit — WPS & PMF', type: 'Config Analysis', status: 'SIMULATED', difficulty: 'Beginner', pcap: null, color: 'cyan' },
-    { id: 'lab-05-recon', module: '05-wireless-recon', title: 'Wireless Recon — Hidden SSID & PNL', type: 'Recon Analysis', status: 'SIMULATED', difficulty: 'Intermediate', pcap: 'recon-lab', color: 'violet' },
-    { id: 'lab-06-traffic', module: '06-traffic-analysis', title: 'Traffic Analysis — Association Flow', type: 'Traffic Analysis', status: 'SIMULATED', difficulty: 'Intermediate', pcap: 'traffic-analysis', color: 'violet' },
-    { id: 'lab-09-handshake', module: '09-wpa2-practical', title: 'WPA2 Handshake Identification', type: 'Handshake Analysis', status: 'SIMULATED', difficulty: 'Intermediate', pcap: 'wpa2-handshake', color: 'amber' },
-    { id: 'lab-09-pmkid', module: '09-wpa2-practical', title: 'PMKID Extraction — Clientless', type: 'PMKID Analysis', status: 'SIMULATED', difficulty: 'Intermediate', pcap: 'pmkid', color: 'amber' },
-    { id: 'lab-10-wps', module: '10-wps', title: 'WPS Enumeration — 11k PIN Flaw', type: 'WPS Analysis', status: 'SIMULATED', difficulty: 'Intermediate', pcap: 'wps-beacon', color: 'amber' },
-    { id: 'lab-11-transition', module: '11-wpa3', title: 'WPA3 Transition — Downgrade Risk', type: 'WPA3 Analysis', status: 'SIMULATED', difficulty: 'Advanced', pcap: 'wpa3-transition', color: 'amber' },
-    { id: 'lab-11-wpa3-only', module: '11-wpa3', title: 'WPA3-Only Good Config', type: 'WPA3 Analysis', status: 'SIMULATED', difficulty: 'Beginner', pcap: 'wpa3-only', color: 'emerald' },
-    { id: 'lab-12-deauth', module: '12-deauth-disassoc', title: 'Deauth Flood — PMF Disabled', type: 'Deauth Analysis', status: 'SIMULATED', difficulty: 'Intermediate', pcap: 'deauth', color: 'red' },
-    { id: 'lab-13-rogue', module: '13-rogue-ap', title: 'Rogue AP — Evil Twin Detection', type: 'Rogue Analysis', status: 'SIMULATED', difficulty: 'Advanced', pcap: 'rogue-ap', color: 'red' },
-    { id: 'lab-14-captive', module: '14-captive-portals', title: 'Captive Portal — Bypass & Isolation', type: 'Captive Analysis', status: 'SIMULATED', difficulty: 'Intermediate', pcap: 'captive-portal', color: 'amber' },
-    { id: 'lab-15-enterprise', module: '15-enterprise-fundamentals', title: 'Enterprise Recon & Config Audit', type: 'Enterprise Analysis', status: 'SIMULATED', difficulty: 'Advanced', pcap: 'enterprise', color: 'pink' },
-    { id: 'lab-16-eap', module: '16-eap', title: 'EAP PEAP-MSCHAPv2 Analysis', type: 'EAP Analysis', status: 'SIMULATED', difficulty: 'Advanced', pcap: 'eap', color: 'pink' },
-    { id: 'lab-17-radius', module: '17-radius', title: 'RADIUS Architecture & Weak Secret', type: 'RADIUS Analysis', status: 'SIMULATED', difficulty: 'Advanced', pcap: 'radius', color: 'pink' },
-    { id: 'lab-18-corporate', module: '18-corporate-attacks', title: 'Corporate Attack Chain', type: 'Corporate Analysis', status: 'SIMULATED', difficulty: 'Professional', pcap: 'corporate-attacks', color: 'pink' },
-    { id: 'lab-19-methodology', module: '19-methodology', title: 'Full Methodology Assessment', type: 'Final Assessment', status: 'SIMULATED', difficulty: 'Professional', pcap: 'methodology', color: 'slate' },
-    { id: 'lab-20-final', module: '20-final-assessment', title: 'Final Wireless PT Assessment', type: 'Final Assessment', status: 'SIMULATED', difficulty: 'Professional', pcap: 'methodology', color: 'slate' },
-  ]
-
+  const labs = LABS
   const filteredLabs = useMemo(() => {
     return labs.filter(lab => {
       if (filterType && lab.type !== filterType) return false
@@ -124,10 +105,10 @@ export function Labs() {
               <FlaskConical className="w-5 h-5 text-emerald-400" />
             </div>
             <div className="min-w-0">
-              <h1 className="font-heading font-bold text-[22px] xs:text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none truncate">Labs — Enterprise</h1>
+              <h1 className="font-heading font-bold text-[22px] xs:text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none truncate">Labs</h1>
               <p className="text-[12px] xs:text-[13px] text-slate-400 mt-1.5 flex flex-wrap items-center gap-2">
                 <span className="hidden sm:inline">Hands-on • Simulated + Hardware • Real PCAP engine • Terminal • Vault</span>
-                <span className="sm:hidden">16 PCAPs • Terminal • Vault</span>
+                <span className="sm:hidden">{TOTAL_PCAPS} PCAPs • Terminal • Vault</span>
                 <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
                   <Activity className="w-3 h-3" />
                   {pcaps.length} PCAPs
@@ -144,7 +125,7 @@ export function Labs() {
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-glow-emerald" />
             <span className="text-[12px] font-medium text-slate-300 hidden xs:inline">{pcaps.length} PCAPs • Parser:</span>
             <span className={`text-[11px] px-2 py-0.5 rounded-full border font-mono font-medium ${parserInfo?.method === 'tshark' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'}`}>
-              {parserInfo?.method?.toUpperCase() || 'SCAPY'}
+              {parserInfo?.method?.toUpperCase() || 'OFFLINE DATASET'}
             </span>
           </motion.div>
         </div>
@@ -156,8 +137,8 @@ export function Labs() {
           {[
             { id: 'pcaps', label: 'PCAP Library', icon: Radio, count: pcaps.length },
             { id: 'upload', label: 'Upload Custom', icon: Upload, count: null },
-            { id: 'terminal', label: 'Terminal', icon: Terminal, count: '50+' },
-            { id: 'vault', label: 'Evidence Vault', icon: Shield, count: '5' },
+            { id: 'terminal', label: 'Terminal', icon: Terminal, count: TERMINAL_COMMAND_COUNT },
+            { id: 'vault', label: 'Evidence Vault', icon: Shield, count: null },
             { id: 'scoring', label: 'Scoring', icon: Trophy, count: null },
           ].map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center gap-1.5 xs:gap-2 px-3 xs:px-4 py-2.5 rounded-lg text-[12px] xs:text-[13px] font-medium transition-all shrink-0 touch-manipulation min-h-[44px] xs:min-h-0 ${activeTab === tab.id ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>
@@ -171,9 +152,32 @@ export function Labs() {
       </motion.div>
 
       {activeTab === 'upload' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading PcapUploader…</div>}><PcapUploader /></Suspense>}
-      {activeTab === 'terminal' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Terminal 50+ cmds…</div>}><TerminalEmulator /></Suspense>}
-      {activeTab === 'vault' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Evidence Vault SHA256…</div>}><EvidenceVault /></Suspense>}
-      {activeTab === 'scoring' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Lab Scoring…</div>}><LabScoring labId="lab-02-beacon" /></Suspense>}
+      {activeTab === 'terminal' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading terminal…</div>}><TerminalEmulator /></Suspense>}
+      {activeTab === 'vault' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading evidence vault…</div>}><EvidenceVault /></Suspense>}
+      {activeTab === 'scoring' && (
+        <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading lab scoring…</div>}>
+          <div className="space-y-4">
+            <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5">
+              <label htmlFor="scoring-lab" className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Lab to score</label>
+              <select
+                id="scoring-lab"
+                value={selectedLabId}
+                onChange={e => setSelectedLabId(e.target.value)}
+                className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none"
+              >
+                {LABS.map(lab => (
+                  <option key={lab.id} value={lab.id}>{lab.id} — {lab.title}</option>
+                ))}
+              </select>
+              <p className="text-[11px] text-slate-500 mt-2">
+                Pick the lab you are working on: the objective, artefact and method prompts below come from that lab's
+                catalogue entry, so you are never shown another lab's answers.
+              </p>
+            </div>
+            <LabScoring labId={selectedLabId} />
+          </div>
+        </Suspense>
+      )}
 
       {activeTab === 'pcaps' && (
         <>
@@ -191,13 +195,13 @@ export function Labs() {
                     <Radio className="w-4 h-4 text-emerald-400" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-heading font-bold text-[13px] xs:text-[14px] text-slate-100 truncate">Available PCAPs — Real Scapy-generated</h3>
-                    <p className="text-[11px] text-slate-500 font-mono truncate">Phase C+D+E+F • Zero-cost • Local-first • Production parser</p>
+                    <h3 className="font-heading font-bold text-[13px] xs:text-[14px] text-slate-100 truncate">Capture library</h3>
+                    <p className="text-[11px] text-slate-500 font-mono truncate">generated structure + decoded offline • verified by scripts/verify-lab-artifacts.py</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 xs:gap-2 min-w-0 shrink-0">
                   <span className="text-[11px] px-2.5 py-1 rounded-full bg-[#020617] border border-[#1e293b] text-slate-500 font-mono shrink-0">{filteredPcaps.length} shown</span>
-                  <span className="text-[11px] px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-mono shrink-0">Scapy Engine</span>
+                  <span className="text-[11px] px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-mono shrink-0">Offline dataset</span>
                 </div>
               </div>
               <div className="grid grid-cols-1 xs:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 xs:gap-3 min-w-0">
@@ -327,9 +331,9 @@ export function Labs() {
         <div className="flex items-start gap-3 min-w-0">
           <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0"><Sparkles className="w-4 h-4 text-emerald-400" /></div>
           <div className="text-[11px] xs:text-[12px] leading-relaxed min-w-0">
-            <div className="font-semibold text-slate-300 mb-1">Enterprise Labs — Production Ready</div>
+            <div className="font-semibold text-slate-300 mb-1">How these labs work</div>
             <div className="text-slate-500 font-mono leading-relaxed break-words">
-              <span className="text-emerald-400 font-medium">SIMULATED</span> real Scapy PCAPs + configs — zero-cost • <span className="text-cyan-400 font-medium">Upload</span> custom PCAPs drag-drop • <span className="text-violet-400 font-medium">Terminal</span> 50+ cmds simulated Kali • <span className="text-amber-400 font-medium">Vault</span> SHA256 chain • <span className="text-pink-400 font-medium">16 PCAPs</span> • Parser tshark→scapy→mock • PcapInspector filters • Evidence vault • Enterprise audit ready
+              <span className="text-emerald-400 font-medium">SIMULATED</span> captures + hostapd configs generated and verified offline — zero-cost • <span className="text-cyan-400 font-medium">Custom capture</span> get the SHA-256 in-browser, then parse with the local API or your own tshark • <span className="text-violet-400 font-medium">Terminal</span> {TERMINAL_COMMAND_COUNT} simulated commands with real syntax • <span className="text-amber-400 font-medium">Vault</span> hash + claim + filter + frames • <span className="text-pink-400 font-medium">{TOTAL_PCAPS} captures</span>
             </div>
           </div>
         </div>

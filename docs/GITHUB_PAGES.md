@@ -71,12 +71,12 @@ After that, every push to `main` redeploys automatically.
 
 ## What works on Pages
 
-Everything the SPA ships itself: all 20 modules / 80 lessons (Markdown is bundled at
+Everything the SPA ships itself: all 20 modules / 27 authored lessons (Markdown is bundled at
 build time), challenges, reference, gamification, reports + PDF export, terminal,
 evidence vault, theme, search — plus offline use after the first visit.
 
 The **FastAPI backend cannot run on Pages.** Anything that needs the API degrades to
-its built-in local-first/mock data (`src/lib/api.ts`, `src/pages/Labs.tsx`,
+its bundled offline datasets (`src/pages/Labs.tsx`,
 `src/components/lab/PcapInspector.tsx`) rather than erroring, so the UI is fully
 navigable. For live PCAP parsing, run the stack locally:
 

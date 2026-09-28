@@ -3,6 +3,9 @@ import { driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
 import { Sparkles, Map, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { TOTAL_LABS, TOTAL_LESSONS, TOTAL_MODULES, TOTAL_PCAPS } from '@/content/stats'
+import { ACHIEVEMENTS_DEF } from '@/content/achievements'
+import { MAX_XP } from '@/store/useProgressStore'
 
 export function GuidedTour() {
   const [hasSeenTour, setHasSeenTour] = useState(() => {
@@ -27,12 +30,12 @@ export function GuidedTour() {
       stageRadius: 12,
       popoverClass: 'wififorge-tour-popover',
       steps: [
-        { element: 'header', popover: { title: 'Enterprise Topbar — XP & Level', description: 'Track XP, level, streak, current module. Cmd+K search 50+ items, theme toggle, notifications 3 unread, ? shortcuts', side: 'bottom', align: 'start' } },
-        { element: '[data-tour=\"sidebar\"]', popover: { title: 'Learning Path — 20 Modules', description: '20 modules × 4 lessons = 80 lessons, 49572 lines. Progress ring, continue card, phases C+D+E+F. Click to start.', side: 'right', align: 'start' } },
-        { element: '[data-tour=\"dashboard-stats\"]', popover: { title: 'Dashboard Stats — XP & Streak', description: 'XP earned, lessons 80, labs 20, streak days, achievements 20. Level Initiate → Forge Master 2450 XP max', side: 'bottom', align: 'start' } },
-        { element: '[data-tour=\"daily\"]', popover: { title: 'Daily Challenges — Retention', description: '4 tasks daily: 2 lessons, 1 PCAP with 3 filters, perfect quiz, 5 terminal cmds. Weekly bonus +100 XP streak freeze', side: 'top', align: 'start' } },
-        { element: '[data-tour=\"labs\"]', popover: { title: 'Labs — PCAP + Terminal + Vault', description: '16 Scapy real PCAPs, custom upload drag-drop 50MB, terminal 50+ cmds simulated Kali, evidence vault SHA256 chain, production parser', side: 'top', align: 'start' } },
-        { element: '[data-tour=\"reports\"]', popover: { title: 'Reports & Certificate — Audit Ready', description: 'VAPT structure, evidence-based, Attack→Defense→Retest, PDF/A jsPDF real CVSS risk matrix compliance, certificate QR verified flag WIFIFORGE{FINAL_RECON_ASSESSMENT_COMPLETE}', side: 'top', align: 'start' } },
+        { element: 'header', popover: { title: 'Topbar — XP & level', description: 'XP, level and streak counted from your local completions. Cmd+K or Ctrl+K for search, theme toggle, activity list, ? for the shortcut sheet', side: 'bottom', align: 'start' } },
+        { element: '[data-tour=\"sidebar\"]', popover: { title: 'Learning path', description: `${TOTAL_MODULES} modules in 6 phases with ${TOTAL_LESSONS} authored lessons. Progress comes from what you complete on this device.`, side: 'right', align: 'start' } },
+        { element: '[data-tour=\"dashboard-stats\"]', popover: { title: 'Dashboard Stats — XP & Streak', description: `${TOTAL_LESSONS} authored lessons, ${TOTAL_LABS} labs, ${ACHIEVEMENTS_DEF.length} achievements and ${MAX_XP} XP across ${TOTAL_MODULES} modules. Everything is counted from your own completions on this device.`, side: 'bottom', align: 'start' } },
+        { element: '[data-tour=\"daily\"]', popover: { title: 'Daily goals', description: 'Three practice goals counted from your own completions today: two lessons, one capture analysed, one perfect quiz.', side: 'top', align: 'start' } },
+        { element: '[data-tour=\"labs\"]', popover: { title: 'Labs — captures, terminal, vault', description: `${TOTAL_PCAPS} verified captures decoded offline, custom-capture hashing, a simulated shell with real syntax, and an evidence vault that records hash + claim + filter + frames.`, side: 'top', align: 'start' } },
+        { element: '[data-tour=\"reports\"]', popover: { title: 'Reports & completion record', description: 'Finding editor, evidence vault export, CVSS 3.1 calculator, engagement timeline built from your own artefacts, and a local completion record you can print — not an accredited certificate.', side: 'top', align: 'start' } },
       ],
       onDestroyStarted: () => {
         try { localStorage.setItem('wififorge-tour-seen', 'true') } catch {}
@@ -54,8 +57,8 @@ export function GuidedTour() {
                   <Map className="w-4 h-4 text-violet-400" />
                 </div>
                 <div>
-                  <div className="text-[13px] font-bold text-slate-100">Welcome to WiFiForge Enterprise!</div>
-                  <div className="text-[11px] text-slate-500">Take 60s guided tour — 20 modules, labs, terminal, vault, cert</div>
+                  <div className="text-[13px] font-bold text-slate-100">Welcome to WiFiForge</div>
+                  <div className="text-[11px] text-slate-500">Take the 60s tour — modules, labs, terminal, evidence vault</div>
                 </div>
               </div>
               <button onClick={() => { setShowPrompt(false); try { localStorage.setItem('wififorge-tour-seen', 'true') } catch {}; setHasSeenTour(true) }} className="w-6 h-6 rounded-lg bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] transition-colors">
@@ -68,7 +71,7 @@ export function GuidedTour() {
               </button>
               <button onClick={() => { setShowPrompt(false); try { localStorage.setItem('wififorge-tour-seen', 'true') } catch {}; setHasSeenTour(true) }} className="px-4 py-2.5 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] text-slate-400 hover:text-slate-200 transition-colors">Skip</button>
             </div>
-            <div className="mt-2 text-[10px] text-slate-600 font-mono">Enterprise • Zero-cost • Local-first • Offline • 20 modules • 80 lessons • 16 PCAPs • 50+ cmds • Cmd+K • Terminal • Vault • Cert • Daily • Teams • JWT • PWA</div>
+            <div className="mt-2 text-[10px] text-slate-600 font-mono">Zero-cost • local-first • offline • {TOTAL_MODULES} modules • {TOTAL_LESSONS} lessons • {TOTAL_PCAPS} verified captures • Cmd+K • terminal • evidence vault • PWA</div>
           </motion.div>
         )}
       </AnimatePresence>

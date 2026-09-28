@@ -1,97 +1,179 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Download, FileText, Shield, CheckCircle, Zap, Hash, Clock, Award, Target, BarChart3 } from 'lucide-react'
-import { useProgressStore } from '@/store/useProgressStore'
+import { Download, FileText, Shield, CheckCircle, Hash, Info, AlertTriangle } from 'lucide-react'
 import jsPDF from 'jspdf'
+import { useProgressStore } from '@/store/useProgressStore'
+import { TOTAL_LABS, TOTAL_LESSONS, TOTAL_MODULES, TOTAL_PCAPS } from '@/content/stats'
+
+/**
+ * PDF export of *your* records.
+ *
+ * The export contains the evidence-vault entries you added (label, claim, filter, frame numbers,
+ * SHA-256) and the finding draft you wrote in the editor — nothing else. The previous version of this
+ * component generated a random SHA-256, eight sample findings and a "chain verified" flag; that is
+ * exactly the kind of invented material a report must never contain.
+ *
+ * The SHA-256 printed for the exported PDF is computed from the generated file's bytes in the browser,
+ * so the hash line is a real fingerprint of the file you are holding.
+ */
+
+interface EvidenceRecord {
+  id: string
+  kind: string
+  label: string
+  claim: string
+  filter: string
+  frames: string
+  sha256: string
+  bytes?: number
+  /** Written by the evidence vault; `at` is tolerated for older records. */
+  createdAt?: string
+  at?: string
+}
+
+interface Finding {
+  title: string
+  severity: string
+  description: string
+  technicalDetails: string
+  affectedComponent: string
+  evidence: string
+  impact: string
+  recommendation: string
+  references: string
+  retest: string
+}
+
+const EVIDENCE_KEY = 'wififorge-evidence-vault'
+const DRAFT_KEY = 'wififorge-report-draft'
+
+async function sha256Hex(buf: ArrayBuffer): Promise<string | null> {
+  try {
+    const digest = await crypto.subtle.digest('SHA-256', buf)
+    return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('')
+  } catch {
+    return null
+  }
+}
 
 export function ReportPdfExport({ className = '' }: { className?: string }) {
   const totalXp = useProgressStore(s => s.getTotalXp())
   const level = useProgressStore(s => s.getLevel())
   const completedLessons = useProgressStore(s => s.completedLessons.length)
+  const completedLabs = useProgressStore(s => s.completedLabs.length)
+  const quizScores = useProgressStore(s => s.quizScores.length)
   const overall = useProgressStore(s => s.getOverallProgress())
+
+  const [records, setRecords] = useState<EvidenceRecord[]>([])
+  const [finding, setFinding] = useState<Finding | null>(null)
   const [generating, setGenerating] = useState(false)
-  const [generated, setGenerated] = useState<any>(null)
+  const [generated, setGenerated] = useState<{ id: string; pages: number; sha256: string | null; size: string; url: string; blob: Blob; itemCount: number } | null>(null)
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(EVIDENCE_KEY)
+      if (raw) setRecords(JSON.parse(raw) as EvidenceRecord[])
+    } catch { /* storage unavailable */ }
+    try {
+      const draft = localStorage.getItem(DRAFT_KEY)
+      if (draft) {
+        const parsed = JSON.parse(draft) as Finding
+        if (parsed?.title?.trim()) setFinding(parsed)
+      }
+    } catch { /* storage unavailable */ }
+  }, [])
+
+  const hasContent = records.length > 0 || !!finding
 
   const generatePdf = async () => {
     setGenerating(true)
-    await new Promise(r => setTimeout(r, 800))
+    await new Promise(r => setTimeout(r, 250))
 
     const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' })
-    const sha = Array.from({ length: 64 }, () => Math.floor(Math.random()*16).toString(16)).join('')
-    const reportId = `WIFIFORGE-REPORT-${Date.now()}`
-    const date = new Date().toISOString()
+    const date = new Date()
+    const reportId = `local-${date.toISOString().slice(0, 19).replace(/[:T]/g, '')}`
+    let y = 20
 
-    // Title
-    doc.setFontSize(20)
+    const line = (text: string, size = 10, gap = 5, color: [number, number, number] = [30, 41, 59]) => {
+      doc.setFontSize(size)
+      doc.setTextColor(color[0], color[1], color[2])
+      const wrapped = doc.splitTextToSize(text, 180) as string[]
+      for (const row of wrapped) {
+        if (y > 280) { doc.addPage(); y = 20 }
+        doc.text(row, 15, y)
+        y += gap
+      }
+    }
+
+    doc.setFontSize(18)
     doc.setTextColor(15, 23, 42)
-    doc.text('WiFiForge — Wireless Penetration Testing Report', 15, 20)
-    doc.setFontSize(10)
-    doc.setTextColor(100, 116, 139)
-    doc.text(`Enterprise v2.1 • Professional VAPT • Production Audit Ready • ${date}`, 15, 27)
+    doc.text('WiFiForge — engagement notes export', 15, y); y += 8
+    line(`Generated ${date.toLocaleString()} on this device • record ${reportId}`, 9, 4, [100, 116, 139])
+    line('This file contains only records you entered. It is not a signed or accredited report; every hash below is the value you recorded (or that the page computed from the file you exported).', 9, 4, [100, 116, 139])
 
-    // Operator
-    doc.setFontSize(12)
-    doc.setTextColor(0,0,0)
-    doc.text(`Operator: Operator • Level: ${level.title} Lv.${level.level} • ${totalXp} XP • ${completedLessons}/80 lessons • ${overall}%`, 15, 35)
-    doc.text(`Report ID: ${reportId} • SHA256: ${sha.slice(0,32)}...`, 15, 41)
-    doc.text(`Compliance: PCI-DSS 11.1, NIST 800-153, OWASP WSTG v4.2, PTES`, 15, 47)
+    y += 3
+    line('Local progress', 13, 6)
+    line(`Level ${level.title} (Lv.${level.level}) • ${totalXp} XP • ${overall}% overall`, 10, 4)
+    line(`Lessons ${completedLessons}/${TOTAL_LESSONS} • Labs ${completedLabs}/${TOTAL_LABS} • Quizzes ${quizScores}/${TOTAL_MODULES} • Capture library ${TOTAL_PCAPS} files`, 10, 5)
 
-    // Findings
-    doc.setFontSize(14)
-    doc.text('Findings — 8 (HIGH 3, MED 3, LOW 2)', 15, 55)
-    doc.setFontSize(10)
-    let y = 62
-    const findings = [
-      '[HIGH] WPS Enabled — 11k PIN brute-force — wps-beacon.pcapng frame 2 — BSSID aa:bb:cc:11:22:33 — CVSS 7.5 — Impact: PSK recovery — Rec: wps_state=0 — Retest: wash no WPS',
-      '[HIGH] WPA2-PSK Weak 12345678 — handshake wpa2-handshake.pcapng 4 EAPOL VALID — hashcat -m 22000 cracked — CVSS 8.1 — Rec: WPA3-SAE 20+ chars — Retest: SAE config',
-      '[HIGH] Deauth Flood PMF Disabled — deauth.pcapng 14 frames — CVSS 7.4 — Rec: dot11RSNAProtectedManagementFrames — Retest: PMF required',
-      '[MED] Rogue AP Evil Twin — rogue-ap.pcapng 7 frames — SSID LAB-WIFI duplicate BSSID — CVSS 6.5 — Rec: WIDS + 802.11w — Retest: no rogue',
-      '[MED] Hidden SSID PNL Leakage — recon-lab.pcapng — client probing HIDDEN-LAB — CVSS 5.3 — Rec: disable PNL — Retest: no PNL',
-      '[MED] Captive Portal Bypass — captive-portal.pcapng 6 frames — isolation bypass — CVSS 5.8 — Rec: client isolation + firewall — Retest: isolated',
-      '[LOW] WPS Beacon Info Leak — wps-beacon.pcapng — vendor WPS IE — CVSS 3.7 — Rec: disable WPS — Retest: no WPS IE',
-      '[LOW] PMKID Clientless — pmkid.pcapng 1 frame — PMKID extractable — CVSS 3.1 — Rec: PMF + strong PSK — Retest: no PMKID',
-    ]
-    findings.forEach(f => {
-      if (y > 270) { doc.addPage(); y = 15 }
-      doc.text(f.slice(0, 110), 15, y)
-      y += 6
-    })
+    y += 3
+    line(`Finding draft${finding ? '' : ' — none saved'}`, 13, 6)
+    if (finding) {
+      line(`Title: ${finding.title}`, 10, 4)
+      line(`Severity: ${finding.severity}`, 10, 4)
+      if (finding.affectedComponent) line(`Affected: ${finding.affectedComponent}`, 10, 4)
+      if (finding.description) line(`Description: ${finding.description}`, 9, 4)
+      if (finding.technicalDetails) line(`Technical detail: ${finding.technicalDetails}`, 9, 4)
+      if (finding.evidence) line(`Evidence: ${finding.evidence}`, 9, 4)
+      if (finding.impact) line(`Impact: ${finding.impact}`, 9, 4)
+      if (finding.recommendation) line(`Recommendation: ${finding.recommendation}`, 9, 4)
+      if (finding.references) line(`References: ${finding.references}`, 9, 4)
+      if (finding.retest) line(`Retest: ${finding.retest}`, 9, 5)
+    } else {
+      line('Nothing saved yet — write a finding in the editor (it starts empty on purpose) and save it, then export again.', 9, 5, [100, 116, 139])
+    }
 
-    // Risk Matrix
-    if (y > 220) { doc.addPage(); y = 15 }
-    doc.setFontSize(12)
-    doc.text('Risk Matrix — Likelihood x Impact', 15, y); y+=8
-    doc.setFontSize(9)
-    doc.text('HIGH: WPS, Weak PSK, Deauth — Immediate remediation required', 15, y); y+=5
-    doc.text('MED: Rogue, PNL, Captive — 30 days remediation', 15, y); y+=5
-    doc.text('LOW: Info leak, PMKID — 90 days remediation', 15, y); y+=8
+    y += 3
+    line(`Evidence vault — ${records.length} record${records.length === 1 ? '' : 's'}`, 13, 6)
+    if (records.length === 0) {
+      line('No artefacts recorded. Add a capture, config or artefact in the evidence vault (label, claim, filter, frames, SHA-256) and it will be listed here with its hash.', 9, 5, [100, 116, 139])
+    } else {
+      records.forEach((r, idx) => {
+        if (y > 270) { doc.addPage(); y = 20 }
+        line(`${idx + 1}. [${r.kind}] ${r.label || r.id}`, 10, 4)
+        if (r.claim) line(`   Claim: ${r.claim}`, 9, 4)
+        if (r.filter) line(`   Filter: ${r.filter}${r.frames ? ` • Frames: ${r.frames}` : ''}`, 9, 4)
+        line(`   SHA-256: ${r.sha256 || 'not recorded'}${(r.createdAt || r.at) ? ` • recorded ${new Date(r.createdAt || r.at || '').toLocaleString()}` : ''}`, 9, 5, [80, 96, 120])
+      })
+    }
 
-    // Compliance
-    doc.text('Compliance Mapping — PCI-DSS 11.1, NIST 800-153, OWASP WSTG, PTES', 15, y); y+=6
-    doc.text('Evidence Vault — 16 PCAPs Scapy-generated SHA256 verified chain of custody', 15, y); y+=6
-    doc.text(`Flag: WIFIFORGE{FINAL_RECON_ASSESSMENT_COMPLETE} — Chain verified`, 15, y)
+    line('Retest and limits', 13, 6)
+    line('For every finding above, state what the evidence does NOT prove and the exact check that will confirm the fix (command, filter, expected output). A finding without a retest check is unfinished work.', 9, 5, [100, 116, 139])
 
-    // Footer
-    doc.setFontSize(8)
-    doc.setTextColor(100,116,139)
-    doc.text('WiFiForge Enterprise v2.1 • Zero-cost • Local-first • Offline • Kali-ready • Production • 20 modules • 80 lessons • 16 PCAPs • 50+ commands', 15, 285)
-    doc.text(`Generated ${date} • SHA256 ${sha} • Page 1`, 15, 290)
-
-    // Save blob for download
     const blob = doc.output('blob')
-    const url = URL.createObjectURL(blob)
+    const buf = await blob.arrayBuffer()
+    const sha = await sha256Hex(buf)
+
+    // Stamp the file's own hash in the footer of every page.
+    const pages = doc.getNumberOfPages()
+    for (let p = 1; p <= pages; p++) {
+      doc.setPage(p)
+      doc.setFontSize(8)
+      doc.setTextColor(120, 130, 150)
+      doc.text(`local export ${reportId} • page ${p}/${pages} • file SHA-256 ${sha ? sha.slice(0, 32) + '…' : 'unavailable in this context'}`, 15, 290)
+    }
+    const stampBlob = doc.output('blob')
+    const stampBuf = await stampBlob.arrayBuffer()
+    const stampSha = await sha256Hex(stampBuf)
 
     setGenerated({
       id: reportId,
-      pages: doc.getNumberOfPages(),
-      sha256: sha,
-      size: `${(blob.size/1024).toFixed(1)}KB`,
-      sections: ['Executive Summary', 'Scope', 'Findings (8) CVSS', 'Evidence (16 PCAPs) SHA256', 'Impact Analysis', 'Recommendations', 'Retest Verification', 'Risk Matrix', 'Compliance Mapping', 'Appendix — Hashes, Configs, Logs'],
-      compliance: ['PCI-DSS 11.1', 'NIST 800-153', 'OWASP WSTG v4.2', 'PTES', 'ISO 27001'],
-      cvss: 'HIGH 3, MED 3, LOW 2 • Avg 5.8',
-      generatedAt: date,
-      url,
-      blob,
+      pages,
+      sha256: stampSha,
+      size: `${(stampBlob.size / 1024).toFixed(1)} KB`,
+      url: URL.createObjectURL(stampBlob),
+      blob: stampBlob,
+      itemCount: records.length,
     })
     setGenerating(false)
   }
@@ -100,7 +182,7 @@ export function ReportPdfExport({ className = '' }: { className?: string }) {
     if (!generated?.blob) return
     const a = document.createElement('a')
     a.href = generated.url
-    a.download = `${generated.id}.pdf`
+    a.download = `wififorge-notes-${generated.id}.pdf`
     a.click()
   }
 
@@ -111,86 +193,80 @@ export function ReportPdfExport({ className = '' }: { className?: string }) {
           <FileText className="w-5 h-5 text-violet-400" />
         </div>
         <div className="min-w-0">
-          <h3 className="font-heading font-bold text-[14px] xs:text-[15px] text-slate-100">PDF Report Export — Enterprise Audit Ready • Real jsPDF</h3>
-          <p className="text-[11px] text-slate-500 font-mono">PDF/A • jsPDF • CVSS • Risk Matrix • Compliance • SHA256 • 12 pages • Production</p>
-        </div>
-        <div className="ml-auto flex items-center gap-2 shrink-0">
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono hidden xs:inline">jsPDF Real</span>
+          <h3 className="font-heading font-bold text-[14px] xs:text-[15px] text-slate-100">Export your records as PDF</h3>
+          <p className="text-[11px] text-slate-500 font-mono">jsPDF • your evidence vault + finding draft • hash of the exported file itself</p>
         </div>
       </div>
 
-      {!generated ? (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 xs:grid-cols-4 gap-3">
-            {[
-              { label: 'Findings', value: '8', desc: 'CVSS 5.8 avg', icon: Target },
-              { label: 'PCAPs', value: '16', desc: 'Scapy SHA256', icon: Shield },
-              { label: 'Compliance', value: '5', desc: 'PCI NIST OWASP', icon: Award },
-              { label: 'Format', value: 'PDF/A', desc: 'jsPDF real', icon: FileText },
-            ].map(s => (
-              <div key={s.label} className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-center min-w-0">
-                <s.icon className="w-4 h-4 text-violet-400 mx-auto mb-1" />
-                <div className="text-[18px] font-bold font-mono text-slate-100">{s.value}</div>
-                <div className="text-[11px] text-slate-500 mt-1">{s.label} • {s.desc}</div>
-              </div>
-            ))}
-          </div>
-
-          <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} onClick={generatePdf} disabled={generating} className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-[13px] flex items-center justify-center gap-2 shadow-glow-violet disabled:opacity-60 touch-manipulation min-h-[44px]">
-            {generating ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Generating PDF/A with jsPDF…</> : <><Download className="w-4 h-4" />Generate Enterprise PDF Report — Real jsPDF</>}
-          </motion.button>
-
-          <div className="p-3 rounded-xl bg-cyan-500/[0.03] border border-cyan-500/10 flex items-start gap-2.5">
-            <Zap className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" />
-            <div className="text-[11px] text-slate-400 leading-relaxed min-w-0">
-              <span className="font-semibold text-cyan-300">Enterprise Real:</span> Now using <span className="text-slate-200 font-mono">jsPDF</span> — VAPT structure Title, Severity CVSS, Description, Technical Details, Affected Component, Evidence (PCAP frame numbers, BSSID, SSID, channel), Impact, Recommendation, References, Retest. Risk matrix likelihood×impact, compliance mapping PCI-DSS 11.1 NIST 800-153 OWASP WSTG PTES ISO 27001, SHA256 chain.
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        {[
+          { label: 'Vault records', value: `${records.length}`, desc: 'added by you', icon: Shield },
+          { label: 'Finding draft', value: finding ? 'saved' : 'empty', desc: 'report editor', icon: FileText },
+          { label: 'Lessons', value: `${completedLessons}/${TOTAL_LESSONS}`, desc: 'local progress', icon: CheckCircle },
+          { label: 'Labs', value: `${completedLabs}/${TOTAL_LABS}`, desc: 'local progress', icon: Hash },
+        ].map(item => (
+          <div key={item.label} className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
+            <div className="flex items-center gap-1.5 text-[10px] text-slate-500 uppercase tracking-widest font-semibold mb-1.5">
+              <item.icon className="w-3 h-3" /> {item.label}
             </div>
+            <div className="text-[15px] font-mono font-bold text-slate-100">{item.value}</div>
+            <div className="text-[10px] text-slate-600 mt-0.5">{item.desc}</div>
           </div>
+        ))}
+      </div>
+
+      {!hasContent && (
+        <div className="mb-4 p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/20 text-[11.5px] text-amber-300/90 flex items-start gap-2">
+          <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+          <span>
+            Nothing to export yet. Add artefacts in Reports → Evidence Vault and write at least one finding in the
+            editor. The export deliberately does not ship with sample findings, sample hashes or a sample flag — a
+            report is only worth what your own evidence supports.
+          </span>
         </div>
-      ) : (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-          <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-3 min-w-0">
-            <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
-            <div className="min-w-0">
-              <div className="text-[14px] font-bold text-emerald-300">PDF Generated — Real jsPDF Production Ready!</div>
-              <div className="text-[12px] text-emerald-400/80 mt-1 flex flex-wrap gap-2">
-                <span className="flex items-center gap-1"><Hash className="w-3 h-3" />{generated.id}</span>
-                <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(generated.generatedAt).toLocaleString()}</span>
-                <span>{generated.pages} pages • {generated.size} • {generated.cvss}</span>
-              </div>
-              <div className="text-[11px] font-mono text-slate-500 mt-2 break-all">SHA256: {generated.sha256}</div>
-            </div>
-          </div>
+      )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0">
-            <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 min-w-0">
-              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1"><BarChart3 className="w-3 h-3" />Sections CVSS Risk Matrix</div>
-              <div className="space-y-1">
-                {generated.sections.map((s: string, i: number) => (
-                  <div key={i} className="text-[11px] text-slate-400 flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-violet-400 shrink-0" />{s}</div>
-                ))}
-              </div>
-            </div>
-            <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 min-w-0">
-              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-2">Compliance + CVSS</div>
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {generated.compliance.map((c: string) => (
-                  <span key={c} className="text-[10px] px-2 py-1 rounded-full bg-[#1e293b] border border-[#334155] text-slate-400 font-mono">{c}</span>
-                ))}
-              </div>
-              <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300 font-mono">Flag: WIFIFORGE{'{FINAL_RECON_ASSESSMENT_COMPLETE}'}</div>
-              <div className="mt-2 text-[11px] text-slate-500">CVSS: {generated.cvss}</div>
-            </div>
-          </div>
+      <button
+        onClick={generatePdf}
+        disabled={generating || !hasContent}
+        className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-[13px] flex items-center justify-center gap-2 shadow-glow-violet disabled:opacity-40 disabled:cursor-not-allowed touch-manipulation min-h-[44px]"
+      >
+        {generating ? (
+          <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Building PDF…</>
+        ) : (
+          <><Download className="w-4 h-4" />Generate PDF from my records</>
+        )}
+      </button>
 
-          <div className="flex gap-2">
-            <button onClick={downloadPdf} className="flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-[13px] flex items-center justify-center gap-2 shadow-glow-violet touch-manipulation min-h-[44px]">
-              <Download className="w-4 h-4" />Download PDF — {generated.size} Real jsPDF
-            </button>
-            <button onClick={() => { if (generated.url) URL.revokeObjectURL(generated.url); setGenerated(null) }} className="px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-500 hover:text-slate-300 transition-colors touch-manipulation min-h-[44px]">New</button>
+      {generated && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-4 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+          <div className="flex items-start gap-2.5">
+            <CheckCircle className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+            <div className="min-w-0 text-[11.5px] text-slate-300 leading-relaxed">
+              <div className="font-semibold text-emerald-300">PDF built — {generated.pages} page{generated.pages === 1 ? '' : 's'}, {generated.size}</div>
+              <div className="mt-1 font-mono text-[10.5px] text-slate-400 break-all">
+                file SHA-256: {generated.sha256 || 'unavailable in this browser context'}
+              </div>
+              <div className="mt-1 text-slate-500">
+                {generated.itemCount} vault record{generated.itemCount === 1 ? '' : 's'} included. The hash above identifies the
+                exported file itself — record it next to your evidence if you need a chain of custody.
+              </div>
+              <button onClick={downloadPdf} className="mt-3 px-4 py-2 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] text-slate-200 hover:border-[#475569] transition-colors">
+                Download {`wififorge-notes-${generated.id}.pdf`}
+              </button>
+            </div>
           </div>
         </motion.div>
       )}
+
+      <div className="mt-4 p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 flex items-start gap-2.5">
+        <Info className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" />
+        <div className="text-[11px] text-slate-400 leading-relaxed min-w-0">
+          Keep the evidence vault JSON export next to this PDF: the vault holds the machine-checkable part
+          (hash, filter, frame numbers), the PDF holds the narrative your reader needs. For CVSS scoring use the
+          calculator in Reports → CVSS 3.1 — the numbers there are computed, not typed.
+        </div>
+      </div>
     </div>
   )
 }

@@ -1,35 +1,91 @@
-import { useState, useEffect } from 'react'
+import { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, X, CheckCircle, Award, Zap, Trophy, Shield, Target, Clock } from 'lucide-react'
+import { Bell, X, CheckCircle, Award, Zap, Shield, Info, Trash2 } from 'lucide-react'
 import { useProgressStore } from '@/store/useProgressStore'
+
+/**
+ * Notification centre — built from real local events only.
+ *
+ * There is no server to push notifications and this build does not invent any: the list is derived
+ * from the completions, achievements and XP events this browser actually recorded, and "read" state
+ * is kept in component state for the session. A fresh profile sees an empty state explaining what
+ * will appear here, not a fake feed.
+ */
 
 interface Notif {
   id: string
-  type: 'xp' | 'achievement' | 'lab' | 'system'
   title: string
   desc: string
-  time: string
+  at: string
   read: boolean
-  icon: any
-  color: string
+  icon: typeof Zap
+  color: 'amber' | 'violet' | 'emerald' | 'cyan'
 }
 
-const mockNotifs: Notif[] = [
-  { id: '1', type: 'xp', title: '+50 XP — Module Complete', desc: '02-wifi-fundamentals completed — 120 XP total', time: '2m ago', read: false, icon: Zap, color: 'amber' },
-  { id: '2', type: 'achievement', title: 'Achievement Unlocked — Explorer', desc: 'Complete 5 lessons — +25 XP bonus', time: '1h ago', read: false, icon: Award, color: 'violet' },
-  { id: '3', type: 'lab', title: 'Lab Completed — Beacon Analysis', desc: 'beacon-only.pcapng — 5 frames analyzed — +25 XP', time: '3h ago', read: false, icon: Shield, color: 'emerald' },
-  { id: '4', type: 'system', title: 'Daily Challenges Reset', desc: 'New challenges available — 4 tasks • 115 XP today', time: '5h ago', read: true, icon: Target, color: 'cyan' },
-  { id: '5', type: 'xp', title: '+10 XP — Lesson Complete', desc: 'SSID vs BSSID vs ESSID — 02-wifi-fundamentals', time: '1d ago', read: true, icon: CheckCircle, color: 'cyan' },
-]
+function relative(at: string): string {
+  const t = new Date(at).getTime()
+  if (Number.isNaN(t)) return 'unknown time'
+  const diff = Date.now() - t
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 30) return `${days}d ago`
+  return new Date(at).toLocaleDateString()
+}
 
 export function NotificationCenter({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [notifs, setNotifs] = useState<Notif[]>(mockNotifs)
-  const totalXp = useProgressStore(s => s.getTotalXp())
+  const completedLessons = useProgressStore(s => s.completedLessons)
+  const completedLabs = useProgressStore(s => s.completedLabs)
+  const quizScores = useProgressStore(s => s.quizScores)
+  const achievements = useProgressStore(s => s.achievements)
+  const [readIds, setReadIds] = useState<Set<string>>(new Set())
 
-  const unread = notifs.filter(n => !n.read).length
+  const events = useMemo<Notif[]>(() => {
+    const all: Omit<Notif, 'read'>[] = [
+      ...completedLessons.map(l => ({
+        id: `lesson-${l.moduleId}-${l.lessonId}`,
+        title: `Lesson complete — +${l.points} XP`,
+        desc: `${l.lessonId} (${l.moduleId})`,
+        at: l.completedAt || '',
+        icon: CheckCircle,
+        color: 'cyan' as const,
+      })),
+      ...completedLabs.map(l => ({
+        id: `lab-${l.moduleId}-${l.labId}`,
+        title: `Lab complete — +${l.points} XP`,
+        desc: `${l.labId}${l.score !== undefined ? ` • score ${l.score}` : ''} (${l.moduleId})`,
+        at: l.completedAt || '',
+        icon: Shield,
+        color: 'emerald' as const,
+      })),
+      ...quizScores.map(q => ({
+        id: `quiz-${q.moduleId}-${q.quizId}`,
+        title: `Quiz ${q.score}/${q.total} — +${q.points} XP`,
+        desc: `${q.quizId} (${q.moduleId})`,
+        at: q.completedAt || '',
+        icon: Zap,
+        color: 'amber' as const,
+      })),
+      ...achievements.map(a => ({
+        id: `achievement-${a.id}`,
+        title: `${a.icon} ${a.title} — +${a.points} XP`,
+        desc: a.description,
+        at: a.unlockedAt || '',
+        icon: Award,
+        color: 'violet' as const,
+      })),
+    ].filter(e => e.at)
 
-  const markAllRead = () => setNotifs(notifs.map(n => ({ ...n, read: true })))
-  const markRead = (id: string) => setNotifs(notifs.map(n => n.id === id ? { ...n, read: true } : n))
+    return all
+      .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+      .slice(0, 50)
+      .map(e => ({ ...e, read: readIds.has(e.id) }))
+  }, [completedLessons, completedLabs, quizScores, achievements, readIds])
+
+  const unread = events.filter(e => !e.read).length
 
   return (
     <AnimatePresence>
@@ -43,8 +99,8 @@ export function NotificationCenter({ open, onClose }: { open: boolean; onClose: 
                   <Bell className="w-5 h-5 text-violet-400" />
                 </div>
                 <div>
-                  <h3 className="font-heading font-bold text-[15px] text-slate-100">Notifications • {unread} unread</h3>
-                  <p className="text-[11px] text-slate-500 font-mono">{totalXp} XP • Enterprise • Real-time ready</p>
+                  <h3 className="font-heading font-bold text-[15px] text-slate-100">Activity — {unread} new</h3>
+                  <p className="text-[11px] text-slate-500 font-mono">recorded in this browser • no server push</p>
                 </div>
               </div>
               <button onClick={onClose} className="w-8 h-8 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] transition-colors touch-manipulation">
@@ -53,32 +109,64 @@ export function NotificationCenter({ open, onClose }: { open: boolean; onClose: 
             </div>
 
             <div className="p-3 border-b border-[#1e293b]/60 flex items-center justify-between shrink-0">
-              <span className="text-[11px] text-slate-500 font-mono">{notifs.length} notifications • {unread} unread</span>
-              <button onClick={markAllRead} className="text-[11px] px-2.5 py-1 rounded-full bg-[#1e293b] border border-[#334155] text-slate-400 hover:text-slate-200 transition-colors">Mark all read</button>
+              <span className="text-[11px] text-slate-500 font-mono">{events.length} entries • {unread} new</span>
+              <button
+                onClick={() => setReadIds(new Set(events.map(e => e.id)))}
+                disabled={events.length === 0}
+                className="text-[11px] px-2.5 py-1 rounded-full bg-[#1e293b] border border-[#334155] text-slate-400 hover:text-slate-200 transition-colors disabled:opacity-40 disabled:hover:text-slate-400"
+              >
+                Mark all read
+              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto scrollbar-thin p-3 space-y-2">
-              {notifs.map((n, idx) => (
-                <motion.div key={n.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }} onClick={() => markRead(n.id)} className={`p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-colors ${n.read ? 'bg-[#020617]/40 border-[#1e293b]/40 opacity-70' : 'bg-[#020617]/80 border-[#334155]/60 hover:bg-[#020617]/90'}`}>
-                  <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${n.color === 'amber' ? 'bg-amber-500/10 border-amber-500/20' : n.color === 'violet' ? 'bg-violet-500/10 border-violet-500/20' : n.color === 'emerald' ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-cyan-500/10 border-cyan-500/20'}`}>
-                    <n.icon className={`w-4 h-4 ${n.color === 'amber' ? 'text-amber-400' : n.color === 'violet' ? 'text-violet-400' : n.color === 'emerald' ? 'text-emerald-400' : 'text-cyan-400'}`} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[13px] font-medium truncate ${n.read ? 'text-slate-400' : 'text-slate-100'}`}>{n.title}</span>
-                      {!n.read && <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />}
+              {events.length === 0 ? (
+                <div className="p-6 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 text-center">
+                  <Info className="w-5 h-5 text-slate-500 mx-auto mb-2" />
+                  <div className="text-[12.5px] text-slate-300">Nothing recorded yet</div>
+                  <p className="mt-1.5 text-[11.5px] text-slate-500 leading-relaxed">
+                    This list shows your own completions — lessons, labs, quizzes and achievements — with the time they
+                    happened. Complete something and it will appear here; nothing is ever fabricated to fill the panel.
+                  </p>
+                </div>
+              ) : (
+                events.map((n, idx) => (
+                  <motion.div
+                    key={n.id}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(idx, 8) * 0.03 }}
+                    onClick={() => setReadIds(prev => new Set(prev).add(n.id))}
+                    className={`p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-colors ${n.read ? 'bg-[#020617]/40 border-[#1e293b]/40 opacity-70' : 'bg-[#020617]/80 border-[#334155]/60 hover:bg-[#020617]/90'}`}
+                  >
+                    <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${n.color === 'amber' ? 'bg-amber-500/10 border-amber-500/20' : n.color === 'violet' ? 'bg-violet-500/10 border-violet-500/20' : n.color === 'emerald' ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-cyan-500/10 border-cyan-500/20'}`}>
+                      <n.icon className={`w-4 h-4 ${n.color === 'amber' ? 'text-amber-400' : n.color === 'violet' ? 'text-violet-400' : n.color === 'emerald' ? 'text-emerald-400' : 'text-cyan-400'}`} />
                     </div>
-                    <div className="text-[11px] text-slate-500 mt-1 leading-relaxed">{n.desc}</div>
-                    <div className="text-[10px] font-mono text-slate-600 mt-1.5 flex items-center gap-1"><Clock className="w-3 h-3" />{n.time}</div>
-                  </div>
-                </motion.div>
-              ))}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[13px] font-medium truncate ${n.read ? 'text-slate-400' : 'text-slate-100'}`}>{n.title}</span>
+                        {!n.read && <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-1 leading-relaxed break-words">{n.desc}</div>
+                      <div className="text-[10px] font-mono text-slate-600 mt-1.5">{relative(n.at)} • {new Date(n.at).toLocaleString()}</div>
+                    </div>
+                  </motion.div>
+                ))
+              )}
             </div>
 
-            <div className="p-4 border-t border-[#1e293b] bg-[#020617]/40 shrink-0">
-              <div className="text-[11px] text-slate-500 flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Real-time ready — WebSocket • Push • Enterprise • Production</span>
+            <div className="p-4 border-t border-[#1e293b] bg-[#020617]/40 shrink-0 space-y-2">
+              {events.length > 0 && (
+                <button
+                  onClick={() => setReadIds(new Set())}
+                  className="w-full text-[11px] px-3 py-2 rounded-xl bg-[#0f172a] border border-[#1e293b] text-slate-400 hover:text-slate-200 hover:border-[#334155] transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Reset read marks (session only)
+                </button>
+              )}
+              <div className="text-[11px] text-slate-500 flex items-start gap-2 leading-relaxed">
+                <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-slate-600" />
+                <span>Derived from this device&apos;s local progress records. No push service, no email, no server-side notification log.</span>
               </div>
             </div>
           </motion.div>

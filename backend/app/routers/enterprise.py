@@ -1,128 +1,155 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
-from typing import List
+"""Optional backend helpers — every response here is derived, stored or explicitly unavailable.
+
+This router previously returned a "verified" certificate for any id, an invented PDF report and a
+fabricated analysis for uploaded captures. Those responses were indistinguishable from real data once
+they left the API, so they are gone:
+
+* certificate verification: the static academy issues no accredited certificate and keeps no
+  registry, so there is nothing to verify — 404 with that explanation.
+* PDF generation: reports are produced in the browser (jsPDF) from the learner's own evidence vault.
+* capture upload: the file is hashed (SHA-256) and, if a parser is available locally, decoded; if not,
+  the response says analysis was not performed instead of guessing frame counts.
+"""
+
 import hashlib
 import time
-import os
 from pathlib import Path
+from tempfile import NamedTemporaryFile
+
+from fastapi import APIRouter, File, HTTPException, UploadFile
+
+from app.core.config import MAX_UPLOAD_BYTES
+from app.services.pcap_parser import parse_pcap, tshark_available, SCAPY_AVAILABLE
 
 router = APIRouter()
 
-# Enterprise — zero-cost local-first, no cloud
+# Magic numbers that a real capture file starts with.
+CAPTURE_MAGIC = {
+    b"\xd4\xc3\xb2\xa1": "pcap (little-endian, microsecond)",
+    b"\xa1\xb2\xc3\xd4": "pcap (big-endian, microsecond)",
+    b"\x4d\x3c\xb2\xa1": "pcap (little-endian, nanosecond)",
+    b"\x0a\x0d\x0d\x0a": "pcapng",
+}
+
 
 @router.get("/cert/verify/{cert_id}")
 async def verify_certificate(cert_id: str):
-    # Simulate verification — production would check DB
-    return {
-        "cert_id": cert_id,
-        "valid": True,
-        "issued_to": "Operator",
-        "issue_date": "2024-12-19",
-        "level": "Professional",
-        "modules_completed": 20,
-        "lessons": 80,
-        "xp": 2450,
-        "verification": "SHA256 verified • Chain of custody intact",
-        "flag": "WIFIFORGE{FINAL_RECON_ASSESSMENT_COMPLETE}"
-    }
+    raise HTTPException(
+        status_code=404,
+        detail=(
+            "This API keeps no certificate registry. The academy's completion record is generated "
+            "locally in the browser (see Reports → completion record) and is explicitly not an "
+            "accredited certification, so there is nothing to verify server-side."
+        ),
+    )
+
 
 @router.get("/reports/pdf/{report_id}")
 async def generate_pdf_report(report_id: str):
-    # Enterprise PDF generation — simulated, would use weasyprint/reportlab
-    return {
-        "report_id": report_id,
-        "status": "generated",
-        "format": "PDF/A — enterprise audit ready",
-        "pages": 12,
-        "sections": ["Executive Summary", "Scope", "Findings", "Evidence", "Impact", "Recommendations", "Retest", "Appendix — PCAP hashes"],
-        "sha256": hashlib.sha256(f"{report_id}{time.time()}".encode()).hexdigest(),
-        "compliance": ["PCI-DSS 11.1", "NIST 800-153", "OWASP WSTG"],
-        "download_url": f"/api/reports/pdf/{report_id}/download"
-    }
+    raise HTTPException(
+        status_code=501,
+        detail=(
+            "Server-side PDF generation is not implemented. Export the report from the browser "
+            "(Reports → 'Export your records as PDF'); it is built from your own evidence vault records."
+        ),
+    )
+
 
 @router.post("/pcaps/upload")
 async def upload_pcap(file: UploadFile = File(...)):
-    # Validate
-    allowed = ('.pcap', '.pcapng', '.cap')
-    if not file.filename or not file.filename.lower().endswith(allowed):
-        raise HTTPException(status_code=400, detail="Only .pcap/.pcapng/.cap allowed — enterprise policy")
+    """Hash an uploaded capture and decode it *only* if a parser is actually available.
+
+    Nothing about the capture is inferred from its name or size.
+    """
+    if not file.filename or not file.filename.lower().endswith((".pcap", ".pcapng", ".cap")):
+        raise HTTPException(status_code=400, detail="Only .pcap/.pcapng/.cap uploads are accepted")
+
     content = await file.read()
-    if len(content) > 50 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Max 50MB — enterprise limit")
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail=f"Upload exceeds {MAX_UPLOAD_BYTES} bytes")
+    if not content:
+        raise HTTPException(status_code=400, detail="Empty file")
+
+    magic = next((label for sig, label in CAPTURE_MAGIC.items() if content.startswith(sig)), None)
     sha256 = hashlib.sha256(content).hexdigest()
-    # Simulate analysis
+
+    parser_available = tshark_available() or SCAPY_AVAILABLE
+    analysis = None
+    note = None
+
+    if magic is None:
+        note = "File does not start with a recognised capture header (pcap/pcapng). It was not parsed."
+    elif not parser_available:
+        note = (
+            "No local parser installed (tshark/scapy), so no frames were decoded. Install one of them "
+            "and re-upload, or decode the file on your own machine and record the reproducible parts in "
+            "the evidence vault."
+        )
+    else:
+        # Write to a temporary file only for the duration of the parse; nothing is persisted.
+        with NamedTemporaryFile(suffix=Path(file.filename).suffix, delete=False) as tmp:
+            tmp.write(content)
+            tmp_path = Path(tmp.name)
+        try:
+            result = parse_pcap(tmp_path, pcap_id=Path(file.filename).stem)
+            analysis = {
+                "method": result.get("method"),
+                "note": result.get("note"),
+                "summary": result.get("summary"),
+            }
+            if result.get("method") == "offline-dataset":
+                # An uploaded file must be decoded from its own bytes; the shipped dataset for a
+                # same-named lab capture is not evidence about this file.
+                analysis = None
+                note = (
+                    "Only the offline dataset for that capture id was available, which does not describe "
+                    "the uploaded bytes. Install tshark or scapy to decode this file."
+                )
+        finally:
+            tmp_path.unlink(missing_ok=True)
+
     return {
         "filename": file.filename,
         "size": len(content),
         "sha256": sha256,
-        "chain_of_custody": True,
-        "analysis": {
-            "frames": len(content) // 100,  # mock
-            "ssids": ["LAB-WIFI", "Corp-WLAN"],
-            "bssids": ["aa:bb:cc:11:22:33"],
-            "eapol": 4,
-            "beacons": 10,
-            "deauth": 0,
-            "handshake_valid": True,
-        },
-        "evidence_vault": "Stored with SHA256 verification — production integrity",
-        "uploaded_at": time.time(),
+        "header": magic,
+        "parsed": analysis is not None,
+        "analysis": analysis,
+        "note": note,
+        "received_at": time.time(),
     }
+
 
 @router.get("/analytics/overview")
 async def analytics_overview():
-    return {
-        "total_users": 5,
-        "active_today": 3,
-        "total_xp": 12450,
-        "avg_progress": 67,
-        "top_modules": [
-            {"module": "02-wifi-fundamentals", "completion": 95},
-            {"module": "05-wireless-recon", "completion": 78},
-            {"module": "09-wpa2-practical", "completion": 65},
-        ],
-        "leaderboard": [
-            {"user": "Operator", "xp": 2450, "level": 10},
-            {"user": "alice.wifi", "xp": 2150, "level": 8},
-            {"user": "bob.pentest", "xp": 1890, "level": 7},
-        ],
-        "compliance": "Enterprise audit log ready — GDPR local-first",
-    }
+    """Counts from the local SQLite progress store — empty database means empty numbers."""
+    from app.core.database import SessionLocal
+    from app.models.progress import LessonProgress, LabProgress, QuizProgress
 
-@router.get("/audit/logs")
-async def audit_logs():
-    return {
-        "logs": [
-            {"timestamp": "2024-12-19T10:30:00Z", "user": "Operator", "action": "PCAP_UPLOAD", "resource": "wpa2-handshake.pcapng", "result": "success", "sha256": "a1b2c3..."},
-            {"timestamp": "2024-12-19T10:32:00Z", "user": "Operator", "action": "HASHCAT_CRACK", "resource": "lab-wifi", "result": "success", "xp": 50},
-            {"timestamp": "2024-12-19T10:45:00Z", "user": "Operator", "action": "CERT_GENERATE", "resource": "WIFIFORGE-2450", "result": "success"},
-        ],
-        "retention": "90 days • enterprise policy",
-        "integrity": "SHA256 chain verified",
-    }
+    db = SessionLocal()
+    try:
+        lessons = db.query(LessonProgress).count()
+        labs = db.query(LabProgress).count()
+        quizzes = db.query(QuizProgress).count()
+        users = len({
+            row.user_id
+            for row in (
+                db.query(LessonProgress).all()
+                + db.query(LabProgress).all()
+                + db.query(QuizProgress).all()
+            )
+        })
+    finally:
+        db.close()
 
-@router.get("/health/enterprise")
-async def enterprise_health():
     return {
-        "status": "enterprise-ready",
-        "version": "2.1.0",
-        "features": {
-            "multi_user": "JWT + OAuth ready — foundation implemented",
-            "team_management": "Classrooms + role-based access",
-            "analytics_dashboard": "Instructor view live",
-            "audit_logs": "SHA256 chain + 90d retention",
-            "evidence_vault": "Production integrity",
-            "pwa": "Offline-first • Service Worker v2.1",
-            "rate_limit": "100 req/min per IP — enterprise",
-            "pdf_reports": "PDF/A audit-ready",
-            "cert_verification": "QR + SHA256",
-            "pcap_upload": "Custom 50MB limit",
-        },
-        "compliance": ["SOC2-ready", "PCI-DSS 11.1", "NIST 800-153", "GDPR local-first"],
-        "deployment": {
-            "docker": "production ready",
-            "nginx": "TLS + gzip + cache",
-            "ci_cd": "GitHub Actions",
-            "monitoring": "Prometheus + Grafana ready",
-            "backup": "Daily SHA256 verified",
-        }
+        "source": "local SQLite progress store",
+        "learners_with_records": users,
+        "lessons_completed": lessons,
+        "labs_completed": labs,
+        "quizzes_completed": quizzes,
+        "note": (
+            "Zero values mean no progress has been recorded in this database — the hosted build stores "
+            "progress in the browser instead."
+        ) if not (lessons or labs or quizzes) else None,
     }

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useProgressStore } from '@/store/useProgressStore'
 import { motion } from 'framer-motion'
 import modules from '@/content/modules.json'
+import { TOTAL_MODULES } from '@/content/stats'
 import { CheckCircle, Circle, Loader2, Lock, Sparkles, Target, BookOpen, Award, Zap, ChevronRight } from 'lucide-react'
 
 export function LearningPath() {
@@ -29,7 +30,7 @@ export function LearningPath() {
         </div>
         <div>
           <h1 className="font-heading font-bold text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none">Learning Path</h1>
-          <p className="text-[13px] text-slate-400 mt-1.5">20 modules • 6 phases • From fundamentals to professional assessment • Zero-cost</p>
+          <p className="text-[13px] text-slate-400 mt-1.5">{TOTAL_MODULES} modules • 6 phases • From fundamentals to professional assessment • Zero-cost</p>
         </div>
       </motion.div>
 

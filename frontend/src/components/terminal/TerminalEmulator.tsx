@@ -8,7 +8,7 @@ interface Command {
   type: 'success' | 'error' | 'info'
 }
 
-const COMMANDS: Record<string, { output: string; type: 'success' | 'error' | 'info' }> = {
+export const COMMANDS: Record<string, { output: string; type: 'success' | 'error' | 'info' }> = {
   'iw dev': {
     output: `phy#0
         Interface wlan0
@@ -166,9 +166,9 @@ wlan0: EAPOL: Successfully received EAPOL-Key msg 4/4
     type: 'success'
   },
   'help': {
-    output: `WiFiForge Terminal — Simulated Kali Linux
+    output: `WiFiForge Terminal — simulated Kali-style shell
 
-Available commands (50+):
+Available commands (counted from the implementation below):
   iw dev                          — List wireless interfaces
   iw dev wlan0 scan               — Scan APs (passive)
   iw dev wlan0 set type monitor   — Set monitor mode (RF_REQUIRED)
@@ -203,7 +203,7 @@ Filters (20+):
   wlan.rsn.capabilities.mfpc / .mfpr
 
 Type any command or 'clear' to reset. All simulated — zero-cost, no RF needed.
-Real RF commands marked RF_REQUIRED need ALFA AWUS036ACHM + bare-metal Kali.`,
+Commands marked RF_REQUIRED need monitor-mode capable hardware on bare metal — the simulator only shows their documented syntax and output shape.`,
     type: 'info'
   },
   'clear': { output: '', type: 'info' },
@@ -236,7 +236,7 @@ export function TerminalEmulator({ className = '' }: { className?: string }) {
       // Fuzzy match
       const key = Object.keys(COMMANDS).find(k => trimmed.startsWith(k) || k.startsWith(trimmed))
       result = key ? COMMANDS[key] : {
-        output: `bash: ${trimmed}: command not found\n\nTry 'help' for available commands.\n\nSimulated environment — 50+ commands available.\nFor real RF: iw, airodump-ng, aireplay-ng require ALFA adapter + monitor mode.`,
+        output: `bash: ${trimmed}: command not found\n\nTry 'help' for the ${Object.keys(COMMANDS).length} simulated commands.\nFor real RF: iw, airodump-ng, aireplay-ng need an adapter that supports monitor mode + injection (see Modules → 04-kali-wireless-setup).`,
         type: 'error' as const
       }
     }
@@ -259,7 +259,7 @@ export function TerminalEmulator({ className = '' }: { className?: string }) {
 
   return (
     <div className={`rounded-2xl bg-[#080d18] border border-[#1e293b] overflow-hidden shadow-soft flex flex-col min-w-0 w-full ${className}`}>
-      {/* Header — production ready responsive */}
+      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-[#0a1020] border-b border-[#1e293b]/60 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex items-center gap-1.5">
@@ -269,7 +269,7 @@ export function TerminalEmulator({ className = '' }: { className?: string }) {
           </div>
           <div className="hidden xs:flex items-center gap-2 min-w-0">
             <Terminal className="w-4 h-4 text-slate-500 shrink-0" />
-            <span className="text-[12px] font-mono text-slate-400 truncate">kali@wififorge: ~/labs • zsh • 50+ cmds</span>
+            <span className="text-[12px] font-mono text-slate-400 truncate">kali@wififorge: ~/labs • simulated shell</span>
           </div>
           <div className="flex xs:hidden items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -301,7 +301,7 @@ export function TerminalEmulator({ className = '' }: { className?: string }) {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input — production ready */}
+      {/* Input */}
       <form onSubmit={handleSubmit} className="flex items-center gap-2 p-3 bg-[#0a1020] border-t border-[#1e293b]/60 shrink-0">
         <span className="text-emerald-400 font-mono text-[13px] shrink-0 hidden xs:inline">kali@wififorge:~$</span>
         <span className="text-emerald-400 font-mono text-[13px] shrink-0 xs:hidden">$</span>
@@ -320,14 +320,14 @@ export function TerminalEmulator({ className = '' }: { className?: string }) {
       {/* Footer hints — responsive */}
       <div className="px-4 py-2 bg-[#020617]/60 border-t border-[#1e293b]/40 flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2 text-[10px] font-mono text-slate-500">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="flex items-center gap-1"><Zap className="w-3 h-3 text-amber-400" /> 50+ cmds</span>
+          <span className="flex items-center gap-1"><Zap className="w-3 h-3 text-amber-400" /> {Object.keys(COMMANDS).length} cmds</span>
           <span className="w-1 h-1 rounded-full bg-slate-700 hidden xs:block" />
           <span className="hidden xs:inline">Tab complete • ↑↓ history • Real RF marked RF_REQUIRED</span>
           <span className="xs:hidden">Simulated • Zero-cost</span>
         </div>
         <div className="flex items-center gap-1.5">
           <Wifi className="w-3 h-3 text-cyan-400" />
-          <span>Production terminal</span>
+          <span>Simulated terminal</span>
         </div>
       </div>
     </div>

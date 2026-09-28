@@ -22,6 +22,8 @@ const initialCards: Card[] = [
   { id: '8', front: 'hashcat -m 22000', category: 'command', back: 'WPA2-PSK crack — hashcat mode 22000 for .hc22000, wordlist rockyou.txt, rules', difficulty: 0, nextReview: new Date().toISOString() },
 ]
 
+export const INITIAL_CARD_COUNT = initialCards.length
+
 export function Flashcards({ className = '' }: { className?: string }) {
   const [cards, setCards] = useState<Card[]>(() => {
     try { const saved = JSON.parse(localStorage.getItem('wififorge-flashcards') || 'null'); return saved || initialCards } catch { return initialCards }
@@ -56,7 +58,7 @@ export function Flashcards({ className = '' }: { className?: string }) {
           <Brain className="w-5 h-5 text-violet-400" />
         </div>
         <div className="min-w-0">
-          <h3 className="font-heading font-bold text-[14px] xs:text-[15px] text-slate-100">Flashcards — Spaced Repetition SM-2 • Enterprise</h3>
+          <h3 className="font-heading font-bold text-[14px] xs:text-[15px] text-slate-100">Flashcards — spaced repetition</h3>
           <p className="text-[11px] text-slate-500 font-mono">{cards.length} cards • {stats.correct} correct • {stats.wrong} wrong • {Math.round((stats.correct/(stats.correct+stats.wrong||1))*100)}% accuracy</p>
         </div>
         <div className="ml-auto flex items-center gap-2 shrink-0">
@@ -85,7 +87,7 @@ export function Flashcards({ className = '' }: { className?: string }) {
       {!flipped && (
         <div className="p-3 rounded-xl bg-cyan-500/[0.03] border border-cyan-500/10 flex items-center gap-2 text-[11px] text-slate-500">
           <Zap className="w-4 h-4 text-cyan-400 shrink-0" />
-          <span>Spaced repetition SM-2 — 30+ terms, 50+ commands, 20+ filters — daily review, difficulty 0-5, next review auto-scheduled — enterprise retention</span>
+          <span>{INITIAL_CARD_COUNT} cards drawn from the shipped terms, commands and filters — difficulty 0–5, next review auto-scheduled from your own answers. Your deck is stored in this browser.</span>
         </div>
       )}
 

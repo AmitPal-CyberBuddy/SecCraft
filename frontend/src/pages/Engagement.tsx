@@ -210,7 +210,7 @@ export function Engagement() {
 
           <Section title="Artefact bundle (verified captures)" icon={FlaskConical}>
             <p className="text-[12px] text-slate-400 leading-relaxed mb-3">
-              All 16 captures are generated with real radiotap/802.11 structure and verified by
+              All {artList.length} captures are generated with real radiotap/802.11 structure and verified by
               <span className="font-mono"> scripts/verify-lab-artifacts.py</span>. Open one in the inspector to
               analyse it; hashes are the values recorded in <span className="font-mono">MANIFEST.md</span>.
             </p>
