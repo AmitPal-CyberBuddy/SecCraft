@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
 import { FlaskConical, Search, Filter, Radio, Wifi, FileCode, Activity, Zap, ChevronRight, Sparkles, Target, Layers, Terminal, Upload, Shield, Trophy, Clock } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import modules from '@/content/modules.json'
+import { TierBadge } from '@/components/common/TierBadge'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const TerminalEmulator = lazy(() => import('@/components/terminal/TerminalEmulator').then(m => ({ default: m.TerminalEmulator })))
@@ -53,6 +55,14 @@ export function Labs() {
           { id: "methodology", filename: "methodology.pcapng", module: "methodology", type: "methodology", frames: 29, sha256: "08928da3074d001bdbb8920536ae49eddd1a2ab2088d3870dcb25fe7799eda3c", real: "Multi-BSS engagement capture: ESS, hidden BSS reveal, weak-PSK handshake, PMF-disabled deauth, rogue twin, 802.1X/PEAP, MS-CHAPv2, segmentation and isolation evidence" }
         ])
       })
+  }, [])
+
+  const tierByModule = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const m of modules as Array<{ id: string; lab_requirement?: string }>) {
+      if (m.lab_requirement) map.set(m.id, m.lab_requirement)
+    }
+    return map
   }, [])
 
   const labs = [
@@ -285,7 +295,7 @@ export function Labs() {
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5 xs:gap-2 min-w-0 shrink-0">
-                          <span className={`text-[10px] px-2.5 py-1 rounded-full border font-mono font-medium backdrop-blur-sm shrink-0 ${lab.status === 'SIMULATED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>{lab.status === 'SIMULATED' ? '● SIM' : '◐ RF'}</span>
+                          <TierBadge tier={tierByModule.get(lab.module) ?? lab.status} size="xs" />
                         </div>
                       </div>
                       <h3 className="font-heading font-bold text-[15px] text-slate-100 mb-3 leading-tight group-hover:text-white transition-colors duration-200 line-clamp-2">{lab.title}</h3>
