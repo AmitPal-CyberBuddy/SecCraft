@@ -11,6 +11,9 @@ export function Modules() {
   const [searchQuery, setSearchQuery] = useState('')
   const getProgress = useProgressStore(s => s.getOverallProgress)
   const getModuleProgress = useProgressStore(s => s.getModuleProgress)
+  const totalXp = useProgressStore(s => s.getTotalXp())
+  const level = useProgressStore(s => s.getLevel())
+  const completedLessons = useProgressStore(s => s.completedLessons.length)
 
   const filtered = useMemo(() => {
     return modules.filter(m => {
@@ -84,8 +87,15 @@ export function Modules() {
               />
             </div>
           </div>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm">
+            <span className="text-[11px] font-bold text-slate-200">{level.icon} {level.title} Lv.{level.level}</span>
+            <span className="w-1 h-1 rounded-full bg-slate-600" />
+            <span className="text-[11px] font-mono text-amber-400">{totalXp} XP</span>
+            <span className="w-1 h-1 rounded-full bg-slate-600" />
+            <span className="text-[11px] font-mono text-slate-500">{completedLessons}/80 lessons</span>
+          </div>
           <div className="text-[11px] font-mono text-slate-500 px-3 py-2 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40">
-            {filtered.length} / {modules.length} modules
+            {filtered.length} / {modules.length} modules • Goal: Forge Master 2450 XP
           </div>
         </div>
       </motion.div>

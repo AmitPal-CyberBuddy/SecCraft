@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -9,9 +9,10 @@ import { ConfigViewer } from '@/components/lab/ConfigViewer'
 import { ReconMap } from '@/components/lab/ReconMap'
 import { HandshakeDiagram } from '@/components/lab/HandshakeDiagram'
 import { AttackDefenseRetest } from '@/components/lab/AttackDefenseRetest'
+import { ReadingProgress, LessonReadingProgress } from '@/components/learning/ReadingProgress'
 import { motion, AnimatePresence } from 'framer-motion'
 import modules from '@/content/modules.json'
-import { ArrowLeft, BookOpen, FlaskConical, CheckCircle, Clock, Shield, FileText, Swords, Radio, AlertTriangle, Wifi, Target, Sparkles, ChevronRight, Layers, Award, Zap } from 'lucide-react'
+import { ArrowLeft, BookOpen, FlaskConical, CheckCircle, Clock, Shield, FileText, Swords, Radio, AlertTriangle, Wifi, Target, Sparkles, ChevronRight, Layers, Award, Zap, List, Eye, Type, Maximize2 } from 'lucide-react'
 
 const lessonMap: Record<string, string[]> = {
   "01-intro-wireless": ["01-what-is-wireless", "02-wireless-vs-wifi", "03-attack-surface", "04-methodology-ethics"],
@@ -235,6 +236,32 @@ export function ModuleDetail() {
   const lessons = lessonMap[id || ''] || ["01-overview"]
   const labs = labMap[id || ''] || []
   const quizzes = quizData[id || ''] || []
+  const theoryContentRef = useRef<HTMLDivElement>(null)
+  const [readingMode, setReadingMode] = useState<'default' | 'focus' | 'wide'>('default')
+  const [showToc, setShowToc] = useState(false)
+
+  // Scroll to top whenever module, lesson, or tab changes — fixes UX issue
+  useEffect(() => {
+    // Scroll window to top instantly for module changes
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior })
+  }, [id])
+
+  useEffect(() => {
+    // Scroll theory content to top when lesson changes
+    if (activeTab === 'theory') {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      if (theoryContentRef.current) {
+        theoryContentRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+      // Scroll to theory start anchor
+      const anchor = document.getElementById('theory-content-start')
+      if (anchor) {
+        setTimeout(() => {
+          anchor.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }, 100)
+      }
+    }
+  }, [activeLesson, activeTab])
 
   useEffect(() => {
     if (activeTab === 'theory') {
@@ -244,6 +271,23 @@ export function ModuleDetail() {
         .catch(() => setLessonContent(`# ${lessonId}\n\nContent coming soon for Module ${id}.`))
     }
   }, [activeTab, activeLesson, id, lessons])
+
+  // Generate TOC from lessonContent
+  const toc = useMemo(() => {
+    if (!lessonContent) return []
+    const headings: { id: string; text: string; level: number }[] = []
+    const lines = lessonContent.split('\n')
+    lines.forEach(line => {
+      const match = line.match(/^(#{1,3})\s+(.+)$/)
+      if (match) {
+        const level = match[1].length
+        const text = match[2].replace(/[#*`]/g, '').trim()
+        const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+        headings.push({ id, text, level })
+      }
+    })
+    return headings.slice(0, 20) // Limit to 20 for readability
+  }, [lessonContent])
 
   if (!module) {
     return (
@@ -552,85 +596,203 @@ export function ModuleDetail() {
             </div>
           )}
 
-          {/* Theory */}
+          {/* Theory — Enhanced Readability + Scroll Fix */}
           {activeTab === 'theory' && (
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              <div className="lg:col-span-1">
-                <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 sticky top-[80px] backdrop-blur-sm">
-                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4 px-2 flex items-center gap-2">
-                    <BookOpen className="w-3 h-3" />
-                    Lessons
-                    <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-[#1e293b] border border-[#334155] font-mono">{lessons.length}</span>
-                  </div>
-                  <div className="space-y-1.5">
-                    {lessons.map((lesson, idx) => {
-                      const completed = isLessonCompleted(module.id, lesson)
-                      return (
-                        <button key={lesson} onClick={() => setActiveLesson(idx)} className={`group w-full text-left p-3 rounded-xl flex items-center gap-3 transition-all duration-200 ${activeLesson === idx ? 'bg-[#1e293b] border border-[#334155] text-slate-100 shadow-soft' : 'text-slate-400 hover:bg-[#1e293b]/50 hover:text-slate-200 border border-transparent'}`}>
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 transition-all duration-200 ${completed ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' : activeLesson === idx ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/20' : 'bg-[#020617] text-slate-500 group-hover:bg-[#1e293b] group-hover:text-slate-400'}`}>{completed ? '✓' : idx + 1}</div>
-                          <span className="text-[12px] font-medium truncate flex-1">{lesson.replace(/-/g, ' ')}</span>
-                          {completed && <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
-                        </button>
-                      )
-                    })}
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-[#1e293b]/60">
-                    <div className="text-[11px] text-slate-500 font-mono mb-2">Progress</div>
-                    <div className="w-full h-1.5 bg-[#020617] rounded-full border border-[#1e293b]/50 overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-cyan-400 to-violet-400 rounded-full" style={{ width: `${(lessons.filter(l => isLessonCompleted(module.id, l)).length / lessons.length) * 100}%` }} />
+            <>
+              <ReadingProgress />
+              <div id="theory-content-start" className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div className="lg:col-span-1 space-y-4">
+                  <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 sticky top-[80px] backdrop-blur-sm">
+                    <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4 px-2 flex items-center gap-2">
+                      <BookOpen className="w-3 h-3" />
+                      Lessons
+                      <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-[#1e293b] border border-[#334155] font-mono">{lessons.length}</span>
                     </div>
-                    <div className="text-[11px] text-slate-600 font-mono mt-1.5">{lessons.filter(l => isLessonCompleted(module.id, l)).length} / {lessons.length} completed</div>
+                    <div className="space-y-1.5">
+                      {lessons.map((lesson, idx) => {
+                        const completed = isLessonCompleted(module.id, lesson)
+                        const isActive = activeLesson === idx
+                        return (
+                          <button 
+                            key={lesson} 
+                            onClick={() => setActiveLesson(idx)} 
+                            className={`group w-full text-left p-3 rounded-xl flex items-center gap-3 transition-all duration-200 relative overflow-hidden ${isActive ? 'bg-[#1e293b] border border-cyan-500/30 text-slate-100 shadow-soft' : 'text-slate-400 hover:bg-[#1e293b]/50 hover:text-slate-200 border border-transparent'}`}
+                          >
+                            {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-cyan-400 rounded-full" />}
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 transition-all duration-200 ${completed ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-glow-emerald' : isActive ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'bg-[#020617] text-slate-500 group-hover:bg-[#1e293b] group-hover:text-slate-400'}`}>{completed ? '✓' : idx + 1}</div>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-[12px] font-medium truncate block">{lesson.replace(/-/g, ' ').replace(/^\d+\s/, '')}</span>
+                              <span className="text-[10px] font-mono text-slate-500 truncate block">{completed ? 'Completed • +10 XP' : 'Not started'}</span>
+                            </div>
+                            {completed && <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />}
+                            {isActive && !completed && <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-[#1e293b]/60 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-[11px] text-slate-500 font-mono">Progress</div>
+                        <div className="text-[11px] text-cyan-400 font-mono font-bold">{lessons.filter(l => isLessonCompleted(module.id, l)).length}/{lessons.length}</div>
+                      </div>
+                      <div className="w-full h-2 bg-[#020617] rounded-full border border-[#1e293b]/50 overflow-hidden">
+                        <motion.div initial={{ width: 0 }} animate={{ width: `${(lessons.filter(l => isLessonCompleted(module.id, l)).length / lessons.length) * 100}%` }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }} className="h-full bg-gradient-to-r from-cyan-400 to-violet-400 rounded-full" />
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => setReadingMode(readingMode === 'focus' ? 'default' : 'focus')} className={`flex-1 px-3 py-2 rounded-xl border text-[11px] font-medium flex items-center justify-center gap-1.5 transition-all ${readingMode === 'focus' ? 'bg-violet-500/15 border-violet-500/30 text-violet-300' : 'bg-[#020617] border-[#1e293b] text-slate-500 hover:text-slate-300'}`}>
+                          <Eye className="w-3.5 h-3.5" /> {readingMode === 'focus' ? 'Focus ON' : 'Focus'}
+                        </button>
+                        <button onClick={() => setShowToc(!showToc)} className={`flex-1 px-3 py-2 rounded-xl border text-[11px] font-medium flex items-center justify-center gap-1.5 transition-all ${showToc ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300' : 'bg-[#020617] border-[#1e293b] text-slate-500 hover:text-slate-300'}`}>
+                          <List className="w-3.5 h-3.5" /> TOC
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="lg:col-span-3">
-                <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-6 md:p-8 relative overflow-hidden group hover:border-[#334155]/60 transition-all duration-300">
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/[0.01] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="relative">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-[#1e293b]/60">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-                          <BookOpen className="w-5 h-5 text-cyan-400" />
-                        </div>
-                        <div>
-                          <div className="text-[12px] font-mono text-slate-500">{lessons[activeLesson]}.md</div>
-                          <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-1"><Clock className="w-3 h-3" /> ~8 min read</div>
+                  {showToc && toc.length > 0 && (
+                    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 backdrop-blur-sm">
+                      <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <List className="w-3 h-3" /> On This Page
+                      </div>
+                      <div className="space-y-1 max-h-[300px] overflow-y-auto scrollbar-thin pr-1">
+                        {toc.map((h, i) => (
+                          <a key={i} href={`#${h.id}`} onClick={(e) => { e.preventDefault(); document.getElementById(h.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} className={`block text-[12px] leading-relaxed py-1.5 px-2.5 rounded-lg hover:bg-[#1e293b] hover:text-slate-200 transition-colors ${h.level === 1 ? 'font-semibold text-slate-300' : h.level === 2 ? 'text-slate-400 ml-2 border-l border-[#1e293b] pl-3' : 'text-slate-500 ml-4 text-[11px]'}`}>
+                            {h.text}
+                          </a>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+
+                <div className={`transition-all duration-300 ${readingMode === 'focus' ? 'lg:col-span-3 max-w-[800px] mx-auto' : readingMode === 'wide' ? 'lg:col-span-3' : 'lg:col-span-3'}`}>
+                  <div ref={theoryContentRef} id="lesson-content-area" className={`rounded-2xl bg-[#0f172a] border border-[#1e293b] p-6 md:p-8 lg:p-10 relative overflow-hidden group hover:border-[#334155]/60 transition-all duration-300 ${readingMode === 'focus' ? 'shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_20px_60px_rgba(0,0,0,0.5)]' : ''}`}>
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.015] via-transparent to-transparent pointer-events-none" />
+                    <div className="relative">
+                      {/* Enhanced Header with Readability Controls */}
+                      <div className="flex flex-col gap-4 mb-8 pb-6 border-b border-[#1e293b]/60">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+                              <BookOpen className="w-5 h-5 text-cyan-400" />
+                            </div>
+                            <div>
+                              <div className="text-[12px] font-mono text-slate-400 flex items-center gap-2">
+                                <span>{lessons[activeLesson]}.md</span>
+                                <span className="w-1 h-1 rounded-full bg-slate-600" />
+                                <span className="text-emerald-400">+10 XP</span>
+                              </div>
+                              <div className="mt-1">
+                                <LessonReadingProgress content={lessonContent} />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="hidden sm:flex items-center gap-1 p-1 rounded-xl bg-[#020617] border border-[#1e293b]">
+                              <button onClick={() => setReadingMode('default')} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${readingMode === 'default' ? 'bg-[#1e293b] text-slate-200 border border-[#334155]' : 'text-slate-500 hover:text-slate-300'}`}><Type className="w-3 h-3 inline mr-1" />Default</button>
+                              <button onClick={() => setReadingMode('focus')} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${readingMode === 'focus' ? 'bg-violet-500/15 text-violet-300 border border-violet-500/20' : 'text-slate-500 hover:text-slate-300'}`}><Eye className="w-3 h-3 inline mr-1" />Focus</button>
+                              <button onClick={() => setReadingMode('wide')} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${readingMode === 'wide' ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/20' : 'text-slate-500 hover:text-slate-300'}`}><Maximize2 className="w-3 h-3 inline mr-1" />Wide</button>
+                            </div>
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => completeLesson(module.id, lessons[activeLesson])}
+                              className={`px-4 py-2.5 rounded-xl text-[12px] font-semibold border transition-all duration-200 flex items-center gap-2 ${isLessonCompleted(module.id, lessons[activeLesson]) ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-glow-emerald' : 'bg-gradient-to-r from-cyan-500 to-violet-500 border-cyan-500/20 text-white shadow-glow-cyan hover:shadow-glow-violet'}`}
+                            >
+                              {isLessonCompleted(module.id, lessons[activeLesson]) ? <><CheckCircle className="w-4 h-4" /> Completed • +10 XP</> : <><Award className="w-4 h-4" /> Mark Complete • +10 XP</>}
+                            </motion.button>
+                          </div>
                         </div>
                       </div>
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => completeLesson(module.id, lessons[activeLesson])}
-                        className={`px-4 py-2 rounded-xl text-[12px] font-medium border transition-all duration-200 flex items-center gap-2 ${isLessonCompleted(module.id, lessons[activeLesson]) ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 shadow-glow-emerald' : 'bg-[#1e293b] border-[#334155] text-slate-300 hover:border-cyan-500/30 hover:text-slate-100 hover:bg-[#25354f]'}`}
-                      >
-                        {isLessonCompleted(module.id, lessons[activeLesson]) ? <><CheckCircle className="w-4 h-4" /> Completed</> : <><Award className="w-4 h-4" /> Mark Complete</>}
-                      </motion.button>
-                    </div>
 
-                    <div className="markdown prose prose-invert max-w-none prose-headings:font-heading prose-headings:tracking-tight prose-p:text-slate-300 prose-p:leading-relaxed prose-strong:text-slate-100 prose-code:text-cyan-400 prose-code:bg-[#020617] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:border prose-code:border-[#1e293b] prose-pre:bg-[#020617] prose-pre:border prose-pre:border-[#1e293b]">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>{lessonContent}</ReactMarkdown>
-                    </div>
+                      {/* Improved Markdown Readability */}
+                      <div id="lesson-markdown-content" className={`markdown prose prose-invert max-w-none prose-headings:font-heading prose-headings:tracking-tight ${readingMode === 'focus' ? 'prose-p:text-[15.5px] prose-p:leading-[1.85] prose-p:text-slate-200 prose-li:text-[15px] prose-li:leading-[1.75]' : 'prose-p:text-[14.5px] prose-p:leading-[1.8] prose-p:text-slate-300'} prose-strong:text-slate-100 prose-strong:font-semibold prose-code:text-cyan-300 prose-code:bg-[#020617] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:border prose-code:border-cyan-500/20 prose-code:text-[13px] prose-pre:bg-[#080d18] prose-pre:border prose-pre:border-[#1e293b] prose-pre:rounded-xl prose-pre:shadow-soft prose-a:text-cyan-400 prose-a:no-underline hover:prose-a:text-cyan-300 prose-a:font-medium prose-headings:scroll-mt-24`}>
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkGfm]} 
+                          rehypePlugins={[rehypeHighlight]}
+                          components={{
+                            h1: ({children, ...props}) => {
+                              const text = String(children)
+                              const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+                              return <h1 id={id} className="group flex items-center gap-3 scroll-mt-24" {...props}>{children} <a href={`#${id}`} className="opacity-0 group-hover:opacity-100 text-cyan-500/50 hover:text-cyan-400 text-[16px] transition-opacity">#</a></h1>
+                            },
+                            h2: ({children, ...props}) => {
+                              const text = String(children)
+                              const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+                              return <h2 id={id} className="group flex items-center gap-3 scroll-mt-24" {...props}>{children} <a href={`#${id}`} className="opacity-0 group-hover:opacity-100 text-cyan-500/50 hover:text-cyan-400 text-[14px] transition-opacity">#</a></h2>
+                            },
+                            h3: ({children, ...props}) => {
+                              const text = String(children)
+                              const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+                              return <h3 id={id} className="scroll-mt-24" {...props}>{children}</h3>
+                            },
+                          }}
+                        >
+                          {lessonContent}
+                        </ReactMarkdown>
+                      </div>
 
-                    <div className="mt-8 flex justify-between pt-6 border-t border-[#1e293b]/60">
-                      <button disabled={activeLesson === 0} onClick={() => setActiveLesson(Math.max(0, activeLesson - 1))} className="px-4 py-2.5 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#25354f] hover:text-slate-100 transition-all duration-200 flex items-center gap-2">
-                        <ArrowLeft className="w-4 h-4" />
-                        Previous
-                      </button>
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => { completeLesson(module.id, lessons[activeLesson]); if (activeLesson < lessons.length - 1) setActiveLesson(activeLesson + 1); else setActiveTab('lab'); }}
-                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-violet-500 hover:from-cyan-400 hover:to-violet-400 text-white text-[12px] font-semibold shadow-glow-cyan hover:shadow-glow-violet transition-all duration-300 flex items-center gap-2"
-                      >
-                        <span>{activeLesson < lessons.length - 1 ? 'Next' : 'Go to Lab'}</span>
-                        <ChevronRight className="w-4 h-4" />
-                      </motion.button>
+                      {/* Enhanced Navigation with Scroll Fix */}
+                      <div className="mt-10 flex flex-col sm:flex-row justify-between gap-3 pt-8 border-t border-[#1e293b]/60">
+                        <button 
+                          disabled={activeLesson === 0} 
+                          onClick={() => {
+                            const newLesson = Math.max(0, activeLesson - 1)
+                            setActiveLesson(newLesson)
+                            // Scroll fix: ensure next module starts at top
+                            setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100)
+                          }} 
+                          className="group px-5 py-3 rounded-xl bg-[#1e293b] border border-[#334155] text-[13px] text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#25354f] hover:text-slate-100 hover:border-[#475569] transition-all duration-200 flex items-center gap-2.5"
+                        >
+                          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+                          <div className="text-left">
+                            <div className="text-[10px] font-mono text-slate-500 uppercase tracking-wide">Previous</div>
+                            <div className="text-[12px] font-medium">{activeLesson > 0 ? lessons[activeLesson - 1].replace(/-/g, ' ').slice(0, 30) : 'Start'}</div>
+                          </div>
+                        </button>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => { 
+                            completeLesson(module.id, lessons[activeLesson]); 
+                            if (activeLesson < lessons.length - 1) {
+                              setActiveLesson(activeLesson + 1)
+                            } else {
+                              setActiveTab('lab')
+                              window.scrollTo({ top: 0, behavior: 'smooth' })
+                            }
+                          }}
+                          className="group px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-violet-500 hover:from-cyan-400 hover:to-violet-400 text-white text-[13px] font-semibold shadow-glow-cyan hover:shadow-glow-violet transition-all duration-300 flex items-center gap-3"
+                        >
+                          <div className="text-left">
+                            <div className="text-[10px] font-mono text-white/70 uppercase tracking-wide">{activeLesson < lessons.length - 1 ? 'Next Lesson' : 'Next Section'}</div>
+                            <div className="text-[13px] font-semibold">{activeLesson < lessons.length - 1 ? lessons[activeLesson + 1].replace(/-/g, ' ').slice(0, 30) : 'Go to Lab • +25 XP'}</div>
+                          </div>
+                          <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
+                        </motion.button>
+                      </div>
+
+                      {/* Consistency: Completion Mark + Points Payoff */}
+                      <div className="mt-6 p-4 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-xl border flex items-center justify-center ${isLessonCompleted(module.id, lessons[activeLesson]) ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' : 'bg-[#1e293b] border-[#334155] text-slate-500'}`}>
+                            {isLessonCompleted(module.id, lessons[activeLesson]) ? <CheckCircle className="w-4 h-4" /> : <BookOpen className="w-4 h-4" />}
+                          </div>
+                          <div>
+                            <div className="text-[12px] font-medium text-slate-200">{isLessonCompleted(module.id, lessons[activeLesson]) ? 'Lesson Completed' : 'Mark as complete to earn XP'}</div>
+                            <div className="text-[11px] font-mono text-slate-500">{isLessonCompleted(module.id, lessons[activeLesson]) ? '+10 XP earned • Progress saved' : '10 XP • Contributes to level & certification'}</div>
+                          </div>
+                        </div>
+                        <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono">
+                          <span className="px-2 py-1 rounded-full bg-[#1e293b] border border-[#334155] text-slate-500">{activeLesson + 1}/{lessons.length}</span>
+                          <span className="px-2 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">{Math.round(((activeLesson + 1)/lessons.length)*100)}%</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </>
           )}
 
           {/* Lab */}

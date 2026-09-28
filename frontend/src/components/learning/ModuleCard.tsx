@@ -128,19 +128,23 @@ export function ModuleCard({ id, title, phase, difficulty, estimated_hours, stat
           )}
         </div>
 
-        {/* Meta */}
-        <div className="flex items-center gap-3 mb-4">
+        {/* Meta — Consistent with points payoff */}
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#020617]/60 border border-[#1e293b]/60 text-[11px] text-slate-400">
             <Clock className="w-3 h-3" />
             <span className="font-mono font-medium">{estimated_hours}h</span>
           </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#020617]/60 border border-[#1e293b]/60 text-[11px] text-slate-400">
             <BookOpen className="w-3 h-3" />
-            <span className="font-mono">4 lessons</span>
+            <span className="font-mono">4 lessons • 40 XP</span>
           </div>
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#020617]/60 border border-[#1e293b]/60 text-[11px] text-slate-400">
             <FlaskConical className="w-3 h-3" />
-            <span className="font-mono">2 labs</span>
+            <span className="font-mono">2 labs • 50 XP</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-400 font-mono">
+            <span>🏆</span>
+            <span>160 XP total</span>
           </div>
         </div>
 

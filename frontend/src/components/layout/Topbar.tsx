@@ -1,5 +1,5 @@
 import { useProgressStore } from '@/store/useProgressStore'
-import { Flame, Trophy, Target, Menu, X, Search, Bell, Command } from 'lucide-react'
+import { Flame, Trophy, Target, Menu, X, Search, Bell, Command, Zap, Award } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 interface Props {
@@ -12,6 +12,9 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
   const overall = useProgressStore(s => s.getOverallProgress())
   const streak = useProgressStore(s => s.streak)
   const currentModule = useProgressStore(s => s.currentModule)
+  const totalXp = useProgressStore(s => s.getTotalXp())
+  const level = useProgressStore(s => s.getLevel())
+  const xpToNext = useProgressStore(s => s.getXpToNextLevel())
 
   return (
     <header className="h-[64px] bg-[#020617]/70 backdrop-blur-2xl border-b border-[#1e293b]/60 sticky top-0 z-20 flex items-center justify-between px-4 md:px-6 relative">
@@ -80,21 +83,39 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
             whileHover={{ scale: 1.02 }}
             className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm hover:bg-[#111d33]/80 hover:border-[#334155]/60 transition-all duration-200 group"
           >
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500/15 to-violet-500/10 border border-cyan-500/20 flex items-center justify-center group-hover:from-cyan-500/20 group-hover:to-violet-500/15 transition-all duration-200">
-              <Trophy className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform duration-200" />
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500/15 to-orange-500/10 border border-amber-500/20 flex items-center justify-center group-hover:from-amber-500/20 group-hover:to-orange-500/15 transition-all duration-200">
+              <Zap className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform duration-200" />
             </div>
             <div>
-              <div className="text-[10px] text-slate-500 leading-none font-medium tracking-wide uppercase">Progress</div>
+              <div className="text-[10px] text-slate-500 leading-none font-medium tracking-wide uppercase flex items-center gap-1">
+                <span>{level.icon}</span> {level.title} Lv.{level.level}
+              </div>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-[13px] font-bold text-slate-100 leading-none font-mono">{overall}%</span>
-                <div className="w-12 h-1 bg-[#020617] rounded-full overflow-hidden border border-[#1e293b]/30">
+                <span className="text-[13px] font-bold text-slate-100 leading-none font-mono">{totalXp} XP</span>
+                <div className="w-14 h-1 bg-[#020617] rounded-full overflow-hidden border border-[#1e293b]/30">
                   <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: `${overall}%` }}
+                    animate={{ width: `${xpToNext.percent}%` }}
                     transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                    className="h-full bg-gradient-to-r from-cyan-400 to-violet-400 rounded-full"
+                    className="h-full bg-gradient-to-r from-amber-400 to-orange-400 rounded-full"
                   />
                 </div>
+                <span className="text-[10px] font-mono text-slate-500">{overall}%</span>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="hidden xl:flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm hover:bg-[#111d33]/80 hover:border-[#334155]/60 transition-all duration-200 group"
+          >
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500/15 to-violet-500/10 border border-cyan-500/20 flex items-center justify-center">
+              <Trophy className="w-4 h-4 text-cyan-400" />
+            </div>
+            <div>
+              <div className="text-[10px] text-slate-500 leading-none font-medium tracking-wide uppercase">Next Level</div>
+              <div className="text-[11px] font-bold text-slate-200 leading-none mt-1 font-mono">
+                {xpToNext.nextLevel ? `${xpToNext.needed} XP to ${xpToNext.nextLevel.title}` : 'MAX!'}
               </div>
             </div>
           </motion.div>

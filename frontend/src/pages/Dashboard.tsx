@@ -1,8 +1,9 @@
 import { useProgressStore } from '@/store/useProgressStore'
 import { ProgressRing } from '@/components/dashboard/ProgressRing'
 import { ContinueCard } from '@/components/dashboard/ContinueCard'
+import { LevelBadge, CertificationPayoff, XpProgressBar } from '@/components/gamification/LevelBadge'
 import { Link } from 'react-router-dom'
-import { BookOpen, FlaskConical, Swords, Trophy, Radio, Shield, Zap, Target, Clock, Activity, Wifi, TrendingUp, Award, Users, ChevronRight, Sparkles, ArrowRight } from 'lucide-react'
+import { BookOpen, FlaskConical, Swords, Trophy, Radio, Shield, Zap, Target, Clock, Activity, Wifi, TrendingUp, Award, Users, ChevronRight, Sparkles, ArrowRight, Star, Flame, Crown } from 'lucide-react'
 import { motion } from 'framer-motion'
 import modules from '@/content/modules.json'
 
@@ -13,6 +14,10 @@ export function Dashboard() {
   const completedLessons = useProgressStore(s => s.completedLessons)
   const completedLabs = useProgressStore(s => s.completedLabs)
   const quizScores = useProgressStore(s => s.quizScores)
+  const totalXp = useProgressStore(s => s.getTotalXp())
+  const level = useProgressStore(s => s.getLevel())
+  const xpToNext = useProgressStore(s => s.getXpToNextLevel())
+  const achievements = useProgressStore(s => s.achievements)
 
   const currentModule = modules.find(m => m.id === currentModuleId) || modules[1]
   const currentProgress = getModuleProgress(currentModule.id)
@@ -24,9 +29,9 @@ export function Dashboard() {
   ]
 
   const stats = [
-    { label: 'Modules', value: '20', total: '20', icon: BookOpen, color: 'cyan', trend: '+3 this week' },
-    { label: 'Labs', value: '18', total: '18', icon: FlaskConical, color: 'emerald', trend: '16 PCAPs live' },
-    { label: 'Challenges', value: '15', total: '15', icon: Swords, color: 'violet', trend: '500pts max' },
+    { label: 'XP Earned', value: `${totalXp}`, total: '2450', icon: Zap, color: 'amber', trend: `${level.title} Lv.${level.level}` },
+    { label: 'Lessons', value: `${completedLessons.length}`, total: '80', icon: BookOpen, color: 'cyan', trend: `${Math.round((completedLessons.length/80)*100)}% complete` },
+    { label: 'Labs', value: `${completedLabs.length}`, total: '20', icon: FlaskConical, color: 'emerald', trend: '16 PCAPs live' },
   ]
 
   return (
@@ -132,8 +137,9 @@ export function Dashboard() {
           </div>
         </motion.div>
 
-        {/* Stats Grid */}
+        {/* Stats Grid + Level */}
         <div className="lg:col-span-4 grid grid-cols-1 gap-4">
+          <LevelBadge />
           {stats.map((stat, idx) => (
             <motion.div
               key={stat.label}
@@ -141,35 +147,38 @@ export function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.15 + idx * 0.05, ease: [0.16, 1, 0.3, 1] }}
               whileHover={{ y: -2, scale: 1.01 }}
-              className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-5 relative overflow-hidden group hover:border-[#334155] hover:bg-[#111d33] transition-all duration-300 ease-smooth cursor-pointer"
+              className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 relative overflow-hidden group hover:border-[#334155] hover:bg-[#111d33] transition-all duration-300 ease-smooth cursor-pointer"
             >
               <div className={`absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
                 stat.color === 'cyan' ? 'from-cyan-500/5 to-transparent' :
                 stat.color === 'emerald' ? 'from-emerald-500/5 to-transparent' :
+                stat.color === 'amber' ? 'from-amber-500/5 to-transparent' :
                 'from-violet-500/5 to-transparent'
               }`} />
               <div className="relative flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`
-                    w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300 group-hover:scale-110
+                    w-9 h-9 rounded-xl border flex items-center justify-center transition-all duration-300 group-hover:scale-110
                     ${stat.color === 'cyan' ? 'bg-cyan-500/10 border-cyan-500/20 group-hover:bg-cyan-500/15' :
                       stat.color === 'emerald' ? 'bg-emerald-500/10 border-emerald-500/20 group-hover:bg-emerald-500/15' :
+                      stat.color === 'amber' ? 'bg-amber-500/10 border-amber-500/20 group-hover:bg-amber-500/15' :
                       'bg-violet-500/10 border-violet-500/20 group-hover:bg-violet-500/15'
                     }
                   `}>
-                    <stat.icon className={`w-5 h-5 ${
+                    <stat.icon className={`w-4 h-4 ${
                       stat.color === 'cyan' ? 'text-cyan-400' :
                       stat.color === 'emerald' ? 'text-emerald-400' :
+                      stat.color === 'amber' ? 'text-amber-400' :
                       'text-violet-400'
                     }`} />
                   </div>
                   <div>
-                    <div className="text-[13px] font-semibold text-slate-200 group-hover:text-slate-100 transition-colors">{stat.label}</div>
-                    <div className="text-[11px] text-slate-500 font-mono">{stat.trend}</div>
+                    <div className="text-[12px] font-semibold text-slate-200 group-hover:text-slate-100 transition-colors">{stat.label}</div>
+                    <div className="text-[10px] text-slate-500 font-mono">{stat.trend}</div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[20px] font-bold text-slate-100 font-mono leading-none">{stat.value}</div>
+                  <div className="text-[16px] font-bold text-slate-100 font-mono leading-none">{stat.value}</div>
                   <div className="text-[10px] text-slate-500 font-mono">/ {stat.total}</div>
                 </div>
               </div>
@@ -177,8 +186,9 @@ export function Dashboard() {
           ))}
         </div>
 
-        {/* Methodology + Skills */}
+        {/* Methodology + Skills + Payoff */}
         <div className="lg:col-span-3 space-y-4">
+          <CertificationPayoff />
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}

@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Shell } from '@/components/layout/Shell'
+import { ScrollToTop } from '@/components/layout/ScrollToTop'
+import { PointsToast } from '@/components/gamification/PointsToast'
 import { Dashboard } from '@/pages/Dashboard'
 import { LearningPath } from '@/pages/LearningPath'
 import { Modules } from '@/pages/Modules'
@@ -14,6 +16,8 @@ import { Reports } from '@/pages/Reports'
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
+      <PointsToast />
       <Shell>
         <Routes>
           <Route path="/" element={<Dashboard />} />
