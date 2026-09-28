@@ -88,7 +88,8 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [open, onClose])
+    // Fix: onClose stable via useCallback, but keep dep only open to avoid loop from inline function
+  }, [open])
 
   const getIcon = (type: string) => {
     switch(type) {

@@ -129,9 +129,9 @@ export function RealtimeLeaderboard({ className = '' }: { className?: string }) 
             <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1.5"><Award className="w-3 h-3 text-violet-400" />Team Standings</div>
             <div className="space-y-2">
               {[
-                { team: 'red-team-alpha', xp: 18450 + Math.floor(Math.random()*100), members: 12 },
-                { team: 'purple-gamma', xp: 22100 + Math.floor(Math.random()*100), members: 15 },
-                { team: 'blue-beta', xp: 12300 + Math.floor(Math.random()*100), members: 8 },
+                { team: 'red-team-alpha', xp: 18450, members: 12 },
+                { team: 'purple-gamma', xp: 22100, members: 15 },
+                { team: 'blue-beta', xp: 12300, members: 8 },
               ].sort((a,b) => b.xp - a.xp).map((t, i) => (
                 <div key={t.team} className="flex items-center justify-between text-[11px] font-mono">
                   <span className="text-slate-400 flex items-center gap-1.5"><span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-bold ${i===0?'bg-amber-500/20 text-amber-300':'bg-[#1e293b] text-slate-500'}`}>{i+1}</span>{t.team}</span>

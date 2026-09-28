@@ -177,7 +177,8 @@ export function ReconMap({ pcapId }: Props) {
         hidden: isHidden || f.bssid === 'AA:BB:CC:11:22:33',
         essGroup: finalSSID,
         clients: [],
-        signal: -50 - Math.floor(Math.random() * 20),
+        // Fix infinite loop purity: deterministic signal from bssid hash, not Math.random during render
+        signal: -50 - (f.bssid ? (f.bssid.charCodeAt(0) + f.bssid.charCodeAt(1) + f.bssid.length) % 20 : 5),
         wps: f.wps || f.bssid === 'AA:BB:CC:11:22:33',
         pmf: 'disabled',
         beaconCount: 1,

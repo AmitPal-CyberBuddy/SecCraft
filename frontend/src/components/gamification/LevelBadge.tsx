@@ -1,11 +1,21 @@
 import { motion } from 'framer-motion'
 import { useProgressStore, LEVELS } from '@/store/useProgressStore'
 import { Trophy, Zap, Target, Award, Crown, Star } from 'lucide-react'
+import { useMemo } from 'react'
 
 export function LevelBadge({ compact = false }: { compact?: boolean }) {
   const level = useProgressStore(s => s.getLevel())
-  const xpInfo = useProgressStore(s => s.getXpToNextLevel())
   const totalXp = useProgressStore(s => s.getTotalXp())
+  const xpInfo = useMemo(() => {
+    const currentLevel = level
+    const nextLevel = LEVELS.find(l => l.level === currentLevel.level + 1) || null
+    if (!nextLevel) return { current: totalXp, needed: 0, nextLevel: null, percent: 100 }
+    const needed = nextLevel.minXp - totalXp
+    const range = nextLevel.minXp - currentLevel.minXp
+    const progressInLevel = totalXp - currentLevel.minXp
+    const percent = Math.min(Math.max((progressInLevel / range) * 100, 0), 100)
+    return { current: totalXp, needed: Math.max(0, needed), nextLevel, percent }
+  }, [totalXp, level])
 
   if (compact) {
     return (
@@ -92,9 +102,18 @@ export function LevelBadge({ compact = false }: { compact?: boolean }) {
 }
 
 export function XpProgressBar() {
-  const xpInfo = useProgressStore(s => s.getXpToNextLevel())
   const level = useProgressStore(s => s.getLevel())
   const totalXp = useProgressStore(s => s.getTotalXp())
+  const xpInfo = useMemo(() => {
+    const currentLevel = level
+    const nextLevel = LEVELS.find(l => l.level === currentLevel.level + 1) || null
+    if (!nextLevel) return { current: totalXp, needed: 0, nextLevel: null, percent: 100 }
+    const needed = nextLevel.minXp - totalXp
+    const range = nextLevel.minXp - currentLevel.minXp
+    const progressInLevel = totalXp - currentLevel.minXp
+    const percent = Math.min(Math.max((progressInLevel / range) * 100, 0), 100)
+    return { current: totalXp, needed: Math.max(0, needed), nextLevel, percent }
+  }, [totalXp, level])
 
   return (
     <div className="flex items-center gap-3">

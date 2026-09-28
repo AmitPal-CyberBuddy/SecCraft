@@ -1,7 +1,7 @@
-import { useProgressStore } from '@/store/useProgressStore'
+import { useProgressStore, LEVELS } from '@/store/useProgressStore'
 import { Menu, X, Search, Bell, Command, Zap, Trophy, Target, Moon, Sun } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { NotificationCenter } from '@/components/notifications/NotificationCenter'
 
 interface Props {
@@ -15,7 +15,18 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
   const currentModule = useProgressStore(s => s.currentModule)
   const totalXp = useProgressStore(s => s.getTotalXp())
   const level = useProgressStore(s => s.getLevel())
-  const xpToNext = useProgressStore(s => s.getXpToNextLevel())
+  // Fix infinite loop: getXpToNextLevel returns new object every call, causes re-render loop if used as selector
+  // Compute stable xpToNext via useMemo from totalXp and level (both primitives/stable)
+  const xpToNext = useMemo(() => {
+    const currentLevel = level
+    const nextLevel = LEVELS.find(l => l.level === currentLevel.level + 1) || null
+    if (!nextLevel) return { current: totalXp, needed: 0, nextLevel: null, percent: 100 }
+    const needed = nextLevel.minXp - totalXp
+    const range = nextLevel.minXp - currentLevel.minXp
+    const progressInLevel = totalXp - currentLevel.minXp
+    const percent = Math.min(Math.max((progressInLevel / range) * 100, 0), 100)
+    return { current: totalXp, needed: Math.max(0, needed), nextLevel, percent }
+  }, [totalXp, level])
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
   const [notifOpen, setNotifOpen] = useState(false)
 

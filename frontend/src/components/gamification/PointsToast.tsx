@@ -5,7 +5,7 @@ import { Trophy, X, Sparkles, Zap } from 'lucide-react'
 
 export function PointsToast() {
   const lastEarned = useProgressStore(s => s.lastEarnedPoints)
-  const clear = useProgressStore(s => s.clearLastEarnedPoints)
+  // Use getState for stable clear to avoid function identity causing effect loop
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -13,11 +13,13 @@ export function PointsToast() {
       setVisible(true)
       const t = setTimeout(() => {
         setVisible(false)
-        setTimeout(() => clear(), 300)
+        setTimeout(() => {
+          try { useProgressStore.getState().clearLastEarnedPoints() } catch {}
+        }, 300)
       }, 4000)
       return () => clearTimeout(t)
     }
-  }, [lastEarned, clear])
+  }, [lastEarned])
 
   return (
     <AnimatePresence>
@@ -68,7 +70,7 @@ export function PointsToast() {
                 <span className="text-[10px] font-bold text-amber-300">BONUS</span>
               </motion.div>
               <button
-                onClick={() => { setVisible(false); setTimeout(() => clear(), 300) }}
+                onClick={() => { setVisible(false); setTimeout(() => { try { useProgressStore.getState().clearLastEarnedPoints() } catch {} }, 300) }}
                 className="w-7 h-7 rounded-lg bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] transition-colors"
               >
                 <X className="w-3.5 h-3.5 text-slate-400" />

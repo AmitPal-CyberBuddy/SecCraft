@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -6,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 export function Shell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const location = useLocation()
 
   useEffect(() => {
     const checkMobile = () => {
@@ -20,12 +22,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Close sidebar on route change (mobile) - handled by location change via children prop change
+  // Close sidebar on route change (mobile) - use pathname, not children (children new object every render causes loop)
   useEffect(() => {
     if (isMobile) {
       setSidebarOpen(false)
     }
-  }, [children, isMobile])
+  }, [location.pathname, isMobile])
 
   // Prevent body scroll when mobile sidebar open
   useEffect(() => {
