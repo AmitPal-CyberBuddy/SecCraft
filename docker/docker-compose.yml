@@ -1,0 +1,45 @@
+# WiFiForge — Docker Labs (Phase F)
+# Simulated Enterprise Wi-Fi: hostapd + FreeRADIUS + supplicant logs
+# Zero-cost, no RF, produces artifacts for simulated labs
+
+version: '3.8'
+
+services:
+  # hostapd — not actually beaconing, just config + log generation
+  hostapd:
+    image: alpine:latest
+    container_name: wififorge-hostapd
+    volumes:
+      - ./hostapd:/etc/hostapd
+      - ../content/configs:/configs
+    command: ["sh", "-c", "echo 'hostapd simulation — config audit only, no RF' && sleep infinity"]
+    networks:
+      - wififorge
+
+  # FreeRADIUS — generates RADIUS logs and EAP PCAPs for analysis
+  freeradius:
+    image: freeradius/freeradius-server:latest
+    container_name: wififorge-radius
+    volumes:
+      - ./freeradius:/etc/freeradius
+      - ../content/pcaps/enterprise:/pcaps
+    ports:
+      - "1812:1812/udp"
+      - "1813:1813/udp"
+    networks:
+      - wififorge
+
+  # Web portal for captive portal simulation
+  portal:
+    image: nginx:alpine
+    container_name: wififorge-portal
+    volumes:
+      - ./portal:/usr/share/nginx/html
+    ports:
+      - "8080:80"
+    networks:
+      - wififorge
+
+networks:
+  wififorge:
+    driver: bridge

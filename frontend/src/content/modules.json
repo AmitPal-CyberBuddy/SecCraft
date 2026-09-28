@@ -1,0 +1,222 @@
+[
+  {
+    "id": "01-intro-wireless",
+    "title": "Introduction to Wireless Security",
+    "phase": 1,
+    "difficulty": "Beginner",
+    "estimated_hours": 1.5,
+    "prerequisites": [],
+    "status": "simulated",
+    "skills": ["wireless-basics", "methodology", "ethics"],
+    "description": "Wireless vs Wi-Fi, attack surface, legal boundaries, VAPT methodology."
+  },
+  {
+    "id": "02-wifi-fundamentals",
+    "title": "Wi-Fi Fundamentals",
+    "phase": 1,
+    "difficulty": "Beginner",
+    "estimated_hours": 2,
+    "prerequisites": ["01-intro-wireless"],
+    "status": "simulated",
+    "skills": ["ssid", "bssid", "ap", "channels", "bands"],
+    "description": "SSID, BSSID, AP, client, WLAN, channels, 2.4/5/6 GHz, terminology."
+  },
+  {
+    "id": "03-80211-architecture",
+    "title": "802.11 Architecture",
+    "phase": 1,
+    "difficulty": "Beginner",
+    "estimated_hours": 2.5,
+    "prerequisites": ["02-wifi-fundamentals"],
+    "status": "simulated",
+    "skills": ["802.11", "frames", "beacon", "probe"],
+    "description": "Management, control, data frames, beacon, probe, auth, association."
+  },
+  {
+    "id": "04-kali-wireless-setup",
+    "title": "Kali Wireless Setup",
+    "phase": 1,
+    "difficulty": "Beginner",
+    "estimated_hours": 2,
+    "prerequisites": ["03-80211-architecture"],
+    "status": "hardware",
+    "skills": ["kali", "iw", "monitor-mode"],
+    "description": "Wireless interfaces, iw, ip, managed vs monitor mode, troubleshooting."
+  },
+  {
+    "id": "05-wireless-recon",
+    "title": "Wireless Reconnaissance",
+    "phase": 2,
+    "difficulty": "Beginner",
+    "estimated_hours": 3,
+    "prerequisites": ["04-kali-wireless-setup"],
+    "status": "simulated",
+    "skills": ["recon", "enumeration", "hidden-ssid"],
+    "description": "Discover APs, SSIDs, BSSIDs, channels, encryption, clients, vendors."
+  },
+  {
+    "id": "06-traffic-analysis",
+    "title": "Wi-Fi Traffic Analysis",
+    "phase": 2,
+    "difficulty": "Intermediate",
+    "estimated_hours": 3,
+    "prerequisites": ["05-wireless-recon"],
+    "status": "simulated",
+    "skills": ["wireshark", "pcap", "filtering"],
+    "description": "Wireshark, PCAP analysis, beacon/probe/association filtering."
+  },
+  {
+    "id": "07-wep-legacy",
+    "title": "WEP and Legacy Security",
+    "phase": 3,
+    "difficulty": "Intermediate",
+    "estimated_hours": 2,
+    "prerequisites": ["06-traffic-analysis"],
+    "status": "simulated",
+    "skills": ["wep", "legacy"],
+    "description": "WEP architecture, why broken, historical attacks."
+  },
+  {
+    "id": "08-wpa-wpa2",
+    "title": "WPA/WPA2 Security",
+    "phase": 3,
+    "difficulty": "Intermediate",
+    "estimated_hours": 3.5,
+    "prerequisites": ["07-wep-legacy"],
+    "status": "simulated",
+    "skills": ["wpa2", "psk", "4-way-handshake", "pmk"],
+    "description": "WPA/WPA2, PSK, 4-way handshake, PMK, PTK, GTK flow."
+  },
+  {
+    "id": "09-wpa2-practical",
+    "title": "WPA2 Practical Testing",
+    "phase": 3,
+    "difficulty": "Intermediate",
+    "estimated_hours": 4,
+    "prerequisites": ["08-wpa-wpa2"],
+    "status": "simulated",
+    "skills": ["handshake", "offline-audit", "wordlists"],
+    "description": "Capture analysis, handshake ID, offline auditing, evidence."
+  },
+  {
+    "id": "10-wps",
+    "title": "WPS Security",
+    "phase": 3,
+    "difficulty": "Intermediate",
+    "estimated_hours": 2.5,
+    "prerequisites": ["09-wpa2-practical"],
+    "status": "simulated",
+    "skills": ["wps", "pin", "rate-limiting"],
+    "description": "WPS architecture, PIN, PBC, enumeration, lockout."
+  },
+  {
+    "id": "11-wpa3",
+    "title": "WPA3 Security",
+    "phase": 3,
+    "difficulty": "Advanced",
+    "estimated_hours": 3,
+    "prerequisites": ["10-wps"],
+    "status": "simulated",
+    "skills": ["wpa3", "sae", "transition-mode"],
+    "description": "WPA3-Personal, SAE, transition mode weaknesses."
+  },
+  {
+    "id": "12-deauth-disassoc",
+    "title": "Deauthentication and Disassociation",
+    "phase": 4,
+    "difficulty": "Advanced",
+    "estimated_hours": 2.5,
+    "prerequisites": ["11-wpa3"],
+    "status": "hardware",
+    "skills": ["deauth", "pmf", "detection"],
+    "description": "Protocol behavior, PMF, detection, mitigation."
+  },
+  {
+    "id": "13-rogue-ap",
+    "title": "Rogue AP / Evil Twin",
+    "phase": 4,
+    "difficulty": "Advanced",
+    "estimated_hours": 4,
+    "prerequisites": ["12-deauth-disassoc"],
+    "status": "hardware",
+    "skills": ["rogue-ap", "evil-twin", "detection"],
+    "description": "SSID cloning, client behavior, detection, defense."
+  },
+  {
+    "id": "14-captive-portals",
+    "title": "Captive Portals",
+    "phase": 4,
+    "difficulty": "Intermediate",
+    "estimated_hours": 3,
+    "prerequisites": ["13-rogue-ap"],
+    "status": "simulated",
+    "skills": ["captive-portal", "session"],
+    "description": "Architecture, auth flow, weaknesses, testing."
+  },
+  {
+    "id": "15-enterprise-fundamentals",
+    "title": "Enterprise Wi-Fi Fundamentals",
+    "phase": 5,
+    "difficulty": "Advanced",
+    "estimated_hours": 3,
+    "prerequisites": ["14-captive-portals"],
+    "status": "simulated",
+    "skills": ["wpa2-enterprise", "802.1x"],
+    "description": "WPA2/3-Enterprise, 802.1X, supplicant, authenticator."
+  },
+  {
+    "id": "16-eap",
+    "title": "EAP Protocols",
+    "phase": 5,
+    "difficulty": "Advanced",
+    "estimated_hours": 3.5,
+    "prerequisites": ["15-enterprise-fundamentals"],
+    "status": "simulated",
+    "skills": ["eap", "peap", "eap-tls"],
+    "description": "EAP, PEAP, EAP-TLS, auth flow, cert validation."
+  },
+  {
+    "id": "17-radius",
+    "title": "RADIUS Architecture",
+    "phase": 5,
+    "difficulty": "Advanced",
+    "estimated_hours": 3,
+    "prerequisites": ["16-eap"],
+    "status": "simulated",
+    "skills": ["radius", "aaa", "logs"],
+    "description": "RADIUS auth, accounting, logs, security."
+  },
+  {
+    "id": "18-corporate-attacks",
+    "title": "Corporate Wi-Fi Attacks",
+    "phase": 5,
+    "difficulty": "Professional",
+    "estimated_hours": 5,
+    "prerequisites": ["17-radius"],
+    "status": "simulated",
+    "skills": ["enterprise-attacks", "segmentation"],
+    "description": "Enterprise attack surface, rogue, segmentation, client isolation."
+  },
+  {
+    "id": "19-methodology",
+    "title": "Wireless PT Methodology",
+    "phase": 6,
+    "difficulty": "Professional",
+    "estimated_hours": 3,
+    "prerequisites": ["18-corporate-attacks"],
+    "status": "simulated",
+    "skills": ["methodology", "reporting", "retest"],
+    "description": "Full engagement flow: scope → recon → enum → test → report → retest."
+  },
+  {
+    "id": "20-final-assessment",
+    "title": "Final Wireless PT Assessment",
+    "phase": 6,
+    "difficulty": "Professional",
+    "estimated_hours": 8,
+    "prerequisites": ["19-methodology"],
+    "status": "simulated",
+    "skills": ["assessment", "reporting"],
+    "description": "Realistic authorized lab: scope, artifacts, PCAPs, configs — independent assessment."
+  }
+]

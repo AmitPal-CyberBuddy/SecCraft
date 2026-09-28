@@ -1,0 +1,28 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!-- WiFiForge Forge Mark - Rounded square bg -->
+<rect width="256" height="256" rx="48" fill="#0f172a"/>
+<rect x="1" y="1" width="254" height="254" rx="47" stroke="#334155" stroke-width="2"/>
+<!-- Wi-Fi arcs above anvil -->
+<g opacity="1">
+  <path d="M 128 52 A 64 64 0 0 1 188 88" stroke="#22d3ee" stroke-width="8" stroke-linecap="round" fill="none"/>
+  <path d="M 128 52 A 64 64 0 0 0 68 88" stroke="#22d3ee" stroke-width="8" stroke-linecap="round" fill="none"/>
+</g>
+<g opacity="0.7">
+  <path d="M 128 76 A 40 40 0 0 1 164 100" stroke="#22d3ee" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <path d="M 128 76 A 40 40 0 0 0 92 100" stroke="#22d3ee" stroke-width="7" stroke-linecap="round" fill="none"/>
+</g>
+<g opacity="0.4">
+  <path d="M 128 100 A 16 16 0 0 1 142 112" stroke="#22d3ee" stroke-width="6" stroke-linecap="round" fill="none"/>
+  <path d="M 128 100 A 16 16 0 0 0 114 112" stroke="#22d3ee" stroke-width="6" stroke-linecap="round" fill="none"/>
+</g>
+<!-- Spark dot -->
+<circle cx="128" cy="108" r="6" fill="#fbbf24" opacity="0.9"/>
+<circle cx="128" cy="108" r="10" fill="#fbbf24" opacity="0.2"/>
+<!-- Anvil -->
+<path d="M 64 148 L 64 160 L 84 160 L 92 180 L 164 180 L 172 160 L 192 160 L 192 148 Z" fill="#f1f5f9"/>
+<path d="M 72 148 L 184 148 L 180 140 L 76 140 Z" fill="#cbd5e1"/>
+<!-- Hammer strike suggestion - small hammer head -->
+<rect x="148" y="128" width="36" height="12" rx="3" fill="#94a3b8" transform="rotate(-25 166 134)"/>
+<!-- Base shadow -->
+<ellipse cx="128" cy="192" rx="56" ry="8" fill="#020617" opacity="0.6"/>
+</svg>

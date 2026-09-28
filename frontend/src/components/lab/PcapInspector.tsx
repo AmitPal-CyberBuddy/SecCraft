@@ -1,0 +1,374 @@
+import { useState, useEffect } from 'react'
+import { Search, Filter, Radio, Wifi, Users, Hash, Zap, AlertCircle, CheckCircle, Sparkles, Target, FileCode, Activity } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+
+interface Frame {
+  number: number
+  type: number
+  subtype: number
+  subtype_name: string
+  ssid?: string
+  bssid?: string
+  sa?: string
+  da?: string
+  channel?: number
+  reason?: number
+  wps?: boolean
+  eapol: boolean
+  summary: string
+}
+
+interface PcapData {
+  pcap_id: string
+  method: string
+  filter?: string
+  frames: Frame[]
+  summary: {
+    total_frames: number
+    ssids: string[]
+    bssids: string[]
+    clients?: string[]
+    channels: number[]
+    beacons: number
+    probes: number
+    eapol: number
+    deauth?: number
+    disassoc?: number
+    assoc?: number
+    wps?: number
+  }
+}
+
+interface Props {
+  pcapId: string
+  initialFilter?: string
+  onFrameSelect?: (frame: Frame) => void
+}
+
+const filterPresets = [
+  { label: 'All', value: '' },
+  { label: 'Beacons', value: 'wlan.fc.type_subtype==8' },
+  { label: 'Probe Req', value: 'wlan.fc.type_subtype==4' },
+  { label: 'Probe Resp', value: 'wlan.fc.type_subtype==5' },
+  { label: 'EAPOL', value: 'eapol' },
+  { label: 'EAP', value: 'eap' },
+  { label: 'RADIUS', value: 'radius' },
+  { label: 'Auth', value: 'wlan.fc.type_subtype==11' },
+  { label: 'Deauth', value: 'wlan.fc.type_subtype==12' },
+  { label: 'Disassoc', value: 'wlan.fc.type_subtype==10' },
+  { label: 'Assoc Req', value: 'wlan.fc.type_subtype==0' },
+  { label: 'Assoc Resp', value: 'wlan.fc.type_subtype==1' },
+  { label: 'WPS', value: 'wps' },
+]
+
+export function PcapInspector({ pcapId, initialFilter = '', onFrameSelect }: Props) {
+  const [data, setData] = useState<PcapData | null>(null)
+  const [filter, setFilter] = useState(initialFilter)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedFrame, setSelectedFrame] = useState<Frame | null>(null)
+
+  const fetchData = async (f: string) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const params = new URLSearchParams()
+      if (f) params.set('filter', f)
+      const res = await fetch(`/api/pcaps/${pcapId}/analyze?${params.toString()}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json()
+      setData(json)
+    } catch (e: any) {
+      console.warn('PCAP API failed, using mock', e)
+      setError(e.message)
+      setData({
+        pcap_id: pcapId,
+        method: 'mock',
+        filter: f,
+        frames: [
+          { number: 1, type: 0, subtype: 8, subtype_name: 'Beacon', ssid: 'LAB-WIFI', bssid: 'AA:BB:CC:DD:EE:FF', channel: 6, eapol: false, summary: 'Beacon | SSID=LAB-WIFI | BSSID=AA:BB:CC:DD:EE:FF | Ch=6' },
+          { number: 2, type: 0, subtype: 8, subtype_name: 'Beacon', ssid: 'LAB-WIFI', bssid: 'AA:BB:CC:DD:EE:FF', channel: 6, eapol: false, summary: 'Beacon | SSID=LAB-WIFI | BSSID=AA:BB:CC:DD:EE:FF | Ch=6' },
+          { number: 3, type: 0, subtype: 4, subtype_name: 'Probe Request', ssid: 'LAB-WIFI', bssid: undefined, sa: '11:22:33:44:55:66', channel: undefined, eapol: false, summary: 'Probe Request | SSID=LAB-WIFI | Client=11:22:33:44:55:66 (PNL leak)' },
+        ],
+        summary: {
+          total_frames: 3,
+          ssids: ['LAB-WIFI'],
+          bssids: ['AA:BB:CC:DD:EE:FF'],
+          clients: ['11:22:33:44:55:66'],
+          channels: [6],
+          beacons: 2,
+          probes: 1,
+          eapol: 0
+        }
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchData(filter)
+  }, [pcapId])
+
+  const handleFilterApply = () => {
+    fetchData(filter)
+  }
+
+  const handlePreset = (value: string) => {
+    setFilter(value)
+    fetchData(value)
+  }
+
+  if (loading) {
+    return (
+      <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-8 text-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/[0.02] to-transparent" />
+        <div className="relative inline-flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+            <div className="w-5 h-5 border-2 border-slate-600 border-t-cyan-400 rounded-full animate-spin" />
+          </div>
+          <div className="text-[13px] text-slate-400 font-medium">Parsing PCAP via Scapy engine...</div>
+          <div className="text-[11px] text-slate-600 font-mono">{pcapId}.pcapng • Real 802.11 frames</div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Summary Bar */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-5 relative overflow-hidden group hover:border-[#334155]/60 transition-all duration-300"
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/[0.03] via-transparent to-violet-500/[0.02] opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="relative">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+                <Radio className="w-5 h-5 text-cyan-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px] font-bold text-slate-100 font-mono">{pcapId}.pcapng</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-glow-emerald" />
+                </div>
+                <div className="text-[11px] text-slate-500 font-mono flex items-center gap-2">
+                  <span>Method: {data?.method}</span>
+                  <span className="w-1 h-1 rounded-full bg-slate-700" />
+                  <span>{data?.summary.total_frames} frames</span>
+                  <span className="hidden sm:inline-flex items-center gap-1 ml-1 px-1.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[10px] text-cyan-400">
+                    <Activity className="w-3 h-3" />
+                    LIVE
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`text-[10px] px-2.5 py-1 rounded-full border font-mono font-medium backdrop-blur-sm tracking-widest ${
+                data?.method === 'tshark' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-glow-emerald' : 
+                data?.method === 'scapy' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20 shadow-glow-cyan' : 
+                'bg-amber-500/10 text-amber-400 border-amber-500/20'
+              }`}>
+                {data?.method?.toUpperCase()} ENGINE
+              </span>
+              {error && (
+                <span className="text-[10px] px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1 font-mono">
+                  <AlertCircle className="w-3 h-3" /> MOCK FALLBACK
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 backdrop-blur-sm hover:bg-[#020617]/80 hover:border-[#334155]/50 transition-all duration-200 group/card">
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mb-1.5 uppercase tracking-widest font-semibold"><Wifi className="w-3 h-3" /> SSIDs</div>
+              <div className="text-[12px] font-mono text-slate-200 truncate group-hover/card:text-slate-100 transition-colors">{data?.summary.ssids.join(', ') || '—'}</div>
+            </div>
+            <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 backdrop-blur-sm hover:bg-[#020617]/80 hover:border-[#334155]/50 transition-all duration-200 group/card">
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mb-1.5 uppercase tracking-widest font-semibold"><Hash className="w-3 h-3" /> BSSIDs</div>
+              <div className="text-[11px] font-mono text-slate-200 truncate group-hover/card:text-slate-100 transition-colors">{data?.summary.bssids.slice(0,2).join(', ') || '—'}</div>
+            </div>
+            <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 backdrop-blur-sm hover:bg-[#020617]/80 hover:border-[#334155]/50 transition-all duration-200 group/card">
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mb-1.5 uppercase tracking-widest font-semibold"><Users className="w-3 h-3" /> Clients</div>
+              <div className="text-[11px] font-mono text-slate-200 group-hover/card:text-slate-100 transition-colors">{data?.summary.clients?.length || 0} clients • PNL leak</div>
+            </div>
+            <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 backdrop-blur-sm hover:bg-[#020617]/80 hover:border-[#334155]/50 transition-all duration-200 group/card">
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mb-1.5 uppercase tracking-widest font-semibold"><Zap className="w-3 h-3" /> Stats</div>
+              <div className="text-[11px] text-slate-300 font-mono leading-relaxed group-hover/card:text-slate-200 transition-colors">
+                <span className="inline-flex items-center gap-1"><span className="w-1 h-1 rounded-full bg-cyan-400" />{data?.summary.beacons} beacons</span>
+                <span className="mx-1 text-slate-700">•</span>
+                <span className="inline-flex items-center gap-1"><span className="w-1 h-1 rounded-full bg-violet-400" />{data?.summary.probes} probes</span>
+                <span className="mx-1 text-slate-700">•</span>
+                <span className="inline-flex items-center gap-1"><span className="w-1 h-1 rounded-full bg-amber-400" />{data?.summary.eapol} EAPOL</span>
+                {(data?.summary.deauth||0)>0 && <><span className="mx-1 text-slate-700">•</span><span className="text-red-400">{data?.summary.deauth} deauth</span></>}
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Filter Bar */}
+      <div className="rounded-2xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm p-4">
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="flex-1 relative group">
+            <Search className="w-4 h-4 text-slate-600 absolute left-3.5 top-1/2 -translate-y-1/2 group-hover:text-slate-500 transition-colors" />
+            <input
+              value={filter}
+              onChange={e => setFilter(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleFilterApply()}
+              placeholder="Wireshark display filter, e.g., wlan.fc.type_subtype==8, eapol, wlan_mgt.ssid==LAB-WIFI"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[12px] font-mono text-slate-200 placeholder:text-slate-600 focus:border-cyan-500/30 focus:bg-[#0a1020] focus:outline-none hover:border-[#334155]/60 transition-all duration-200"
+            />
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleFilterApply}
+            className="px-5 py-2.5 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] font-medium text-slate-200 hover:border-cyan-500/30 hover:bg-[#25354f] hover:text-slate-100 flex items-center gap-2 transition-all duration-200 shadow-soft"
+          >
+            <Filter className="w-4 h-4" />
+            Apply Filter
+          </motion.button>
+        </div>
+        <div className="flex flex-wrap gap-1.5 mt-4">
+          {filterPresets.map(preset => (
+            <button
+              key={preset.label}
+              onClick={() => handlePreset(preset.value)}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-medium border transition-all duration-200 ${
+                filter === preset.value 
+                  ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-400 shadow-glow-cyan' 
+                  : 'bg-[#020617]/60 border-[#1e293b]/60 text-slate-500 hover:text-slate-300 hover:border-[#334155]/60 hover:bg-[#020617]/80'
+              }`}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Frames Table */}
+      <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] overflow-hidden hover:border-[#334155]/60 transition-all duration-300">
+        <div className="p-4 border-b border-[#1e293b]/60 bg-[#020617]/40 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[12px] font-semibold text-slate-200">
+            <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+              <FileCode className="w-4 h-4 text-cyan-400" />
+            </div>
+            Frames
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#1e293b] border border-[#334155] font-mono text-slate-400">{data?.frames.length} shown</span>
+          </div>
+          <div className="text-[11px] font-mono text-slate-500">Click to inspect • Real Scapy frames</div>
+        </div>
+        <div className="overflow-x-auto scrollbar-thin">
+          <table className="w-full text-[12px]">
+            <thead>
+              <tr className="bg-[#020617]/60 border-b border-[#1e293b] text-[11px] text-slate-500 uppercase tracking-widest">
+                <th className="text-left p-3 font-semibold">No</th>
+                <th className="text-left p-3 font-semibold">Type</th>
+                <th className="text-left p-3 font-semibold">SSID / Info</th>
+                <th className="text-left p-3 font-semibold">BSSID / SA</th>
+                <th className="text-left p-3 font-semibold">Ch</th>
+                <th className="text-left p-3 font-semibold">Summary</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data?.frames.map(frame => (
+                <tr
+                  key={frame.number}
+                  onClick={() => {
+                    setSelectedFrame(frame)
+                    onFrameSelect?.(frame)
+                  }}
+                  className={`border-b border-[#1e293b]/30 hover:bg-[#1e293b]/40 cursor-pointer transition-all duration-200 group/row ${selectedFrame?.number === frame.number ? 'bg-[#1e293b]/60 border-cyan-500/20' : ''}`}
+                >
+                  <td className="p-3 font-mono text-slate-500 group-hover/row:text-slate-300 transition-colors">{frame.number}</td>
+                  <td className="p-3">
+                    <span className={`px-2 py-1 rounded-full text-[10px] font-medium border tracking-widest backdrop-blur-sm ${
+                      frame.subtype_name.includes('Beacon') ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' :
+                      frame.subtype_name.includes('Probe') ? 'bg-violet-500/10 text-violet-400 border-violet-500/20' :
+                      frame.subtype_name.includes('EAPOL') ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                      frame.subtype_name.includes('Deauth') ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                      frame.subtype_name.includes('Disassoc') ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
+                      frame.subtype_name.includes('Assoc') ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                      'bg-[#1e293b] text-slate-400 border-[#334155]'
+                    }`}>
+                      {frame.subtype_name}{frame.reason ? ` R${frame.reason}` : ''}{frame.wps ? ' WPS' : ''}
+                    </span>
+                  </td>
+                  <td className="p-3 font-mono text-slate-300 truncate max-w-[150px] group-hover/row:text-slate-100 transition-colors">{frame.ssid || '—'}</td>
+                  <td className="p-3 font-mono text-[11px] text-slate-500 truncate max-w-[140px] group-hover/row:text-slate-400 transition-colors">{frame.bssid || frame.sa || '—'}</td>
+                  <td className="p-3 font-mono text-slate-500">{frame.channel || '—'}</td>
+                  <td className="p-3 text-slate-400 truncate max-w-[300px] group-hover/row:text-slate-300 transition-colors">{frame.summary}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {data?.frames.length === 0 && (
+          <div className="p-12 text-center">
+            <div className="w-10 h-10 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center mx-auto mb-3">
+              <Search className="w-5 h-5 text-slate-500" />
+            </div>
+            <div className="text-[13px] text-slate-400">No frames match filter "{filter}"</div>
+            <div className="text-[11px] text-slate-600 mt-1 font-mono">Try a different Wireshark display filter</div>
+          </div>
+        )}
+      </div>
+
+      {/* Frame Detail */}
+      <AnimatePresence>
+        {selectedFrame && (
+          <motion.div
+            initial={{ opacity: 0, y: 12, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="rounded-2xl bg-[#0f172a] border border-cyan-500/20 p-5 relative overflow-hidden shadow-glow-cyan"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/[0.03] to-transparent" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+                    <CheckCircle className="w-4 h-4 text-cyan-400" />
+                  </div>
+                  <div>
+                    <div className="text-[13px] font-bold text-slate-100">Frame {selectedFrame.number} — {selectedFrame.subtype_name}</div>
+                    <div className="text-[11px] text-slate-500 font-mono">Detailed inspection • Evidence collection</div>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedFrame(null)} className="w-8 h-8 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] hover:border-[#475569] transition-all duration-200 text-slate-500 hover:text-slate-300">
+                  ✕
+                </button>
+              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 backdrop-blur-sm">
+                  <div className="text-[11px] text-slate-500 uppercase tracking-widest font-semibold">SSID</div>
+                  <div className="font-mono text-[12px] text-slate-200 mt-1.5">{selectedFrame.ssid || '—'}</div>
+                </div>
+                <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 backdrop-blur-sm">
+                  <div className="text-[11px] text-slate-500 uppercase tracking-widest font-semibold">BSSID</div>
+                  <div className="font-mono text-[12px] text-slate-200 mt-1.5">{selectedFrame.bssid || '—'}</div>
+                </div>
+                <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 backdrop-blur-sm">
+                  <div className="text-[11px] text-slate-500 uppercase tracking-widest font-semibold">SA / Client</div>
+                  <div className="font-mono text-[12px] text-slate-200 mt-1.5">{selectedFrame.sa || '—'}</div>
+                </div>
+                <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 backdrop-blur-sm">
+                  <div className="text-[11px] text-slate-500 uppercase tracking-widest font-semibold">Channel</div>
+                  <div className="font-mono text-[12px] text-slate-200 mt-1.5">{selectedFrame.channel || '—'}</div>
+                </div>
+              </div>
+              <div className="mt-4 p-3 rounded-xl bg-[#020617] border border-[#1e293b] font-mono text-[11px] text-slate-400 leading-relaxed">
+                {selectedFrame.summary}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}

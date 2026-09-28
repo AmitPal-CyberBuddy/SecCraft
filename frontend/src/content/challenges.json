@@ -1,0 +1,310 @@
+[
+  {
+    "id": "chal-01-beacon",
+    "title": "Beacon Recon — Find the Hidden Network",
+    "module": "05-wireless-recon",
+    "difficulty": "Beginner",
+    "type": "pcap_analysis",
+    "level": "guided",
+    "estimated_time": "15m",
+    "points": 100,
+    "status": "simulated",
+    "description": "Given recon-lab.pcapng, enumerate APs and find hidden SSID. Guided with steps.",
+    "objectives": ["Enumerate APs", "Find hidden SSID", "Map ESS", "List clients PNL"],
+    "artifacts": ["recon-lab.pcapng"],
+    "tasks": [
+      {"id": "t1", "question": "How many APs total?", "answer": "5", "hint": "Filter wlan.fc.type_subtype==8, count unique BSSIDs"},
+      {"id": "t2", "question": "Which SSID is hidden? How revealed?", "answer": "HIDDEN-LAB revealed via probe response frame 10", "hint": "Look for SSID empty beacon then probe response with real SSID"},
+      {"id": "t3", "question": "Which BSSIDs share ESS LAB-WIFI?", "answer": "00:11:22:33:44:55 and 00:11:22:33:44:56", "hint": "Same SSID different BSSID different channel = ESS"}
+    ],
+    "flag": "WIFIFORGE{RECON_5_APS_HIDDEN_REVEALED}",
+    "skills": ["recon", "hidden-ssid", "ess-mapping"]
+  },
+  {
+    "id": "chal-02-handshake",
+    "title": "WPA2 Handshake — Evidence Collection",
+    "module": "09-wpa2-practical",
+    "difficulty": "Intermediate",
+    "type": "pcap_analysis",
+    "level": "semi-guided",
+    "estimated_time": "20m",
+    "points": 200,
+    "status": "simulated",
+    "description": "Analyze wpa2-handshake.pcapng, identify complete handshake, collect evidence for report.",
+    "objectives": ["Identify handshake", "Extract nonces", "Verify completeness", "Collect evidence"],
+    "artifacts": ["wpa2-handshake.pcapng"],
+    "tasks": [
+      {"id": "t1", "question": "How many EAPOL frames? Complete?", "answer": "4 EAPOL, complete M1-M4", "hint": "Filter eapol, check replay counter"},
+      {"id": "t2", "question": "ANonce and SNonce (first 8 hex)?", "answer": "ANonce aabbccdd, SNonce 11223344", "hint": "Check EAPOL M1 and M2 nonce fields"},
+      {"id": "t3", "question": "What is needed for offline audit?", "answer": "SSID, BSSID, client MAC, ANonce, SNonce, MIC", "hint": "PMK via PBKDF2, PTK via PRF, MIC verification"}
+    ],
+    "flag": "WIFIFORGE{HANDSHAKE_4_EAPOL_COMPLETE}",
+    "skills": ["wpa2", "handshake", "eapol", "evidence"]
+  },
+  {
+    "id": "chal-03-pmkid",
+    "title": "PMKID — Clientless Capture",
+    "module": "09-wpa2-practical",
+    "difficulty": "Intermediate",
+    "type": "pcap_analysis",
+    "level": "semi-guided",
+    "estimated_time": "15m",
+    "points": 200,
+    "status": "simulated",
+    "description": "Analyze pmkid.pcapng, extract PMKID, understand clientless advantage.",
+    "objectives": ["Extract PMKID", "Understand clientless", "Compare vs handshake"],
+    "artifacts": ["pmkid.pcapng"],
+    "tasks": [
+      {"id": "t1", "question": "PMKID hex?", "answer": "aabbccddeeff00112233445566778899", "hint": "Check EAPOL M1 key data KDE with PMKID"},
+      {"id": "t2", "question": "Advantage vs handshake?", "answer": "Clientless, single frame, no deauth needed", "hint": "PMKID can be captured without client, no deauth"}
+    ],
+    "flag": "WIFIFORGE{PMKID_CLIENTLESS_SINGLE_FRAME}",
+    "skills": ["pmkid", "wpa2", "clientless"]
+  },
+  {
+    "id": "chal-04-wps",
+    "title": "WPS Enumeration — PIN Risk",
+    "module": "10-wps",
+    "difficulty": "Intermediate",
+    "type": "config_analysis",
+    "level": "guided",
+    "estimated_time": "15m",
+    "points": 150,
+    "status": "simulated",
+    "description": "Detect WPS IE in wps-beacon.pcapng and audit config with WPS enabled.",
+    "objectives": ["Detect WPS IE", "Identify OUI", "Audit config", "Recommend fix"],
+    "artifacts": ["wps-beacon.pcapng", "hostapd-wps-enabled.conf"],
+    "tasks": [
+      {"id": "t1", "question": "WPS IE present? OUI?", "answer": "Yes, 00:50:F2:04, frames 1-2", "hint": "Filter wps or wlan_mgt.tag.number==221"},
+      {"id": "t2", "question": "PIN brute-force max?", "answer": "11k (10^4 + 10^3)", "hint": "Halves flaw, not 10^8"},
+      {"id": "t3", "question": "Config fix?", "answer": "wps_state=0 disable WPS", "hint": "Disable WPS"}
+    ],
+    "flag": "WIFIFORGE{WPS_11K_PIN_FLAW}",
+    "skills": ["wps", "config-audit", "pin"]
+  },
+  {
+    "id": "chal-05-wpa3-transition",
+    "title": "WPA3 Transition — Downgrade Risk",
+    "module": "11-wpa3",
+    "difficulty": "Advanced",
+    "type": "investigation",
+    "level": "semi-guided",
+    "estimated_time": "20m",
+    "points": 250,
+    "status": "simulated",
+    "description": "Analyze wpa3-transition.pcapng and configs, identify transition mode weaknesses.",
+    "objectives": ["Identify AKMs", "Check PMF", "Assess downgrade risk", "Recommend fix"],
+    "artifacts": ["wpa3-transition.pcapng", "hostapd-wpa3-transition-bad.conf", "hostapd-wpa3-only-good.conf"],
+    "tasks": [
+      {"id": "t1", "question": "AKMs? PMF? Transition?", "answer": "PSK+SAE, PMF optional, transition yes", "hint": "Check RSN IE akms.type, mfpc/mfpr"},
+      {"id": "t2", "question": "Downgrade risk? Defense?", "answer": "Force WPA2 via deauth, capture handshake if PSK weak, PMF optional allows deauth. Defense: WPA3-only PMF required, strong PSK", "hint": "Transition same password, PMF optional allows deauth"}
+    ],
+    "flag": "WIFIFORGE{WPA3_TRANSITION_PMF_OPTIONAL_DOWNGRADE}",
+    "skills": ["wpa3", "transition", "downgrade", "pmf"]
+  },
+  {
+    "id": "chal-06-deauth",
+    "title": "Deauth Flood — PMF Detection",
+    "module": "12-deauth-disassoc",
+    "difficulty": "Intermediate",
+    "type": "pcap_analysis",
+    "level": "guided",
+    "estimated_time": "15m",
+    "points": 150,
+    "status": "simulated",
+    "description": "Analyze deauth.pcapng, count deauth frames, check PMF, assess impact.",
+    "objectives": ["Count deauth", "Check PMF", "Impact", "Recommend fix"],
+    "artifacts": ["deauth.pcapng", "hostapd-wpa2-bad.conf"],
+    "tasks": [
+      {"id": "t1", "question": "How many deauth? Reason?", "answer": "12 deauth reason 7, 1 disassoc reason 8", "hint": "Filter wlan.fc.type_subtype==12 and ==10"},
+      {"id": "t2", "question": "PMF required?", "answer": "No, MFPC=0 MFPR=0, PMF disabled, deauth possible", "hint": "Check beacon RSN capabilities mfpr"},
+      {"id": "t3", "question": "Impact and fix?", "answer": "DoS, handshake capture, Evil Twin facilitation. Fix: ieee80211w=2 PMF required, WPA3-only", "hint": "PMF required prevents spoofed deauth"}
+    ],
+    "flag": "WIFIFORGE{DEAUTH_12_PMF_DISABLED}",
+    "skills": ["deauth", "pmf", "detection", "dos"]
+  },
+  {
+    "id": "chal-07-rogue",
+    "title": "Rogue AP — Evil Twin Detection",
+    "module": "13-rogue-ap",
+    "difficulty": "Advanced",
+    "type": "investigation",
+    "level": "semi-guided",
+    "estimated_time": "20m",
+    "points": 300,
+    "status": "simulated",
+    "description": "Analyze rogue-ap.pcapng, detect rogue BSSID cloning Corp-WLAN, assess client association.",
+    "objectives": ["Detect rogue", "Legit vs rogue", "Client association", "Defense"],
+    "artifacts": ["rogue-ap.pcapng"],
+    "tasks": [
+      {"id": "t1", "question": "BSSIDs for Corp-WLAN?", "answer": "2: AA:BB:CC:DD:EE:FF legit Ch6 and 11:22:33:44:55:66 rogue Ch11", "hint": "Filter wlan_mgt.ssid==Corp-WLAN, list BSSIDs"},
+      {"id": "t2", "question": "Which is rogue? Evidence?", "answer": "11:22:33:44:55:66 Ch11 different vendor not in authorized list, same SSID different BSSID channel", "hint": "Channel, vendor OUI, authorized list"},
+      {"id": "t3", "question": "Client associated to rogue?", "answer": "Yes, 12:34:56:78:9A:BC to rogue BSSID 11:22:33:44:55:66 frame 6-7", "hint": "Check assoc req/resp to rogue BSSID"}
+    ],
+    "flag": "WIFIFORGE{ROGUE_AP_EVIL_TWIN_DETECTED}",
+    "skills": ["rogue-ap", "evil-twin", "detection", "wids"]
+  },
+  {
+    "id": "chal-08-captive",
+    "title": "Captive Portal — Open Network & Session Bypass",
+    "module": "14-captive-portals",
+    "difficulty": "Intermediate",
+    "type": "investigation",
+    "level": "semi-guided",
+    "estimated_time": "20m",
+    "points": 250,
+    "status": "simulated",
+    "description": "Analyze captive-portal.pcapng, check open network, portal redirect, session management, isolation.",
+    "objectives": ["Open network?", "Portal redirect?", "Session type?", "Isolation?", "Bypass?"],
+    "artifacts": ["captive-portal.pcapng", "hostapd config ap_isolate"],
+    "tasks": [
+      {"id": "t1", "question": "Is it open? Evidence?", "answer": "Yes, open, no EAPOL, association open, beacon Open Ch6", "hint": "Check beacon security Open, no 4-way"},
+      {"id": "t2", "question": "Portal redirect? HTTPS?", "answer": "HTTP GET example.com -> 302 redirect to https://portal.guest.com/login, login POST over HTTP weak", "hint": "Filter http, check GET and redirect and POST"},
+      {"id": "t3", "question": "Session bypass via MAC spoof?", "answer": "Yes, MAC-based session, open no encryption, sniff MAC, spoof to bypass portal", "hint": "Open network, MAC-based firewall allows MAC after auth, sniff and spoof"}
+    ],
+    "flag": "WIFIFORGE{CAPTIVE_PORTAL_MAC_SPOOF_BYPASS}",
+    "skills": ["captive-portal", "open-network", "session-bypass", "isolation"]
+  },
+  {
+    "id": "chal-09-enterprise",
+    "title": "Enterprise — PEAP Without Cert Validation",
+    "module": "15-enterprise-fundamentals",
+    "difficulty": "Advanced",
+    "type": "investigation",
+    "level": "semi-guided",
+    "estimated_time": "25m",
+    "points": 300,
+    "status": "simulated",
+    "description": "Analyze enterprise.pcapng, identify WPA2-EAP, PEAP without ca_cert, rogue RADIUS risk, RADIUS weak secret.",
+    "objectives": ["Identify EAP method", "Check cert validation", "RADIUS secret", "Impact"],
+    "artifacts": ["enterprise.pcapng", "wpa_supplicant no ca_cert", "clients.conf testing123"],
+    "tasks": [
+      {"id": "t1", "question": "EAP method? Identity?", "answer": "PEAP-MSCHAPv2, user@corp.com", "hint": "Filter eap, check Identity and type 25 PEAP"},
+      {"id": "t2", "question": "ca_cert present? Risk?", "answer": "No ca_cert, Evil Twin + rogue RADIUS captures MSCHAPv2 challenge/response for hashcat -m 5500", "hint": "Check wpa_supplicant.conf, no ca_cert"},
+      {"id": "t3", "question": "RADIUS secret strength?", "answer": "testing123 weak, should be 22+ chars random, RadSec", "hint": "Check clients.conf secret"}
+    ],
+    "flag": "WIFIFORGE{ENTERPRISE_PEAP_NO_CERT_VALIDATION}",
+    "skills": ["enterprise", "eap", "peap", "radius", "cert-validation"]
+  },
+  {
+    "id": "chal-10-eap",
+    "title": "EAP — MSCHAPv2 Capture & Offline Crack",
+    "module": "16-eap",
+    "difficulty": "Advanced",
+    "type": "pcap_analysis",
+    "level": "semi-guided",
+    "estimated_time": "25m",
+    "points": 300,
+    "status": "simulated",
+    "description": "Analyze eap.pcapng with PEAP MSCHAPv2 Challenge/Response, understand offline cracking, defense EAP-TLS.",
+    "objectives": ["EAP method", "Challenge/Response", "Offline crack", "Defense EAP-TLS"],
+    "artifacts": ["eap.pcapng"],
+    "tasks": [
+      {"id": "t1", "question": "What EAP method? Identity? Challenge/Response?", "answer": "PEAP-MSCHAPv2, user@corp.com, Challenge/Response captured inside TLS if no cert validation", "hint": "Filter eap, check Identity, type 25, MSCHAPv2"},
+      {"id": "t2", "question": "Can you crack offline? Tool and mode?", "answer": "Yes, hashcat -m 5500 NetNTLMv1/MSCHAPv2 or asleap, if password weak", "hint": "MSCHAPv2 challenge/response -> NTLM hash crackable"},
+      {"id": "t3", "question": "Defense?", "answer": "Enforce ca_cert + subject_match via MDM/GPO, prefer EAP-TLS mutual cert, strong RADIUS secret, PMF, WIDS", "hint": "Cert validation + EAP-TLS"}
+    ],
+    "flag": "WIFIFORGE{EAP_PEAP_MSCHAPV2_CAPTURE}",
+    "skills": ["eap", "peap", "mschapv2", "offline-crack", "eap-tls"]
+  },
+  {
+    "id": "chal-11-radius",
+    "title": "RADIUS — Weak Secret & No RadSec",
+    "module": "17-radius",
+    "difficulty": "Intermediate",
+    "type": "config_analysis",
+    "level": "guided",
+    "estimated_time": "20m",
+    "points": 200,
+    "status": "simulated",
+    "description": "Audit FreeRADIUS clients.conf secret testing123 weak, users weak password, no RadSec, logs no monitoring.",
+    "objectives": ["Secret strength", "Users VLAN", "RadSec", "Logs"],
+    "artifacts": ["radius.pcapng", "clients.conf", "users"],
+    "tasks": [
+      {"id": "t1", "question": "RADIUS secret? Strength?", "answer": "testing123 weak, should be 22+ chars random, per NAS unique", "hint": "Check clients.conf secret"},
+      {"id": "t2", "question": "Users? VLAN? Password strength?", "answer": "user1 WeakPass, VLAN 100, weak, no complexity lockout", "hint": "Check users file"},
+      {"id": "t3", "question": "RadSec enabled? Logs monitored?", "answer": "No RadSec UDP not encrypted, no monitoring, should use RadSec TLS + SIEM", "hint": "Check radiusd.conf, logs"}
+    ],
+    "flag": "WIFIFORGE{RADIUS_WEAK_SECRET_NO_RADSEC}",
+    "skills": ["radius", "secret", "radsec", "vlan", "monitoring"]
+  },
+  {
+    "id": "chal-12-corporate",
+    "title": "Corporate Attacks — Rogue + Segmentation + Isolation Bypass",
+    "module": "18-corporate-attacks",
+    "difficulty": "Professional",
+    "type": "investigation",
+    "level": "semi-guided",
+    "estimated_time": "30m",
+    "points": 400,
+    "status": "simulated",
+    "description": "Analyze corporate-attacks.pcapng: 3 SSIDs Enterprise/Guest/IoT + rogue + deauth + segmentation bypass + isolation bypass.",
+    "objectives": ["Count SSIDs", "Detect rogue", "Credential capture", "Segmentation bypass", "Isolation bypass", "Defense"],
+    "artifacts": ["corporate-attacks.pcapng"],
+    "tasks": [
+      {"id": "t1", "question": "How many SSIDs? BSSIDs? Rogue?", "answer": "3 SSIDs: Corp-Enterprise EAP Ch6 AA:BB:CC:DD:EE:FF, Corp-Guest Open Ch11 BB:CC:DD:EE:FF:00, IoT-PSK WPS Ch1 CC:DD:EE:FF:00:11 + rogue 11:22:33:44:55:66 clones Enterprise Ch11", "hint": "Filter wlan.fc.type_subtype==8, list SSIDs BSSIDs channels security"},
+      {"id": "t2", "question": "Credential capture? EAP method? Identity?", "answer": "Yes, PEAP-MSCHAPv2, user@corp.com, Challenge/Response captured by rogue RADIUS 11:22:33:44:55:66", "hint": "Filter eap, check Identity, MSCHAPv2 Challenge/Response"},
+      {"id": "t3", "question": "Segmentation bypass? Isolation bypass? Defense?", "answer": "Corp VLAN 100 to Guest VLAN 200 ping success ACL misconfigured, Guest ap_isolate=0 ARP spoof possible. Defense: WIDS authorized list + 802.1X cert validation + EAP-TLS + strong secret + RadSec + PMF + VLAN ACL deny + ap_isolate=1 + monitoring", "hint": "Check Data frames ICMP ping Corp→Guest success, ARP Guest"}
+    ],
+    "flag": "WIFIFORGE{CORPORATE_ROGUE_SEGMENTATION_ISOLATION_BYPASS}",
+    "skills": ["corporate", "rogue", "segmentation", "isolation", "enterprise", "wids"]
+  },
+  {
+    "id": "chal-13-methodology",
+    "title": "Methodology — Full Assessment Prep",
+    "module": "19-methodology",
+    "difficulty": "Professional",
+    "type": "investigation",
+    "level": "semi-guided",
+    "estimated_time": "40m",
+    "points": 400,
+    "status": "simulated",
+    "description": "Analyze methodology.pcapng combining all issues: 6 APs + rogue, hidden, WPS, weak PSK, PMF disabled, PEAP no cert, RADIUS weak, open no isolation, rogue, segmentation. Write findings.",
+    "objectives": ["Count APs", "Find hidden", "List vulns", "Write findings", "Risk", "Quick wins"],
+    "artifacts": ["methodology.pcapng", "hostapd configs", "wpa_supplicant no ca_cert", "RADIUS clients.conf"],
+    "tasks": [
+      {"id": "t1", "question": "How many APs? Hidden? Clients? Vulns?", "answer": "6 APs +1 rogue, 5 clients, 1 hidden HIDDEN-LAB f10, WPS 3 SSIDs 11k, weak PSK WeakPass123 IoT and TRANS, PMF disabled, PEAP no cert, RADIUS weak testing123, open Guest no isolation, captive MAC bypass, rogue, segmentation Corp→Guest", "hint": "Filter beacons, probes, deauth, eap, count SSIDs BSSIDs, check WPS IE, PSK, PMF, cert validation, secret, isolation, VLAN"},
+      {"id": "t2", "question": "Top 3 findings? Risk? Quick wins vs long-term?", "answer": "WPS High, WPA2 weak High, PEAP no cert High, overall High, quick wins disable WPS strong PSK PMF ca_cert strong secret ap_isolate VLAN ACL deny; long-term WPA3-only EAP-TLS RadSec WIDS monitoring training audits", "hint": "Prioritize by impact likelihood, quick wins vs long-term"}
+    ],
+    "flag": "WIFIFORGE{METHODOLOGY_FULL_ASSESSMENT_PREP}",
+    "skills": ["methodology", "assessment", "reporting", "retest", "risk"]
+  },
+  {
+    "id": "chal-14-final",
+    "title": "Final Wireless PT Assessment — No Hints",
+    "module": "20-final-assessment",
+    "difficulty": "Professional",
+    "type": "investigation",
+    "level": "assessment",
+    "estimated_time": "60m",
+    "points": 500,
+    "status": "simulated",
+    "description": "Final assessment: 6 APs + rogue, 5 clients, hidden, WPS, weak PSK, PMF disabled, PEAP no cert, RADIUS weak, open no isolation, captive MAC bypass, rogue, segmentation. No hints. Provide full report with evidence.",
+    "objectives": ["Recon all APs", "Find hidden", "Enum vulns per SSID", "Write 5 findings with evidence", "Risk summary", "Recommendation prioritized", "Retest plan", "Flag"],
+    "artifacts": ["methodology.pcapng", "enterprise.pcapng", "eap.pcapng", "radius.pcapng", "corporate-attacks.pcapng", "all previous PCAPs and configs"],
+    "tasks": [
+      {"id": "t1", "question": "Provide full report with BSSIDs, SSIDs, channels, security, clients PNL, hidden reveal, ESS, vulns per SSID with severity evidence frame numbers config snippets impact recommendation retest, risk summary, prioritized recommendations, retest plan", "answer": "Full professional report with executive summary, scope ROE, methodology, findings (WPS High, WPA2 weak High, PEAP no cert High, RADIUS weak Medium, open no isolation Medium, captive MAC bypass Medium, rogue High, segmentation High), risk High, quick wins vs long-term, retest verification, references, appendices, flag WIFIFORGE{FINAL_RECON_ASSESSMENT_COMPLETE}", "hint": "No hints — use methodology module: scope → recon → enum → vuln analysis → exploitation simulated → post-exploitation simulated → reporting → retest. Use PcapInspector filters, ConfigViewer, ReportEditor, evidence chain of custody SHA256 frame numbers filters config hash logs screenshots commands reproducible."}
+    ],
+    "flag": "WIFIFORGE{FINAL_RECON_ASSESSMENT_COMPLETE}",
+    "skills": ["assessment", "reporting", "methodology", "enterprise", "eap", "radius", "corporate", "retest"]
+  },
+  {
+    "id": "chal-09-final-recon",
+    "title": "Final Recon Assessment — No Hints (Legacy)",
+    "module": "05-wireless-recon",
+    "difficulty": "Professional",
+    "type": "investigation",
+    "level": "assessment",
+    "estimated_time": "45m",
+    "points": 500,
+    "status": "simulated",
+    "description": "Scope: LAB-WIFI environment, 5 APs, hidden SSID, clients PNL. No hints. Provide full recon report with evidence.",
+    "objectives": ["Map all APs", "Find hidden", "List clients PNL", "ESS mapping", "Channel map", "Security assessment", "Report"],
+    "artifacts": ["recon-lab.pcapng"],
+    "tasks": [
+      {"id": "t1", "question": "Provide full recon report with BSSIDs, SSIDs, channels, security, clients PNL, hidden reveal, ESS, evidence frame numbers", "answer": "Report with 5 APs, HIDDEN-LAB revealed f10, 2 clients PNL, ESS LAB-WIFI 2 BSSIDs, channels 1/6/11/36, etc.", "hint": "No hints — use methodology: Beacon filter, probe filter, association, OUI, etc."}
+    ],
+    "flag": "WIFIFORGE{FINAL_RECON_ASSESSMENT_COMPLETE}",
+    "skills": ["recon", "assessment", "reporting", "methodology"]
+  }
+]
