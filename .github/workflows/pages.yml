@@ -15,14 +15,48 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
-# Note: no actions/configure-pages step — it hard-fails while the site does not
-# exist yet, and its outputs are not needed here. Create the site once in
-# Settings → Pages → Source: GitHub Actions, then every push to main deploys.
+# Pages is enabled on this repo (Settings → Pages → Source: GitHub Actions), and
+# that is a one-time manual step: a bot token cannot create the site
+# (actions/configure-pages with `enablement: true` is rejected here with
+# "Resource not accessible by integration"), and enabling it publishes nothing by
+# itself — a successful run of this workflow is what actually puts files online.
+#
+# So instead of configure-pages we do a direct pre-flight against the Pages API,
+# which turns the cryptic end-of-pipeline "Failed to create deployment
+# (status: 404)" into a clear, actionable failure before we spend a minute
+# building. See docs/GITHUB_PAGES.md.
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Pre-flight — confirm Pages is enabled for Actions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          api="repos/${{ github.repository }}/pages"
+          body=$(gh api "$api" 2>/dev/null) || body=""
+          build_type=$(printf '%s' "$body" | jq -r '.build_type // empty')
+
+          if [ -z "$body" ]; then
+            echo "::error::GitHub Pages is NOT enabled on this repo."
+            echo "Open https://github.com/${{ github.repository }}/settings/pages"
+            echo "Build and deployment → Source: GitHub Actions → Save, then re-run this workflow."
+            echo "Enabling Pages publishes nothing by itself; a successful run of this workflow does."
+            exit 1
+          fi
+
+          if [ "$build_type" != "workflow" ]; then
+            echo "::error::Pages source is '$build_type', not 'workflow'."
+            echo "actions/deploy-pages can only publish when Source is 'GitHub Actions'."
+            echo "Fix it at https://github.com/${{ github.repository }}/settings/pages and re-run."
+            exit 1
+          fi
+
+          echo "✓ Pages enabled for GitHub Actions (build_type=workflow)"
+          echo "  Current status: $(printf '%s' "$body" | jq -r '.status // "never deployed"')"
 
       - uses: actions/setup-node@v4
         with:
@@ -54,3 +88,27 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+      # A green deploy step does not guarantee a serving site: Pages can be
+      # enabled yet empty (no successful build ever published), which is exactly
+      # what serves GitHub's default 404. Poll the live URL so the run fails
+      # loudly instead of silently shipping nothing.
+      - name: Verify the site actually serves
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -uo pipefail
+          echo "Checking $PAGE_URL"
+          for attempt in 1 2 3 4 5 6; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' -L "$PAGE_URL" || echo "000")
+            echo "  attempt $attempt: HTTP $code"
+            if [ "$code" = "200" ]; then
+              echo "✓ Live at $PAGE_URL"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "::error::$PAGE_URL is not serving 200 after deployment."
+          echo "Usually means Pages is enabled but nothing has ever published, or the"
+          echo "build_type is not 'workflow'. Check Settings → Pages."
+          exit 1
