@@ -22,10 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Also flips Settings → Pages → Source to "GitHub Actions" on the first run.
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - uses: actions/setup-node@v4
         with:
