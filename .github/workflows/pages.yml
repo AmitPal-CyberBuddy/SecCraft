@@ -29,7 +29,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Pre-flight — confirm Pages is enabled for Actions
         env:
@@ -58,14 +58,26 @@ jobs:
           echo "✓ Pages enabled for GitHub Actions (build_type=workflow)"
           echo "  Current status: $(printf '%s' "$body" | jq -r '.status // "never deployed"')"
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install
+      - name: Install (lockfile exact)
         run: npm ci
+        working-directory: frontend
+
+      # Nothing fabricated and nothing fetched from a third party may reach the live site, and the
+      # capture datasets must still decode to the values the lessons assert.
+      - name: Gate — no dummy data, no external requests, no unearned claims
+        run: python3 scripts/verify-no-dummy-data.py
+
+      - name: Gate — lab artifacts and challenge answers
+        run: python3 scripts/verify-lab-artifacts.py
+
+      - name: Dependency audit (informational)
+        run: npm audit --omit=dev --audit-level=high || true
         working-directory: frontend
 
       - name: Build
@@ -75,7 +87,7 @@ jobs:
           # Project sites are served from /<repo>/ — the Vite build has to match.
           VITE_BASE: /${{ github.event.repository.name }}/
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:
           path: frontend/dist
 
@@ -87,7 +99,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
 
       # A green deploy step does not guarantee a serving site: Pages can be
       # enabled yet empty (no successful build ever published), which is exactly

@@ -1,0 +1,257 @@
+[
+ {
+  "group": "1. Scope, authorisation and rules of engagement",
+  "items": [
+   {
+    "id": "scope-1",
+    "text": "Named signatory, company, dates and the validity window are recorded.",
+    "evidence": "Signed RoE (reference only; never paste signatures into a report)"
+   },
+   {
+    "id": "scope-2",
+    "text": "In-scope SSIDs/BSSIDs/locations and explicitly out-of-scope targets are enumerated.",
+    "evidence": "Scope table in the report appendix"
+   },
+   {
+    "id": "scope-3",
+    "text": "Authorised and prohibited techniques are listed per target and per time window.",
+    "evidence": "Technique matrix"
+   },
+   {
+    "id": "scope-4",
+    "text": "Data handling: capture storage, encryption, retention and deletion date.",
+    "evidence": "RoE clause + capture inventory"
+   },
+   {
+    "id": "scope-5",
+    "text": "Stop conditions, escalation contact and rollback for intrusive tests are agreed.",
+    "evidence": "Contact sheet; incident notes if triggered"
+   }
+  ]
+ },
+ {
+  "group": "2. Passive reconnaissance",
+  "items": [
+   {
+    "id": "recon-1",
+    "text": "AP inventory with BSSID, SSID, channel, band, width, vendor and frame numbers.",
+    "evidence": "tshark field extraction + capture hash"
+   },
+   {
+    "id": "recon-2",
+    "text": "Security policy per BSS: AKM list, ciphers, MFPC/MFPR, WPS state, OWE.",
+    "evidence": "RSNE/WPS IE from beacons"
+   },
+   {
+    "id": "recon-3",
+    "text": "Client inventory: identity (or randomisation flag), probes, association targets.",
+    "evidence": "Probe/association frames"
+   },
+   {
+    "id": "recon-4",
+    "text": "ESS mapping: which BSSIDs share an SSID, and which look like look-alikes.",
+    "evidence": "Inventory grouping + IE fingerprint diff"
+   },
+   {
+    "id": "recon-5",
+    "text": "Explicit limits of the capture (duration, channels, coverage, time reference).",
+    "evidence": "Capture metadata (duration, channel list, clock source)"
+   }
+  ]
+ },
+ {
+  "group": "3. Authentication and key management",
+  "items": [
+   {
+    "id": "auth-1",
+    "text": "PSK/WPA2: is a handshake or PMKID obtainable, and is the passphrase auditable offline?",
+    "evidence": "hc22000 file + hashcat output with rate/time"
+   },
+   {
+    "id": "auth-2",
+    "text": "WPA3: is the deployment WPA3-only, transition or mixed? Is SAE enforced?",
+    "evidence": "RSNE AKM list + client association evidence"
+   },
+   {
+    "id": "auth-3",
+    "text": "WPS: state (enabled/disabled, locked, methods) and whether the PIN path is reachable.",
+    "evidence": "WPS IE attributes + any authorised live test result"
+   },
+   {
+    "id": "auth-4",
+    "text": "Legacy/weak configurations (WEP, TKIP, PSK on a WPA3 AP, open BSS) are identified and scoped.",
+    "evidence": "Beacon capability/RSNE evidence"
+   },
+   {
+    "id": "auth-5",
+    "text": "Whether a recovered key/credential grants more than L2 access (reuse, management plane).",
+    "evidence": "Authorised reuse test or the explicit exclusion note"
+   }
+  ]
+ },
+ {
+  "group": "4. Management frames and availability",
+  "items": [
+   {
+    "id": "mgmt-1",
+    "text": "PMF state per BSS (capable/required) and per client population (who negotiates it).",
+    "evidence": "RSNE caps + association requests"
+   },
+   {
+    "id": "mgmt-2",
+    "text": "If authorised: whether spoofed deauth/disassoc affects clients, with effect evidence.",
+    "evidence": "Deauth frames + client disconnect log + re-association timeline"
+   },
+   {
+    "id": "mgmt-3",
+    "text": "Reason codes and SA Query behaviour analysed where PMF is present.",
+    "evidence": "Action frames (category 8) + reason codes"
+   },
+   {
+    "id": "mgmt-4",
+    "text": "Availability impact described in business terms and timeboxed.",
+    "evidence": "Impact statement with duration/users"
+   }
+  ]
+ },
+ {
+  "group": "5. Rogue infrastructure and client behaviour",
+  "items": [
+   {
+    "id": "rogue-1",
+    "text": "Baseline of authorised BSSIDs/IE fingerprints obtained before testing.",
+    "evidence": "Authorised inventory (from client or previous recon)"
+   },
+   {
+    "id": "rogue-2",
+    "text": "Rogue/twin detection reasoning recorded with the signals that discriminate.",
+    "evidence": "IE/policy/channel diff with frame numbers"
+   },
+   {
+    "id": "rogue-3",
+    "text": "Client behaviour tested where authorised: auto-connect, PNL, certificate validation.",
+    "evidence": "Rogue-authenticator capture or a controlled client test"
+   },
+   {
+    "id": "rogue-4",
+    "text": "Detection coverage: does WIDS/WIPS raise the rogue BSSID, and with what latency?",
+    "evidence": "WIDS alert/log or the documented gap"
+   }
+  ]
+ },
+ {
+  "group": "6. Segmentation, isolation and guest access",
+  "items": [
+   {
+    "id": "seg-1",
+    "text": "Client isolation tested explicitly (client-to-client through the AP).",
+    "evidence": "ARP/ICMP capture between two authorised clients"
+   },
+   {
+    "id": "seg-2",
+    "text": "VLAN separation tested (L2 domain boundaries).",
+    "evidence": "Failed/successful ARP for a host on another segment"
+   },
+   {
+    "id": "seg-3",
+    "text": "Inter-VLAN ACL enforcement tested at protocol/port level, not with ping alone.",
+    "evidence": "TCP/UDP reachability results with ports"
+   },
+   {
+    "id": "seg-4",
+    "text": "Guest portal reviewed: transport, token handling, bypass paths, credentials.",
+    "evidence": "HTTP capture + portal configuration"
+   }
+  ]
+ },
+ {
+  "group": "7. Enterprise Wi-Fi (802.1X/EAP/RADIUS)",
+  "items": [
+   {
+    "id": "ent-1",
+    "text": "EAP method identified and the inner/outer identity handling reviewed.",
+    "evidence": "EAP frames with types and identities"
+   },
+   {
+    "id": "ent-2",
+    "text": "Client certificate validation tested (ca_cert, domain/subject match).",
+    "evidence": "Rogue-authenticator result + supplicant log"
+   },
+   {
+    "id": "ent-3",
+    "text": "Credential exposure assessed (MS-CHAPv2 exposure, EAP-TLS absence, legacy methods).",
+    "evidence": "Captured material + crack result (lab/authorised) or the control that blocked it"
+   },
+   {
+    "id": "ent-4",
+    "text": "RADIUS integrity reviewed: Message-Authenticator, Response Authenticator, secret strength/scope.",
+    "evidence": "Packet bytes + recomputation with the secret"
+   },
+   {
+    "id": "ent-5",
+    "text": "Dynamic VLAN/ACL assignment verified as actually enforced.",
+    "evidence": "Access-Accept attributes + reachability test"
+   },
+   {
+    "id": "ent-6",
+    "text": "Identity-store controls (lockout, account hygiene, monitoring) reviewed where in scope.",
+    "evidence": "Auth logs + configuration review notes"
+   }
+  ]
+ },
+ {
+  "group": "8. Evidence and integrity",
+  "items": [
+   {
+    "id": "ev-1",
+    "text": "Every claim has a capture + hash + filter + frame numbers, or a config/log excerpt.",
+    "evidence": "Evidence appendix"
+   },
+   {
+    "id": "ev-2",
+    "text": "Tools and versions, parameters and time references are recorded per test.",
+    "evidence": "Method section"
+   },
+   {
+    "id": "ev-3",
+    "text": "Limitations and untested areas are stated explicitly.",
+    "evidence": "Coverage/limitations section"
+   },
+   {
+    "id": "ev-4",
+    "text": "Personal data in captures is minimised, stored securely and deleted per the RoE.",
+    "evidence": "Data-handling record"
+   }
+  ]
+ },
+ {
+  "group": "9. Findings, reporting and retest",
+  "items": [
+   {
+    "id": "rep-1",
+    "text": "Severity derived from finding context (exploitability, impact, environment), CVSS shown as an example vector.",
+    "evidence": "Severity justification per finding"
+   },
+   {
+    "id": "rep-2",
+    "text": "Remediation is specific, owned and verifiable \u2014 not 'enable security'.",
+    "evidence": "Remediation sections"
+   },
+   {
+    "id": "rep-3",
+    "text": "Retest criteria written so a third party can execute them without you.",
+    "evidence": "Retest steps per finding"
+   },
+   {
+    "id": "rep-4",
+    "text": "Executive summary contains no unverifiable claims and no jargon.",
+    "evidence": "Executive summary review"
+   },
+   {
+    "id": "rep-5",
+    "text": "Retest executed against remediated artefacts; result recorded as pass/fail with evidence.",
+    "evidence": "Retest capture hashes + comparison"
+   }
+  ]
+ }
+]

@@ -1,4 +1,5 @@
-import { useProgressStore, LEVELS } from '@/store/useProgressStore'
+import { MAX_XP, useProgressStore, LEVELS } from '@/store/useProgressStore'
+import { TOTAL_CAPTURE_LABS, TOTAL_CHALLENGES, TOTAL_LABS, TOTAL_LESSONS, TOTAL_MODULES, TOTAL_PCAPS } from '@/content/stats'
 import { ProgressRing } from '@/components/dashboard/ProgressRing'
 import { ContinueCard } from '@/components/dashboard/ContinueCard'
 import { LevelBadge, CertificationPayoff, XpProgressBar } from '@/components/gamification/LevelBadge'
@@ -11,7 +12,6 @@ import { lazy, Suspense, useMemo } from 'react'
 const AnalyticsDashboard = lazy(() => import('@/components/analytics/AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard })))
 const DailyChallenges = lazy(() => import('@/components/gamification/DailyChallenges').then(m => ({ default: m.DailyChallenges })))
 const BadgesShowcase = lazy(() => import('@/components/gamification/BadgesShowcase').then(m => ({ default: m.BadgesShowcase })))
-const RealtimeLeaderboard = lazy(() => import('@/components/analytics/RealtimeLeaderboard').then(m => ({ default: m.RealtimeLeaderboard })))
 
 export function Dashboard() {
   const getOverall = useProgressStore(s => s.getOverallProgress())
@@ -38,21 +38,56 @@ export function Dashboard() {
   const currentModule = modules.find(m => m.id === currentModuleId) || modules[1]
   const currentProgress = getModuleProgress(currentModule.id)
 
-  const recentActivity = [
-    { id: '1', type: 'lesson', title: 'SSID vs BSSID vs ESSID', module: '02-wifi-fundamentals', time: '2h ago', progress: 100 },
-    { id: '2', type: 'lab', title: 'Beacon Frame Analysis', module: '02-wifi-fundamentals', time: '5h ago', progress: 100 },
-    { id: '3', type: 'challenge', title: 'Beacon Recon', module: '05-wireless-recon', time: '1d ago', progress: 75 },
-  ]
+  // Recent activity is assembled from real completion records (newest first) — no sample entries.
+  const recentActivity = useMemo(() => {
+    const items = [
+      ...completedLessons.map(l => ({
+        id: `lesson-${l.moduleId}-${l.lessonId}`,
+        type: 'lesson' as const,
+        title: l.lessonId,
+        module: l.moduleId,
+        at: l.completedAt || '',
+        points: l.points,
+      })),
+      ...completedLabs.map(l => ({
+        id: `lab-${l.moduleId}-${l.labId}`,
+        type: 'lab' as const,
+        title: l.labId,
+        module: l.moduleId,
+        at: l.completedAt || '',
+        points: l.points,
+      })),
+      ...quizScores.map(q => ({
+        id: `quiz-${q.moduleId}-${q.quizId}`,
+        type: 'quiz' as const,
+        title: `${q.quizId} — ${q.score}/${q.total}`,
+        module: q.moduleId,
+        at: q.completedAt || '',
+        points: q.points,
+      })),
+    ].filter(i => i.at)
+    return items.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 5)
+  }, [completedLessons, completedLabs, quizScores])
 
   const stats = [
-    { label: 'XP Earned', value: `${totalXp}`, total: '2450', icon: Zap, color: 'amber', trend: `${level.title} Lv.${level.level}` },
-    { label: 'Lessons', value: `${completedLessons.length}`, total: '80', icon: BookOpen, color: 'cyan', trend: `${Math.round((completedLessons.length/80)*100)}% complete` },
-    { label: 'Labs', value: `${completedLabs.length}`, total: '20', icon: FlaskConical, color: 'emerald', trend: '16 PCAPs live' },
+    { label: 'XP Earned', value: `${totalXp}`, total: `${MAX_XP}`, icon: Zap, color: 'amber', trend: `${level.title} Lv.${level.level}` },
+    { label: 'Lessons', value: `${completedLessons.length}`, total: `${TOTAL_LESSONS}`, icon: BookOpen, color: 'cyan', trend: `${Math.round((completedLessons.length / TOTAL_LESSONS) * 100)}% of authored lessons` },
+    { label: 'Labs', value: `${completedLabs.length}`, total: `${TOTAL_LABS}`, icon: FlaskConical, color: 'emerald', trend: `${TOTAL_PCAPS} verified captures on disk` },
   ]
+
+  const ago = (at: string) => {
+    const diff = Date.now() - new Date(at).getTime()
+    const mins = Math.floor(diff / 60000)
+    if (mins < 1) return 'just now'
+    if (mins < 60) return `${mins}m ago`
+    const hours = Math.floor(mins / 60)
+    if (hours < 24) return `${hours}h ago`
+    return `${Math.floor(hours / 24)}d ago`
+  }
 
   return (
     <div className="space-y-4 xs:space-y-5 sm:space-y-6 md:space-y-8 max-w-[1400px] mx-auto min-w-0 w-full min-w-0 w-full px-0" data-tour="dashboard-stats">
-      {/* Header — production ready responsive */}
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -72,7 +107,7 @@ export function Dashboard() {
           <p className="text-[13px] md:text-[14px] text-slate-400 mt-2 flex items-center gap-2">
             <span>Forge. Break. Fix. Retest.</span>
             <span className="hidden sm:inline w-1 h-1 rounded-full bg-slate-600" />
-            <span className="hidden sm:inline text-slate-500">Your wireless PT journey • 20 modules • Zero-cost</span>
+            <span className="hidden sm:inline text-slate-500">Your wireless PT journey • {TOTAL_MODULES} modules • zero-cost</span>
           </p>
         </div>
         <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
@@ -82,7 +117,7 @@ export function Dashboard() {
           >
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-glow-emerald" />
             <span className="text-[11px] md:text-[12px] font-medium text-slate-300">Local Lab</span>
-            <span className="hidden sm:inline text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">KALI</span>
+            <span className="hidden sm:inline text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">LOCAL</span>
           </motion.div>
         </div>
       </motion.div>
@@ -107,7 +142,7 @@ export function Dashboard() {
                   </div>
                   <h3 className="font-heading font-bold text-[16px] text-slate-100">Overall Progress</h3>
                 </div>
-                <p className="text-[12px] text-slate-500 mt-2">Your journey through 20 modules</p>
+                <p className="text-[12px] text-slate-500 mt-2">Your journey through the {TOTAL_MODULES}-module path</p>
               </div>
               <div className="text-right">
                 <div className="text-[11px] text-slate-500 uppercase tracking-wide font-medium">Completion</div>
@@ -298,47 +333,52 @@ export function Dashboard() {
                 </div>
                 Recent Activity
               </h3>
-              <span className="text-[10px] px-2 py-1 rounded-full bg-[#1e293b] border border-[#334155] text-slate-500 font-mono">{recentActivity.length} recent</span>
+              <span className="text-[10px] px-2 py-1 rounded-full bg-[#1e293b] border border-[#334155] text-slate-500 font-mono">
+                {recentActivity.length === 0 ? 'nothing recorded yet' : `${recentActivity.length} most recent`}
+              </span>
             </div>
             <div className="space-y-3">
-              {recentActivity.map((act, idx) => (
-                <motion.div
-                  key={act.id}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: 0.4 + idx * 0.05 }}
-                  whileHover={{ scale: 1.01, x: 2 }}
-                  className="flex gap-3 p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 hover:bg-[#020617]/80 hover:border-[#334155]/40 transition-all duration-200 cursor-pointer group/item"
-                >
-                  <div className={`
-                    w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 border transition-all duration-200
-                    ${act.type === 'lesson' 
-                      ? 'bg-cyan-500/10 border-cyan-500/20 group-hover/item:bg-cyan-500/15 group-hover/item:scale-110' 
-                      : act.type === 'lab'
-                      ? 'bg-emerald-500/10 border-emerald-500/20 group-hover/item:bg-emerald-500/15 group-hover/item:scale-110'
-                      : 'bg-violet-500/10 border-violet-500/20 group-hover/item:bg-violet-500/15 group-hover/item:scale-110'
-                    }
-                  `}>
-                    {act.type === 'lesson' ? <BookOpen className="w-4 h-4 text-cyan-400" /> : 
-                     act.type === 'lab' ? <FlaskConical className="w-4 h-4 text-emerald-400" /> :
-                     <Swords className="w-4 h-4 text-violet-400" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-medium text-slate-200 truncate group-hover/item:text-slate-100 transition-colors">{act.title}</div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[11px] text-slate-500 font-mono truncate">{act.module}</span>
-                      <span className="w-1 h-1 rounded-full bg-slate-600" />
-                      <div className="flex items-center gap-1">
-                        <div className="w-8 h-1 bg-[#1e293b] rounded-full overflow-hidden">
-                          <div className="h-full bg-cyan-400 rounded-full" style={{ width: `${act.progress}%` }} />
-                        </div>
-                        <span className="text-[10px] text-slate-500 font-mono">{act.progress}%</span>
+              {recentActivity.length === 0 ? (
+                <div className="p-5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-center">
+                  <div className="text-[12.5px] text-slate-300">No activity recorded yet</div>
+                  <p className="mt-1.5 text-[11.5px] text-slate-500 leading-relaxed">
+                    Your lesson, lab and quiz completions appear here as you work. Start with{' '}
+                    <Link to={`/modules/${currentModule.id}`} className="text-cyan-400 hover:text-cyan-300">{currentModule.title}</Link>{' '}
+                    — each lesson needs about 15–20 minutes.
+                  </p>
+                </div>
+              ) : (
+                recentActivity.map((act, idx) => (
+                  <motion.div
+                    key={act.id}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.2 + idx * 0.05 }}
+                    className="flex gap-3 p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 hover:bg-[#020617]/80 hover:border-[#334155]/40 transition-all duration-200 group/item"
+                  >
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 border transition-all duration-200 ${
+                      act.type === 'lesson'
+                        ? 'bg-cyan-500/10 border-cyan-500/20 group-hover/item:bg-cyan-500/15'
+                        : act.type === 'lab'
+                        ? 'bg-emerald-500/10 border-emerald-500/20 group-hover/item:bg-emerald-500/15'
+                        : 'bg-violet-500/10 border-violet-500/20 group-hover/item:bg-violet-500/15'
+                    }`}>
+                      {act.type === 'lesson' ? <BookOpen className="w-4 h-4 text-cyan-400" /> :
+                       act.type === 'lab' ? <FlaskConical className="w-4 h-4 text-emerald-400" /> :
+                       <Target className="w-4 h-4 text-violet-400" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-medium text-slate-200 truncate group-hover/item:text-slate-100 transition-colors">{act.title}</div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[11px] text-slate-500 font-mono truncate">{act.module}</span>
+                        <span className="w-1 h-1 rounded-full bg-slate-600" />
+                        <span className="text-[10px] text-slate-500 font-mono">+{act.points} XP</span>
                       </div>
                     </div>
-                  </div>
-                  <div className="text-[10px] text-slate-600 font-mono shrink-0">{act.time}</div>
-                </motion.div>
-              ))}
+                    <div className="text-[10px] text-slate-600 font-mono shrink-0">{ago(act.at)}</div>
+                  </motion.div>
+                ))
+              )}
             </div>
           </div>
         </motion.div>
@@ -360,7 +400,7 @@ export function Dashboard() {
               </div>
               <div>
                 <h3 className="font-heading font-bold text-[15px] text-slate-100">Learning Path</h3>
-                <p className="text-[11px] text-slate-500 font-mono">20 modules • 6 phases • Zero-cost</p>
+                <p className="text-[11px] text-slate-500 font-mono">{TOTAL_MODULES} modules • 6 phases • zero-cost</p>
               </div>
             </div>
             <Link to="/path" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] font-medium text-slate-300 hover:bg-[#25354f] hover:border-[#475569] hover:text-slate-100 transition-all duration-200 group/link">
@@ -421,8 +461,8 @@ export function Dashboard() {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {[
-          { to: '/modules', icon: BookOpen, title: 'Browse Modules', desc: '20 modules • 6 phases', color: 'cyan', stats: '20 total' },
-          { to: '/labs', icon: FlaskConical, title: 'Hands-on Labs', desc: 'PCAP • Config • Simulated', color: 'emerald', stats: '16 PCAPs' },
+          { to: '/modules', icon: BookOpen, title: 'Browse Modules', desc: `${TOTAL_MODULES} modules • 6 phases`, color: 'cyan', stats: `${TOTAL_MODULES} total` },
+          { to: '/labs', icon: FlaskConical, title: 'Hands-on Labs', desc: 'Capture • Config • Simulated', color: 'emerald', stats: `${TOTAL_CAPTURE_LABS} capture labs` },
           { to: '/challenges', icon: Swords, title: 'Challenges', desc: 'Guided → Assessment', color: 'violet', stats: '15 total' },
         ].map((action, idx) => (
           <motion.div
@@ -485,16 +525,11 @@ export function Dashboard() {
         </Suspense>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="min-w-0 w-full">
-        <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Realtime Leaderboard…</div>}>
-          <RealtimeLeaderboard />
-        </Suspense>
-      </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.52 }} className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 min-w-0" data-tour="reports">
         <div className="flex items-center gap-2 mb-4">
           <BarChart3 className="w-5 h-5 text-violet-400" />
-          <h3 className="font-heading font-bold text-[16px] text-slate-100">Enterprise Analytics — Classroom Ready</h3>
+          <h3 className="font-heading font-bold text-[16px] text-slate-100">Your progress analytics</h3>
           <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 font-mono">Instructor View</span>
         </div>
         <Suspense fallback={<div className="p-6 text-center text-[13px] text-slate-500 font-mono">Loading Analytics…</div>}>
@@ -510,12 +545,12 @@ export function Dashboard() {
       >
         <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
           <Zap className="w-3 h-3 text-amber-400" />
-          <span>Enterprise • Zero-cost • Local-first • Offline • Kali-ready • Production</span>
+          <span>Zero-cost • local-first • offline-capable • command syntax mapped to the tools you use on your own machine</span>
         </div>
         <span className="hidden sm:inline w-1 h-1 rounded-full bg-slate-700" />
         <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
           <Users className="w-3 h-3 text-slate-500" />
-          <span>20 modules • 18 labs • 15 challenges • 16 PCAPs • Cmd+K search • Terminal • Vault • Certificate</span>
+          <span>{TOTAL_MODULES} modules • {TOTAL_LABS} labs • {TOTAL_CHALLENGES} challenges • {TOTAL_PCAPS} verified captures • Cmd+K search • Terminal • Evidence vault</span>
         </div>
       </motion.div>
     </div>

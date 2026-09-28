@@ -1,34 +1,84 @@
+import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { useProgressStore } from '@/store/useProgressStore'
-import { BarChart3, TrendingUp, Clock, Target, Award, Zap, Flame, Trophy, Users, Activity, Shield, BookOpen } from 'lucide-react'
+import modules from '@/content/modules.json'
+import { TOTAL_LESSONS, TOTAL_MODULES, TOTAL_PCAPS, TOTAL_SCENARIOS } from '@/content/stats'
+import { BarChart3, TrendingUp, Flame, BookOpen, Zap, Trophy, Info } from 'lucide-react'
+
+/**
+ * Progress analytics — computed from what this browser actually recorded.
+ *
+ * Every number on this panel comes from the local progress store (lesson/lab/quiz completions with
+ * real timestamps). When nothing has been recorded yet, the panels say so instead of showing a
+ * placeholder chart.
+ */
+
+interface ModuleRow { id: string; title: string; phase: number; lessons: unknown[] }
 
 export function AnalyticsDashboard({ className = '' }: { className?: string }) {
   const totalXp = useProgressStore(s => s.getTotalXp())
-  const completed = useProgressStore(s => s.completedLessons.length)
   const level = useProgressStore(s => s.getLevel())
-  const streak = useProgressStore(s => s.streak)
-  const achievements = useProgressStore(s => s.achievements.length)
+  const streak = useProgressStore(s => s.getStreak())
+  const achievements = useProgressStore(s => s.achievements)
+  const overall = useProgressStore(s => s.getOverallProgress())
+  const completedLessons = useProgressStore(s => s.completedLessons)
+  const completedLabs = useProgressStore(s => s.completedLabs)
+  const quizScores = useProgressStore(s => s.quizScores)
+  const getModuleProgress = useProgressStore(s => s.getModuleProgress)
 
-  const modulesData = [
-    { name: '802.11 Fundamentals', progress: 100, xp: 120 },
-    { name: 'Linux & Tools', progress: 85, xp: 100 },
-    { name: 'Recon & Scanning', progress: 60, xp: 140 },
-    { name: 'WPA/WPA2', progress: 40, xp: 160 },
-    { name: 'WPA3 & WPS', progress: 20, xp: 200 },
-    { name: 'Enterprise', progress: 0, xp: 0 },
+  const moduleRows = useMemo(() => {
+    const list = modules as ModuleRow[]
+    return list.map(m => ({
+      id: m.id,
+      title: m.title,
+      progress: getModuleProgress(m.id),
+      lessons: Array.isArray(m.lessons) ? m.lessons.length : 0,
+    }))
+  }, [getModuleProgress, completedLessons, completedLabs, quizScores])
+
+  const started = moduleRows.filter(m => m.progress > 0)
+  const nothingRecorded = completedLessons.length === 0 && completedLabs.length === 0 && quizScores.length === 0
+
+  // Real activity by weekday, from the timestamps stored with each completion.
+  const weekly = useMemo(() => {
+    const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+    const buckets = labels.map(() => 0)
+    const points: { at: string; points: number }[] = [
+      ...completedLessons.map(l => ({ at: l.completedAt || '', points: l.points || 0 })),
+      ...completedLabs.map(l => ({ at: l.completedAt || '', points: l.points || 0 })),
+      ...quizScores.map(q => ({ at: q.completedAt || '', points: q.points || 0 })),
+    ]
+    const now = new Date()
+    const startOfWeek = new Date(now)
+    const dow = (now.getDay() + 6) % 7 // Monday = 0
+    startOfWeek.setDate(now.getDate() - dow)
+    startOfWeek.setHours(0, 0, 0, 0)
+    let tracked = 0
+    for (const p of points) {
+      if (!p.at) continue
+      const when = new Date(p.at)
+      if (Number.isNaN(when.getTime()) || when < startOfWeek) continue
+      const idx = (when.getDay() + 6) % 7
+      buckets[idx] += p.points
+      tracked++
+    }
+    return { labels, buckets, tracked }
+  }, [completedLessons, completedLabs, quizScores])
+
+  const weekTotal = weekly.buckets.reduce((a, b) => a + b, 0)
+  const peak = Math.max(...weekly.buckets, 0)
+
+  const stats = [
+    { icon: Zap, label: 'Total XP', value: `${totalXp}`, sub: `Lv ${level.level} • ${level.title}`, color: 'amber' },
+    { icon: BookOpen, label: 'Lessons', value: `${completedLessons.length}/${TOTAL_LESSONS}`, sub: `${Math.round((completedLessons.length / TOTAL_LESSONS) * 100)}% of authored lessons`, color: 'cyan' },
+    { icon: Flame, label: 'Streak', value: `${streak} ${streak === 1 ? 'day' : 'days'}`, sub: streak > 0 ? 'local activity streak' : 'no activity recorded yet', color: 'orange' },
+    { icon: Trophy, label: 'Achievements', value: `${achievements.length}`, sub: `${achievements.reduce((a, b) => a + b.points, 0)} XP from unlocks`, color: 'violet' },
   ]
-
-  const weeklyXp = [120, 200, 150, 300, 250, 180, 220]
 
   return (
     <div className={`space-y-4 xs:space-y-5 min-w-0 w-full ${className}`}>
-      <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { icon: Zap, label: 'Total XP', value: totalXp, sub: `Lv ${level.level} • ${level.title}`, color: 'amber' },
-          { icon: BookOpen, label: 'Lessons', value: `${completed}/80`, sub: `${Math.round((completed/80)*100)}% complete`, color: 'cyan' },
-          { icon: Flame, label: 'Streak', value: `${streak} days`, sub: 'Keep it up!', color: 'orange' },
-          { icon: Trophy, label: 'Achievements', value: `${achievements}/20`, sub: 'Unlock more', color: 'violet' },
-        ].map((stat, idx) => (
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {stats.map((stat, idx) => (
           <motion.div key={stat.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} className="p-4 rounded-2xl bg-[#0f172a] border border-[#1e293b] hover:border-[#334155]/60 transition-colors min-w-0">
             <div className="flex items-center gap-2 mb-2">
               <div className={`w-7 h-7 rounded-lg border flex items-center justify-center ${stat.color === 'amber' ? 'bg-amber-500/10 border-amber-500/20' : stat.color === 'cyan' ? 'bg-cyan-500/10 border-cyan-500/20' : stat.color === 'orange' ? 'bg-orange-500/10 border-orange-500/20' : 'bg-violet-500/10 border-violet-500/20'}`}>
@@ -46,78 +96,109 @@ export function AnalyticsDashboard({ className = '' }: { className?: string }) {
         <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 min-w-0">
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="w-4 h-4 text-cyan-400" />
-            <h3 className="font-heading font-bold text-[13px] text-slate-100">Module Progress</h3>
-            <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-[#020617] border border-[#1e293b] text-slate-500 font-mono">20 modules</span>
+            <h3 className="font-heading font-bold text-[13px] text-slate-100">Module progress</h3>
+            <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-[#020617] border border-[#1e293b] text-slate-500 font-mono">{TOTAL_MODULES} modules</span>
           </div>
-          <div className="space-y-2.5">
-            {modulesData.map((m, idx) => (
-              <div key={m.name} className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-slate-400 truncate flex-1 mr-2">{m.name}</span>
-                  <span className="text-[11px] font-mono text-slate-500 shrink-0">{m.progress}% • {m.xp} XP</span>
+
+          {started.length === 0 ? (
+            <div className="p-5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 text-center">
+              <div className="text-[12.5px] text-slate-300">No module progress yet</div>
+              <p className="mt-1.5 text-[11.5px] text-slate-500 leading-relaxed">
+                Progress appears here as soon as you complete a lesson, lab or quiz. Start with
+                <span className="font-mono text-slate-400"> Modules → {moduleRows[0]?.title ?? 'the first module'}</span>, then run the matching lab in the PCAP inspector.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {started.map((m, idx) => (
+                <div key={m.id} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-slate-400 truncate flex-1 mr-2">{m.title}</span>
+                    <span className="text-[11px] font-mono text-slate-500 shrink-0">{m.progress}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-[#020617] border border-[#1e293b]/60 overflow-hidden">
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${m.progress}%` }} transition={{ duration: 0.8, delay: idx * 0.05 }} className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-violet-400" />
+                  </div>
                 </div>
-                <div className="h-1.5 rounded-full bg-[#020617] border border-[#1e293b]/60 overflow-hidden">
-                  <motion.div initial={{ width: 0 }} animate={{ width: `${m.progress}%` }} transition={{ duration: 0.8, delay: idx * 0.05 }} className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-violet-400" />
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+              {started.length < TOTAL_MODULES && (
+                <div className="text-[11px] text-slate-500 font-mono pt-1">{TOTAL_MODULES - started.length} modules not started</div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 min-w-0">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-4 h-4 text-emerald-400" />
-            <h3 className="font-heading font-bold text-[13px] text-slate-100">Weekly XP Activity</h3>
-            <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono">+{weeklyXp.reduce((a,b)=>a+b,0)} XP</span>
+            <h3 className="font-heading font-bold text-[13px] text-slate-100">This week&apos;s XP</h3>
+            <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono">+{weekTotal} XP</span>
           </div>
-          <div className="flex items-end gap-1 h-[120px]">
-            {weeklyXp.map((xp, idx) => (
-              <div key={idx} className="flex-1 flex flex-col items-center gap-1 min-w-0">
-                <motion.div initial={{ height: 0 }} animate={{ height: `${(xp/300)*100}%` }} transition={{ duration: 0.6, delay: idx * 0.05 }} className="w-full rounded-t-lg bg-gradient-to-t from-cyan-500/20 to-violet-500/40 border border-violet-500/20 min-h-[8px]" />
-                <span className="text-[10px] font-mono text-slate-500">{['M','T','W','T','F','S','S'][idx]}</span>
+
+          {weekly.tracked === 0 ? (
+            <div className="p-5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 text-center">
+              <div className="text-[12.5px] text-slate-300">No completions recorded this week</div>
+              <p className="mt-1.5 text-[11.5px] text-slate-500 leading-relaxed">
+                The chart counts XP from completions stored on this device in the current Mon–Sun week. Complete a
+                lesson ({TOTAL_LESSONS} authored), a lab ({TOTAL_PCAPS} verified captures) or a decision scenario
+                ({TOTAL_SCENARIOS} available) and it will appear here.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-end gap-1 h-[120px]">
+                {weekly.buckets.map((xp, idx) => (
+                  <div key={idx} className="flex-1 flex flex-col items-center gap-1 min-w-0">
+                    <motion.div
+                      initial={{ height: 0 }}
+                      animate={{ height: peak ? `${Math.max((xp / peak) * 100, 2)}%` : '2%' }}
+                      transition={{ duration: 0.6, delay: idx * 0.05 }}
+                      className="w-full rounded-t-lg bg-gradient-to-t from-cyan-500/20 to-violet-500/40 border border-violet-500/20 min-h-[8px]"
+                      title={`${xp} XP`}
+                    />
+                    <span className="text-[10px] font-mono text-slate-500">{weekly.labels[idx]}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <div className="p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-center">
-              <div className="text-[14px] font-bold font-mono text-slate-100">{Math.max(...weeklyXp)}</div>
-              <div className="text-[10px] text-slate-500">Peak XP</div>
-            </div>
-            <div className="p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-center">
-              <div className="text-[14px] font-bold font-mono text-slate-100">{Math.round(weeklyXp.reduce((a,b)=>a+b,0)/7)}</div>
-              <div className="text-[10px] text-slate-500">Avg/day</div>
-            </div>
-            <div className="p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-center">
-              <div className="text-[14px] font-bold font-mono text-emerald-400">+12%</div>
-              <div className="text-[10px] text-slate-500">Growth</div>
-            </div>
-          </div>
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <div className="p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-center">
+                  <div className="text-[14px] font-bold font-mono text-slate-100">{peak}</div>
+                  <div className="text-[10px] text-slate-500">Best day</div>
+                </div>
+                <div className="p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-center">
+                  <div className="text-[14px] font-bold font-mono text-slate-100">{Math.round(weekTotal / 7)}</div>
+                  <div className="text-[10px] text-slate-500">Avg/day</div>
+                </div>
+                <div className="p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-center">
+                  <div className="text-[14px] font-bold font-mono text-slate-100">{weekly.buckets.filter(b => b > 0).length}</div>
+                  <div className="text-[10px] text-slate-500">Active days</div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 min-w-0">
-        <div className="flex items-center gap-2 mb-4">
-          <Users className="w-4 h-4 text-violet-400" />
-          <h3 className="font-heading font-bold text-[13px] text-slate-100">Leaderboard — Enterprise Classroom</h3>
-          <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 font-mono">Mock • Multi-user ready</span>
+      <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Trophy className="w-4 h-4 text-violet-400" />
+          <h3 className="font-heading font-bold text-[13px] text-slate-100">Where you stand</h3>
+          <span className="ml-auto text-[10px] font-mono text-slate-500">{overall}% overall</span>
         </div>
-        <div className="space-y-2">
-          {[
-            { rank: 1, name: 'You', xp: totalXp, level: level.level, avatar: '👑' },
-            { rank: 2, name: 'alice.wifi', xp: 2150, level: 8, avatar: '🚀' },
-            { rank: 3, name: 'bob.pentest', xp: 1890, level: 7, avatar: '🔥' },
-            { rank: 4, name: 'carol.recon', xp: 1650, level: 6, avatar: '⚡' },
-            { rank: 5, name: 'dave.enterprise', xp: 1420, level: 5, avatar: '🛡️' },
-          ].map((user, idx) => (
-            <motion.div key={user.name} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.04 }} className={`flex items-center gap-3 p-3 rounded-xl border ${user.name === 'You' ? 'bg-violet-500/10 border-violet-500/30' : 'bg-[#020617]/60 border-[#1e293b]/40 hover:bg-[#020617]/80'}`}>
-              <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[12px] font-bold font-mono shrink-0 ${user.rank === 1 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : user.rank === 2 ? 'bg-slate-400/20 text-slate-300 border border-slate-400/30' : user.rank === 3 ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' : 'bg-[#1e293b] text-slate-500 border border-[#334155]'}`}>{user.rank}</span>
-              <span className="text-[16px]">{user.avatar}</span>
-              <span className="text-[13px] font-medium text-slate-200 flex-1 truncate">{user.name}</span>
-              <span className="text-[11px] font-mono text-slate-500 hidden xs:inline">Lv.{user.level}</span>
-              <span className="text-[12px] font-bold font-mono text-cyan-300 shrink-0">{user.xp} XP</span>
-            </motion.div>
-          ))}
-        </div>
+        {nothingRecorded ? (
+          <p className="text-[12px] text-slate-400 flex items-start gap-2 leading-relaxed">
+            <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-slate-500" />
+            Nothing recorded on this device yet, so there is nothing to compare. Progress, XP and achievements are
+            stored only in this browser — clearing site data or using another device starts from zero.
+          </p>
+        ) : (
+          <p className="text-[12px] text-slate-400 leading-relaxed">
+            {completedLessons.length} lessons, {completedLabs.length} labs and {quizScores.length} quizzes recorded
+            locally, {achievements.length} achievements unlocked. Overall completion ({overall}%) is derived from those
+            records plus XP against the level table — it is not a comparison with other learners, because this build
+            has no accounts and no server-side roster.
+          </p>
+        )}
       </div>
     </div>
   )

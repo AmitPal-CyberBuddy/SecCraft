@@ -1,5 +1,9 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { ACHIEVEMENTS_DEF as ACHIEVEMENT_DEFS, ACHIEVEMENT_POINTS } from '@/content/achievements'
+import { TOTAL_LABS, TOTAL_LESSONS, TOTAL_MODULES } from '@/content/stats'
+import modules from '@/content/modules.json'
+import { LABS } from '@/content/labs'
 
 interface LessonProgress {
   moduleId: string
@@ -46,17 +50,6 @@ export interface Level {
   icon: string
 }
 
-export const LEVELS: Level[] = [
-  { level: 1, title: 'Initiate', minXp: 0, maxXp: 99, color: 'slate', icon: '🌱' },
-  { level: 2, title: 'Scout', minXp: 100, maxXp: 299, color: 'cyan', icon: '🔍' },
-  { level: 3, title: 'Analyst', minXp: 300, maxXp: 599, color: 'emerald', icon: '📡' },
-  { level: 4, title: 'Operator', minXp: 600, maxXp: 999, color: 'violet', icon: '⚡' },
-  { level: 5, title: 'Specialist', minXp: 1000, maxXp: 1499, color: 'amber', icon: '🛡️' },
-  { level: 6, title: 'Expert', minXp: 1500, maxXp: 1999, color: 'pink', icon: '🎯' },
-  { level: 7, title: 'Master', minXp: 2000, maxXp: 2449, color: 'cyan', icon: '👑' },
-  { level: 8, title: 'Forge Master', minXp: 2450, maxXp: 9999, color: 'amber', icon: '🔥' },
-]
-
 export const POINTS = {
   LESSON: 10,
   LAB: 25,
@@ -69,28 +62,38 @@ export const POINTS = {
   STREAK_BONUS: 5,
 }
 
-export const ACHIEVEMENTS_DEF: Omit<Achievement, 'unlockedAt'>[] = [
-  { id: 'first_lesson', title: 'First Blood', description: 'Complete your first lesson', icon: '📖', points: 10 },
-  { id: 'five_lessons', title: 'Explorer', description: 'Complete 5 lessons', icon: '🧭', points: 25 },
-  { id: 'ten_lessons', title: 'Scholar', description: 'Complete 10 lessons', icon: '🎓', points: 50 },
-  { id: 'twenty_lessons', title: 'Knowledge Seeker', description: 'Complete 20 lessons', icon: '📚', points: 100 },
-  { id: 'fifty_lessons', title: 'Lore Master', description: 'Complete 50 lessons', icon: '📜', points: 150 },
-  { id: 'all_lessons', title: 'Completionist', description: 'Complete all 80 lessons', icon: '🏆', points: 200 },
-  { id: 'first_lab', title: 'Lab Rat', description: 'Complete your first lab', icon: '🧪', points: 15 },
-  { id: 'five_labs', title: 'Hands-On', description: 'Complete 5 labs', icon: '🔬', points: 50 },
-  { id: 'ten_labs', title: 'Lab Master', description: 'Complete 10 labs', icon: '⚗️', points: 100 },
-  { id: 'first_quiz', title: 'Quiz Novice', description: 'Complete your first quiz', icon: '❓', points: 10 },
-  { id: 'perfect_quiz', title: 'Perfectionist', description: 'Get 100% on a quiz', icon: '💯', points: 25 },
-  { id: 'five_quizzes', title: 'Quiz Master', description: 'Complete 5 quizzes', icon: '🧠', points: 50 },
-  { id: 'module_complete', title: 'Module Conqueror', description: 'Complete a full module', icon: '✅', points: 50 },
-  { id: 'phase_complete', title: 'Phase Conqueror', description: 'Complete a full phase', icon: '🚩', points: 100 },
-  { id: 'three_modules', title: 'Trifecta', description: 'Complete 3 modules', icon: '🔱', points: 75 },
-  { id: 'ten_modules', title: 'Deca', description: 'Complete 10 modules', icon: '💎', points: 150 },
-  { id: 'all_modules', title: 'Forge Legend', description: 'Complete all 20 modules', icon: '👑', points: 300 },
-  { id: 'final_assessment', title: 'Certified', description: 'Complete final assessment', icon: '🎖️', points: 200 },
-  { id: 'streak_3', title: 'Consistent', description: '3 day streak', icon: '🔥', points: 30 },
-  { id: 'streak_7', title: 'Dedicated', description: '7 day streak', icon: '🔥', points: 70 },
+
+/**
+ * XP ceiling for this build, derived from the shipped content and the point values above:
+ * every authored lesson, every lab, one quiz per module (perfect-score bonus included) and every
+ * achievement. Progress percentages and certificate thresholds divide by this — never by a number
+ * typed into a component.
+ */
+export const MAX_XP =
+  TOTAL_LESSONS * POINTS.LESSON +
+  TOTAL_LABS * POINTS.LAB +
+  TOTAL_MODULES * (POINTS.QUIZ + POINTS.QUIZ_PERFECT_BONUS) +
+  ACHIEVEMENT_POINTS
+
+/** Certificate unlock: 60% of achievable XP and 60% overall completion. */
+export const CERT_XP_THRESHOLD = Math.round(MAX_XP * 0.6)
+export const CERT_PROGRESS_THRESHOLD = 60
+
+
+export const LEVELS: Level[] = [
+  { level: 1, title: 'Initiate', minXp: 0, maxXp: 99, color: 'slate', icon: '🌱' },
+  { level: 2, title: 'Scout', minXp: 100, maxXp: 299, color: 'cyan', icon: '🔍' },
+  { level: 3, title: 'Analyst', minXp: 300, maxXp: 599, color: 'emerald', icon: '📡' },
+  { level: 4, title: 'Operator', minXp: 600, maxXp: 999, color: 'violet', icon: '⚡' },
+  { level: 5, title: 'Specialist', minXp: 1000, maxXp: 1499, color: 'amber', icon: '🛡️' },
+  { level: 6, title: 'Expert', minXp: 1500, maxXp: 1999, color: 'pink', icon: '🎯' },
+  { level: 7, title: 'Master', minXp: 2000, maxXp: 2449, color: 'cyan', icon: '👑' },
+  { level: 8, title: 'Forge Master', minXp: Math.round(MAX_XP * 0.75), maxXp: 999999, color: 'amber', icon: '🔥' },
 ]
+
+
+export const ACHIEVEMENTS_DEF: Omit<Achievement, 'unlockedAt'>[] = ACHIEVEMENT_DEFS
+
 
 interface ProgressState {
   overallProgress: number
@@ -115,6 +118,7 @@ interface ProgressState {
   resetProgress: () => void
   getTotalXp: () => number
   getLevel: () => Level
+  getStreak: () => number
   getXpToNextLevel: () => { current: number; needed: number; nextLevel: Level | null; percent: number }
   getAchievements: () => Achievement[]
   getUnlockedAchievements: () => Achievement[]
@@ -130,7 +134,7 @@ export const useProgressStore = create<ProgressState>()(
       completedLabs: [],
       quizScores: [],
       currentModule: "02-wifi-fundamentals",
-      streak: 1,
+      streak: 0,
       lastActive: new Date().toISOString(),
       totalXp: 0,
       achievements: [],
@@ -150,7 +154,10 @@ export const useProgressStore = create<ProgressState>()(
           }
         })
         // Check achievements after
-        setTimeout(() => get().checkAndUnlockAchievements(), 100)
+        setTimeout(() => {
+          get().checkAndUnlockAchievements()
+          set({ streak: get().getStreak() })
+        }, 100)
         return { points, isNew: true }
       },
 
@@ -164,7 +171,10 @@ export const useProgressStore = create<ProgressState>()(
           totalXp: state.totalXp + points,
           lastEarnedPoints: { amount: points, reason: `Lab: ${labId}`, at: new Date().toISOString() },
         }))
-        setTimeout(() => get().checkAndUnlockAchievements(), 100)
+        setTimeout(() => {
+          get().checkAndUnlockAchievements()
+          set({ streak: get().getStreak() })
+        }, 100)
         return { points, isNew: true }
       },
 
@@ -193,11 +203,47 @@ export const useProgressStore = create<ProgressState>()(
             lastEarnedPoints: xpToAdd > 0 ? { amount: xpToAdd, reason: `Quiz: ${score}/${total}${isPerfect ? ' Perfect!' : ''}`, at: new Date().toISOString() } : state.lastEarnedPoints,
           }
         })
-        setTimeout(() => get().checkAndUnlockAchievements(), 100)
+        setTimeout(() => {
+          get().checkAndUnlockAchievements()
+          set({ streak: get().getStreak() })
+        }, 100)
         return { points: xpToAdd, isNew: !existing }
       },
 
       setCurrentModule: (id) => set({ currentModule: id }),
+
+      /**
+       * Consecutive days with at least one recorded completion, counted back from today (a streak
+       * that ended yesterday is still shown as alive until the day is over).
+       */
+      getStreak: () => {
+        const state = get()
+        const days = new Set<string>()
+        const add = (at?: string) => {
+          if (!at) return
+          const d = new Date(at)
+          if (!Number.isNaN(d.getTime())) days.add(d.toDateString())
+        }
+        state.completedLessons.forEach(l => add(l.completedAt))
+        state.completedLabs.forEach(l => add(l.completedAt))
+        state.quizScores.forEach(q => add(q.completedAt))
+
+        if (days.size === 0) return 0
+        const dayMs = 86400000
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        let cursor = new Date(today)
+        if (!days.has(cursor.toDateString())) {
+          cursor = new Date(today.getTime() - dayMs)
+          if (!days.has(cursor.toDateString())) return 0
+        }
+        let streak = 0
+        while (days.has(cursor.toDateString())) {
+          streak++
+          cursor = new Date(cursor.getTime() - dayMs)
+        }
+        return streak
+      },
 
       getModuleProgress: (moduleId) => {
         const state = get()
@@ -205,8 +251,14 @@ export const useProgressStore = create<ProgressState>()(
         const labsDone = state.completedLabs.filter(l => l.moduleId === moduleId).length
         const quizDone = state.quizScores.filter(q => q.moduleId === moduleId && q.completed).length
 
-        const lessonProgress = Math.min((lessonsDone / 4) * 60, 60)
-        const labProgress = Math.min((labsDone / 2) * 25, 25)
+        // Denominators come from the content itself: lessons from modules.json, labs from the single
+        // catalogue in content/labs.ts (the same list the Labs page renders).
+        const meta = (modules as Array<{ id: string; lessons?: unknown[] }>).find(m => m.id === moduleId)
+        const lessonTotal = Math.max(1, Array.isArray(meta?.lessons) ? meta!.lessons!.length : 1)
+        const labTotal = Math.max(1, LABS.filter(lab => lab.module === moduleId).length)
+
+        const lessonProgress = Math.min((lessonsDone / lessonTotal) * 60, 60)
+        const labProgress = Math.min((labsDone / labTotal) * 25, 25)
         const quizProgress = Math.min((quizDone / 1) * 15, 15)
 
         return Math.round(lessonProgress + labProgress + quizProgress)
@@ -214,19 +266,15 @@ export const useProgressStore = create<ProgressState>()(
 
       getOverallProgress: () => {
         const state = get()
-        // More accurate: avg of module progress
-        // 20 modules
-        const totalModules = 20
-        let sum = 0
-        // We don't have modules list here, approximate via completed items
-        // Use XP based progress as well
-        const maxXp = 2450
-        const xpProgress = Math.min((state.totalXp / maxXp) * 100, 100)
-        const totalItems = 20 * 7
+        // 60% XP against the achievable ceiling, 40% completion of the shipped items. Both halves
+        // are content-derived, so the number means the same thing after a content update.
+        const xpProgress = Math.min((state.getTotalXp() / MAX_XP) * 100, 100)
+        const totalItems = TOTAL_LESSONS + TOTAL_LABS + TOTAL_MODULES
         const completed = state.completedLessons.length + state.completedLabs.length + state.quizScores.length
         const itemProgress = Math.min((completed / totalItems) * 100, 100)
-        // Weighted avg: 60% xp, 40% items
-        return Math.round(xpProgress * 0.6 + itemProgress * 0.4)
+        const value = xpProgress * 0.6 + itemProgress * 0.4
+        // Guard against a persisted snapshot from an older release producing NaN.
+        return Number.isFinite(value) ? Math.round(value) : 0
       },
 
       isLessonCompleted: (moduleId, lessonId) => {
@@ -275,13 +323,12 @@ export const useProgressStore = create<ProgressState>()(
         const labs = state.completedLabs.length
         const quizzes = state.quizScores.length
         const perfectQuiz = state.quizScores.some(q => q.score === q.total && q.total > 0)
+        // A module counts as complete once every lesson it ships is done.
         const modulesCompleted = (() => {
-          // Count modules with 100% progress
-          // We approximate: if 4 lessons + 1 lab + 1 quiz done, consider module complete
-          // For simplicity, count distinct modules where lessons >=4
-          const map: Record<string, number> = {}
-          state.completedLessons.forEach(l => { map[l.moduleId] = (map[l.moduleId] || 0) + 1 })
-          return Object.values(map).filter(c => c >= 4).length
+          const done: Record<string, number> = {}
+          state.completedLessons.forEach(l => { done[l.moduleId] = (done[l.moduleId] || 0) + 1 })
+          const list = modules as Array<{ id: string; lessons?: unknown[] }>
+          return list.filter(m => (done[m.id] || 0) >= Math.max(1, Array.isArray(m.lessons) ? m.lessons.length : 1)).length
         })()
 
         const checks: { id: string; condition: boolean }[] = [
@@ -289,8 +336,7 @@ export const useProgressStore = create<ProgressState>()(
           { id: 'five_lessons', condition: lessons >= 5 },
           { id: 'ten_lessons', condition: lessons >= 10 },
           { id: 'twenty_lessons', condition: lessons >= 20 },
-          { id: 'fifty_lessons', condition: lessons >= 50 },
-          { id: 'all_lessons', condition: lessons >= 80 },
+          { id: 'all_lessons', condition: lessons >= TOTAL_LESSONS },
           { id: 'first_lab', condition: labs >= 1 },
           { id: 'five_labs', condition: labs >= 5 },
           { id: 'ten_labs', condition: labs >= 10 },
@@ -300,7 +346,9 @@ export const useProgressStore = create<ProgressState>()(
           { id: 'module_complete', condition: modulesCompleted >= 1 },
           { id: 'three_modules', condition: modulesCompleted >= 3 },
           { id: 'ten_modules', condition: modulesCompleted >= 10 },
-          { id: 'all_modules', condition: modulesCompleted >= 20 },
+          { id: 'all_modules', condition: modulesCompleted >= TOTAL_MODULES },
+          { id: 'streak_3', condition: get().getStreak() >= 3 },
+          { id: 'streak_7', condition: get().getStreak() >= 7 },
         ]
 
         checks.forEach(({ id, condition }) => {

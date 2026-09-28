@@ -1,3 +1,9 @@
+> **Historical note (superseded).** This file records what an earlier phase did, including the
+> former `mock_frames` fallback and the endpoints that returned placeholder data. Those paths were
+> removed: decoding now uses tshark → scapy → the verified offline datasets in
+> `frontend/public/lab-data/`, and the API returns explicit errors instead of invented values. See
+> `docs/REVIEW_AND_DECISIONS.md` §6 and `SECURITY.md`.
+
 # Phase E — Deauth, Rogue AP, Captive Portals + Challenges + Reporting
 
 ## PCAPs Generated (scripts/generate_phase_e_pcaps.py)

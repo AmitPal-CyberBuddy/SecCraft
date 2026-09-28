@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion'
-import { useProgressStore, LEVELS } from '@/store/useProgressStore'
+import { CERT_PROGRESS_THRESHOLD, CERT_XP_THRESHOLD, LEVELS, MAX_XP, useProgressStore } from '@/store/useProgressStore'
+import { TOTAL_LABS, TOTAL_LESSONS, TOTAL_MODULES } from '@/content/stats'
+import { ACHIEVEMENTS_DEF } from '@/content/achievements'
 import { Trophy, Zap, Target, Award, Crown, Star } from 'lucide-react'
 import { useMemo } from 'react'
 
@@ -143,9 +145,9 @@ export function CertificationPayoff() {
   const achievements = useProgressStore(s => s.achievements.length)
   const level = useProgressStore(s => s.getLevel())
 
-  const maxXp = 2450
-  const percentToCert = Math.min((totalXp / maxXp) * 100, 100)
-  const isCertified = totalXp >= 2000 && overall >= 80
+  const maxXp = MAX_XP
+  const percentToCert = Math.min((totalXp / CERT_XP_THRESHOLD) * 100, 100)
+  const isCertified = totalXp >= CERT_XP_THRESHOLD && overall >= CERT_PROGRESS_THRESHOLD
 
   return (
     <motion.div
@@ -164,10 +166,10 @@ export function CertificationPayoff() {
             </div>
             <div>
               <h3 className="font-heading font-bold text-[15px] text-slate-100 flex items-center gap-2">
-                WiFiForge Certified
+                Completion record
                 {isCertified && <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 font-mono">UNLOCKED</span>}
               </h3>
-              <p className="text-[11px] text-slate-400 mt-1">Complete journey to earn certificate</p>
+              <p className="text-[11px] text-slate-400 mt-1">A printable record of your own work — not an accredited certification</p>
             </div>
           </div>
           <div className="text-right">
@@ -178,31 +180,31 @@ export function CertificationPayoff() {
 
         <div className="grid grid-cols-3 gap-3 mb-5">
           <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-center">
-            <div className="text-[18px] font-bold text-slate-100 font-mono">{completedLessons}/80</div>
+            <div className="text-[18px] font-bold text-slate-100 font-mono">{completedLessons}/{TOTAL_LESSONS}</div>
             <div className="text-[10px] text-slate-500 uppercase tracking-wide mt-1">Lessons</div>
             <div className="w-full h-1 bg-[#1e293b] rounded-full mt-2 overflow-hidden">
-              <div className="h-full bg-cyan-400 rounded-full" style={{ width: `${(completedLessons/80)*100}%` }} />
+              <div className="h-full bg-cyan-400 rounded-full" style={{ width: `${(completedLessons/TOTAL_LESSONS)*100}%` }} />
             </div>
           </div>
           <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-center">
-            <div className="text-[18px] font-bold text-slate-100 font-mono">{completedLabs}/20</div>
+            <div className="text-[18px] font-bold text-slate-100 font-mono">{completedLabs}/{TOTAL_LABS}</div>
             <div className="text-[10px] text-slate-500 uppercase tracking-wide mt-1">Labs</div>
             <div className="w-full h-1 bg-[#1e293b] rounded-full mt-2 overflow-hidden">
-              <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${(completedLabs/20)*100}%` }} />
+              <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${(completedLabs/TOTAL_LABS)*100}%` }} />
             </div>
           </div>
           <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-center">
-            <div className="text-[18px] font-bold text-slate-100 font-mono">{achievements}/20</div>
+            <div className="text-[18px] font-bold text-slate-100 font-mono">{achievements}/{ACHIEVEMENTS_DEF.length}</div>
             <div className="text-[10px] text-slate-500 uppercase tracking-wide mt-1">Achievements</div>
             <div className="w-full h-1 bg-[#1e293b] rounded-full mt-2 overflow-hidden">
-              <div className="h-full bg-violet-400 rounded-full" style={{ width: `${(achievements/20)*100}%` }} />
+              <div className="h-full bg-violet-400 rounded-full" style={{ width: `${(achievements/ACHIEVEMENTS_DEF.length)*100}%` }} />
             </div>
           </div>
         </div>
 
         <div className="space-y-3">
           <div className="flex items-center justify-between text-[11px] font-mono">
-            <span className="text-slate-500 flex items-center gap-1.5"><Target className="w-3 h-3" /> Progress to Forge Master</span>
+            <span className="text-slate-500 flex items-center gap-1.5"><Target className="w-3 h-3" /> Progress to the completion record</span>
             <span className="text-slate-300">{totalXp} / {maxXp} XP</span>
           </div>
           <div className="relative h-2.5 bg-[#020617] rounded-full overflow-hidden border border-[#1e293b]/50">
@@ -232,15 +234,15 @@ export function CertificationPayoff() {
               <Trophy className="w-5 h-5 text-emerald-400" />
             </div>
             <div className="flex-1">
-              <div className="text-[13px] font-bold text-emerald-300">🎉 Certified! You are WiFiForge Certified!</div>
-              <div className="text-[11px] text-emerald-400/80 mt-1">Download your certificate from Reports • Share your achievement • Final flag: WIFIFORGE{'{FINAL_RECON_ASSESSMENT_COMPLETE}'}</div>
+              <div className="text-[13px] font-bold text-emerald-300">Record unlocked — coursework complete</div>
+              <div className="text-[11px] text-emerald-400/80 mt-1">Print or save it from Reports → Certificate. It documents your own practice; no third party issues or validates it.</div>
             </div>
           </motion.div>
         ) : (
           <div className="mt-5 p-3 rounded-xl bg-amber-500/[0.04] border border-amber-500/10 flex items-start gap-2.5">
             <Star className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
             <div className="text-[11px] text-slate-400 leading-relaxed">
-              <span className="font-semibold text-amber-300">Goal:</span> Complete all 20 modules (80 lessons), 18 labs, 15 challenges, earn {maxXp} XP to unlock <span className="text-violet-300 font-medium">WiFiForge Certified</span> certificate + final assessment flag. Current: {level.title} • {totalXp} XP • {overall}% overall.
+              <span className="font-semibold text-amber-300">Unlock condition:</span> {CERT_XP_THRESHOLD} XP (of the {maxXp} XP achievable here) and {CERT_PROGRESS_THRESHOLD}% overall, from {TOTAL_LESSONS} lessons, {TOTAL_LABS} labs and {TOTAL_MODULES} modules stored in this browser. Current: {level.title} • {totalXp} XP • {overall}% overall.
             </div>
           </div>
         )}

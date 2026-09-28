@@ -1,17 +1,13 @@
 import { useProgressStore, LEVELS } from '@/store/useProgressStore'
+import { TOTAL_LABS, TOTAL_LESSONS, TOTAL_MODULES, TOTAL_PCAPS, TOTAL_SCENARIOS } from '@/content/stats'
 import { motion } from 'framer-motion'
 import { Settings as SettingsIcon, Download, Trash2, FlaskConical, Wifi, Shield, Zap, Sparkles, Award, Target, Trophy, Star, Crown, Moon, Sun, LogIn, LogOut, Users, Lock, BarChart3, Bell, Keyboard, Smartphone, Clock, Flag, Code, Plus, Mic, Accessibility } from 'lucide-react'
 import { LevelBadge, CertificationPayoff } from '@/components/gamification/LevelBadge'
 import { useTheme } from '@/components/theme/ThemeProvider'
-import { useAuth } from '@/components/auth/AuthProvider'
+import { useLocalProfile } from '@/components/profile/LocalProfile'
+import { LocalDataPanel } from '@/components/security/LocalDataPanel'
+import { SecurityPosture } from '@/components/security/SecurityPosture'
 import { useState, lazy, Suspense } from 'react'
-
-const TwoFactorAuth = lazy(() => import('@/components/security/TwoFactorAuth').then(m => ({ default: m.TwoFactorAuth })))
-const AuditTrail = lazy(() => import('@/components/security/AuditTrail').then(m => ({ default: m.AuditTrail })))
-const TimelineViz = lazy(() => import('@/components/report/TimelineViz').then(m => ({ default: m.TimelineViz })))
-const CustomModuleCreator = lazy(() => import('@/components/admin/CustomModuleCreator').then(m => ({ default: m.CustomModuleCreator })))
-const ApiSdkDocs = lazy(() => import('@/components/admin/ApiSdkDocs').then(m => ({ default: m.ApiSdkDocs })))
-const VoiceAssistant = lazy(() => import('@/components/voice/VoiceAssistant').then(m => ({ default: m.VoiceAssistant })))
 const AccessibilityPanel = lazy(() => import('@/components/accessibility/AccessibilityPanel').then(m => ({ default: m.AccessibilityPanel })))
 
 export function Settings() {
@@ -24,18 +20,11 @@ export function Settings() {
   const achievements = useProgressStore(s => s.achievements)
   const xpToNext = useProgressStore(s => s.getXpToNextLevel())
   const { theme, resolved, setTheme } = useTheme()
-  const { user, login, logout, isAuthenticated, isInstructor } = useAuth()
-  const [loginForm, setLoginForm] = useState({ username: '', password: '' })
-  const [loginError, setLoginError] = useState('')
-  const [loginLoading, setLoginLoading] = useState(false)
-
-  const handleLogin = async () => {
-    setLoginLoading(true)
-    setLoginError('')
-    const ok = await login(loginForm.username, loginForm.password)
-    if (!ok) setLoginError('Invalid — try operator/operator, alice/alice, admin/admin')
-    setLoginLoading(false)
-  }
+  const { profile, hasProfile, save, clear } = useLocalProfile()
+  const [profileForm, setProfileForm] = useState<{ displayName: string; role: 'learner' | 'instructor' }>({
+    displayName: '',
+    role: 'learner',
+  })
 
   return (
     <div className="max-w-[800px] mx-auto space-y-4 xs:space-y-6 md:space-y-8 min-w-0 w-full">
@@ -44,27 +33,47 @@ export function Settings() {
           <SettingsIcon className="w-5 h-5 text-slate-400" />
         </div>
         <div className="min-w-0">
-          <h1 className="font-heading font-bold text-[22px] xs:text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none truncate">Settings — Enterprise</h1>
-          <p className="text-[12px] xs:text-[13px] text-slate-400 mt-1.5 leading-relaxed">Local-first • JWT auth • Theme • Teams • PWA • Audit • Enterprise-ready</p>
+          <h1 className="font-heading font-bold text-[22px] xs:text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none truncate">Settings</h1>
+          <p className="text-[12px] xs:text-[13px] text-slate-400 mt-1.5 leading-relaxed">Local-first • No account required • Theme • Accessibility • Offline (PWA) • Your data stays in this browser</p>
         </div>
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 sm:p-6 min-w-0">
         <h3 className="font-heading font-bold text-[14px] text-slate-100 mb-4 flex items-center gap-2">
-          <Lock className="w-4 h-4 text-violet-400" />Enterprise Auth — JWT Foundation • Multi-user • Role-based
-          {isAuthenticated && <span className="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono">Authenticated</span>}
+          <Lock className="w-4 h-4 text-violet-400" />Profile — local only, no authentication
+          {hasProfile && <span className="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono">saved locally</span>}
         </h3>
-        {!isAuthenticated ? (
+        <p className="text-[11.5px] text-slate-400 leading-relaxed mb-4">
+          This build has no server and therefore no accounts: there is no password field because there is nothing to
+          authenticate against, and no session token pretending otherwise. The name below only labels your local
+          progress. The optional FastAPI backend (<span className="font-mono">docker compose up</span>) provides real
+          JWT-authenticated multi-user classrooms if you need them.
+        </p>
+        {!hasProfile ? (
           <div className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input value={loginForm.username} onChange={e => setLoginForm({ ...loginForm, username: e.target.value })} placeholder="Username (operator, alice, admin)" className="px-4 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/30" />
-              <input value={loginForm.password} onChange={e => setLoginForm({ ...loginForm, password: e.target.value })} type="password" placeholder="Password (same as username)" className="px-4 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/30" />
+              <input
+                value={profileForm.displayName}
+                onChange={e => setProfileForm({ ...profileForm, displayName: e.target.value })}
+                placeholder="Display name (optional)"
+                maxLength={64}
+                className="px-4 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/30"
+              />
+              <select
+                value={profileForm.role}
+                onChange={e => setProfileForm({ ...profileForm, role: e.target.value as 'learner' | 'instructor' })}
+                className="px-4 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:outline-none focus:border-violet-500/30"
+              >
+                <option value="learner">Learner</option>
+                <option value="instructor">Instructor (self-declared)</option>
+              </select>
             </div>
-            {loginError && <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-[12px] text-red-400">{loginError}</div>}
-            <button onClick={handleLogin} disabled={loginLoading || !loginForm.username} className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-[13px] flex items-center justify-center gap-2 disabled:opacity-50 touch-manipulation min-h-[44px]">
-              {loginLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <LogIn className="w-4 h-4" />}Login — JWT • OAuth ready • Zero-cost mock
+            <button
+              onClick={() => save({ displayName: profileForm.displayName || 'Learner', role: profileForm.role })}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-[13px] flex items-center justify-center gap-2 touch-manipulation min-h-[44px]"
+            >
+              <Users className="w-4 h-4" />Save local profile
             </button>
-            <div className="text-[11px] text-slate-500 leading-relaxed">Mock users: <span className="text-slate-300 font-mono">operator/operator</span> (student, red-team-alpha), <span className="text-slate-300 font-mono">alice/alice</span> (instructor), <span className="text-slate-300 font-mono">admin/admin</span> (admin) • Production would use real JWT + OAuth Google/GitHub + refresh tokens + rate limit</div>
           </div>
         ) : (
           <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
@@ -74,26 +83,27 @@ export function Settings() {
                   <Users className="w-5 h-5 text-emerald-400" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[14px] font-bold text-slate-100 truncate">{user?.username} • {user?.role}</div>
-                  <div className="text-[11px] font-mono text-slate-500 truncate">{user?.email} • Team {user?.team} • {user?.xp} XP Lv.{user?.level}</div>
+                  <div className="text-[14px] font-bold text-slate-100 truncate">{profile?.displayName}</div>
+                  <div className="text-[11px] font-mono text-slate-500 truncate">
+                    {profile?.role} • {achievements.length} achievements • {totalXp} XP • stored in this browser only
+                  </div>
                 </div>
               </div>
-              <button onClick={logout} className="px-4 py-2 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] text-slate-300 flex items-center gap-2 hover:bg-[#25354f] transition-colors shrink-0 touch-manipulation min-h-[36px]">
-                <LogOut className="w-4 h-4" />Logout
+              <button onClick={clear} className="px-4 py-2 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] text-slate-300 flex items-center gap-2 hover:bg-[#25354f] transition-colors shrink-0 touch-manipulation min-h-[36px]">
+                <LogOut className="w-4 h-4" />Clear
               </button>
             </div>
-            {isInstructor && <div className="mt-3 p-2.5 rounded-lg bg-violet-500/10 border border-violet-500/20 text-[11px] text-violet-300">Instructor access — analytics dashboard, team management, audit logs, classroom creation</div>}
           </div>
         )}
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.07 }} className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 sm:p-6 min-w-0">
         <h3 className="font-heading font-bold text-[14px] text-slate-100 mb-4 flex items-center gap-2">
-          <Moon className="w-4 h-4 text-cyan-400" />Appearance — Theme • Light/Dark • System • Production
+          <Moon className="w-4 h-4 text-cyan-400" />Appearance — theme • light/dark/system
         </h3>
         <div className="flex gap-2 overflow-x-auto scrollbar-thin pb-1">
           {[
-            { id: 'dark', label: 'Dark', icon: Moon, desc: 'Default • OLED • Enterprise' },
+            { id: 'dark', label: 'Dark', icon: Moon, desc: 'Default • low-light friendly' },
             { id: 'light', label: 'Light', icon: Sun, desc: 'High contrast • Day mode' },
             { id: 'system', label: 'System', icon: SettingsIcon, desc: 'Auto • Prefers-color-scheme' },
           ].map(t => (
@@ -110,29 +120,9 @@ export function Settings() {
         </div>
       </motion.div>
 
-      <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading 2FA…</div>}>
-        <TwoFactorAuth />
-      </Suspense>
+      <SecurityPosture />
 
-      <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Audit Trail…</div>}>
-        <AuditTrail />
-      </Suspense>
-
-      <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Timeline…</div>}>
-        <TimelineViz />
-      </Suspense>
-
-      <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Custom Module Creator…</div>}>
-        <CustomModuleCreator />
-      </Suspense>
-
-      <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading API SDK Docs…</div>}>
-        <ApiSdkDocs />
-      </Suspense>
-
-      <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Voice Assistant…</div>}>
-        <VoiceAssistant />
-      </Suspense>
+      <LocalDataPanel />
 
       <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Accessibility…</div>}>
         <AccessibilityPanel />
@@ -159,13 +149,13 @@ export function Settings() {
             </div>
             <div className="p-3 xs:p-4 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 backdrop-blur-sm min-w-0">
               <div className="flex items-center gap-2 text-[11px] text-slate-500 uppercase tracking-widest font-semibold mb-2"><FlaskConical className="w-3 h-3" />Lessons</div>
-              <div className="text-[22px] xs:text-[24px] font-bold text-slate-100 font-mono">{lessons.length}/80</div>
-              <div className="text-[11px] text-slate-500 mt-1">{Math.round((lessons.length/80)*100)}% • {lessons.length*10} XP</div>
+              <div className="text-[22px] xs:text-[24px] font-bold text-slate-100 font-mono">{lessons.length}/{TOTAL_LESSONS}</div>
+              <div className="text-[11px] text-slate-500 mt-1">{Math.round((lessons.length/TOTAL_LESSONS)*100)}% • {lessons.length*10} XP</div>
             </div>
             <div className="p-3 xs:p-4 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 backdrop-blur-sm min-w-0">
               <div className="flex items-center gap-2 text-[11px] text-slate-500 uppercase tracking-widest font-semibold mb-2"><Trophy className="w-3 h-3" />Labs</div>
-              <div className="text-[22px] xs:text-[24px] font-bold text-slate-100 font-mono">{labs.length}/20</div>
-              <div className="text-[11px] text-slate-500 mt-1">{labs.length*25} XP • 16 PCAPs</div>
+              <div className="text-[22px] xs:text-[24px] font-bold text-slate-100 font-mono">{labs.length}/{TOTAL_LABS}</div>
+              <div className="text-[11px] text-slate-500 mt-1">{labs.length*25} XP • {TOTAL_PCAPS} captures</div>
             </div>
             <div className="p-3 xs:p-4 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 backdrop-blur-sm min-w-0">
               <div className="flex items-center gap-2 text-[11px] text-slate-500 uppercase tracking-widest font-semibold mb-2"><Star className="w-3 h-3" />Achievements</div>
@@ -210,14 +200,14 @@ export function Settings() {
         <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 min-w-0">
           <div className="flex items-center gap-2 mb-3">
             <BarChart3 className="w-4 h-4 text-emerald-400" />
-            <h4 className="font-bold text-[13px] text-slate-100">Enterprise</h4>
-            <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono">v2.1</span>
+            <h4 className="font-bold text-[13px] text-slate-100">Runtime</h4>
+            <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono">static</span>
           </div>
           <div className="space-y-1.5 text-[11px] font-mono">
-            <div className="flex justify-between"><span className="text-slate-500">PWA</span><span className="text-emerald-400">Offline-first • SW</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Auth</span><span className="text-violet-400">JWT • OAuth ready</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Audit</span><span className="text-cyan-400">SHA256 chain</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Rate Limit</span><span className="text-amber-400">100 req/min</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Offline (PWA)</span><span className="text-emerald-400">service worker</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Accounts</span><span className="text-slate-300">none in the static build</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Storage</span><span className="text-cyan-400">this browser only</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Local API</span><span className="text-amber-400">optional, same origin</span></div>
           </div>
         </div>
       </motion.div>
@@ -232,7 +222,7 @@ export function Settings() {
       </motion.div>
 
       <div className="text-[11px] text-slate-600 font-mono text-center pb-4">
-        WiFiForge v2.1 Enterprise • Zero-cost • Local-first • Offline • Kali-ready • Production • {totalXp} XP • Lv.{level.level} {level.title} • 20 modules • 80 lessons • 16 PCAPs • 50+ commands • Cmd+K search • Terminal • Vault • Certificate • Daily • Teams • JWT • PWA • Docker • Nginx TLS • CI/CD
+        WiFiForge — zero-cost, local-first, offline-capable • {totalXp} XP • Lv.{level.level} {level.title} • {TOTAL_MODULES} modules • {TOTAL_LESSONS} lessons • {TOTAL_PCAPS} verified captures • {TOTAL_SCENARIOS} decision scenarios • checklist • evidence vault • no accounts, no tracking
       </div>
     </div>
   )

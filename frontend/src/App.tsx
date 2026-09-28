@@ -15,6 +15,7 @@ import { Labs } from '@/pages/Labs'
 import { Challenges } from '@/pages/Challenges'
 import { ChallengeDetail } from '@/pages/ChallengeDetail'
 import { Reference } from '@/pages/Reference'
+import { Engagement } from '@/pages/Engagement'
 import { Settings } from '@/pages/Settings'
 import { Reports } from '@/pages/Reports'
 
@@ -61,6 +62,8 @@ function App() {
             <Route path="/challenges" element={<Challenges />} />
             <Route path="/challenges/:id" element={<ChallengeDetail />} />
             <Route path="/reference" element={<Reference />} />
+            <Route path="/engagement" element={<Engagement />} />
+            <Route path="/engagement/:id" element={<Engagement />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>

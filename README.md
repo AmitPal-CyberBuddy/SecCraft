@@ -29,15 +29,18 @@ Forge. Break. Fix. Retest.<br/>
 Core loop:
 
 ```
-Learn → Understand → Observe → Enumerate → Test → Validate → Evidence → Impact → Remediate → Retest → Report
+Observe → Interpret → Hypothesise → Choose the test → Execute → Evidence → Conclude → Impact → Remediate → Retest → Report
 ```
+
+Current content: **20 modules · 27 authored lessons · 15 artefact challenges (guided → semi-guided → assessment) ·
+35 decision scenarios · 42-item master checklist · 16 verified PCAPNG artefacts · 1 full engagement pack (`ENG-01`)**.
 
 - Runs at `http://localhost:3000` on Kali Linux
 - **Live in the browser:** <https://amitpal-cyberbuddy.github.io/WiFiForge/> (GitHub Pages, auto-deployed from `main`)
 - Zero-cost: Vite + React + FastAPI + SQLite + Docker (optional)
-- No physical Wi-Fi hardware required for Phase 1-5 (PCAPs, configs, logs)
-- Hardware labs clearly separated and gated (`RF_REQUIRED` badge)
-- VAPT methodology enforced in every module
+- No physical Wi-Fi hardware required for SIMULATION labs; HYBRID/RF_REQUIRED labs say exactly what they cannot prove
+- Lab tiers are explicit everywhere: 🟢 SIMULATION · 🟡 HYBRID · 🔴 RF_REQUIRED (see `docs/SIMULATION_VS_HARDWARE.md`)
+- Every capture is generated with real cryptographic material and verified by `scripts/verify-lab-artifacts.py` (142 checks)
 
 ### 🎨 Brand
 
@@ -55,23 +58,26 @@ Locked decision: [`docs/BRANDING_DECISION.md`](docs/BRANDING_DECISION.md)
 
 ```
 Frontend: Vite + React + TS + Tailwind + Zustand + React Router
-Backend:  FastAPI + SQLite + tshark parser
-Content:  Markdown + YAML + JSON (content/modules/)
-Labs:     Simulated (PCAP/config) → Docker (hostapd/freeradius) → Hardware (future)
+Backend:  FastAPI + SQLite + tshark/scapy (optional — the hosted build is static)
+Content:  JSON + Markdown (frontend/src/content, content/)
+Labs:     SIMULATION (bundled captures + configs) → HYBRID → RF_REQUIRED (documented, not performed)
 ```
 
 See [`docs/ARCHITECTURE_AND_ROADMAP.md`](docs/ARCHITECTURE_AND_ROADMAP.md) for full stack, repo structure, and 8-phase roadmap.
 
 ### 🗺️ Roadmap
 
-- **Phase A — Skeleton (Wk1):** Shell + Dashboard + Learning Path
-- **Phase B — Ref Module (Wk1-2):** Module 02 Wi-Fi Fundamentals end-to-end
-- **Phase C — Recon Labs (Wk2-3):** PCAP engine + Wireshark filters
-- **Phase D — Security (Wk3-5):** WPA2/WPA3/WPS
-- **Phase E — Challenges (Wk5-6):** Challenge engine + reporting
-- **Phase F — Docker Enterprise (Wk6-7):** RADIUS/EAP labs
-- **Phase G — Final Assessment (Wk7-8):** Full path 01-20
-- **Phase H — Hardware (Future):** Real RF with ALFA adapter
+Shipped today (see [`docs/REVIEW_AND_DECISIONS.md`](docs/REVIEW_AND_DECISIONS.md) for the audit trail):
+
+- **Foundations → Enterprise, one path:** 20 modules / 27 authored lessons across 6 phases, with a tier badge on
+  every lab (SIMULATION · HYBRID · RF_REQUIRED).
+- **Offline lab data:** 16 802.11 captures with configs, decoded datasets and a manifest whose SHA-256 values are
+  re-verified by `scripts/verify-lab-artifacts.py` (142 checks) before every deploy.
+- **Assessment practice:** 15 challenges (45 tasks with answers derived from the captures), 35 decision scenarios,
+  ENG-01 engagement pack + instructor answer key, 42-item VAPT checklist, CVSS 3.1 calculator, evidence vault,
+  report editor, PDF export of your own records.
+- **Still open:** ENG-02 (a second engagement profile), depth parity for modules 07/10, and an accessibility pass —
+  tracked in the roadmap rather than claimed as done.
 
 ### 📂 Repo Structure
 
@@ -87,7 +93,15 @@ WiFiForge/
 └── reporting/templates/
 ```
 
-### 🚀 Quick Start (Phase A — coming soon)
+### 🔐 Security
+
+Local-first is the security model: no account, no third-party requests (no CDN, no external fonts, no analytics),
+CSP in the shipped HTML plus `dist/_headers`/`nginx.conf`, and a build that fails if any of that regresses
+(`scripts/verify-no-dummy-data.py`). The optional API narrows CORS to an explicit allowlist, needs
+`WIFIFORGE_JWT_SECRET` before it will issue tokens, and returns explicit errors instead of placeholder data.
+See [`SECURITY.md`](SECURITY.md) for the guarantees, the non-claims and the reporting route.
+
+### 🚀 Quick Start
 
 ```bash
 # frontend

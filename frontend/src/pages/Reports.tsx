@@ -6,14 +6,12 @@ import { useState, lazy, Suspense } from 'react'
 const Certificate = lazy(() => import('@/components/certificate/Certificate').then(m => ({ default: m.Certificate })))
 const EvidenceVault = lazy(() => import('@/components/evidence/EvidenceVault').then(m => ({ default: m.EvidenceVault })))
 const ReportPdfExport = lazy(() => import('@/components/pdf/ReportPdfExport').then(m => ({ default: m.ReportPdfExport })))
-const TeamClassrooms = lazy(() => import('@/components/team/TeamClassrooms').then(m => ({ default: m.TeamClassrooms })))
 const CvssCalculator = lazy(() => import('@/components/security/CvssCalculator').then(m => ({ default: m.CvssCalculator })))
-const DiscussionForum = lazy(() => import('@/components/forum/DiscussionForum').then(m => ({ default: m.DiscussionForum })))
 const ReportTemplates = lazy(() => import('@/components/report/ReportTemplates').then(m => ({ default: m.ReportTemplates })))
 const TimelineViz = lazy(() => import('@/components/report/TimelineViz').then(m => ({ default: m.TimelineViz })))
 
 export function Reports() {
-  const [activeTab, setActiveTab] = useState<'editor' | 'certificate' | 'vault' | 'pdf' | 'cvss' | 'forum' | 'teams' | 'templates' | 'timeline'>('editor')
+  const [activeTab, setActiveTab] = useState<'editor' | 'certificate' | 'vault' | 'pdf' | 'cvss' | 'templates' | 'timeline'>('editor')
 
   return (
     <div className="max-w-[1200px] mx-auto space-y-4 xs:space-y-6 md:space-y-8 min-w-0 w-full">
@@ -29,13 +27,13 @@ export function Reports() {
           </div>
           <div className="min-w-0">
             <h1 className="font-heading font-bold text-[22px] xs:text-[26px] sm:text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none truncate">Reports & Certification</h1>
-            <p className="text-[12px] xs:text-[13px] text-slate-400 mt-1.5 leading-relaxed">Professional VAPT findings • Evidence vault • PDF export • Verified certificate • Enterprise audit ready</p>
+            <p className="text-[12px] xs:text-[13px] text-slate-400 mt-1.5 leading-relaxed">VAPT findings from your own evidence • evidence vault • PDF export • local completion record</p>
           </div>
         </div>
         <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500 px-3 py-2 rounded-xl bg-[#0f172a]/60 border border-[#1e293b]/40 shrink-0">
           <Sparkles className="w-3 h-3 text-violet-400" />
-          <span className="hidden xs:inline">Professional VAPT structure • Enterprise</span>
-          <span className="xs:hidden">Enterprise</span>
+          <span className="hidden xs:inline">Professional VAPT structure • your data only</span>
+          <span className="xs:hidden">Local</span>
         </div>
       </motion.div>
 
@@ -67,9 +65,7 @@ export function Reports() {
       {activeTab === 'cvss' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading CVSS…</div>}><CvssCalculator /></Suspense>}
       {activeTab === 'templates' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Templates…</div>}><ReportTemplates /></Suspense>}
       {activeTab === 'timeline' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Timeline…</div>}><TimelineViz /></Suspense>}
-      {activeTab === 'forum' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Forum…</div>}><DiscussionForum /></Suspense>}
-      {activeTab === 'teams' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Teams…</div>}><TeamClassrooms /></Suspense>}
-
+            
       {activeTab === 'editor' && (
         <>
           <motion.div

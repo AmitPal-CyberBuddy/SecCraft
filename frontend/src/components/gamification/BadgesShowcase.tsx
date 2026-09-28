@@ -1,29 +1,23 @@
 import { motion } from 'framer-motion'
-import { useProgressStore } from '@/store/useProgressStore'
-import { Award, Crown, Trophy, Zap, Flame, Star, Shield, Target, Lock } from 'lucide-react'
+import { ACHIEVEMENTS_DEF, useProgressStore } from '@/store/useProgressStore'
+import { Crown, Trophy, Star, Lock } from 'lucide-react'
 
 export function BadgesShowcase({ className = '' }: { className?: string }) {
   const achievements = useProgressStore(s => s.achievements)
   const totalXp = useProgressStore(s => s.getTotalXp())
   const level = useProgressStore(s => s.getLevel())
 
-  const allBadges = [
-    { id: 'first_lesson', title: 'First Blood', desc: 'Complete first lesson', icon: '📖', rarity: 'common', xp: 10, unlocked: achievements.some(a => a.id === 'first_lesson') },
-    { id: 'five_lessons', title: 'Explorer', desc: '5 lessons', icon: '🧭', rarity: 'common', xp: 25, unlocked: achievements.some(a => a.id === 'five_lessons') },
-    { id: 'ten_lessons', title: 'Scholar', desc: '10 lessons', icon: '🎓', rarity: 'rare', xp: 50, unlocked: achievements.some(a => a.id === 'ten_lessons') },
-    { id: 'twenty_lessons', title: 'Knowledge Seeker', desc: '20 lessons', icon: '📚', rarity: 'rare', xp: 100, unlocked: achievements.some(a => a.id === 'twenty_lessons') },
-    { id: 'fifty_lessons', title: 'Lore Master', desc: '50 lessons', icon: '📜', rarity: 'epic', xp: 150, unlocked: achievements.some(a => a.id === 'fifty_lessons') },
-    { id: 'all_lessons', title: 'Completionist', desc: '80 lessons', icon: '🏆', rarity: 'legendary', xp: 200, unlocked: achievements.some(a => a.id === 'all_lessons') },
-    { id: 'first_lab', title: 'Lab Rat', desc: 'First lab', icon: '🧪', rarity: 'common', xp: 15, unlocked: achievements.some(a => a.id === 'first_lab') },
-    { id: 'five_labs', title: 'Hands-On', desc: '5 labs', icon: '🔬', rarity: 'rare', xp: 50, unlocked: achievements.some(a => a.id === 'five_labs') },
-    { id: 'ten_labs', title: 'Lab Master', desc: '10 labs', icon: '⚗️', rarity: 'epic', xp: 100, unlocked: achievements.some(a => a.id === 'ten_labs') },
-    { id: 'perfect_quiz', title: 'Perfectionist', desc: '100% quiz', icon: '💯', rarity: 'rare', xp: 25, unlocked: achievements.some(a => a.id === 'perfect_quiz') },
-    { id: 'module_complete', title: 'Module Conqueror', desc: 'Complete module', icon: '✅', rarity: 'rare', xp: 50, unlocked: achievements.some(a => a.id === 'module_complete') },
-    { id: 'all_modules', title: 'Forge Legend', desc: '20 modules', icon: '👑', rarity: 'legendary', xp: 300, unlocked: achievements.some(a => a.id === 'all_modules') },
-    { id: 'streak_3', title: 'Consistent', desc: '3 day streak', icon: '🔥', rarity: 'rare', xp: 30, unlocked: achievements.some(a => a.id === 'streak_3') },
-    { id: 'streak_7', title: 'Dedicated', desc: '7 day streak', icon: '🔥', rarity: 'epic', xp: 70, unlocked: achievements.some(a => a.id === 'streak_7') },
-    { id: 'final_assessment', title: 'Certified', desc: 'Final assessment', icon: '🎖️', rarity: 'legendary', xp: 200, unlocked: achievements.some(a => a.id === 'final_assessment') },
-  ]
+  // Defined once in the progress store; rarity/XP are derived from the real achievement points.
+  const rarityFor = (points: number) => (points >= 200 ? 'legendary' : points >= 100 ? 'epic' : points >= 50 ? 'rare' : 'common')
+  const allBadges = ACHIEVEMENTS_DEF.map(def => ({
+    id: def.id,
+    title: def.title,
+    desc: def.description,
+    icon: def.icon,
+    xp: def.points,
+    rarity: rarityFor(def.points),
+    unlocked: achievements.some(a => a.id === def.id),
+  }))
 
   const getRarityColor = (rarity: string, unlocked: boolean) => {
     if (!unlocked) return 'bg-[#020617]/40 border-[#1e293b]/40 text-slate-600 opacity-60'
@@ -46,10 +40,10 @@ export function BadgesShowcase({ className = '' }: { className?: string }) {
         </div>
         <div className="min-w-0">
           <h3 className="font-heading font-bold text-[14px] xs:text-[15px] text-slate-100 flex items-center gap-2">
-            Badges Showcase — 20 Achievements • {unlockedCount}/{allBadges.length} unlocked
+            Achievements — {ACHIEVEMENTS_DEF.length} defined • {unlockedCount} unlocked
             <Crown className="w-4 h-4 text-amber-400" />
           </h3>
-          <p className="text-[11px] text-slate-500 font-mono">Rarity: common/rare/epic/legendary • Shareable • Animated • Enterprise</p>
+          <p className="text-[11px] text-slate-500 font-mono">Derived from local completions • rarity follows achievement XP • nothing here is pre-unlocked</p>
         </div>
         <div className="ml-auto text-[12px] font-bold font-mono text-amber-300 shrink-0">{totalXp} XP • Lv.{level.level}</div>
       </div>
@@ -71,7 +65,7 @@ export function BadgesShowcase({ className = '' }: { className?: string }) {
 
       <div className="mt-5 p-3 rounded-xl bg-amber-500/[0.03] border border-amber-500/10 flex items-center gap-2 text-[11px] text-slate-500">
         <Star className="w-4 h-4 text-amber-400 shrink-0" />
-        <span><span className="font-semibold text-amber-300">Enterprise:</span> Badges shareable LinkedIn/Twitter, rarity tiers animated, 20 achievements total, XP bonus, production-ready for 1000+ operators, anti-cheat.</span>
+        <span><span className="font-semibold text-amber-300">Scope:</span> achievements unlock from your own completions in this browser — nothing is pre-unlocked, and there is no sharing service or leaderboard behind them.</span>
       </div>
     </div>
   )

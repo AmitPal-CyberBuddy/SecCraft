@@ -1,5 +1,11 @@
 const API_BASE = "/api"
 
+export interface ModuleLesson {
+  id: string
+  title: string
+  kind: string
+}
+
 export interface Module {
   id: string
   title: string
@@ -7,10 +13,19 @@ export interface Module {
   difficulty: string
   estimated_hours: number
   prerequisites: string[]
+  /** Legacy convenience flag derived from lab_requirement. */
   status: "simulated" | "hardware" | "locked"
+  /** SIMULATION | HYBRID | RF_REQUIRED — see docs/SIMULATION_VS_HARDWARE.md */
+  lab_requirement?: string
+  content_status?: string
   skills: string[]
   description?: string
-  lessons?: string[]
+  objectives?: string[]
+  artifacts?: string[]
+  decision_practice?: string[]
+  evidence_focus?: string
+  retest_focus?: string
+  lessons?: ModuleLesson[]
   labs?: string[]
   progress?: number
 }

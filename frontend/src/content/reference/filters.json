@@ -1,0 +1,122 @@
+[
+ {
+  "filter": "wlan.fc.type_subtype == 8",
+  "purpose": "Beacon frames \u2014 the policy advertisement (SSID, RSNE, WPS, capabilities)."
+ },
+ {
+  "filter": "wlan.fc.type_subtype == 5",
+  "purpose": "Probe responses \u2014 reveals hidden SSIDs and per-client capabilities."
+ },
+ {
+  "filter": "wlan.fc.type_subtype == 4",
+  "purpose": "Probe requests \u2014 client intent / preferred network list leakage."
+ },
+ {
+  "filter": "wlan.fc.type_subtype == 11",
+  "purpose": "Authentication frames \u2014 algorithm and status codes."
+ },
+ {
+  "filter": "wlan.fc.type_subtype == 0 || wlan.fc.type_subtype == 1",
+  "purpose": "Association request / response \u2014 negotiated policy and status codes."
+ },
+ {
+  "filter": "wlan.fc.type_subtype == 12",
+  "purpose": "Deauthentication \u2014 reason codes, source, timing."
+ },
+ {
+  "filter": "wlan.fc.type_subtype == 10",
+  "purpose": "Disassociation \u2014 reason codes (e.g. 8 = STA leaving)."
+ },
+ {
+  "filter": "wlan.fc.type == 0",
+  "purpose": "All management frames \u2014 a useful overview filter."
+ },
+ {
+  "filter": "wlan.tag.number == 48",
+  "purpose": "Beacons/frames carrying the RSN information element (element 48)."
+ },
+ {
+  "filter": "wlan.rsn.akms.type == 8",
+  "purpose": "SAE (WPA3-Personal) AKM present."
+ },
+ {
+  "filter": "wlan.rsn.akms.type == 1",
+  "purpose": "802.1X (enterprise) AKM present."
+ },
+ {
+  "filter": "wlan.rsn.akms.type == 2",
+  "purpose": "PSK AKM present \u2014 in a WPA3 deployment this indicates transition mode."
+ },
+ {
+  "filter": "wlan.rsn.capabilities.mfpc == 1",
+  "purpose": "PMF capable (MFPC bit set)."
+ },
+ {
+  "filter": "wlan.rsn.capabilities.mfpr == 1",
+  "purpose": "PMF required (MFPR bit set) \u2014 spoofed deauth should fail."
+ },
+ {
+  "filter": "wlan.tag.number == 221",
+  "purpose": "Vendor-specific IEs, including WPS (OUI 00:50:F2)."
+ },
+ {
+  "filter": "wps.ap_setup_locked == 1",
+  "purpose": "WPS registrar is in setup-locked state."
+ },
+ {
+  "filter": "eapol",
+  "purpose": "All EAPOL frames (EAP authentication and 4-way handshake)."
+ },
+ {
+  "filter": "eapol.type == 3",
+  "purpose": "EAPOL-Key frames \u2014 the 4-way handshake (M1\u2013M4)."
+ },
+ {
+  "filter": "eapol.keydes.key_info & 0x0008",
+  "purpose": "M2/M4-style MIC-flagged key frames (verify with key_info, not order)."
+ },
+ {
+  "filter": "eap",
+  "purpose": "All EAP frames \u2014 method identification, identity exchange."
+ },
+ {
+  "filter": "eap.type == 25",
+  "purpose": "PEAP (EAP type 25); type 13 = EAP-TLS, 21 = EAP-TTLS, 26 = MS-CHAPv2, 254 = WSC."
+ },
+ {
+  "filter": "radius",
+  "purpose": "RADIUS traffic (authentication/accounting) visible on the capture path."
+ },
+ {
+  "filter": "radius.code == 11",
+  "purpose": "RADIUS Access-Challenge \u2014 the server is driving an EAP exchange."
+ },
+ {
+  "filter": "radius.tunnel_private_group_id",
+  "purpose": "Dynamic VLAN/group assignment attribute in an Access-Accept."
+ },
+ {
+  "filter": "wlan.fc.protected == 1",
+  "purpose": "Protected (encrypted) data frames \u2014 payload not readable without the PTK."
+ },
+ {
+  "filter": "wlan.fc.protected == 0 && wlan.fc.type == 2",
+  "purpose": "Unprotected data frames \u2014 cleartext payload (often an open/WEP BSS)."
+ },
+ {
+  "filter": "wlan.bssid == aa:bb:cc:dd:ee:ff",
+  "purpose": "One BSS \u2014 the right granularity for a finding."
+ },
+ {
+  "filter": "icmp",
+  "purpose": "ICMP \u2014 the reachability evidence for isolation/segmentation tests."
+ },
+ {
+  "filter": "bootp || dhcp",
+  "purpose": "DHCP \u2014 lease source, which exposes a rogue network quickly."
+ },
+ {
+  "filter": "http.request",
+  "purpose": "HTTP methods/hosts/URIs \u2014 portal flows and cleartext credentials."
+ }
+]

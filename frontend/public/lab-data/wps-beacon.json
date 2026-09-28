@@ -1,0 +1,390 @@
+{
+ "pcap_id": "wps-beacon",
+ "method": "wififorge-labkit",
+ "filter": "",
+ "frames": [
+  {
+   "frame_type": "mgmt",
+   "type": 0,
+   "subtype": 8,
+   "subtype_name": "Beacon",
+   "addr1": "ff:ff:ff:ff:ff:ff",
+   "addr2": "ff:00:11:22:33:44",
+   "addr3": "ff:00:11:22:33:44",
+   "seq": 0,
+   "duration": 0,
+   "protected": false,
+   "to_ds": false,
+   "from_ds": false,
+   "radio": {
+    "channel": 6,
+    "freq": 2437,
+    "signal": -44,
+    "rate": 1.0
+   },
+   "channel": 6,
+   "timestamp": 0,
+   "beacon_interval": 100,
+   "capability": 1041,
+   "ssid": "LAB-WPS",
+   "ssid_len": 7,
+   "ds_channel": 6,
+   "rsn": {
+    "version": 1,
+    "group": 172,
+    "pairwise": [
+     4
+    ],
+    "akm": [
+     2
+    ],
+    "caps": 32,
+    "mfpc": true,
+    "mfpr": false
+   },
+   "akm_names": [
+    "PSK"
+   ],
+   "cipher_names": [
+    "CCMP-128"
+   ],
+   "mfpc": true,
+   "mfpr": false,
+   "wps": true,
+   "wps_attrs": {
+    "version": "104a",
+    "config_methods": {
+     "label": true,
+     "display": true,
+     "push_button": true
+    },
+    "device_password_id": 0,
+    "selected_registrar": true,
+    "device_name": "LAB-DIRECT-AP"
+   },
+   "ht": true,
+   "bssid": "ff:00:11:22:33:44",
+   "sa": "ff:00:11:22:33:44",
+   "da": "ff:ff:ff:ff:ff:ff",
+   "number": 1
+  },
+  {
+   "frame_type": "mgmt",
+   "type": 0,
+   "subtype": 8,
+   "subtype_name": "Beacon",
+   "addr1": "ff:ff:ff:ff:ff:ff",
+   "addr2": "ff:00:11:22:33:45",
+   "addr3": "ff:00:11:22:33:45",
+   "seq": 0,
+   "duration": 0,
+   "protected": false,
+   "to_ds": false,
+   "from_ds": false,
+   "radio": {
+    "channel": 11,
+    "freq": 2462,
+    "signal": -61,
+    "rate": 1.0
+   },
+   "channel": 11,
+   "timestamp": 0,
+   "beacon_interval": 100,
+   "capability": 1041,
+   "ssid": "LAB-WPS",
+   "ssid_len": 7,
+   "ds_channel": 11,
+   "rsn": {
+    "version": 1,
+    "group": 172,
+    "pairwise": [
+     4
+    ],
+    "akm": [
+     2
+    ],
+    "caps": 32,
+    "mfpc": true,
+    "mfpr": false
+   },
+   "akm_names": [
+    "PSK"
+   ],
+   "cipher_names": [
+    "CCMP-128"
+   ],
+   "mfpc": true,
+   "mfpr": false,
+   "wps": true,
+   "wps_attrs": {
+    "version": "104a",
+    "config_methods": {
+     "label": true,
+     "display": false,
+     "push_button": true
+    },
+    "device_password_id": 0,
+    "setup_locked": true,
+    "device_name": "LAB-DIRECT-AP"
+   },
+   "ht": true,
+   "bssid": "ff:00:11:22:33:45",
+   "sa": "ff:00:11:22:33:45",
+   "da": "ff:ff:ff:ff:ff:ff",
+   "number": 2
+  },
+  {
+   "frame_type": "mgmt",
+   "type": 0,
+   "subtype": 11,
+   "subtype_name": "Authentication",
+   "addr1": "ff:00:11:22:33:44",
+   "addr2": "55:66:77:88:99:aa",
+   "addr3": "ff:00:11:22:33:44",
+   "seq": 0,
+   "duration": 0,
+   "protected": false,
+   "to_ds": false,
+   "from_ds": false,
+   "radio": {
+    "channel": 6,
+    "freq": 2437,
+    "signal": -45,
+    "rate": 1.0
+   },
+   "channel": 6,
+   "auth_algorithm": 0,
+   "auth_seq": 1,
+   "status_code": 0,
+   "auth_payload": "",
+   "bssid": "ff:00:11:22:33:44",
+   "sa": "55:66:77:88:99:aa",
+   "da": "ff:00:11:22:33:44",
+   "number": 3
+  },
+  {
+   "frame_type": "mgmt",
+   "type": 0,
+   "subtype": 11,
+   "subtype_name": "Authentication",
+   "addr1": "55:66:77:88:99:aa",
+   "addr2": "ff:00:11:22:33:44",
+   "addr3": "ff:00:11:22:33:44",
+   "seq": 0,
+   "duration": 0,
+   "protected": false,
+   "to_ds": false,
+   "from_ds": false,
+   "radio": {
+    "channel": 6,
+    "freq": 2437,
+    "signal": -45,
+    "rate": 1.0
+   },
+   "channel": 6,
+   "auth_algorithm": 0,
+   "auth_seq": 2,
+   "status_code": 0,
+   "auth_payload": "",
+   "bssid": "ff:00:11:22:33:44",
+   "sa": "ff:00:11:22:33:44",
+   "da": "55:66:77:88:99:aa",
+   "number": 4
+  },
+  {
+   "frame_type": "mgmt",
+   "type": 0,
+   "subtype": 0,
+   "subtype_name": "Association Request",
+   "addr1": "ff:00:11:22:33:44",
+   "addr2": "55:66:77:88:99:aa",
+   "addr3": "ff:00:11:22:33:44",
+   "seq": 0,
+   "duration": 0,
+   "protected": false,
+   "to_ds": false,
+   "from_ds": false,
+   "radio": {
+    "channel": 6,
+    "freq": 2437,
+    "signal": -45,
+    "rate": 1.0
+   },
+   "channel": 6,
+   "capability": 1041,
+   "listen_interval": 10,
+   "ssid": "LAB-WPS",
+   "ssid_len": 7,
+   "bssid": "ff:00:11:22:33:44",
+   "sa": "55:66:77:88:99:aa",
+   "da": "ff:00:11:22:33:44",
+   "number": 5
+  },
+  {
+   "frame_type": "mgmt",
+   "type": 0,
+   "subtype": 1,
+   "subtype_name": "Association Response",
+   "addr1": "55:66:77:88:99:aa",
+   "addr2": "ff:00:11:22:33:44",
+   "addr3": "ff:00:11:22:33:44",
+   "seq": 0,
+   "duration": 0,
+   "protected": false,
+   "to_ds": false,
+   "from_ds": false,
+   "radio": {
+    "channel": 6,
+    "freq": 2437,
+    "signal": -45,
+    "rate": 1.0
+   },
+   "channel": 6,
+   "capability": 1041,
+   "status_code": 0,
+   "aid": 1,
+   "bssid": "ff:00:11:22:33:44",
+   "sa": "ff:00:11:22:33:44",
+   "da": "55:66:77:88:99:aa",
+   "number": 6
+  },
+  {
+   "frame_type": "data",
+   "type": 2,
+   "subtype": 8,
+   "subtype_name": "QoS Data",
+   "addr1": "ff:00:11:22:33:44",
+   "addr2": "55:66:77:88:99:aa",
+   "addr3": "ff:00:11:22:33:44",
+   "seq": 0,
+   "duration": 0,
+   "protected": false,
+   "to_ds": true,
+   "from_ds": false,
+   "radio": {
+    "channel": 6,
+    "freq": 2437,
+    "signal": -45,
+    "rate": 1.0
+   },
+   "channel": 6,
+   "ethertype": "0x888e",
+   "eapol": true,
+   "protocol": "EAPOL",
+   "eapol_version": 2,
+   "eapol_type": 0,
+   "eap": true,
+   "eap_code": 2,
+   "eap_identifier": 1,
+   "eap_length": 33,
+   "eap_type": 1,
+   "eap_code_name": "Response",
+   "eap_type_name": "Identity",
+   "eap_identity": "WFA-SimpleConfig-Enrollee-1-0",
+   "bssid": "ff:00:11:22:33:44",
+   "sa": "55:66:77:88:99:aa",
+   "da": "ff:00:11:22:33:44",
+   "number": 7
+  },
+  {
+   "frame_type": "data",
+   "type": 2,
+   "subtype": 8,
+   "subtype_name": "QoS Data",
+   "addr1": "55:66:77:88:99:aa",
+   "addr2": "ff:00:11:22:33:44",
+   "addr3": "ff:00:11:22:33:44",
+   "seq": 0,
+   "duration": 0,
+   "protected": false,
+   "to_ds": false,
+   "from_ds": true,
+   "radio": {
+    "channel": 6,
+    "freq": 2437,
+    "signal": -45,
+    "rate": 1.0
+   },
+   "channel": 6,
+   "ethertype": "0x888e",
+   "eapol": true,
+   "protocol": "EAPOL",
+   "eapol_version": 2,
+   "eapol_type": 0,
+   "eap": true,
+   "eap_code": 1,
+   "eap_identifier": 1,
+   "eap_length": 5,
+   "eap_type": 254,
+   "eap_code_name": "Request",
+   "eap_type_name": "EAP-WSC (WPS)",
+   "bssid": "ff:00:11:22:33:44",
+   "sa": "ff:00:11:22:33:44",
+   "da": "55:66:77:88:99:aa",
+   "number": 8
+  },
+  {
+   "frame_type": "data",
+   "type": 2,
+   "subtype": 8,
+   "subtype_name": "QoS Data",
+   "addr1": "ff:00:11:22:33:44",
+   "addr2": "55:66:77:88:99:aa",
+   "addr3": "ff:00:11:22:33:44",
+   "seq": 1,
+   "duration": 0,
+   "protected": false,
+   "to_ds": true,
+   "from_ds": false,
+   "radio": {
+    "channel": 6,
+    "freq": 2437,
+    "signal": -45,
+    "rate": 1.0
+   },
+   "channel": 6,
+   "ethertype": "0x888e",
+   "eapol": true,
+   "protocol": "EAPOL",
+   "eapol_version": 2,
+   "eapol_type": 0,
+   "eap": true,
+   "eap_code": 2,
+   "eap_identifier": 1,
+   "eap_length": 16,
+   "eap_type": 254,
+   "eap_code_name": "Response",
+   "eap_type_name": "EAP-WSC (WPS)",
+   "bssid": "ff:00:11:22:33:44",
+   "sa": "55:66:77:88:99:aa",
+   "da": "ff:00:11:22:33:44",
+   "number": 9
+  }
+ ],
+ "summary": {
+  "total_frames": 9,
+  "ssids": [
+   "LAB-WPS"
+  ],
+  "bssids": [
+   "ff:00:11:22:33:44",
+   "ff:00:11:22:33:45"
+  ],
+  "clients": [
+   "55:66:77:88:99:aa",
+   "ff:00:11:22:33:44"
+  ],
+  "channels": [
+   6,
+   11
+  ],
+  "beacons": 5,
+  "probes": 0,
+  "eapol": 3,
+  "deauth": 0,
+  "disassoc": 0,
+  "assoc": 2,
+  "wps": 2
+ },
+ "module": "wps"
+}

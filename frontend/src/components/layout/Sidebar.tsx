@@ -2,13 +2,15 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { LayoutDashboard, Map, BookOpen, FlaskConical, Swords, FileText, Settings, Terminal, Shield, Zap, Radio, X, ChevronRight, Activity, Wifi, Target } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useProgressStore } from '@/store/useProgressStore'
+import { TOTAL_CHALLENGES, TOTAL_LABS, TOTAL_MODULES, TOTAL_PCAPS } from '@/content/stats'
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', badge: null, desc: 'Overview & progress' },
   { to: '/path', icon: Map, label: 'Learning Path', badge: null, desc: 'Visual journey' },
-  { to: '/modules', icon: BookOpen, label: 'Modules', badge: '20', desc: '20 modules, 6 phases' },
-  { to: '/labs', icon: FlaskConical, label: 'Labs', badge: '16', desc: '16 PCAPs, hands-on' },
-  { to: '/challenges', icon: Swords, label: 'Challenges', badge: '15', desc: 'Guided → Assessment' },
+  { to: '/modules', icon: BookOpen, label: 'Modules', badge: `${TOTAL_MODULES}`, desc: `${TOTAL_MODULES} modules, 6 phases` },
+  { to: '/engagement', icon: Target, label: 'Engagement', badge: 'ENG-01', desc: 'Authorised engagement mode' },
+  { to: '/labs', icon: FlaskConical, label: 'Labs', badge: `${TOTAL_PCAPS}`, desc: `${TOTAL_PCAPS} verified captures` },
+  { to: '/challenges', icon: Swords, label: 'Challenges', badge: `${TOTAL_CHALLENGES}`, desc: 'Guided → Assessment' },
   { to: '/reference', icon: Terminal, label: 'Reference', badge: null, desc: 'Commands & tools' },
   { to: '/reports', icon: FileText, label: 'Reports', badge: null, desc: 'Finding editor' },
   { to: '/settings', icon: Settings, label: 'Settings', badge: null, desc: 'Preferences' },
@@ -25,7 +27,7 @@ interface Props {
 export function Sidebar({ onClose, isMobile }: Props) {
   const location = useLocation()
   const overall = useProgressStore(s => s.getOverallProgress())
-  const streak = useProgressStore(s => s.streak)
+  const streak = useProgressStore(s => s.getStreak())
 
   return (
     <aside className="w-full h-screen h-[100dvh] bg-[#0a1020]/95 backdrop-blur-2xl border-r border-[#1e293b]/60 flex flex-col relative overflow-hidden">
@@ -33,7 +35,7 @@ export function Sidebar({ onClose, isMobile }: Props) {
       <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] via-transparent to-transparent pointer-events-none" />
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
       
-      {/* Logo — production ready, responsive down to 320px */}
+      {/* Logo */}
       <div className="relative h-[60px] xs:h-[64px] md:h-[72px] px-4 xs:px-5 flex items-center gap-2.5 xs:gap-3 border-b border-[#1e293b]/60 shrink-0 min-w-0">
         <div className="w-9 h-9 rounded-xl bg-[#020617] border border-[#1e293b] flex items-center justify-center relative overflow-hidden shadow-soft group shrink-0">
           <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 via-violet-500/10 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
@@ -63,7 +65,7 @@ export function Sidebar({ onClose, isMobile }: Props) {
         )}
       </div>
 
-      {/* Progress bar — production ready, responsive, finer details */}
+      {/* Progress bar */}
       <div data-tour="sidebar" className="relative px-4 xs:px-5 py-3.5 xs:py-4 border-b border-[#1e293b]/40 shrink-0">
         <div className="flex items-center justify-between mb-2.5 min-w-0">
           <span className="text-[11px] font-medium text-slate-400 tracking-wide truncate">Overall Progress</span>
@@ -90,12 +92,12 @@ export function Sidebar({ onClose, isMobile }: Props) {
           <div className="hidden xs:flex h-3 w-px bg-[#1e293b] shrink-0" />
           <div className="flex items-center gap-1.5 min-w-0">
             <Activity className="w-3 h-3 text-emerald-400 shrink-0" />
-            <span className="text-[10px] text-slate-500 font-mono truncate">16 PCAPs live</span>
+            <span className="text-[10px] text-slate-500 font-mono truncate">{TOTAL_PCAPS} captures • offline</span>
           </div>
           <div className="hidden xs:flex h-3 w-px bg-[#1e293b] shrink-0" />
           <div className="flex items-center gap-1 text-[10px] font-mono text-slate-500 truncate">
             <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse shrink-0" />
-            <span className="truncate">Production</span>
+            <span className="truncate">Static build</span>
           </div>
         </div>
       </div>
@@ -149,9 +151,9 @@ export function Sidebar({ onClose, isMobile }: Props) {
                       {item.badge && (
                         <span className={`
                           text-[9px] px-1.5 py-0.5 rounded-md font-mono font-semibold border transition-all duration-200
-                          ${item.badge === '16' || item.badge === '15'
+                          ${['/labs', '/challenges'].includes(item.to)
                             ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 group-hover:bg-emerald-500/15'
-                            : item.badge === '20'
+                            : item.to === '/modules'
                             ? 'bg-violet-500/10 text-violet-400 border-violet-500/20 group-hover:bg-violet-500/15'
                             : 'bg-[#1e293b] text-slate-400 border-[#334155] group-hover:bg-[#25354f]'
                           }
@@ -220,7 +222,7 @@ export function Sidebar({ onClose, isMobile }: Props) {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">PCAPs</span>
-                  <span className="text-cyan-400 font-mono text-[10px]">16 live • Scapy</span>
+                  <span className="text-cyan-400 font-mono text-[10px]">{TOTAL_PCAPS} captures • verified</span>
                 </div>
               </div>
             </div>
@@ -238,7 +240,7 @@ export function Sidebar({ onClose, isMobile }: Props) {
             </div>
             <div>
               <div className="text-[11px] font-medium text-slate-300 leading-none">WiFiForge</div>
-              <div className="text-[9px] text-slate-500 font-mono">20 modules • 18 labs</div>
+              <div className="text-[9px] text-slate-500 font-mono">{TOTAL_MODULES} modules • {TOTAL_LABS} labs</div>
             </div>
           </div>
           <div className="text-[10px] text-slate-600 font-mono">v2.0</div>

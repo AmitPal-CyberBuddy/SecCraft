@@ -1,58 +1,43 @@
+import json
 from fastapi import APIRouter, Query, HTTPException
 from pathlib import Path
 from typing import Optional
-from app.core.config import CONTENT_DIR, REPO_CONTENT_DIR, BASE_DIR
+from app.core.config import CONTENT_DIR, REPO_CONTENT_DIR, BASE_DIR, PCAP_DIR
 from app.services.pcap_parser import parse_pcap, tshark_available, SCAPY_AVAILABLE
 
 router = APIRouter()
 
 def find_pcap(pcap_id: str) -> Optional[Path]:
-    """Find pcap file by id in multiple locations"""
+    """Locate a capture by id in the locations this repository actually uses."""
     candidates = [
-        CONTENT_DIR / "pcaps" / f"{pcap_id}.pcapng",
-        CONTENT_DIR / "pcaps" / f"{pcap_id}.pcap",
-        REPO_CONTENT_DIR / "wifi-fundamentals" / f"{pcap_id}.pcapng",
-        REPO_CONTENT_DIR / "recon" / f"{pcap_id}.pcapng",
-        REPO_CONTENT_DIR / "traffic" / f"{pcap_id}.pcapng",
-        REPO_CONTENT_DIR / "wifi-fundamentals" / "beacon-only.pcapng" if "beacon" in pcap_id else None,
-        REPO_CONTENT_DIR / "recon" / "recon-lab.pcapng" if "recon" in pcap_id else None,
-        REPO_CONTENT_DIR / "traffic" / "traffic-analysis.pcapng" if "traffic" in pcap_id else None,
-        BASE_DIR.parent / "content" / "pcaps" / "wifi-fundamentals" / "beacon-only.pcapng",
-        BASE_DIR.parent / "content" / "pcaps" / "recon" / "recon-lab.pcapng",
-        BASE_DIR.parent / "content" / "pcaps" / "traffic" / "traffic-analysis.pcapng",
-        BASE_DIR.parent / "frontend" / "public" / "pcaps" / "wifi-fundamentals" / "beacon-only.pcapng",
-        BASE_DIR.parent / "frontend" / "public" / "pcaps" / "recon" / "recon-lab.pcapng",
-        BASE_DIR.parent / "frontend" / "public" / "pcaps" / "traffic" / "traffic-analysis.pcapng",
+        PCAP_DIR / f"{pcap_id}.pcapng",
+        PCAP_DIR / f"{pcap_id}.pcap",
+        REPO_CONTENT_DIR / "pcaps" / f"{pcap_id}.pcapng",
+        REPO_CONTENT_DIR / "pcaps" / f"{pcap_id}.pcap",
+        BASE_DIR.parent / "content" / "pcaps" / f"{pcap_id}.pcapng",
     ]
-    # Also search recursively
-    search_roots = [
-        REPO_CONTENT_DIR,
-        BASE_DIR.parent / "content" / "pcaps",
-        BASE_DIR.parent / "frontend" / "public" / "pcaps",
-    ]
-    for root in search_roots:
-        if root and root.exists():
-            for p in root.rglob(f"{pcap_id}*"):
-                if p.is_file() and p.suffix in [".pcap", ".pcapng"]:
-                    return p
-            # Also try exact name without id
-            for p in root.rglob("*.pcapng"):
-                if pcap_id in p.stem:
-                    return p
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
 
-    for c in candidates:
-        if c and c.exists():
-            return c
+    # Captures live in per-module subdirectories (frontend/public/pcaps/<group>/<id>.pcapng).
+    for root in (PCAP_DIR, REPO_CONTENT_DIR, BASE_DIR.parent / "content" / "pcaps"):
+        if not root or not root.exists():
+            continue
+        matches = [p for p in root.rglob(f"{pcap_id}*.pcap*") if p.is_file()]
+        if matches:
+            return sorted(matches)[0]
     return None
+
 
 @router.get("/pcaps")
 async def list_pcaps():
     pcaps = []
     # List from content/pcaps
     roots = [
+        PCAP_DIR,
         REPO_CONTENT_DIR,
         BASE_DIR.parent / "content" / "pcaps",
-        BASE_DIR.parent / "frontend" / "public" / "pcaps",
     ]
     seen = set()
     for root in roots:
@@ -106,65 +91,93 @@ async def list_pcaps():
                 "size": p.stat().st_size,
             })
     
-    # Fallback mock if none found — include Phase D/E/F
+    # No capture directory in this checkout (e.g. API run against a bare clone): describe what the
+    # frontend ships by reading its artefact metadata instead of a hand-maintained table.
     if not pcaps:
-        pcaps = [
-            {"id": "beacon-only", "filename": "beacon-only.pcapng", "module": "02-wifi-fundamentals", "type": "beacon", "frames": 5},
-            {"id": "recon-lab", "filename": "recon-lab.pcapng", "module": "05-wireless-recon", "type": "recon", "frames": 13},
-            {"id": "traffic-analysis", "filename": "traffic-analysis.pcapng", "module": "06-traffic-analysis", "type": "traffic", "frames": 12},
-            {"id": "wpa2-handshake", "filename": "wpa2-handshake.pcapng", "module": "09-wpa2-practical", "type": "handshake", "frames": 11},
-            {"id": "pmkid", "filename": "pmkid.pcapng", "module": "09-wpa2-practical", "type": "pmkid", "frames": 1},
-            {"id": "wps-beacon", "filename": "wps-beacon.pcapng", "module": "10-wps", "type": "wps", "frames": 2},
-            {"id": "wpa3-transition", "filename": "wpa3-transition.pcapng", "module": "11-wpa3", "type": "wpa3", "frames": 2},
-            {"id": "wpa3-only", "filename": "wpa3-only.pcapng", "module": "11-wpa3", "type": "wpa3", "frames": 1},
-            {"id": "deauth", "filename": "deauth.pcapng", "module": "12-deauth-disassoc", "type": "deauth", "frames": 14},
-            {"id": "rogue-ap", "filename": "rogue-ap.pcapng", "module": "13-rogue-ap", "type": "rogue", "frames": 7},
-            {"id": "captive-portal", "filename": "captive-portal.pcapng", "module": "14-captive-portals", "type": "captive", "frames": 6},
-            {"id": "enterprise", "filename": "enterprise.pcapng", "module": "15-enterprise-fundamentals", "type": "enterprise", "frames": 13},
-            {"id": "eap", "filename": "eap.pcapng", "module": "16-eap", "type": "eap", "frames": 13},
-            {"id": "radius", "filename": "radius.pcapng", "module": "17-radius", "type": "radius", "frames": 13},
-            {"id": "corporate-attacks", "filename": "corporate-attacks.pcapng", "module": "18-corporate-attacks", "type": "corporate", "frames": 14},
-            {"id": "methodology", "filename": "methodology.pcapng", "module": "19-methodology", "type": "methodology", "frames": 24},
-        ]
-    
+        from app.core.config import OFFLINE_DATA_DIR
+        for meta_file in sorted(OFFLINE_DATA_DIR.glob("*.json")):
+            try:
+                meta = json.loads(meta_file.read_text())
+            except (json.JSONDecodeError, OSError):
+                continue
+            frames = meta.get("frames", [])
+            pcaps.append({
+                "id": meta_file.stem,
+                "filename": f"{meta_file.stem}.pcapng",
+                "module": meta.get("module", ""),
+                "type": meta.get("module", ""),
+                "frames": len(frames) if isinstance(frames, list) else 0,
+                "size": None,
+                "path": None,
+                "source": "offline dataset (frontend/public/lab-data)",
+            })
+
     return {
         "pcaps": pcaps,
         "parser": {
             "tshark": tshark_available(),
             "scapy": SCAPY_AVAILABLE,
-            "method": "tshark" if tshark_available() else ("scapy" if SCAPY_AVAILABLE else "mock")
+            "method": "tshark" if tshark_available() else ("scapy" if SCAPY_AVAILABLE else "offline-dataset")
         }
     }
 
 @router.get("/pcaps/{pcap_id}/analyze")
 async def analyze_pcap(pcap_id: str, filter: Optional[str] = Query(None, description="Wireshark display filter, e.g., wlan.fc.type_subtype==8")):
-    pcap_path = find_pcap(pcap_id)
-    if not pcap_path:
-        # Return mock if not found but id known — include Phase D/E/F
-        known = ["beacon-only", "recon-lab", "traffic-analysis", "wpa2-handshake", "pmkid", "wps-beacon", "wpa3-transition", "wpa3-only", "deauth", "rogue-ap", "captive-portal", "enterprise", "eap", "radius", "corporate-attacks", "methodology", "wep-legacy"]
-        if pcap_id in known or any(k in pcap_id for k in known):
-            from app.services.pcap_parser import mock_frames, parse_pcap
-            # Try mock frames
-            frames = mock_frames(pcap_id)
-            if frames:
-                return {
-                    "pcap_id": pcap_id,
-                    "pcap_path": "mock",
-                    "method": "mock",
-                    "filter": filter,
-                    "frames": frames,
-                    "summary": {
-                        "total_frames": len(frames),
-                        "ssids": list(set([f.get("ssid") for f in frames if f.get("ssid")])),
-                        "bssids": list(set([f.get("bssid") for f in frames if f.get("bssid")])),
-                        "deauth": len([f for f in frames if "Deauth" in f.get("subtype_name","")]),
-                        "disassoc": len([f for f in frames if "Disassoc" in f.get("subtype_name","")]),
-                    }
-                }
-        raise HTTPException(status_code=404, detail=f"PCAP {pcap_id} not found")
+    """Decode a capture with tshark/scapy, falling back to the offline dataset.
 
-    result = parse_pcap(pcap_path, display_filter=filter, pcap_id=pcap_id)
-    return result
+    If the capture file is not present in this checkout, the offline dataset for that id (generated
+    from the real file and verified by scripts/verify-lab-artifacts.py) is used, and the response says
+    so via ``method``/``note``. A capture that is unknown in both places returns 404 — no placeholder
+    frames are produced.
+    """
+    pcap_path = find_pcap(pcap_id)
+    if pcap_path:
+        return parse_pcap(pcap_path, display_filter=filter, pcap_id=pcap_id)
+
+    from app.services.pcap_parser import offline_frames, _apply_display_filter
+    frames = offline_frames(pcap_id)
+    if not frames:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"No capture file and no offline dataset for '{pcap_id}'. Expected "
+                f"frontend/public/pcaps/**.pcapng or frontend/public/lab-data/{pcap_id}.json "
+                "(regenerate both with scripts/generate-lab-artifacts.py)."
+            ),
+        )
+
+    frames = _apply_display_filter(frames, filter)
+    return {
+        "pcap_id": pcap_id,
+        "pcap_path": None,
+        "method": "offline-dataset",
+        "note": "Frames come from the offline dataset shipped with the frontend (no capture file in this checkout).",
+        "filter": filter,
+        "frames": frames,
+        "summary": _summarise_frames(frames),
+    }
+
+
+def _summarise_frames(frames):
+    ssids = [f.get("ssid") for f in frames if f.get("ssid")]
+    bssids = [f.get("bssid") for f in frames if f.get("bssid")]
+    clients = [f.get("sa") for f in frames if f.get("sa") and f.get("sa") not in bssids]
+    channels = [f.get("channel") for f in frames if f.get("channel")]
+    return {
+        "total_frames": len(frames),
+        "ssids": sorted(set(ssids)),
+        "bssids": sorted(set(bssids)),
+        "clients": sorted(set(clients)),
+        "channels": sorted(set(channels)),
+        "beacons": len([f for f in frames if "Beacon" in (f.get("subtype_name") or "")]),
+        "probes": len([f for f in frames if "Probe" in (f.get("subtype_name") or "")]),
+        "eapol": len([f for f in frames if f.get("eapol")]),
+        "deauth": len([f for f in frames if "Deauth" in (f.get("subtype_name") or "")]),
+        "disassoc": len([f for f in frames if "Disassoc" in (f.get("subtype_name") or "")]),
+        "assoc": len([f for f in frames if "Assoc" in (f.get("subtype_name") or "")]),
+        "wps": len([f for f in frames if f.get("wps")]),
+    }
+
 
 @router.get("/pcaps/{pcap_id}/frames")
 async def get_frames(pcap_id: str, filter: Optional[str] = Query(None), limit: int = Query(100, le=1000), offset: int = Query(0, ge=0)):

@@ -6,9 +6,9 @@ services:
       - "8000:8000"
     environment:
       - ENV=production
-      - JWT_SECRET=${JWT_SECRET:-wififorge-enterprise-jwt-secret-change-in-prod}
-      - RATE_LIMIT=100
-      - AUDIT_RETENTION_DAYS=90
+      # Required: the API refuses to issue tokens when this is unset (no default secret ships).
+      - WIFIFORGE_JWT_SECRET=${WIFIFORGE_JWT_SECRET:?set WIFIFORGE_JWT_SECRET in the environment}
+      - WIFIFORGE_ALLOWED_ORIGINS=${WIFIFORGE_ALLOWED_ORIGINS:-http://localhost:8080}
     volumes:
       - ./data:/app/data:ro
       - evidence:/app/evidence

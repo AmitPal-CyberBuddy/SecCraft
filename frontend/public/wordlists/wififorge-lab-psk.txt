@@ -1,0 +1,9 @@
+# WiFiForge lab candidate list — generated, do not hand-edit.
+# The lab PSK is intentionally included so `hashcat -m 22000` can be verified.
+password123
+ForgeLab2026!
+Summer2026!
+wififorge
+letmein2026
+CorrectHorseBatteryStaple!WPA3_2024_Secure
+Tr0ub4dor&3_S3cur3_16+_R4nd0m!

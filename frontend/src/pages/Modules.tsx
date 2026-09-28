@@ -4,6 +4,8 @@ import { useProgressStore } from '@/store/useProgressStore'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Filter, Layers, Sparkles, BookOpen, Target, TrendingUp } from 'lucide-react'
 import modules from '@/content/modules.json'
+import { TOTAL_CHALLENGES, TOTAL_LESSONS, TOTAL_MODULES, TOTAL_PCAPS, TOTAL_SCENARIOS } from '@/content/stats'
+import { MAX_XP } from '@/store/useProgressStore'
 
 export function Modules() {
   const [filterPhase, setFilterPhase] = useState<number | null>(null)
@@ -50,7 +52,7 @@ export function Modules() {
             <div>
               <h1 className="font-heading font-bold text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none">Modules</h1>
               <div className="flex items-center gap-2 mt-1.5">
-                <span className="text-[13px] text-slate-400">20 modules • 6 phases • Zero-cost simulated + hardware labs</span>
+                <span className="text-[13px] text-slate-400">{TOTAL_MODULES} modules • 6 phases • {TOTAL_LESSONS} lessons • {TOTAL_SCENARIOS} decision scenarios • {TOTAL_PCAPS} verified captures</span>
                 <span className="hidden sm:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20 font-mono">
                   <Sparkles className="w-3 h-3" />
                   COMPLETE
@@ -92,10 +94,10 @@ export function Modules() {
             <span className="w-1 h-1 rounded-full bg-slate-600" />
             <span className="text-[11px] font-mono text-amber-400">{totalXp} XP</span>
             <span className="w-1 h-1 rounded-full bg-slate-600" />
-            <span className="text-[11px] font-mono text-slate-500">{completedLessons}/80 lessons</span>
+            <span className="text-[11px] font-mono text-slate-500">{completedLessons}/27 lessons</span>
           </div>
           <div className="text-[11px] font-mono text-slate-500 px-3 py-2 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40">
-            {filtered.length} / {modules.length} modules • Goal: Forge Master 2450 XP
+            {filtered.length} / {modules.length} modules • path total {MAX_XP} XP
           </div>
         </div>
       </motion.div>
@@ -113,7 +115,7 @@ export function Modules() {
           <input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search modules, e.g., WPA3, Enterprise, Rogue, Methodology..."
+            placeholder="Search modules, e.g., WPA3, Enterprise, RADIUS, Methodology..."
             className="w-full pl-11 pr-4 py-3 rounded-xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm text-[13px] text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/30 focus:bg-[#0f172a] hover:border-[#334155]/60 hover:bg-[#111d33]/80 transition-all duration-200"
           />
           {searchQuery && (
@@ -277,17 +279,17 @@ export function Modules() {
       >
         <span className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-cyan-400" />
-          20 modules
+          {TOTAL_MODULES} modules
         </span>
         <span className="w-1 h-1 rounded-full bg-slate-700" />
         <span className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-emerald-400" />
-          16 PCAPs live
+          {TOTAL_PCAPS} verified captures
         </span>
         <span className="w-1 h-1 rounded-full bg-slate-700" />
         <span className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-violet-400" />
-          15 challenges
+          {TOTAL_CHALLENGES} challenges
         </span>
         <span className="w-1 h-1 rounded-full bg-slate-700" />
         <span>Zero-cost • Local-first • Offline</span>

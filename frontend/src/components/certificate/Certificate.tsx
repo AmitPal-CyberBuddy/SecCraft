@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion'
-import { useProgressStore } from '@/store/useProgressStore'
+import { CERT_PROGRESS_THRESHOLD, CERT_XP_THRESHOLD, MAX_XP, useProgressStore } from '@/store/useProgressStore'
+import { TOTAL_LESSONS, TOTAL_MODULES, TOTAL_PCAPS } from '@/content/stats'
+import { ACHIEVEMENTS_DEF } from '@/content/achievements'
 import { Award, Trophy, Shield, Zap, CheckCircle, Crown, Star, Download, Share2, QrCode } from 'lucide-react'
 import { useState } from 'react'
 
@@ -11,8 +13,10 @@ export function Certificate({ className = '' }: { className?: string }) {
   const achievements = useProgressStore(s => s.achievements.length)
   const [showQr, setShowQr] = useState(false)
 
-  const isCertified = totalXp >= 2000 && overall >= 80
-  const certId = `WIFIFORGE-${totalXp}-${overall}-${Date.now().toString().slice(-6)}`
+  const isCertified = totalXp >= CERT_XP_THRESHOLD && overall >= CERT_PROGRESS_THRESHOLD
+  // A local record number for your own tracking — it is not registered anywhere, because this build
+  // has no server and no issuer.
+  const certId = `LOCAL-${overall}-${totalXp}-${new Date().toISOString().slice(0, 10)}`
   const issueDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 
   return (
@@ -63,7 +67,7 @@ export function Certificate({ className = '' }: { className?: string }) {
         {/* Stats */}
         <div className="grid grid-cols-2 xs:grid-cols-4 gap-3 mb-6">
           <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-center">
-            <div className="text-[18px] xs:text-[20px] font-bold font-mono text-cyan-300">{completedLessons}/80</div>
+            <div className="text-[18px] xs:text-[20px] font-bold font-mono text-cyan-300">{completedLessons}/{TOTAL_LESSONS}</div>
             <div className="text-[10px] text-slate-500 uppercase tracking-wide mt-1">Lessons</div>
           </div>
           <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-center">
@@ -75,7 +79,7 @@ export function Certificate({ className = '' }: { className?: string }) {
             <div className="text-[10px] text-slate-500 uppercase tracking-wide mt-1">{level.title}</div>
           </div>
           <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-center">
-            <div className="text-[18px] xs:text-[20px] font-bold font-mono text-amber-300">{achievements}/20</div>
+            <div className="text-[18px] xs:text-[20px] font-bold font-mono text-amber-300">{achievements}/{ACHIEVEMENTS_DEF.length}</div>
             <div className="text-[10px] text-slate-500 uppercase tracking-wide mt-1">Achievements</div>
           </div>
         </div>
@@ -87,28 +91,43 @@ export function Certificate({ className = '' }: { className?: string }) {
               <Shield className="w-5 h-5 text-emerald-400" />
             </div>
             <div className="min-w-0">
-              <div className="text-[11px] font-mono text-slate-500 uppercase tracking-wide">Certificate ID • Verified • {issueDate}</div>
+              <div className="text-[11px] font-mono text-slate-500 uppercase tracking-wide">Local record • self-issued • {issueDate}</div>
               <div className="text-[12px] font-mono font-bold text-slate-200 truncate">{certId}</div>
-              <div className="text-[11px] text-slate-500 font-mono truncate">Flag: WIFIFORGE{'{FINAL_RECON_ASSESSMENT_COMPLETE}'}</div>
+              <div className="text-[11px] text-slate-500 font-mono truncate">
+                Not accredited — a printable record of the work you completed on this device
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <button onClick={() => setShowQr(!showQr)} className="w-10 h-10 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] transition-colors touch-manipulation">
+            <button
+              onClick={() => setShowQr(!showQr)}
+              title="Show the exact numbers behind this record"
+              className="w-10 h-10 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] transition-colors touch-manipulation"
+            >
               <QrCode className="w-5 h-5 text-slate-400" />
             </button>
-            <button className="px-4 py-2.5 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] font-medium text-slate-300 hover:bg-[#25354f] flex items-center gap-2 touch-manipulation min-h-[44px]">
-              <Share2 className="w-4 h-4" /> Share
+            <button
+              onClick={() => navigator.clipboard?.writeText(`WiFiForge local record ${certId} — ${totalXp} XP, ${overall}% overall, ${completedLessons} lessons, ${achievements} achievements (not accredited)`)}
+              className="px-4 py-2.5 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] font-medium text-slate-300 hover:bg-[#25354f] flex items-center gap-2 touch-manipulation min-h-[44px]"
+            >
+              <Share2 className="w-4 h-4" /> Copy summary
             </button>
-            <button className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-[12px] flex items-center gap-2 shadow-glow-violet touch-manipulation min-h-[44px]">
-              <Download className="w-4 h-4" /> PDF
+            <button
+              onClick={() => window.print()}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-[12px] flex items-center gap-2 shadow-glow-violet touch-manipulation min-h-[44px]"
+            >
+              <Download className="w-4 h-4" /> Print / Save PDF
             </button>
           </div>
         </div>
 
         {showQr && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-4 p-4 rounded-xl bg-white flex items-center justify-center">
-            <div className="w-32 h-32 bg-[#020617] rounded-lg flex items-center justify-center text-[10px] font-mono text-slate-500 text-center p-2">
-              QR Verification<br/>{certId}<br/>wififorge.local/verify/{certId.slice(-8)}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-4 p-4 rounded-xl bg-[#020617] border border-[#1e293b]">
+            <div className="text-[11px] font-mono text-slate-400 leading-relaxed">
+              Record details (all values stored in this browser):<br/>
+              {certId}<br/>
+              {totalXp} XP of a {MAX_XP} XP ceiling ({TOTAL_LESSONS} lessons, {TOTAL_PCAPS} verified captures, {TOTAL_MODULES} modules)<br/>
+              {overall}% overall • {completedLessons} lessons • {achievements} achievements • issued {issueDate}
             </div>
           </motion.div>
         )}
@@ -116,11 +135,14 @@ export function Certificate({ className = '' }: { className?: string }) {
         {!isCertified && (
           <div className="mt-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center">
             <div className="text-[13px] font-bold text-amber-300 flex items-center justify-center gap-2">
-              <Trophy className="w-4 h-4" /> {2000 - totalXp} XP to unlock certificate
+              <Trophy className="w-4 h-4" /> {Math.max(0, CERT_XP_THRESHOLD - totalXp)} XP to unlock the record
             </div>
-            <div className="text-[11px] text-amber-400/80 mt-1">Complete all modules, earn 2000 XP, achieve 80% overall to unlock • Current: {totalXp} XP, {overall}%</div>
+            <div className="text-[11px] text-amber-400/80 mt-1">
+              Unlocks at {CERT_XP_THRESHOLD} XP ({Math.round((CERT_XP_THRESHOLD / MAX_XP) * 100)}% of the {MAX_XP} XP ceiling)
+              and {CERT_PROGRESS_THRESHOLD}% overall • Current: {totalXp} XP, {overall}%
+            </div>
             <div className="mt-3 w-full h-2 bg-[#020617] rounded-full overflow-hidden border border-amber-500/20">
-              <div className="h-full bg-gradient-to-r from-amber-400 to-violet-400 rounded-full" style={{ width: `${Math.min((totalXp/2000)*100, 100)}%` }} />
+              <div className="h-full bg-gradient-to-r from-amber-400 to-violet-400 rounded-full" style={{ width: `${Math.min((totalXp / CERT_XP_THRESHOLD) * 100, 100)}%` }} />
             </div>
           </div>
         )}
@@ -129,8 +151,12 @@ export function Certificate({ className = '' }: { className?: string }) {
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mt-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3">
             <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0" />
             <div>
-              <div className="text-[14px] font-bold text-emerald-300">Certified & Production Ready!</div>
-              <div className="text-[12px] text-emerald-400/80 mt-1">You have mastered wireless PT • Share your certificate • Enterprise-ready • 20 modules • 80 lessons • 2450 XP max</div>
+              <div className="text-[14px] font-bold text-emerald-300">Coursework complete — record unlocked</div>
+              <div className="text-[12px] text-emerald-400/80 mt-1">
+                You have worked through the {TOTAL_LESSONS} authored lessons, {TOTAL_PCAPS} verified captures and the
+                {TOTAL_MODULES}-module path on this device. Keep the printout as your own evidence of practice — it is
+                not an accredited certification and no third party validates it.
+              </div>
             </div>
           </motion.div>
         )}

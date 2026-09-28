@@ -1,222 +1,877 @@
 [
-  {
-    "id": "01-intro-wireless",
-    "title": "Introduction to Wireless Security",
-    "phase": 1,
-    "difficulty": "Beginner",
-    "estimated_hours": 1.5,
-    "prerequisites": [],
-    "status": "simulated",
-    "skills": ["wireless-basics", "methodology", "ethics"],
-    "description": "Wireless vs Wi-Fi, attack surface, legal boundaries, VAPT methodology."
-  },
-  {
-    "id": "02-wifi-fundamentals",
-    "title": "Wi-Fi Fundamentals",
-    "phase": 1,
-    "difficulty": "Beginner",
-    "estimated_hours": 2,
-    "prerequisites": ["01-intro-wireless"],
-    "status": "simulated",
-    "skills": ["ssid", "bssid", "ap", "channels", "bands"],
-    "description": "SSID, BSSID, AP, client, WLAN, channels, 2.4/5/6 GHz, terminology."
-  },
-  {
-    "id": "03-80211-architecture",
-    "title": "802.11 Architecture",
-    "phase": 1,
-    "difficulty": "Beginner",
-    "estimated_hours": 2.5,
-    "prerequisites": ["02-wifi-fundamentals"],
-    "status": "simulated",
-    "skills": ["802.11", "frames", "beacon", "probe"],
-    "description": "Management, control, data frames, beacon, probe, auth, association."
-  },
-  {
-    "id": "04-kali-wireless-setup",
-    "title": "Kali Wireless Setup",
-    "phase": 1,
-    "difficulty": "Beginner",
-    "estimated_hours": 2,
-    "prerequisites": ["03-80211-architecture"],
-    "status": "hardware",
-    "skills": ["kali", "iw", "monitor-mode"],
-    "description": "Wireless interfaces, iw, ip, managed vs monitor mode, troubleshooting."
-  },
-  {
-    "id": "05-wireless-recon",
-    "title": "Wireless Reconnaissance",
-    "phase": 2,
-    "difficulty": "Beginner",
-    "estimated_hours": 3,
-    "prerequisites": ["04-kali-wireless-setup"],
-    "status": "simulated",
-    "skills": ["recon", "enumeration", "hidden-ssid"],
-    "description": "Discover APs, SSIDs, BSSIDs, channels, encryption, clients, vendors."
-  },
-  {
-    "id": "06-traffic-analysis",
-    "title": "Wi-Fi Traffic Analysis",
-    "phase": 2,
-    "difficulty": "Intermediate",
-    "estimated_hours": 3,
-    "prerequisites": ["05-wireless-recon"],
-    "status": "simulated",
-    "skills": ["wireshark", "pcap", "filtering"],
-    "description": "Wireshark, PCAP analysis, beacon/probe/association filtering."
-  },
-  {
-    "id": "07-wep-legacy",
-    "title": "WEP and Legacy Security",
-    "phase": 3,
-    "difficulty": "Intermediate",
-    "estimated_hours": 2,
-    "prerequisites": ["06-traffic-analysis"],
-    "status": "simulated",
-    "skills": ["wep", "legacy"],
-    "description": "WEP architecture, why broken, historical attacks."
-  },
-  {
-    "id": "08-wpa-wpa2",
-    "title": "WPA/WPA2 Security",
-    "phase": 3,
-    "difficulty": "Intermediate",
-    "estimated_hours": 3.5,
-    "prerequisites": ["07-wep-legacy"],
-    "status": "simulated",
-    "skills": ["wpa2", "psk", "4-way-handshake", "pmk"],
-    "description": "WPA/WPA2, PSK, 4-way handshake, PMK, PTK, GTK flow."
-  },
-  {
-    "id": "09-wpa2-practical",
-    "title": "WPA2 Practical Testing",
-    "phase": 3,
-    "difficulty": "Intermediate",
-    "estimated_hours": 4,
-    "prerequisites": ["08-wpa-wpa2"],
-    "status": "simulated",
-    "skills": ["handshake", "offline-audit", "wordlists"],
-    "description": "Capture analysis, handshake ID, offline auditing, evidence."
-  },
-  {
-    "id": "10-wps",
-    "title": "WPS Security",
-    "phase": 3,
-    "difficulty": "Intermediate",
-    "estimated_hours": 2.5,
-    "prerequisites": ["09-wpa2-practical"],
-    "status": "simulated",
-    "skills": ["wps", "pin", "rate-limiting"],
-    "description": "WPS architecture, PIN, PBC, enumeration, lockout."
-  },
-  {
-    "id": "11-wpa3",
-    "title": "WPA3 Security",
-    "phase": 3,
-    "difficulty": "Advanced",
-    "estimated_hours": 3,
-    "prerequisites": ["10-wps"],
-    "status": "simulated",
-    "skills": ["wpa3", "sae", "transition-mode"],
-    "description": "WPA3-Personal, SAE, transition mode weaknesses."
-  },
-  {
-    "id": "12-deauth-disassoc",
-    "title": "Deauthentication and Disassociation",
-    "phase": 4,
-    "difficulty": "Advanced",
-    "estimated_hours": 2.5,
-    "prerequisites": ["11-wpa3"],
-    "status": "hardware",
-    "skills": ["deauth", "pmf", "detection"],
-    "description": "Protocol behavior, PMF, detection, mitigation."
-  },
-  {
-    "id": "13-rogue-ap",
-    "title": "Rogue AP / Evil Twin",
-    "phase": 4,
-    "difficulty": "Advanced",
-    "estimated_hours": 4,
-    "prerequisites": ["12-deauth-disassoc"],
-    "status": "hardware",
-    "skills": ["rogue-ap", "evil-twin", "detection"],
-    "description": "SSID cloning, client behavior, detection, defense."
-  },
-  {
-    "id": "14-captive-portals",
-    "title": "Captive Portals",
-    "phase": 4,
-    "difficulty": "Intermediate",
-    "estimated_hours": 3,
-    "prerequisites": ["13-rogue-ap"],
-    "status": "simulated",
-    "skills": ["captive-portal", "session"],
-    "description": "Architecture, auth flow, weaknesses, testing."
-  },
-  {
-    "id": "15-enterprise-fundamentals",
-    "title": "Enterprise Wi-Fi Fundamentals",
-    "phase": 5,
-    "difficulty": "Advanced",
-    "estimated_hours": 3,
-    "prerequisites": ["14-captive-portals"],
-    "status": "simulated",
-    "skills": ["wpa2-enterprise", "802.1x"],
-    "description": "WPA2/3-Enterprise, 802.1X, supplicant, authenticator."
-  },
-  {
-    "id": "16-eap",
-    "title": "EAP Protocols",
-    "phase": 5,
-    "difficulty": "Advanced",
-    "estimated_hours": 3.5,
-    "prerequisites": ["15-enterprise-fundamentals"],
-    "status": "simulated",
-    "skills": ["eap", "peap", "eap-tls"],
-    "description": "EAP, PEAP, EAP-TLS, auth flow, cert validation."
-  },
-  {
-    "id": "17-radius",
-    "title": "RADIUS Architecture",
-    "phase": 5,
-    "difficulty": "Advanced",
-    "estimated_hours": 3,
-    "prerequisites": ["16-eap"],
-    "status": "simulated",
-    "skills": ["radius", "aaa", "logs"],
-    "description": "RADIUS auth, accounting, logs, security."
-  },
-  {
-    "id": "18-corporate-attacks",
-    "title": "Corporate Wi-Fi Attacks",
-    "phase": 5,
-    "difficulty": "Professional",
-    "estimated_hours": 5,
-    "prerequisites": ["17-radius"],
-    "status": "simulated",
-    "skills": ["enterprise-attacks", "segmentation"],
-    "description": "Enterprise attack surface, rogue, segmentation, client isolation."
-  },
-  {
-    "id": "19-methodology",
-    "title": "Wireless PT Methodology",
-    "phase": 6,
-    "difficulty": "Professional",
-    "estimated_hours": 3,
-    "prerequisites": ["18-corporate-attacks"],
-    "status": "simulated",
-    "skills": ["methodology", "reporting", "retest"],
-    "description": "Full engagement flow: scope → recon → enum → test → report → retest."
-  },
-  {
-    "id": "20-final-assessment",
-    "title": "Final Wireless PT Assessment",
-    "phase": 6,
-    "difficulty": "Professional",
-    "estimated_hours": 8,
-    "prerequisites": ["19-methodology"],
-    "status": "simulated",
-    "skills": ["assessment", "reporting"],
-    "description": "Realistic authorized lab: scope, artifacts, PCAPs, configs — independent assessment."
-  }
+ {
+  "id": "01-intro-wireless",
+  "title": "Wireless Security Foundations",
+  "phase": 1,
+  "difficulty": "Beginner",
+  "estimated_hours": 2.0,
+  "prerequisites": [],
+  "lab_requirement": "SIMULATION",
+  "content_status": "brief",
+  "skills": [
+   "wireless-basics",
+   "attack-surface",
+   "methodology",
+   "ethics"
+  ],
+  "description": "Why radio changes the threat model: broadcast medium, no physical boundary, layer-1 evidence, and the legal boundary of testing.",
+  "objectives": [
+   "Explain why 802.11 traffic can be observed without any network access and what that means for a penetration test",
+   "Distinguish Wi-Fi (802.11) from other wireless technologies and say why the academy stays focused on 802.11",
+   "Describe the engagement lifecycle used by every later module: authorisation \u2192 recon \u2192 enumeration \u2192 test \u2192 evidence \u2192 impact \u2192 remediation \u2192 retest \u2192 report",
+   "State the legal and ethical limits: own lab hardware or a signed authorisation, never third-party networks"
+  ],
+  "artifacts": [
+   "Lab review: read the sample Rules of Engagement in Engagement Mode and list what is in scope"
+  ],
+  "decision_practice": [
+   "scn-01-scope-gap"
+  ],
+  "evidence_focus": "Every finding must name the affected BSSID/SSID and the frame or config line that proves it.",
+  "retest_focus": "A retest is only credible if the original evidence can be reproduced byte-for-byte (same capture hash, same filter).",
+  "lessons": [
+   {
+    "id": "01-why-wireless-is-different",
+    "title": "Why wireless changes the threat model",
+    "kind": "concept"
+   }
+  ],
+  "status": "simulated"
+ },
+ {
+  "id": "02-wifi-fundamentals",
+  "title": "Wi-Fi Fundamentals: Identity and Topology",
+  "phase": 1,
+  "difficulty": "Beginner",
+  "estimated_hours": 2.0,
+  "prerequisites": [
+   "01-intro-wireless"
+  ],
+  "lab_requirement": "SIMULATION",
+  "content_status": "brief",
+  "skills": [
+   "ssid",
+   "bssid",
+   "ap",
+   "client",
+   "channels",
+   "bands"
+  ],
+  "description": "SSID vs BSSID vs ESS, BSS/DS topology, bands and channels, and how to read a beacon without guessing.",
+  "objectives": [
+   "Decode a beacon's fixed fields and identify SSID, BSSID, channel, capability and beacon interval",
+   "Explain the difference between an ESS, a BSS and a BSSID and why the distinction matters for recon evidence",
+   "Map 2.4/5/6 GHz channels, channel width and overlap, and choose a capture channel",
+   "Describe what a client leaks in a probe request (PNL, wildcard probes, randomised MAC)"
+  ],
+  "artifacts": [
+   "labs: beacon-only.pcapng, recon-lab.pcapng"
+  ],
+  "decision_practice": [
+   "scn-02-ess-or-rogue",
+   "scn-02-randomised-client"
+  ],
+  "evidence_focus": "Extract frame numbers, BSSID, channel and SSID text exactly as captured; keep the capture hash.",
+  "retest_focus": "Re-run the same tshark filter after a fix so the before/after evidence uses identical extraction.",
+  "lessons": [
+   {
+    "id": "01-identity-topology-and-beacons",
+    "title": "Identity, topology and reading a beacon",
+    "kind": "concept"
+   }
+  ],
+  "status": "simulated"
+ },
+ {
+  "id": "03-80211-architecture",
+  "title": "802.11 Frames, IEs and the Association Flow",
+  "phase": 1,
+  "difficulty": "Beginner",
+  "estimated_hours": 2.5,
+  "prerequisites": [
+   "02-wifi-fundamentals"
+  ],
+  "lab_requirement": "SIMULATION",
+  "content_status": "brief",
+  "skills": [
+   "frames",
+   "information-elements",
+   "association",
+   "capabilities"
+  ],
+  "description": "Management/control/data frames, the information elements that carry security policy, and the association state machine.",
+  "objectives": [
+   "Identify frame type/subtype numbers and pick the right display filter for each",
+   "Read RSNE fields: version, group cipher, pairwise ciphers, AKM suites and RSN capabilities (including MFPC/MFPR bits)",
+   "Walk the association flow and explain what each step proves",
+   "Explain what a client must accept for a downgrade to succeed (transition mode, missing PMF, weak AKM)"
+  ],
+  "artifacts": [
+   "labs: traffic-analysis.pcapng, beacon-only.pcapng"
+  ],
+  "decision_practice": [
+   "scn-03-rsn-decode",
+   "scn-03-pmf-bits"
+  ],
+  "evidence_focus": "Frame numbers + the decoded IE values (not screenshots of text you typed).",
+  "retest_focus": "Compare the RSNE before and after a configuration change to show the policy actually changed.",
+  "lessons": [
+   {
+    "id": "01-frames-ies-and-association",
+    "title": "Frames, information elements and the association flow",
+    "kind": "concept"
+   }
+  ],
+  "status": "simulated"
+ },
+ {
+  "id": "04-kali-wireless-setup",
+  "title": "Monitor Mode and the Wireless Toolchain",
+  "phase": 1,
+  "difficulty": "Beginner",
+  "estimated_hours": 2.0,
+  "prerequisites": [
+   "03-80211-architecture"
+  ],
+  "lab_requirement": "HYBRID",
+  "content_status": "brief",
+  "skills": [
+   "interface-modes",
+   "monitor-mode",
+   "toolchain",
+   "regulatory"
+  ],
+  "description": "Interface modes, monitor mode and injection, driver/firmware reality, and choosing the right tool for each job.",
+  "objectives": [
+   "Explain which interface modes are needed for capture vs. injection and why managed mode cannot see other networks' frames",
+   "Verify adapter capability (monitor/injection, supported bands) instead of assuming it",
+   "Read the regulatory domain with `iw reg get` and understand why setting it is a jurisdiction decision, not a troubleshooting step",
+   "Decide when the lab can be completed with a capture (SIMULATION) and when real radio hardware is required (RF_REQUIRED)"
+  ],
+  "artifacts": [
+   "labs: none (hardware-facing). Uses lab-data summaries to practise interface reasoning.",
+   "scripts/enable-monitor.sh (hardware, optional)"
+  ],
+  "decision_practice": [
+   "scn-04-tool-choice"
+  ],
+  "evidence_focus": "Interface name, mode, channel and driver evidence from your own machine (`iw dev`, `iw phy`) when hardware is used.",
+  "retest_focus": "Repeat the interface check after a driver or mode change and record both outputs.",
+  "lessons": [
+   {
+    "id": "01-monitor-mode-and-toolchain",
+    "title": "Monitor mode, injection and the toolchain",
+    "kind": "concept"
+   }
+  ],
+  "status": "hardware"
+ },
+ {
+  "id": "05-wireless-recon",
+  "title": "Passive Reconnaissance and ESS Mapping",
+  "phase": 2,
+  "difficulty": "Beginner",
+  "estimated_hours": 2.5,
+  "prerequisites": [
+   "04-kali-wireless-setup"
+  ],
+  "lab_requirement": "SIMULATION",
+  "content_status": "brief",
+  "skills": [
+   "recon",
+   "ess-mapping",
+   "hidden-ssid",
+   "pnl"
+  ],
+  "description": "Enumerate BSSs, clients and relationships from a passive capture, and separate a legitimate ESS from a look-alike.",
+  "objectives": [
+   "Produce an AP inventory (BSSID, SSID, channel, band, security, PMF, WPS) from a capture",
+   "Explain why hiding an SSID is not a security control and show the frame that reveals it",
+   "Reconstruct client behaviour: what it probes for, where it associates, whether the MAC is randomised",
+   "Identify look-alike infrastructure by comparing IE fingerprints, channels and vendor OUIs"
+  ],
+  "artifacts": [
+   "labs: recon-lab.pcapng, methodology.pcapng"
+  ],
+  "decision_practice": [
+   "scn-05-hidden-ssid",
+   "scn-05-clone-or-ess"
+  ],
+  "evidence_focus": "AP inventory table + frame numbers for every claim; capture SHA-256.",
+  "retest_focus": "Re-run the inventory after remediation and show the look-alike BSSID is gone from the authorised list.",
+  "lessons": [
+   {
+    "id": "01-passive-recon-workflow",
+    "title": "Passive reconnaissance workflow (lab)",
+    "kind": "lab"
+   }
+  ],
+  "status": "simulated"
+ },
+ {
+  "id": "06-traffic-analysis",
+  "title": "Traffic Analysis: From Capture to Evidence",
+  "phase": 2,
+  "difficulty": "Intermediate",
+  "estimated_hours": 2.5,
+  "prerequisites": [
+   "05-wireless-recon"
+  ],
+  "lab_requirement": "SIMULATION",
+  "content_status": "brief",
+  "skills": [
+   "wireshark",
+   "tshark",
+   "evidence",
+   "eapol"
+  ],
+  "description": "Filter, isolate and extract the exact frames that prove a finding \u2014 the core skill behind every later report.",
+  "objectives": [
+   "Write display filters that target management subtypes, EAPOL/EAP, RADIUS and BSSID/SSID",
+   "Isolate one conversation and reconstruct the association + 4-way handshake with frame numbers",
+   "Recognise what is and is not visible on the air (encrypted payload vs. metadata)",
+   "Package evidence: capture hash, filter, frame list, and the claim each frame supports"
+  ],
+  "artifacts": [
+   "labs: traffic-analysis.pcapng, methodology.pcapng"
+  ],
+  "decision_practice": [
+   "scn-06-which-frames",
+   "scn-06-encrypted-or-not"
+  ],
+  "evidence_focus": "A reproducible filter string plus frame numbers, capture SHA-256, and a statement of what the evidence does *not* show.",
+  "retest_focus": "Same filter re-run on the post-fix capture; the delta is the retest evidence.",
+  "lessons": [
+   {
+    "id": "01-evidence-workflow",
+    "title": "From capture to evidence (lab)",
+    "kind": "lab"
+   }
+  ],
+  "status": "simulated"
+ },
+ {
+  "id": "07-wep-legacy",
+  "title": "WEP: Why the Design Fails",
+  "phase": 3,
+  "difficulty": "Intermediate",
+  "estimated_hours": 1.5,
+  "prerequisites": [
+   "06-traffic-analysis"
+  ],
+  "lab_requirement": "SIMULATION",
+  "content_status": "brief",
+  "skills": [
+   "wep",
+   "rc4",
+   "iv-reuse",
+   "legacy"
+  ],
+  "description": "RC4 with a 24-bit IV, CRC32 integrity and why key recovery is a matter of minutes \u2014 plus the migration path.",
+  "objectives": [
+   "Explain IV reuse and how FMS/KoreK/PTW recover the key from a capture",
+   "Explain why the ICV (CRC32) cannot detect modification",
+   "State the correct remediation: remove WEP, do not 'harden' it",
+   "Describe what evidence a WEP finding needs (frame counts, key recovery proof)"
+  ],
+  "artifacts": [
+   "labs: wep-legacy lab notes + generated capture guidance"
+  ],
+  "decision_practice": [
+   "scn-07-wep-report"
+  ],
+  "evidence_focus": "IV/frame counts, the recovered key *in the lab only*, and the tool output with parameters.",
+  "retest_focus": "Post-fix capture shows no WEP BSS and the network no longer accepts WEP association.",
+  "lessons": [
+   {
+    "id": "01-wep-design-failure",
+    "title": "WEP: why the design fails",
+    "kind": "concept"
+   }
+  ],
+  "status": "simulated"
+ },
+ {
+  "id": "08-wpa-wpa2",
+  "title": "WPA2/RSN: Key Hierarchy and the 4-Way Handshake",
+  "phase": 3,
+  "difficulty": "Intermediate",
+  "estimated_hours": 3.0,
+  "prerequisites": [
+   "07-wep-legacy"
+  ],
+  "lab_requirement": "SIMULATION",
+  "content_status": "brief",
+  "skills": [
+   "wpa2",
+   "ccmp",
+   "4-way-handshake",
+   "pmf"
+  ],
+  "description": "PMK \u2192 PTK \u2192 KCK/KEK/TK, the M1\u2013M4 exchange, GTK delivery, and where the design is actually strong or weak.",
+  "objectives": [
+   "Derive PMK/PTK and explain each field the PTK is bound to",
+   "Identify M1\u2013M4 in a capture and say what each message proves",
+   "Explain why capturing a handshake does not mean the network is compromised",
+   "Read RSN capabilities and set/verify PMF (MFPC vs MFPR)"
+  ],
+  "artifacts": [
+   "labs: wpa2-handshake.pcapng (two clients, one complete exchange)"
+  ],
+  "decision_practice": [
+   "scn-08-handshake-completeness",
+   "scn-08-psk-compromise"
+  ],
+  "evidence_focus": "The handshake's frame numbers, nonces (first/last bytes are enough), capture hash, and the wordlist/params used.",
+  "retest_focus": "After a PSK change, the old capture must no longer crack and the new one must.",
+  "lessons": [
+   {
+    "id": "01-rsn-key-hierarchy",
+    "title": "RSN and the key hierarchy",
+    "kind": "concept"
+   },
+   {
+    "id": "02-four-way-handshake-lab",
+    "title": "Reading the 4-way handshake (lab)",
+    "kind": "lab"
+   }
+  ],
+  "status": "simulated"
+ },
+ {
+  "id": "09-wpa2-practical",
+  "title": "Offline Audit: Handshake and PMKID",
+  "phase": 3,
+  "difficulty": "Intermediate",
+  "estimated_hours": 3.0,
+  "prerequisites": [
+   "08-wpa-wpa2"
+  ],
+  "lab_requirement": "HYBRID",
+  "content_status": "brief",
+  "skills": [
+   "offline-audit",
+   "pmkid",
+   "hashcat",
+   "wordlist"
+  ],
+  "description": "Converting a capture to hashcat material, running an authorised audit, and stating what a cracked PSK does and does not prove.",
+  "objectives": [
+   "Convert a capture with hcxpcapngtool and run hashcat mode 22000 (unified PMKID + EAPOL)",
+   "Compare clientless PMKID capture with a 4-way handshake capture (requirements, completeness)",
+   "Interpret a crack: what access does the key actually grant?",
+   "Write the finding with defensible severity derived from impact, not from the technique name"
+  ],
+  "artifacts": [
+   "labs: wpa2-handshake.pcapng, pmkid.pcapng, wordlists/wififorge-lab-psk.txt"
+  ],
+  "decision_practice": [
+   "scn-09-pmkid-vs-handshake",
+   "scn-09-cracked-not-owned"
+  ],
+  "evidence_focus": "Hashcat potfile/`--show` output, the hc22000 file hash, the capture hash, and the recovery duration/rate.",
+  "retest_focus": "Re-run the same conversion after the PSK changes: the line must be gone from `--show` output.",
+  "lessons": [
+   {
+    "id": "01-offline-audit-lab",
+    "title": "Offline audit workflow (lab)",
+    "kind": "lab"
+   },
+   {
+    "id": "02-pmkid-clientless-lab",
+    "title": "PMKID: clientless capture (lab)",
+    "kind": "lab"
+   }
+  ],
+  "status": "hardware"
+ },
+ {
+  "id": "10-wps",
+  "title": "WPS: The 8-Digit PIN and Its Defences",
+  "phase": 3,
+  "difficulty": "Intermediate",
+  "estimated_hours": 2.0,
+  "prerequisites": [
+   "09-wpa2-practical"
+  ],
+  "lab_requirement": "HYBRID",
+  "content_status": "brief",
+  "skills": [
+   "wps",
+   "pin",
+   "lockout",
+   "pixie-dust"
+  ],
+  "description": "WPS architecture, the 11 000-guess PIN flaw, registrar/setup-locked states, and why disabling WPS beats tuning lockout.",
+  "objectives": [
+   "Decode the WPS IE: version, config methods, device password ID, setup-locked, selected registrar",
+   "Explain the 10^7 \u2192 ~11 000 reduction and what defeats it (lockout, M4/M6 validation, WPS 2.0)",
+   "Explain why 'WPS enabled' is a configuration finding while the PIN attack itself needs an authorization decision",
+   "Remediate: disable WPS, or if it must exist, enforce lockout and use PBC with a monitored window"
+  ],
+  "artifacts": [
+   "labs: wps-beacon.pcapng (unlocked vs. setup-locked BSS)"
+  ],
+  "decision_practice": [
+   "scn-10-wps-locked"
+  ],
+  "evidence_focus": "Beacon frame number, decoded WPS attributes, and AP model/firmware if known.",
+  "retest_focus": "Post-fix beacon shows no WPS IE (or setup-locked + lockout logs) and a new enumeration attempt fails.",
+  "lessons": [
+   {
+    "id": "01-wps-architecture-and-pin",
+    "title": "WPS architecture and the PIN flaw",
+    "kind": "concept"
+   }
+  ],
+  "status": "hardware"
+ },
+ {
+  "id": "11-wpa3",
+  "title": "WPA3: SAE, Transition Mode and OWE",
+  "phase": 4,
+  "difficulty": "Advanced",
+  "estimated_hours": 3.0,
+  "prerequisites": [
+   "10-wps"
+  ],
+  "lab_requirement": "SIMULATION",
+  "content_status": "brief",
+  "skills": [
+   "wpa3",
+   "sae",
+   "dragonfly",
+   "owe",
+   "transition"
+  ],
+  "description": "SAE (Dragonfly) handshake properties, forward secrecy, transition-mode downgrade, PMF requirements and OWE.",
+  "objectives": [
+   "Explain why the SAE commit/confirm exchange is not offline-crackable",
+   "Detect transition mode from the RSNE (AKM list) and describe the downgrade path",
+   "Explain the PMF requirement and OWE's role for open networks",
+   "Judge whether a WPA3 deployment is genuinely WPA3-only"
+  ],
+  "artifacts": [
+   "labs: wpa3-only.pcapng, wpa3-transition.pcapng"
+  ],
+  "decision_practice": [
+   "scn-11-transition-downgrade",
+   "scn-11-owe"
+  ],
+  "evidence_focus": "RSNE bytes and frame numbers for the AKM list; a client-side association trace showing which AKM was used.",
+  "retest_focus": "Re-enumerate the BSS after forcing WPA3-only and verify the PSK AKM is gone.",
+  "lessons": [
+   {
+    "id": "01-sae-and-transition-mode",
+    "title": "SAE, transition mode and OWE",
+    "kind": "concept"
+   }
+  ],
+  "status": "simulated"
+ },
+ {
+  "id": "12-deauth-disassoc",
+  "title": "Management Frame Protection and Availability",
+  "phase": 4,
+  "difficulty": "Advanced",
+  "estimated_hours": 2.5,
+  "prerequisites": [
+   "11-wpa3"
+  ],
+  "lab_requirement": "RF_REQUIRED",
+  "content_status": "brief",
+  "skills": [
+   "pmf",
+   "deauth",
+   "disassoc",
+   "availability",
+   "sa-query"
+  ],
+  "description": "Unauthenticated management frames, reason codes, SA Query, and how PMF changes what an attacker can do.",
+  "objectives": [
+   "Explain why unprotected deauth/disassoc frames can be spoofed and what that achieves",
+   "Read MFPC/MFPR from the RSNE and predict whether spoofing will work",
+   "Interpret reason codes (1, 7, 8, 15) and SA Query behaviour",
+   "Assess availability impact as a finding (and why it is often the weakest but noisiest test)"
+  ],
+  "artifacts": [
+   "labs: deauth.pcapng (PMF-capable vs PMF-required BSS), wpa3-only.pcapng"
+  ],
+  "decision_practice": [
+   "scn-12-pmf-value",
+   "scn-12-evidence-for-dos"
+  ],
+  "evidence_focus": "Frame numbers, reason codes, counts and timing; plus client-side evidence (association loss) that the frames had effect.",
+  "retest_focus": "With ieee80211w=2 the same spoof no longer disconnects the client \u2014 capture both states.",
+  "lessons": [
+   {
+    "id": "01-pmf-and-availability",
+    "title": "PMF and availability testing",
+    "kind": "concept"
+   }
+  ],
+  "status": "hardware"
+ },
+ {
+  "id": "13-rogue-ap",
+  "title": "Rogue Infrastructure and Evil Twin",
+  "phase": 4,
+  "difficulty": "Advanced",
+  "estimated_hours": 3.0,
+  "prerequisites": [
+   "12-deauth-disassoc"
+  ],
+  "lab_requirement": "RF_REQUIRED",
+  "content_status": "brief",
+  "skills": [
+   "rogue-ap",
+   "evil-twin",
+   "wids",
+   "client-behaviour"
+  ],
+  "description": "How rogue APs are built, why clients join them, and how to distinguish a rogue twin from legitimate infrastructure.",
+  "objectives": [
+   "Compare IE fingerprints, BSSID vendor/OUI, channel, beacon interval and signal to identify a twin",
+   "Explain client behaviour that makes evil twin practical (auto-connect, PNL, missing server validation)",
+   "Describe detection controls (WIDS/WIPS, authorised-BSSID lists, RF triangulation) and their limits",
+   "Design the test safely: which SSIDs are authorised, and what must never be captured from real clients"
+  ],
+  "artifacts": [
+   "labs: rogue-ap.pcapng"
+  ],
+  "decision_practice": [
+   "scn-13-twin-detection",
+   "scn-13-enterprise-rogue"
+  ],
+  "evidence_focus": "Rogue BSSID + frame numbers, twin vs. legitimate IE diff, and client association evidence.",
+  "retest_focus": "WIDS raises the rogue BSSID and the client no longer associates to the unauthorised infrastructure.",
+  "lessons": [
+   {
+    "id": "01-rogue-infrastructure-analysis",
+    "title": "Rogue infrastructure analysis (lab)",
+    "kind": "lab"
+   }
+  ],
+  "status": "hardware"
+ },
+ {
+  "id": "14-captive-portals",
+  "title": "Captive Portals, Guest Networks and Isolation",
+  "phase": 4,
+  "difficulty": "Advanced",
+  "estimated_hours": 2.0,
+  "prerequisites": [
+   "13-rogue-ap"
+  ],
+  "lab_requirement": "HYBRID",
+  "content_status": "brief",
+  "skills": [
+   "captive-portal",
+   "guest",
+   "client-isolation",
+   "segmentation"
+  ],
+  "description": "Portal architecture, session handling weaknesses, and client isolation as a control rather than a checkbox.",
+  "objectives": [
+   "Trace the portal flow (DHCP \u2192 DNS/HTTP redirect \u2192 portal \u2192 session) from a capture",
+   "Identify credential exposure when the portal is served over cleartext HTTP",
+   "Test whether client isolation is enforced, and explain the difference between isolation and segmentation",
+   "Remediate with HTTPS portal, OWE/WPA2-Guest, per-client isolation and VLAN + ACL enforcement"
+  ],
+  "artifacts": [
+   "labs: captive-portal.pcapng"
+  ],
+  "decision_practice": [
+   "scn-14-isolation-vs-segmentation"
+  ],
+  "evidence_focus": "HTTP request/response frame numbers, session token, and an ARP/ICMP test showing whether peers are reachable.",
+  "retest_focus": "Isolation enabled: the repeat test shows no client-to-client reachability; capture both states.",
+  "lessons": [
+   {
+    "id": "01-portal-and-isolation",
+    "title": "Portal testing and client isolation (lab)",
+    "kind": "lab"
+   }
+  ],
+  "status": "hardware"
+ },
+ {
+  "id": "15-enterprise-fundamentals",
+  "title": "Enterprise Wi-Fi: 802.1X Architecture",
+  "phase": 5,
+  "difficulty": "Advanced",
+  "estimated_hours": 3.0,
+  "prerequisites": [
+   "14-captive-portals"
+  ],
+  "lab_requirement": "SIMULATION",
+  "content_status": "authored",
+  "skills": [
+   "802.1x",
+   "radius",
+   "supplicant",
+   "authenticator"
+  ],
+  "description": "The full enterprise path: client \u2192 802.11 \u2192 authenticator (AP) \u2192 EAP \u2192 RADIUS \u2192 identity store, and where the trust boundaries are.",
+  "objectives": [
+   "Draw the 802.1X architecture and name the role of supplicant, authenticator and authentication server",
+   "Explain how the MSK becomes the PMK and why the 4-way handshake still happens after EAP succeeds",
+   "List the attributes RADIUS returns (VLAN, ACL, session timeout) and the risks of trusting them",
+   "Identify the testing decision points for each enterprise component"
+  ],
+  "artifacts": [
+   "labs: enterprise.pcapng, radius.pcapng"
+  ],
+  "decision_practice": [
+   "scn-15-which-component",
+   "scn-15-msk-to-pmk"
+  ],
+  "evidence_focus": "EAP exchange frames, RADIUS code + attributes, and the resulting 4-way handshake \u2014 in one timeline.",
+  "retest_focus": "After remediation, re-capture and show the client can no longer authenticate with the old configuration (e.g. missing certificate validation).",
+  "lessons": [
+   {
+    "id": "01-architecture-and-roles",
+    "title": "802.1X architecture and roles",
+    "kind": "concept"
+   },
+   {
+    "id": "02-enterprise-testing-lab",
+    "title": "Testing the enterprise path (lab)",
+    "kind": "lab"
+   }
+  ],
+  "status": "simulated"
+ },
+ {
+  "id": "16-eap",
+  "title": "EAP Methods and Credential Exposure",
+  "phase": 5,
+  "difficulty": "Advanced",
+  "estimated_hours": 3.5,
+  "prerequisites": [
+   "15-enterprise-fundamentals"
+  ],
+  "lab_requirement": "SIMULATION",
+  "content_status": "authored",
+  "skills": [
+   "eap",
+   "peap",
+   "eap-tls",
+   "eap-ttls",
+   "mschapv2"
+  ],
+  "description": "PEAP, EAP-TLS, EAP-TTLS and MS-CHAPv2: what each method protects, what it leaks, and what a rogue authenticator can capture.",
+  "objectives": [
+   "Identify the EAP method from the outer exchange and explain what is inside the tunnel",
+   "Explain MS-CHAPv2 challenge/response and why it is crackable when the server's certificate is not validated",
+   "Compare EAP-TLS (mutual certificates) with password-based inner methods",
+   "Advise on client configuration: ca_cert, domain_suffix_match/subject_match, and disabling insecure methods server-side"
+  ],
+  "artifacts": [
+   "labs: eap.pcapng, radius.pcapng (MS-CHAPv2 material)"
+  ],
+  "decision_practice": [
+   "scn-16-method-identification",
+   "scn-16-cert-validation"
+  ],
+  "evidence_focus": "EAP method, outer/inner identity, TLS record frame numbers, and (lab only) the crackable MS-CHAPv2 values.",
+  "retest_focus": "With server certificate validation enforced, the rogue authenticator attempt fails and the client logs a validation error.",
+  "lessons": [
+   {
+    "id": "01-methods-and-credential-exposure",
+    "title": "EAP methods and credential exposure",
+    "kind": "concept"
+   },
+   {
+    "id": "02-cert-validation-and-lab",
+    "title": "Certificate validation and the PEAP lab",
+    "kind": "lab"
+   }
+  ],
+  "status": "simulated"
+ },
+ {
+  "id": "17-radius",
+  "title": "RADIUS: Trust, Secrets and Attributes",
+  "phase": 5,
+  "difficulty": "Advanced",
+  "estimated_hours": 3.0,
+  "prerequisites": [
+   "16-eap"
+  ],
+  "lab_requirement": "SIMULATION",
+  "content_status": "authored",
+  "skills": [
+   "radius",
+   "shared-secret",
+   "message-authenticator",
+   "dynamic-vlan"
+  ],
+  "description": "RADIUS protocol mechanics, verifiable integrity (Message-Authenticator/Response Authenticator), and the shared-secret problem.",
+  "objectives": [
+   "Decode an Access-Request/Challenge/Accept exchange and name the attributes that matter",
+   "Verify a Message-Authenticator and a Response Authenticator from a capture",
+   "Explain why the shared secret is a high-value credential and how it is attacked (offline guessing against captured authenticators)",
+   "Harden: per-AP secrets, require_message_authenticator, source-IP restriction, RadSec, and monitoring"
+  ],
+  "artifacts": [
+   "labs: radius.pcapng (including a rogue NAS whose Message-Authenticator fails)"
+  ],
+  "decision_practice": [
+   "scn-17-secret-rotation",
+   "scn-17-radius-log-reading"
+  ],
+  "evidence_focus": "The RADIUS packet bytes/hex for the verifiable attributes, the secret used (lab), and the calculation performed.",
+  "retest_focus": "Rotate the secret and re-verify: the old capture no longer validates against the new secret.",
+  "lessons": [
+   {
+    "id": "01-radius-mechanics-and-verification",
+    "title": "RADIUS mechanics and verifiable integrity",
+    "kind": "concept"
+   },
+   {
+    "id": "02-hardening-and-monitoring",
+    "title": "RADIUS hardening, RadSec and monitoring",
+    "kind": "concept"
+   }
+  ],
+  "status": "simulated"
+ },
+ {
+  "id": "18-corporate-attacks",
+  "title": "Corporate Wireless Kill Chains",
+  "phase": 5,
+  "difficulty": "Advanced",
+  "estimated_hours": 4.0,
+  "prerequisites": [
+   "17-radius"
+  ],
+  "lab_requirement": "HYBRID",
+  "content_status": "authored",
+  "skills": [
+   "kill-chain",
+   "segmentation",
+   "isolation",
+   "detection"
+  ],
+  "description": "How individual weaknesses chain into network access: rogue authenticator, credential capture, segmentation bypass \u2014 and how each link is broken.",
+  "objectives": [
+   "Assemble a defensible attack chain from the evidence you collected in earlier modules",
+   "Test segmentation and isolation with a method whose result is unambiguous (protocol-level reachability, not 'it felt open')",
+   "Map each link in the chain to a specific control that breaks it",
+   "Report the chain without overstating impact: access to a VLAN is not 'domain admin'"
+  ],
+  "artifacts": [
+   "labs: corporate-attacks.pcapng, methodology.pcapng"
+  ],
+  "decision_practice": [
+   "scn-18-chain-order",
+   "scn-18-segmentation-evidence"
+  ],
+  "evidence_focus": "One timeline: deauth/rogue frames, EAP capture, credential material, and the segmentation test result with frame numbers.",
+  "retest_focus": "Post-fix: each link is re-tested individually and shown to fail.",
+  "lessons": [
+   {
+    "id": "01-kill-chain-and-segmentation",
+    "title": "Kill chain and segmentation testing (lab)",
+    "kind": "lab"
+   },
+   {
+    "id": "02-detection-and-response",
+    "title": "Detection, containment and response",
+    "kind": "concept"
+   }
+  ],
+  "status": "hardware"
+ },
+ {
+  "id": "19-methodology",
+  "title": "Wireless VAPT Methodology and Reporting",
+  "phase": 6,
+  "difficulty": "Advanced",
+  "estimated_hours": 3.0,
+  "prerequisites": [
+   "18-corporate-attacks"
+  ],
+  "lab_requirement": "SIMULATION",
+  "content_status": "authored",
+  "skills": [
+   "methodology",
+   "roe",
+   "evidence",
+   "reporting",
+   "retest"
+  ],
+  "description": "The professional wrapper: scope and RoE, test sequencing, evidence standards, severity from impact, and retest.",
+  "objectives": [
+   "Turn a scope document into a test plan with explicit in/out-of-scope artefacts",
+   "Apply the evidence standard: reproducibility, integrity (hash), and traceability to a claim",
+   "Derive severity from a finding's actual impact using CVSS as a calculation, not a label",
+   "Write a finding and a retest section a client can act on"
+  ],
+  "artifacts": [
+   "labs: methodology.pcapng, Finding template, checklist"
+  ],
+  "decision_practice": [
+   "scn-19-severity-context",
+   "scn-19-retest-fail"
+  ],
+  "evidence_focus": "Every claim traceable to a frame number, configuration line, or log entry \u2014 plus the integrity hash.",
+  "retest_focus": "The retest section states the exact test repeated and the observed difference.",
+  "lessons": [
+   {
+    "id": "01-methodology-and-roe",
+    "title": "Methodology, scope and rules of engagement",
+    "kind": "concept"
+   },
+   {
+    "id": "02-evidence-severity-reporting",
+    "title": "Evidence, severity and reporting",
+    "kind": "concept"
+   }
+  ],
+  "status": "simulated"
+ },
+ {
+  "id": "20-final-assessment",
+  "title": "Final Engagement: Independent Assessment",
+  "phase": 6,
+  "difficulty": "Professional",
+  "estimated_hours": 8.0,
+  "prerequisites": [
+   "19-methodology"
+  ],
+  "lab_requirement": "SIMULATION",
+  "content_status": "authored",
+  "skills": [
+   "assessment",
+   "reporting",
+   "retest",
+   "professional"
+  ],
+  "description": "A full authorised engagement: scope, RoE, artefacts, objectives \u2014 you decide what to test, what proves it, and what to recommend.",
+  "objectives": [
+   "Run recon \u2192 enumeration \u2192 targeted testing \u2192 evidence \u2192 findings \u2192 remediation \u2192 retest planning without step-by-step guidance",
+   "Produce a client-ready report with prioritised findings and an explicit retest plan",
+   "Defend each finding against the evidence and remove anything you cannot reproduce",
+   "Identify what you did *not* test and why (scope, safety, or environment limits)"
+  ],
+  "artifacts": [
+   "engagements: ENG-01 (Northwind Retail)"
+  ],
+  "decision_practice": [
+   "scn-20-triage",
+   "scn-20-no-finding"
+  ],
+  "evidence_focus": "Engagement report with an evidence appendix: capture hashes, filters, frame numbers, config excerpts, and retest steps.",
+  "retest_focus": "The report's retest section is executed against the remediated artefacts and the result recorded.",
+  "lessons": [
+   {
+    "id": "01-final-engagement",
+    "title": "Final engagement (professional assessment)",
+    "kind": "professional"
+   }
+  ],
+  "status": "simulated"
+ }
 ]

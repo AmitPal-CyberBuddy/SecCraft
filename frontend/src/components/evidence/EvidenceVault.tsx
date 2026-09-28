@@ -1,127 +1,302 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Shield, FileCode, Hash, Clock, Download, Trash2, Search, Filter, CheckCircle, AlertTriangle, File, Zap } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { FileLock2, Hash, Plus, Trash2, Download, Copy, Check, ShieldCheck, AlertTriangle } from 'lucide-react'
 
-interface Evidence {
+export interface EvidenceRecord {
   id: string
-  type: 'pcap' | 'config' | 'log' | 'screenshot' | 'hash'
-  name: string
-  module: string
-  timestamp: string
+  label: string
+  kind: 'capture' | 'config' | 'log' | 'hash' | 'note'
+  claim: string
+  filter: string
+  frames: string
   sha256: string
-  size: string
-  verified: boolean
+  bytes: number
+  createdAt: string
 }
 
-const mockEvidence: Evidence[] = [
-  { id: '1', type: 'pcap', name: 'wpa2-handshake.pcapng', module: '09-wpa2-practical', timestamp: '2024-12-19 10:30', sha256: 'a1b2c3d4e5f6...', size: '12.4KB', verified: true },
-  { id: '2', type: 'pcap', name: 'recon-lab.pcapng', module: '05-wireless-recon', timestamp: '2024-12-19 09:15', sha256: 'f6e5d4c3b2a1...', size: '8.2KB', verified: true },
-  { id: '3', type: 'config', name: 'hostapd-wpa2-good.conf', module: '08-wpa-wpa2', timestamp: '2024-12-19 10:45', sha256: '1234567890ab...', size: '1.2KB', verified: true },
-  { id: '4', type: 'log', name: 'hashcat-crack.log', module: '09-wpa2-practical', timestamp: '2024-12-19 10:32', sha256: 'abcdef123456...', size: '2.1KB', verified: true },
-  { id: '5', type: 'hash', name: 'evidence-chain.json', module: '19-methodology', timestamp: '2024-12-19 11:00', sha256: 'deadbeef...', size: '4.5KB', verified: false },
-]
+const STORE_KEY = 'wififorge-evidence-vault'
 
+const KIND_COLORS: Record<EvidenceRecord['kind'], string> = {
+  capture: 'text-cyan-400 border-cyan-500/25 bg-cyan-500/10',
+  config: 'text-violet-400 border-violet-500/25 bg-violet-500/10',
+  log: 'text-amber-400 border-amber-500/25 bg-amber-500/10',
+  hash: 'text-emerald-400 border-emerald-500/25 bg-emerald-500/10',
+  note: 'text-slate-400 border-slate-500/25 bg-slate-500/10',
+}
+
+async function sha256Of(data: ArrayBuffer): Promise<string> {
+  if (!globalThis.crypto?.subtle) return ''
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', data)
+  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+async function sha256OfText(text: string): Promise<string> {
+  return sha256Of(new TextEncoder().encode(text).buffer as ArrayBuffer)
+}
+
+/**
+ * Evidence vault — the evidence standard, as a tool.
+ *
+ * Every artefact is stored with a real SHA-256 (computed in the browser), the claim it supports, and the
+ * reproducible extraction (filter / frame numbers). Hash-only records are allowed for offline captures:
+ * paste `sha256sum` output from your own machine.
+ */
 export function EvidenceVault({ className = '' }: { className?: string }) {
-  const [filter, setFilter] = useState<string | null>(null)
-  const [search, setSearch] = useState('')
+  const [records, setRecords] = useState<EvidenceRecord[]>([])
+  const [form, setForm] = useState({ label: '', kind: 'capture' as EvidenceRecord['kind'], claim: '', filter: '', frames: '', sha256: '', bytes: 0 })
+  const [busy, setBusy] = useState(false)
+  const [copied, setCopied] = useState<string | null>(null)
+  const [error, setError] = useState('')
+  const fileInput = useRef<HTMLInputElement>(null)
 
-  const filtered = mockEvidence.filter(e => {
-    if (filter && e.type !== filter) return false
-    if (search && !e.name.toLowerCase().includes(search.toLowerCase()) && !e.module.toLowerCase().includes(search.toLowerCase())) return false
-    return true
-  })
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORE_KEY)
+      if (raw) setRecords(JSON.parse(raw))
+    } catch { /* ignore malformed storage */ }
+  }, [])
 
-  const getIcon = (type: string) => {
-    switch(type) {
-      case 'pcap': return FileCode
-      case 'config': return File
-      case 'log': return FileCode
-      case 'hash': return Hash
-      default: return File
+  useEffect(() => {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(records)) } catch { /* storage full/blocked */ }
+  }, [records])
+
+  const stats = useMemo(() => ({
+    total: records.length,
+    hashed: records.filter(r => r.sha256).length,
+    withFrames: records.filter(r => r.frames.trim()).length,
+  }), [records])
+
+  async function handleFile(file: File) {
+    setBusy(true)
+    setError('')
+    try {
+      const buf = await file.arrayBuffer()
+      const hash = await sha256Of(buf)
+      setForm(f => ({
+        ...f,
+        label: f.label || file.name,
+        sha256: hash,
+        bytes: file.size,
+        kind: /\.(pcapng?|cap)$/i.test(file.name) ? 'capture' : f.kind,
+      }))
+      if (!hash) setError('crypto.subtle unavailable (needs HTTPS or localhost) — paste the hash from `sha256sum` instead.')
+    } finally {
+      setBusy(false)
     }
   }
 
-  const getTypeColor = (type: string) => {
-    switch(type) {
-      case 'pcap': return 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
-      case 'config': return 'bg-violet-500/10 text-violet-400 border-violet-500/20'
-      case 'log': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-      case 'hash': return 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-      default: return 'bg-slate-500/10 text-slate-400 border-slate-500/20'
-    }
+  async function handleHashOnly(hashText: string) {
+    const clean = hashText.trim().toLowerCase().replace(/^[0-9a-f]{64}\s+\*?/, m => m)
+    const match = clean.match(/[0-9a-f]{64}/)
+    if (match) setForm(f => ({ ...f, sha256: match[0] }))
+  }
+
+  function add() {
+    if (!form.label.trim()) { setError('Give the artefact a label (file name or "RADIUS log — Monday").'); return }
+    if (!form.claim.trim()) { setError('State the claim this artefact supports — evidence without a claim is just data.'); return }
+    setError('')
+    setRecords(rs => [{
+      id: `ev-${Date.now().toString(36)}`,
+      label: form.label.trim(),
+      kind: form.kind,
+      claim: form.claim.trim(),
+      filter: form.filter.trim(),
+      frames: form.frames.trim(),
+      sha256: form.sha256,
+      bytes: form.bytes,
+      createdAt: new Date().toISOString(),
+    }, ...rs])
+    setForm({ label: '', kind: 'capture', claim: '', filter: '', frames: '', sha256: '', bytes: 0 })
+    if (fileInput.current) fileInput.current.value = ''
+  }
+
+  async function copy(text: string, id: string) {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(id)
+      setTimeout(() => setCopied(null), 1500)
+    } catch { /* clipboard blocked */ }
+  }
+
+  function exportJson() {
+    const blob = new Blob([JSON.stringify({ generated: new Date().toISOString(), records }, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `wififorge-evidence-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   return (
-    <div className={`rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 sm:p-6 min-w-0 w-full ${className}`}>
-      <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-3 mb-5">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
-            <Shield className="w-5 h-5 text-violet-400" />
+    <div className={`space-y-4 ${className}`}>
+      <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 sm:p-5">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+            <FileLock2 className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="min-w-0">
-            <h3 className="font-heading font-bold text-[14px] xs:text-[15px] text-slate-100">Evidence Vault — Chain of Custody</h3>
-            <p className="text-[11px] text-slate-500 font-mono">SHA256 verified • Production integrity • Enterprise audit</p>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-[14px] font-semibold text-slate-100">Evidence vault</h3>
+            <p className="mt-1 text-[12px] text-slate-400 leading-relaxed">
+              Every claim in a report needs an artefact, a hash and a reproducible extraction. This vault hashes
+              files in your browser (nothing is uploaded) and stores the record locally.
+            </p>
+            <div className="mt-2.5 flex flex-wrap gap-2 text-[10.5px] font-mono">
+              <span className="px-2 py-1 rounded-full bg-[#020617]/60 border border-[#1e293b] text-slate-400">{stats.total} artefacts</span>
+              <span className="px-2 py-1 rounded-full bg-[#020617]/60 border border-[#1e293b] text-slate-400">{stats.hashed} with hash</span>
+              <span className="px-2 py-1 rounded-full bg-[#020617]/60 border border-[#1e293b] text-slate-400">{stats.withFrames} with frame references</span>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[11px] px-2.5 py-1 rounded-full bg-[#020617] border border-[#1e293b] text-slate-500 font-mono">{filtered.length} items</span>
-          <span className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono">{mockEvidence.filter(e => e.verified).length} verified</span>
-        </div>
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <div className="relative flex-1 min-w-0">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search evidence (e.g., handshake, recon, config)" className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30 min-w-0" />
-        </div>
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-[#020617] border border-[#1e293b] shrink-0 overflow-x-auto scrollbar-thin">
-          {['all', 'pcap', 'config', 'log', 'hash'].map(t => (
-            <button key={t} onClick={() => setFilter(t === 'all' ? null : t)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium capitalize transition-all shrink-0 ${filter === t || (t === 'all' && !filter) ? 'bg-[#1e293b] text-slate-100 border border-[#334155]' : 'text-slate-500 hover:text-slate-300'}`}>
-              {t}
-            </button>
-          ))}
+          <button
+            onClick={exportJson}
+            disabled={!records.length}
+            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#1e293b] border border-[#334155] text-[11px] text-slate-300 hover:bg-[#25354f] disabled:opacity-40 transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" /> Export
+          </button>
         </div>
       </div>
 
-      <div className="space-y-2 max-h-[400px] overflow-y-auto scrollbar-thin pr-1">
-        {filtered.map((ev, idx) => {
-          const Icon = getIcon(ev.type)
-          return (
-            <motion.div key={ev.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }} className="group p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/60 hover:bg-[#020617]/80 hover:border-[#334155]/60 flex items-center gap-3 min-w-0">
-              <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${getTypeColor(ev.type)}`}>
-                <Icon className="w-4 h-4" />
+      <div className="grid gap-3 lg:grid-cols-[1fr_1fr]">
+        <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 space-y-3">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <input
+              value={form.label}
+              onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
+              placeholder="Artefact label (wpa2-handshake.pcapng)"
+              className="rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[12px] text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30"
+            />
+            <select
+              value={form.kind}
+              onChange={e => setForm(f => ({ ...f, kind: e.target.value as EvidenceRecord['kind'] }))}
+              className="rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[12px] text-slate-200 focus:outline-none focus:border-cyan-500/30"
+            >
+              <option value="capture">Capture</option>
+              <option value="config">Configuration</option>
+              <option value="log">Log</option>
+              <option value="hash">Hash record</option>
+              <option value="note">Note</option>
+            </select>
+          </div>
+
+          <input
+            value={form.claim}
+            onChange={e => setForm(f => ({ ...f, claim: e.target.value }))}
+            placeholder="Claim this artefact supports (required)"
+            className="w-full rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[12px] text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30"
+          />
+          <div className="grid gap-2 sm:grid-cols-2">
+            <input
+              value={form.filter}
+              onChange={e => setForm(f => ({ ...f, filter: e.target.value }))}
+              placeholder="Filter / extraction (eapol.type == 3)"
+              className="rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[11.5px] font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30"
+            />
+            <input
+              value={form.frames}
+              onChange={e => setForm(f => ({ ...f, frames: e.target.value }))}
+              placeholder="Frames (9-12)"
+              className="rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[11.5px] font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              ref={fileInput}
+              type="file"
+              onChange={e => { const f = e.target.files?.[0]; if (f) void handleFile(f) }}
+              className="text-[11px] text-slate-400 file:mr-2 file:rounded-lg file:border-0 file:bg-[#1e293b] file:px-3 file:py-1.5 file:text-[11px] file:text-slate-200"
+            />
+            <span className="text-[11px] text-slate-500">or paste a hash:</span>
+            <input
+              onChange={e => void handleHashOnly(e.target.value)}
+              placeholder="sha256sum output"
+              className="flex-1 min-w-[160px] rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[11px] font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30"
+            />
+          </div>
+
+          {form.sha256 && (
+            <div className="rounded-xl bg-[#020617]/60 border border-emerald-500/20 p-3">
+              <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-emerald-400">
+                <Hash className="w-3 h-3" /> SHA-256
+                {form.bytes > 0 && <span className="text-slate-500">({(form.bytes / 1024).toFixed(1)} KiB)</span>}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-[12px] font-mono font-medium text-slate-200 truncate">{ev.name}</span>
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full border font-mono shrink-0 ${getTypeColor(ev.type)}`}>{ev.type.toUpperCase()}</span>
-                  {ev.verified ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> : <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+              <div className="mt-1.5 text-[10.5px] font-mono text-slate-300 break-all">{form.sha256}</div>
+            </div>
+          )}
+
+          {error && (
+            <p className="flex items-start gap-1.5 text-[11px] text-amber-400 leading-relaxed">
+              <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" /> {error}
+            </p>
+          )}
+
+          <button
+            onClick={add}
+            disabled={busy}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-violet-500 text-white text-[12px] font-semibold disabled:opacity-50"
+          >
+            <Plus className="w-4 h-4" /> Add artefact record
+          </button>
+        </div>
+
+        <div className="space-y-2 max-h-[520px] overflow-y-auto scrollbar-thin pr-1">
+          <AnimatePresence initial={false}>
+            {records.map(r => (
+              <motion.div
+                key={r.id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, x: -8 }}
+                className="rounded-xl bg-[#0f172a] border border-[#1e293b] p-3.5"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`text-[9px] font-mono px-2 py-0.5 rounded-full border uppercase ${KIND_COLORS[r.kind]}`}>{r.kind}</span>
+                      <span className="text-[12px] font-medium text-slate-200 break-all">{r.label}</span>
+                    </div>
+                    <p className="mt-1.5 text-[11.5px] text-slate-400 leading-relaxed">{r.claim}</p>
+                    {(r.filter || r.frames) && (
+                      <p className="mt-1.5 text-[10.5px] font-mono text-slate-500 break-all">
+                        {r.filter && <>filter: {r.filter} </>}
+                        {r.frames && <>• frames: {r.frames}</>}
+                      </p>
+                    )}
+                    {r.sha256 ? (
+                      <button
+                        onClick={() => void copy(r.sha256, r.id)}
+                        className="mt-1.5 inline-flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 hover:text-emerald-300 break-all text-left"
+                        title="Copy SHA-256"
+                      >
+                        {copied === r.id ? <Check className="w-3 h-3 shrink-0" /> : <Copy className="w-3 h-3 shrink-0" />}
+                        {r.sha256}
+                      </button>
+                    ) : (
+                      <p className="mt-1.5 flex items-center gap-1.5 text-[10.5px] text-amber-400/90">
+                        <ShieldCheck className="w-3 h-3" /> no hash recorded — add one before reporting this artefact
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setRecords(rs => rs.filter(x => x.id !== r.id))}
+                    className="shrink-0 w-7 h-7 rounded-lg bg-[#020617]/60 border border-[#1e293b] flex items-center justify-center text-slate-500 hover:text-rose-400 hover:border-rose-500/30 transition-colors"
+                    title="Delete record"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-                <div className="flex items-center gap-2 mt-1 text-[10px] font-mono text-slate-500 flex-wrap">
-                  <span className="truncate">{ev.module}</span>
-                  <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0" />
-                  <span className="flex items-center gap-1 shrink-0"><Clock className="w-3 h-3" />{ev.timestamp}</span>
-                  <span className="w-1 h-1 rounded-full bg-slate-600 hidden xs:block shrink-0" />
-                  <span className="hidden xs:inline truncate">{ev.sha256.slice(0, 16)}... • {ev.size}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <button className="w-8 h-8 rounded-lg bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] transition-colors touch-manipulation">
-                  <Download className="w-4 h-4 text-slate-400" />
-                </button>
-                <button className="w-8 h-8 rounded-lg bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 transition-colors touch-manipulation">
-                  <Trash2 className="w-4 h-4 text-slate-500" />
-                </button>
-              </div>
-            </motion.div>
-          )
-        })}
-      </div>
-
-      <div className="mt-4 p-3 rounded-xl bg-cyan-500/[0.03] border border-cyan-500/10 flex items-start gap-2.5">
-        <Zap className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" />
-        <div className="text-[11px] text-slate-400 leading-relaxed min-w-0">
-          <span className="font-semibold text-cyan-300">Enterprise:</span> All evidence SHA256 hashed, chain of custody maintained, exportable for reports. Verified = hash matches original capture. Production-ready for PCI-DSS, NIST 800-153 audits.
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          {!records.length && (
+            <div className="rounded-xl border border-dashed border-[#334155]/60 p-6 text-center">
+              <p className="text-[12px] text-slate-500">
+                No artefact records yet. Add one for each claim you intend to make in a report — including the
+                "no finding" sections.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

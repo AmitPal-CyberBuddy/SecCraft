@@ -180,17 +180,17 @@ export function HandshakeDiagram({ pcapId = 'wpa2-handshake', bssid = 'AA:BB:CC:
               <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
                 <div className="text-[11px] text-slate-500 uppercase tracking-widest">Group Cipher</div>
                 <div className={`text-[12px] font-mono mt-1 ${rsnInfo.groupCipher.includes('CCMP') ? 'text-emerald-400' : 'text-red-400'}`}>{rsnInfo.groupCipher}</div>
-                <div className="text-[10px] text-slate-600 mt-1">Filter: wlan_mgt.rsn.gcs.type==4 CCMP good, ==2 TKIP bad</div>
+                <div className="text-[10px] text-slate-600 mt-1">Filter: wlan.rsn.gcs.type==4 CCMP good, ==2 TKIP bad</div>
               </div>
               <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
                 <div className="text-[11px] text-slate-500 uppercase tracking-widest">Pairwise Cipher</div>
                 <div className={`text-[12px] font-mono mt-1 ${rsnInfo.pairwiseCipher.includes('CCMP') ? 'text-emerald-400' : 'text-red-400'}`}>{rsnInfo.pairwiseCipher}</div>
-                <div className="text-[10px] text-slate-600 mt-1">Filter: wlan_mgt.rsn.pcs.type==4 CCMP good</div>
+                <div className="text-[10px] text-slate-600 mt-1">Filter: wlan.rsn.pcs.type==4 CCMP good</div>
               </div>
               <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
                 <div className="text-[11px] text-slate-500 uppercase tracking-widest">AKM (Auth Key Mgmt)</div>
                 <div className="text-[12px] font-mono text-slate-200 mt-1">{rsnInfo.akm}</div>
-                <div className="text-[10px] text-slate-600 mt-1">Filter: wlan_mgt.rsn.akms.type==2 PSK, ==8 SAE WPA3, ==1 EAP, count&gt;1 transition</div>
+                <div className="text-[10px] text-slate-600 mt-1">Filter: wlan.rsn.akms.type==2 PSK, ==8 SAE WPA3, ==1 EAP, count&gt;1 transition</div>
                 <div className="flex gap-1 mt-2">
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">PSK 2</span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20">SAE 8 WPA3</span>
@@ -209,20 +209,20 @@ export function HandshakeDiagram({ pcapId = 'wpa2-handshake', bssid = 'AA:BB:CC:
                 <div className="text-[10px] text-slate-500 mt-2 leading-relaxed">
                   {rsnInfo.mfpc && rsnInfo.mfpr ? 'PMF required MFPC=1 MFPR=1 — good — prevents deauth — WPA3 mandates required' : rsnInfo.mfpc && !rsnInfo.mfpr ? 'PMF capable optional MFPC=1 MFPR=0 — better than disabled but downgrade possible — should be required if all clients support PMF — Medium' : 'PMF disabled MFPC=0 MFPR=0 — bad — Medium — deauth possible, handshake capture via deauth, DoS, Evil Twin'}
                 </div>
-                <div className="text-[10px] text-cyan-400/80 mt-1">Filter: wlan_mgt.rsn.capabilities.mfpc==1 && mfpr==1 required, ==0 && ==0 disabled</div>
+                <div className="text-[10px] text-cyan-400/80 mt-1">Filter: wlan.rsn.capabilities.mfpc==1 && mfpr==1 required, ==0 && ==0 disabled</div>
               </div>
               <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
                 <div className="text-[11px] text-slate-500 uppercase tracking-widest">PMKID & Group Management</div>
                 <div className="text-[12px] font-mono text-slate-200 mt-1">PMKID Count 0 or 1 — PMKID = HMAC-SHA1-128(PMK, "PMK Name" | BSSID | STA MAC) 16 bytes — clientless capture via hcxdumptool — single frame — no deauth</div>
-                <div className="text-[10px] text-slate-600 mt-1">Filter: wlan_mgt.rsn.pmkid or wlan_rsna_eapol.pmkid</div>
+                <div className="text-[10px] text-slate-600 mt-1">Filter: wlan.rsn.pmkid or wlan_rsna_eapol.pmkid</div>
                 <div className="text-[12px] font-mono text-slate-200 mt-2">Group Mgmt Cipher BIP (00-0F-AC-06) — for PMF — BIP-GMAC-128/256 for WPA3</div>
-                <div className="text-[10px] text-slate-600 mt-1">Filter: wlan_mgt.rsn.gmcs.type==6 BIP good</div>
+                <div className="text-[10px] text-slate-600 mt-1">Filter: wlan.rsn.gmcs.type==6 BIP good</div>
               </div>
               <div className={`p-3 rounded-xl border ${rsnInfo.wps ? 'bg-red-500/10 border-red-500/20' : 'bg-emerald-500/10 border-emerald-500/20'}`}>
                 <div className="text-[11px] uppercase tracking-widest flex items-center gap-1" style={{ color: rsnInfo.wps ? '#f87171' : '#34d399' }}>
                   {rsnInfo.wps ? <><AlertTriangle className="w-3 h-3" /> WPS Enabled IE 00:50:F2:04 High 11k PIN flaw</> : <><CheckCircle className="w-3 h-3" /> WPS Disabled — good</>}
                 </div>
-                <div className="text-[10px] text-slate-500 mt-1">Filter: wps or wlan_mgt.tag.oui==00:50:f2:04 — beacon WPS IE present = WPS enabled = High/Medium</div>
+                <div className="text-[10px] text-slate-500 mt-1">Filter: wps or wlan.tag.oui==00:50:f2:04 — beacon WPS IE present = WPS enabled = High/Medium</div>
                 <div className="text-[11px] font-mono mt-1" style={{ color: rsnInfo.wps ? '#f87171' : '#34d399' }}>{rsnInfo.wps ? 'wps_state=2 enabled — bad — 11k PIN brute-force' : 'wps_state=0 disabled — good'}</div>
               </div>
             </div>
@@ -266,7 +266,7 @@ export function HandshakeDiagram({ pcapId = 'wpa2-handshake', bssid = 'AA:BB:CC:
               </div>
               <div className="mt-3 p-3 rounded-xl bg-[#020617] border border-[#1e293b] font-mono text-[11px] text-slate-400">
                 <div>BSSID {bssid} STA MAC {client} SSID {ssid} PMKID {pmkid || 'aabb...'} in EAPOL M1 key data RSN IE PMKID Count 1</div>
-                <div className="mt-1">Filter: wlan_rsna_eapol.pmkid or eapol && wlan_mgt.rsn.pmkid</div>
+                <div className="mt-1">Filter: wlan_rsna_eapol.pmkid or eapol && wlan.rsn.pmkid</div>
                 <div className="mt-1">Capture clientless: hcxdumptool -i wlan0mon -o pmkid.pcapng --enable_status=1 — associates as client, gets M1 with PMKID, single frame, no client needed, no deauth, less detection than handshake</div>
                 <div className="mt-1">Convert: hcxpcapngtool -o pmkid.22000 pmkid.pcapng && hashcat -m 22000 pmkid.22000 wordlist.txt --force — offline audit if weak PSK</div>
                 <div className="mt-1">Defense: Strong PSK 20+ random not in wordlists, PMF required, WPA3 SAE resists offline audit forward secrecy, no WPS</div>
@@ -283,7 +283,7 @@ export function HandshakeDiagram({ pcapId = 'wpa2-handshake', bssid = 'AA:BB:CC:
           PCAP: {pcapId}.pcapng SHA256 (sha256sum {pcapId}.pcapng) Frames 11-12 BSSID {bssid} Client {client} SSID {ssid} Ch6<br/>
           M1 f9 ANonce {anonce.slice(0, 16)}... replay 1 SA BSSID DA client MIC 0, M2 f10 SNonce {snonce.slice(0, 16)}... MIC {mic.slice(0, 16)}... replay 1 SA client DA BSSID, M3 f11 GTK encrypted MIC replay 2 SA BSSID DA client, M4 f12 ACK MIC replay 2 SA client DA BSSID — complete 1,1,2,2<br/>
           RSN: Group CCMP, Pairwise CCMP, AKM {rsnInfo.akm}, MFPC={rsnInfo.mfpc ? 1 : 0} MFPR={rsnInfo.mfpr ? 1 : 0} {rsnInfo.mfpc && rsnInfo.mfpr ? 'PMF required good' : rsnInfo.mfpc ? 'PMF capable optional Medium' : 'PMF disabled Medium deauth possible'}, WPS {rsnInfo.wps ? 'enabled High 11k' : 'disabled good'}, BIP Group Mgmt<br/>
-          Filters: eapol && wlan.bssid=={bssid}, wlan_mgt.rsn.akms.type==2 PSK ==8 SAE, wlan_mgt.rsn.capabilities.mfpc==1 && mfpr==1 required, wps, wlan_rsna_eapol.pmkid<br/>
+          Filters: eapol && wlan.bssid=={bssid}, wlan.rsn.akms.type==2 PSK ==8 SAE, wlan.rsn.capabilities.mfpc==1 && mfpr==1 required, wps, wlan_rsna_eapol.pmkid<br/>
           Hashcat: hcxpcapngtool -o {pcapId}.hc22000 {pcapId}.pcapng && hashcat -m 22000 {pcapId}.hc22000 wordlist.txt --force — only authorized lab
         </div>
       </div>
