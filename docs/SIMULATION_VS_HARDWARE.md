@@ -1,105 +1,68 @@
-# Simulated vs Hardware Labs — Technical Honesty
+# Simulation vs Hardware — Lab Tier System
 
-> Core principle: **Never claim simulation equals RF reality.**
+Every module, lab and challenge in WiFiForge carries one of three tiers. The tier is not decoration: it
+states exactly what an artefact-based exercise can and cannot establish, and where a real radio is
+required. **A PCAP simulation is never presented as RF testing.**
 
-## Why This Matters
+| Tier | Meaning | What it can prove | What it cannot prove |
+| --- | --- | --- | --- |
+| 🟢 **SIMULATION** | Everything needed is an artefact: a capture, a configuration, a log, an offline hash file. | Policy advertised in beacons; handshake/PMKID material and offline audit results; EAP/RADIUS exchanges; portal flows; segmentation *evidence captured in a test environment*. | Anything that depends on the air itself: injection, client reaction, RF behaviour, interference. |
+| 🟡 **HYBRID** | The concept is provable from artefacts, but confidence needs real hardware (your own AP/adapter) at some point. | The reasoning, the configuration, the analysis — and what would happen given those settings. | Real client behaviour, real driver/firmware behaviour, real-world RF conditions. |
+| 🔴 **RF_REQUIRED** | The air is the subject of the test. | Nothing, from a capture alone. A capture shows *that* frames were transmitted, not *that a client was affected*. | Everything that matters here: injection capability, deauth effect, rogue-AP discovery/association choice, channel/RF behaviour. |
 
-A normal web app, Docker, or VM cannot perfectly emulate:
-- Real RF propagation, signal strength, interference
-- Monitor mode on real radio hardware
-- Packet injection (deauth, etc.)
-- Real AP beaconing with physical timing
-- Client/AP association state machines over air
-- Physical proximity and roaming
+## Where each tier is used
 
-Pretending otherwise is technically dishonest and creates false confidence.
+* **SIMULATION** — modules 01, 02, 03, 05, 06, 07, 08, 11, 15, 16, 17, 19 plus the engagement scaffolding.
+* **HYBRID** — modules 04 (monitor mode/injection are hardware; the reasoning is not), 09 (offline audit of a
+  captured handshake is real crypto, collection needs a radio), 10 (WPS state is readable from beacons; a PIN
+  attempt needs a radio and authorisation), 13 (rogue infrastructure analysis vs. operating a rogue AP),
+  14 (portal analysis vs. an on-site isolation test).
+* **RF_REQUIRED** — module 12 (availability testing) and every intrusive test in module 18 (deauth, rogue
+  authenticator, live segmentation testing).
 
-## Two Lab Categories
+## How the tiers appear in the product
 
-### ✅ SIMULATED — Zero-Cost, No Hardware
+* `modules.json` → `lab_requirement` (authoritative), with a legacy `status` field for compatibility.
+* `lab-artifacts.json` → each artefact records what is **real** and what is **synthetic** (cryptographic
+  material is real where it can be; TLS payloads and SAE scalars are structural only, and say so).
+* UI → `<TierBadge>` / `<TierLegend>` in module headers, labs, challenges and the engagement pack; the
+  SIMULATION badge never appears next to language that implies RF confirmation.
+* Documentation → each lesson states the tier at the top and the exact limit that follows from it.
 
-**What we can do:**
-- PCAP analysis (beacon, probe, handshake, EAPOL, RADIUS logs)
-- 802.11 frame analysis (management/control/data)
-- Wireshark filter exercises
-- WPA/WPA2 concepts, handshake analysis, PMKID
-- Offline password auditing using *self-generated* captures + wordlists
-- Wireless config analysis (hostapd.conf, RADIUS configs)
-- Enterprise Wi-Fi concepts via Docker logs (FreeRADIUS)
-- Network segmentation scenarios
-- Reporting, evidence collection, methodology
+## Creating artefacts (the verification pipeline)
 
-**How we simulate:**
-- Scapy-generated PCAPs (beacons, probes, handshakes)
-- hostapd configs (not running AP, just config audit)
-- Docker FreeRADIUS that produces logs and EAP PCAPs
-- Static artifacts committed to `content/pcaps/` and `content/configs/`
-
-**UI Badge:** `SIMULATED` — green, enabled by default
-
-### ⚠️ HARDWARE_REQUIRED — Real RF
-
-**What genuinely needs hardware:**
-- Monitor mode (`iw dev wlan0 set type monitor`)
-- Packet injection (deauth, disassoc, etc.)
-- Real AP interaction (beacon TX, client assoc)
-- Signal strength, channel interference, proximity
-- Rogue AP / Evil Twin that actually beacons
-- Client isolation testing over air
-- WPS PIN brute-force against real AP
-- WPA3 SAE capture with Wi-Fi 6 hardware
-
-**Requirements:**
-- Compatible adapter: ALFA AWUS036ACHM (MT7610U), AWUS036ACM, or similar
-- Kali bare-metal or VM with USB passthrough
-- `rfkill unblock wifi`, `iw` capable driver
-- Lab-only, authorized, own infrastructure
-
-**UI Badge:** `RF_REQUIRED` — amber, disabled unless `HARDWARE_MODE=true` in Settings
-
-## Lab Manifest Example
-
-```yaml
-id: lab-02-beacon-analysis
-title: Beacon Frame Analysis
-runtime: simulated  # or hardware
-artifacts:
-  - path: pcaps/wifi-fundamentals/beacon-only.pcapng
-    type: pcapng
-hardware:
-  required: false
-  adapters: []
-  notes: "No hardware needed, uses pre-captured beacon"
-
----
-id: lab-12-deauth
-title: Deauth Behavior Validation
-runtime: hardware
-hardware:
-  required: true
-  adapters: ["ALFA AWUS036ACHM"]
-  driver: "mt76"
-  notes: "Requires monitor mode + injection. Lab-only SSID LAB-DEAUTH"
+```bash
+python3 scripts/generate-lab-artifacts.py    # 16 PCAPNGs + lab-data JSON + wordlist + MANIFEST + inventory
+python3 scripts/generate-challenges.py       # 15 challenges; every answer is computed from the captures
+python3 scripts/verify-lab-artifacts.py      # 142 checks: hashes, RSNE, MICs, PMKID, RADIUS, MS-CHAPv2, answers
 ```
 
-## Safety & Ethics
+The verifier is the contract: if a capture is regenerated with different values, stale challenge answers,
+hashes or lesson references fail the run. Cryptographic material is genuinely computed — PMK/PTK/MIC for the
+handshake captures, PMKID from the PMK, RADIUS Message-Authenticator/Response Authenticator from the shared
+secret, and MS-CHAPv2 challenge/response derived per RFC 2759 (checked against the published test vector).
 
-All hardware labs must:
-- Use SSID `LAB-*` or `WIFIFORGE-*`
-- Include `scope: lab-only` in manifest
-- Warn: "Do not test on public/third-party Wi-Fi"
-- Document as VAPT: authorized, evidence-based, remediation-focused
+## What stays synthetic, deliberately
 
-## Roadmap for Hardware
+* TLS record contents inside EAP tunnels (structural bytes; the inner MS-CHAPv2 exchange, where crackable,
+  is real).
+* SAE commit/confirm scalars — a real SAE exchange requires a live DH exchange with a client; the point of
+  the WPA3 lab is that the payloads are *not* offline-crackable.
+* BIP MIC values on protected management frames (the IGTK is not knowable to a passive listener).
+* DHCP option bytes and HTTP/DNS payload strings in the traffic-analysis capture (minimal, fixed-size).
 
-Phase H (Future, Optional):
-- Docs for adapter compatibility
-- Scripts: `scripts/enable-monitor.sh`, `scripts/capture-handshake.sh`
-- Docker won't help here — needs real radio
-- UI toggle in Settings to enable hardware labs
+Each capture's manifest entry lists exactly which parts are synthetic, so a learner can never be misled
+about what a delivered artefact demonstrates.
 
-## Honest UI Copy
+## Hardware mode (optional, zero-cost)
 
-> "This platform cannot simulate RF propagation, signal strength, or real-time 802.11 state machines. Simulated labs use pre-captured artifacts. Labs requiring monitor mode / injection are marked and require compatible hardware."
+If you have an adapter that supports monitor mode and injection:
 
-This copy appears on Labs page, Module detail, and Settings.
+1. Set up your own AP (`hostapd`) and clients you own — never a third-party network.
+2. Verify capability first: `iw dev`, `iw phy <phy> info | grep -A6 'Supported interface modes'`,
+   `aireplay-ng --test <if>` against your own AP.
+3. Use the same evidence standard: hash, filter, frame numbers, limits — plus the hardware/software
+   versions, since RF results are not reproducible without them.
+
+If you do not have the hardware, complete the tier's reasoning and analysis tasks; the academy records
+that the RF step was not performed rather than pretending it was.

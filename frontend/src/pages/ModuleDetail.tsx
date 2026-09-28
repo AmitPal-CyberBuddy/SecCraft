@@ -12,6 +12,8 @@ import { AttackDefenseRetest } from '@/components/lab/AttackDefenseRetest'
 import { ReadingProgress, LessonReadingProgress } from '@/components/learning/ReadingProgress'
 import { motion, AnimatePresence } from 'framer-motion'
 import modules from '@/content/modules.json'
+import { TierBadge } from '@/components/common/TierBadge'
+import { DecisionPractice, getScenariosForModule } from '@/components/learning/DecisionPractice'
 
 const NotesBookmarks = lazy(() => import('@/components/learning/NotesBookmarks').then(m => ({ default: m.NotesBookmarks })))
 const ReadingExperience = lazy(() => import('@/components/learning/ReadingExperience').then(m => ({ default: m.ReadingExperience })))
@@ -113,7 +115,7 @@ const quizData: Record<string, any[]> = {
     { id: "q5", question: "Same SSID, different BSSIDs means:", options: ["Different networks", "Same ESS, multiple APs", "Rogue AP", "Hidden SSID"], correct: 1, explanation: "Same SSID, different BSSIDs = ESS, multiple APs for roaming." },
   ],
   "06-traffic-analysis": [
-    { id: "q1", question: "Wireshark filter for beacons:", options: ["wlan.fc.type==0", "wlan.fc.type_subtype==8", "eapol", "wlan_mgt.ssid==\"\""], correct: 1, explanation: "Type_subtype 8 = beacon." },
+    { id: "q1", question: "Wireshark filter for beacons:", options: ["wlan.fc.type==0", "wlan.fc.type_subtype==8", "eapol", "wlan.ssid==\"\""], correct: 1, explanation: "Type_subtype 8 = beacon." },
     { id: "q2", question: "4-way handshake frames are:", options: ["Beacons", "EAPOL", "Probe requests", "Deauth"], correct: 1, explanation: "EAPOL = 4-way handshake." },
     { id: "q3", question: "Association flow order:", options: ["Beacon→Probe→Auth→Assoc→EAPOL", "EAPOL→Beacon→Probe", "Auth→Beacon→Assoc", "Probe→EAPOL→Beacon"], correct: 0, explanation: "Correct order: Beacon, Probe, Auth, Assoc, EAPOL, Data." },
     { id: "q4", question: "Filter for specific BSSID:", options: ["wlan.bssid==AA:BB:CC:DD:EE:FF", "ssid==LAB-WIFI", "channel==6", "eapol"], correct: 0, explanation: "wlan.bssid filters AP." },
@@ -236,7 +238,43 @@ export function ModuleDetail() {
   const isLessonCompleted = useProgressStore(s => s.isLessonCompleted)
   const getProgress = useProgressStore(s => s.getModuleProgress)
 
-  const lessons = lessonMap[id || ''] || ["01-overview"]
+  const moduleEntry = useMemo(
+    () => (modules as Array<{ id: string; lessons?: { id: string; title: string; kind: string }[] }>).find(m => m.id === id),
+    [id],
+  )
+  const lessons = useMemo(
+    () => moduleEntry?.lessons?.length ? moduleEntry.lessons.map(l => l.id) : ['01-overview'],
+    [moduleEntry],
+  )
+  const lessonMeta = useMemo(
+    () => new Map((moduleEntry?.lessons ?? []).map(l => [l.id, l])),
+    [moduleEntry],
+  )
+
+  const objectives = useMemo(() => {
+    const fromContent = (module as { objectives?: string[] })?.objectives
+    if (fromContent?.length) return fromContent
+    if (id === '02-wifi-fundamentals') return [
+      'Read SSID/BSSID/ESS from a beacon and explain what each identifies',
+      'Explain client behaviour visible in probe requests (PNL, wildcard, randomised MAC)',
+      'Map channels/bands and choose a capture channel for a given target',
+    ]
+    if (id === '05-wireless-recon') return [
+      'Produce an AP inventory with frame numbers for every field',
+      'Explain why a hidden SSID is not a security control, with the revealing frames',
+      'Decide whether two BSSIDs are one ESS or a look-alike',
+    ]
+    if (id === '06-traffic-analysis') return [
+      'Write reproducible display filters for management, EAPOL and RADIUS traffic',
+      'Reconstruct one association and 4-way handshake as a frame-numbered timeline',
+      'Package a claim as evidence: hash + filter + frames + stated limits',
+    ]
+    return [
+      'Apply the module concept to a real engagement decision',
+      'Analyse the module artefacts and state what they do not prove',
+      'Document a finding with severity derived from impact, not from the technique',
+    ]
+  }, [id, module])
   const labs = labMap[id || ''] || []
   const quizzes = quizData[id || ''] || []
   const theoryContentRef = useRef<HTMLDivElement>(null)
@@ -371,10 +409,7 @@ export function ModuleDetail() {
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-1.5 xs:gap-2 mb-2 min-w-0">
               <span className="text-[10px] xs:text-[11px] font-mono px-2 xs:px-2.5 py-1 rounded-full bg-[#020617]/60 border border-[#1e293b]/60 text-slate-500 backdrop-blur-sm shrink-0">{module.id}</span>
-              <span className={`text-[9px] xs:text-[10px] px-2 xs:px-2.5 py-1 rounded-full border font-mono font-medium backdrop-blur-sm tracking-widest shrink-0 ${module.status === 'simulated' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
-                {module.status === 'simulated' ? '● SIM' : '◐ RF'}
-                <span className="hidden xs:inline">{module.status === 'simulated' ? 'ULATED' : ' HARDWARE'}</span>
-              </span>
+              <TierBadge tier={(module as { lab_requirement?: string }).lab_requirement ?? module.status} />
               <span className={`text-[9px] xs:text-[10px] px-2 xs:px-2.5 py-1 rounded-full bg-[#020617]/60 border ${pc.border} ${pc.text} font-mono backdrop-blur-sm shrink-0`}>P{module.phase}</span>
               <span className="text-[10px] xs:text-[11px] px-2 xs:px-2.5 py-1 rounded-full bg-[#1e293b]/60 border border-[#334155]/60 text-slate-400 font-mono shrink-0 truncate max-w-[120px] xs:max-w-none">{module.difficulty}</span>
             </div>
@@ -460,23 +495,7 @@ export function ModuleDetail() {
                       Learning Objectives
                     </h3>
                     <ul className="space-y-2.5">
-                      {(id === '02-wifi-fundamentals' ? [
-                        'SSID vs BSSID vs ESSID distinction for recon',
-                        'AP, client, STA roles and association flow',
-                        'Channels, bands, bandwidth misconfigurations'
-                      ] : id === '05-wireless-recon' ? [
-                        'Enumerate APs via beacons: SSID, BSSID, channel, security, vendor',
-                        'Discover clients via probe requests, map PNL leakage',
-                        'Hidden SSID detection and reveal via probe response'
-                      ] : id === '06-traffic-analysis' ? [
-                        'Wireshark display filters for 802.11',
-                        'Full association flow: Beacon → Probe → Auth → Assoc → EAPOL',
-                        'Analyze traffic, evidence collection, frame numbers'
-                      ] : [
-                        'Understand module objectives and apply VAPT methodology',
-                        'Analyze PCAPs with real-world tools',
-                        'Document findings with evidence'
-                      ]).map((obj, i) => (
+                      {objectives.map((obj, i) => (
                         <li key={i} className="flex gap-3 text-[13px] text-slate-300">
                           <span className="w-5 h-5 rounded-full bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0 mt-0.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
@@ -487,6 +506,23 @@ export function ModuleDetail() {
                     </ul>
                   </div>
                 </div>
+
+                {((module as { evidence_focus?: string }).evidence_focus || (module as { retest_focus?: string }).retest_focus) && (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {(module as { evidence_focus?: string }).evidence_focus && (
+                      <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4">
+                        <h3 className="text-[12px] font-mono uppercase tracking-widest text-cyan-400 mb-2">Evidence standard</h3>
+                        <p className="text-[12.5px] text-slate-300 leading-relaxed">{(module as { evidence_focus?: string }).evidence_focus}</p>
+                      </div>
+                    )}
+                    {(module as { retest_focus?: string }).retest_focus && (
+                      <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4">
+                        <h3 className="text-[12px] font-mono uppercase tracking-widest text-violet-400 mb-2">Retest</h3>
+                        <p className="text-[12.5px] text-slate-300 leading-relaxed">{(module as { retest_focus?: string }).retest_focus}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-6 relative overflow-hidden group hover:border-[#334155]/60 transition-all duration-300">
                   <div className="absolute inset-0 bg-gradient-to-br from-violet-500/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -611,6 +647,7 @@ export function ModuleDetail() {
                       {lessons.map((lesson, idx) => {
                         const completed = isLessonCompleted(module.id, lesson)
                         const isActive = activeLesson === idx
+                        const meta = lessonMeta.get(lessons[idx])
                         return (
                           <button 
                             key={lesson} 
@@ -797,6 +834,17 @@ export function ModuleDetail() {
           {/* Lab */}
           {activeTab === 'lab' && (
             <div className="space-y-6">
+              {getScenariosForModule(id || '').length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="font-heading font-bold text-[15px] text-slate-100">Decision practice — what would you do next?</h3>
+                    <span className="text-[10.5px] font-mono text-slate-500">
+                      Observe → Interpret → Hypothesise → Choose the test → Evidence → Conclude
+                    </span>
+                  </div>
+                  <DecisionPractice moduleId={id || ''} compact />
+                </div>
+              )}
               {labs.length === 0 && (
                 <div className="rounded-2xl bg-[#0f172a]/60 border border-dashed border-[#334155]/60 p-12 text-center">
                   <div className="w-12 h-12 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center mx-auto mb-4">

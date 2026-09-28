@@ -29,15 +29,18 @@ Forge. Break. Fix. Retest.<br/>
 Core loop:
 
 ```
-Learn → Understand → Observe → Enumerate → Test → Validate → Evidence → Impact → Remediate → Retest → Report
+Observe → Interpret → Hypothesise → Choose the test → Execute → Evidence → Conclude → Impact → Remediate → Retest → Report
 ```
+
+Current content: **20 modules · 27 authored lessons · 15 artefact challenges (guided → semi-guided → assessment) ·
+35 decision scenarios · 42-item master checklist · 16 verified PCAPNG artefacts · 1 full engagement pack (`ENG-01`)**.
 
 - Runs at `http://localhost:3000` on Kali Linux
 - **Live in the browser:** <https://amitpal-cyberbuddy.github.io/WiFiForge/> (GitHub Pages, auto-deployed from `main`)
 - Zero-cost: Vite + React + FastAPI + SQLite + Docker (optional)
-- No physical Wi-Fi hardware required for Phase 1-5 (PCAPs, configs, logs)
-- Hardware labs clearly separated and gated (`RF_REQUIRED` badge)
-- VAPT methodology enforced in every module
+- No physical Wi-Fi hardware required for SIMULATION labs; HYBRID/RF_REQUIRED labs say exactly what they cannot prove
+- Lab tiers are explicit everywhere: 🟢 SIMULATION · 🟡 HYBRID · 🔴 RF_REQUIRED (see `docs/SIMULATION_VS_HARDWARE.md`)
+- Every capture is generated with real cryptographic material and verified by `scripts/verify-lab-artifacts.py` (142 checks)
 
 ### 🎨 Brand
 

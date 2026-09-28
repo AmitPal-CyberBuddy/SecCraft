@@ -1,0 +1,231 @@
+{
+ "engagements": [
+  {
+   "id": "ENG-01",
+   "name": "Northwind Retail \u2014 Flagship Store",
+   "subtitle": "Full authorised wireless penetration test (professional assessment)",
+   "tier": "SIMULATION",
+   "time_estimate": "6\u201310 hours",
+   "summary": "A complete engagement package: brief, scope, rules of engagement, target information, an AP inventory, an artefact bundle and a marking guide. No vulnerabilities are disclosed. You plan the test, choose the evidence, derive severity from impact, and write a client-ready report plus a retest plan.",
+   "client_background": [
+    "Northwind Retail operates 12 stores and one small data centre; wireless is managed centrally by a two-person infrastructure team.",
+    "The Flagship Store has a retail floor, a back office with POS terminals (wired), a stock room, and a customer seating area with an outdoor overflow.",
+    "Wireless is used by staff laptops, handheld stock scanners, printers, customer devices and the guest portal.",
+    "The store previously had an incident where an unknown device was found plugged into a switch port; management is sensitive to rogue infrastructure."
+   ],
+   "objectives": [
+    "Assess the security of the wireless infrastructure at the Flagship Store.",
+    "Determine whether an unauthorised party within RF range can obtain network access.",
+    "Assess separation between guest, retail/operations and corporate/enterprise traffic.",
+    "Produce a report that a remediation supplier can act on, including evidence and retest criteria."
+   ],
+   "scope": {
+    "in_scope": [
+     "The four SSIDs listed under Target Information, at the Flagship Store only.",
+     "RF testing within the store footprint (and the seating area's outdoor overflow) during the agreed window.",
+     "One read-only RADIUS server configuration review.",
+     "The two provided test accounts on the enterprise SSID.",
+     "Passive capture, offline audits, rogue-authenticator testing on the guest SSID, and targeted deauthentication of the two provided test clients."
+    ],
+    "out_of_scope": [
+     "All other stores and the corporate data centre network.",
+     "Physical attacks on POS hardware, the payment gateway, or staff devices.",
+     "Denial-of-service testing against production during trading hours (08:00\u201319:00).",
+     "Any interference with neighbouring organisations' networks.",
+     "Testing the guest portal's backend application (web application testing is a separate engagement)."
+    ],
+    "prohibited": [
+     "Capturing customer payload data beyond what the guest SSID exposes passively to any observer; no session-token replay against real customers.",
+     "Using real customer credentials in any test.",
+     "Changing any production configuration (including the RADIUS server and the AP settings).",
+     "Attacking, redirecting or deauthenticating any device other than the two provided test clients."
+    ],
+    "windows": "Passive testing 08:00\u201319:00 any business day. Intrusive tests (rogue authenticator, targeted deauth) only on Tuesdays/Thursdays 19:00\u201321:00, and only with the store manager's confirmation on the day."
+   },
+   "roe_clauses": [
+    "Authorisation: signed by the Northwind Retail CIO (named in the annex), valid for the agreed test window; the store manager is the on-site contact.",
+    "Technique matrix: passive capture (any time), offline audits (any time), rogue authenticator on NW-Guest (window only), targeted deauth on the two test clients (window only).",
+    "Safety: maximum transmit power per the local regulatory domain (`iw reg get`); no interference with neighbouring premises; each intrusive test has a documented rollback.",
+    "Data handling: captures encrypted at rest, retained 30 days after report acceptance, then deleted; no personal data in the report.",
+    "Evidence standard: captures delivered with SHA-256 hashes, filters and frame numbers; raw captures remain with the client.",
+    "Stop conditions: any disruption to POS or staff devices, any suspected real-world attack in progress, or any test that cannot be bounded \u2014 stop, notify, document.",
+    "Disclosure: critical findings notified within 4 hours; report due 10 business days after testing completes."
+   ],
+   "targets": [
+    {
+     "ssid": "NW-Corp",
+     "band": "5 GHz",
+     "documented_security": "WPA2/WPA3-Enterprise (PEAP)",
+     "purpose": "Staff laptops"
+    },
+    {
+     "ssid": "NW-Guest",
+     "band": "2.4/5 GHz",
+     "documented_security": "Captive portal (open)",
+     "purpose": "Customers"
+    },
+    {
+     "ssid": "NW-Ops",
+     "band": "2.4 GHz",
+     "documented_security": "WPA2-PSK",
+     "purpose": "Handheld stock scanners"
+    },
+    {
+     "ssid": "NW-Legacy",
+     "band": "2.4 GHz",
+     "documented_security": "WEP (documented as 'deprecated')",
+     "purpose": "Legacy label printers"
+    }
+   ],
+   "provided_artefacts": [
+    {
+     "item": "Site topology diagram and AP placement plan",
+     "note": "Store, stock room, back office, seating area; 4 APs planned"
+    },
+    {
+     "item": "AP inventory (BSSID, site, channel plan, firmware baseline)",
+     "note": "With two 'unknown' entries flagged by the client"
+    },
+    {
+     "item": "Passive captures, 20 minutes per SSID",
+     "note": "Artefact bundle A \u2014 beacon, recon, traffic, handshake, PMKID, WPS, WPA3, deauth, rogue, portal, EAP, RADIUS (the 16 lab captures)"
+    },
+    {
+     "item": "RADIUS authentication and accounting logs for one business day",
+     "note": "Includes a burst of failures for one service account"
+    },
+    {
+     "item": "hostapd and wpa_supplicant configuration excerpts",
+     "note": "Redacted where credentials appear"
+    },
+    {
+     "item": "Guest portal redirect rules and session handling notes",
+     "note": "From the client's web team"
+    },
+    {
+     "item": "Two test accounts (nw-test-01, nw-test-02), enterprise SSID only",
+     "note": "Credentials in the annex; never use other accounts"
+    }
+   ],
+   "deliverables": [
+    "Reconnaissance and attack-surface inventory (frame-referenced, with stated limits).",
+    "Test plan derived from the brief and RoE, with each intrusive test mapped to its authorising clause.",
+    "Findings: claim, evidence, method, interpretation, impact, severity justification, remediation, retest criteria.",
+    "Evidence appendix: capture hashes, filters, frame numbers, config excerpts, log lines, reproduction steps.",
+    "Retest results against the remediated artefacts supplied at the end of the assessment.",
+    "Executive summary for the store manager (no jargon, no unverifiable claims)."
+   ],
+   "tasks": [
+    {
+     "id": "T1",
+     "title": "Attack-surface inventory",
+     "detail": "Enumerate every BSS and client visible in the artefact bundle; classify policy (AKM, ciphers, PMF, WPS, OWE) with frame numbers. State the limits of the capture.",
+     "output": "Inventory table + limits statement"
+    },
+    {
+     "id": "T2",
+     "title": "Test plan",
+     "detail": "Turn the brief and RoE into a sequencing plan: what you test, in what order, with what authorisation, and what you deliberately will not test.",
+     "output": "Test plan with RoE mapping"
+    },
+    {
+     "id": "T3",
+     "title": "Non-intrusive assessment",
+     "detail": "From the artefacts and configuration excerpts, determine which weaknesses exist without transmitting anything. Justify each candidate finding with the exact artefact.",
+     "output": "Candidate findings with evidence references"
+    },
+    {
+     "id": "T4",
+     "title": "Key material analysis",
+     "detail": "Audit the PSK-based SSIDs offline using the documented lab wordlist; relate each result to the environment (what the key actually grants).",
+     "output": "hc22000 files, hashcat output, interpretation"
+    },
+    {
+     "id": "T5",
+     "title": "Enterprise path analysis",
+     "detail": "Reconstruct the 802.1X/EAP/RADIUS flow; determine what is exposed and under which precondition; verify one RADIUS integrity attribute where the material allows.",
+     "output": "Timeline + precondition analysis"
+    },
+    {
+     "id": "T6",
+     "title": "Segmentation and isolation",
+     "detail": "Design and (using the captures/logs) evaluate the tests that prove or disprove guest isolation and inter-VLAN restriction. State what the artefacts do not prove and what you would run on site.",
+     "output": "Test design + evidence assessment"
+    },
+    {
+     "id": "T7",
+     "title": "Findings and impact",
+     "detail": "Write each finding with severity derived from this environment, quoting CVSS only as an example vector with justification.",
+     "output": "Client-ready findings"
+    },
+    {
+     "id": "T8",
+     "title": "Report and retest plan",
+     "detail": "Assemble the report with an executive summary, prioritisation and per-finding retest criteria; execute the retest against the remediated artefacts and record pass/fail.",
+     "output": "Report + retest record"
+    }
+   ],
+   "marking_guide": [
+    {
+     "criterion": "Scope discipline",
+     "weight": "10%",
+     "looks_like": "Only in-scope targets tested; prohibited techniques avoided and the decision documented."
+    },
+    {
+     "criterion": "Reconnaissance quality",
+     "weight": "15%",
+     "looks_like": "Complete inventory with frame numbers, ESS/look-alike analysis, explicit limits."
+    },
+    {
+     "criterion": "Technical accuracy",
+     "weight": "20%",
+     "looks_like": "Correct frame/IE/protocol reasoning, correct tools and hashcat modes, no deprecated field names."
+    },
+    {
+     "criterion": "Evidence standard",
+     "weight": "20%",
+     "looks_like": "Every claim traceable to a hash + filter + frame number; screenshots never load-bearing."
+    },
+    {
+     "criterion": "Impact reasoning",
+     "weight": "15%",
+     "looks_like": "Severity derived from the environment; technique labels never used as severity."
+    },
+    {
+     "criterion": "Remediation and retest",
+     "weight": "10%",
+     "looks_like": "Specific, owned controls and a retest a third party can execute."
+    },
+    {
+     "criterion": "Reporting",
+     "weight": "10%",
+     "looks_like": "Clear structure, prioritisation, and an executive summary with no unverifiable claims."
+    }
+   ],
+   "notes": [
+    "There is at least one red herring: a configuration that looks severe but is not reachable or not exploitable in this environment. Say so, and say why.",
+    "At least one SSID yields no exploitable weakness. Document the test you performed and the control that held \u2014 that section is graded.",
+    "If a test is not authorised or not safe, record why you did not perform it and what you did instead.",
+    "Timebox: no more than 40% of your effort on any single SSID."
+   ],
+   "companion_assets": [
+    {
+     "label": "Master checklist (42 items)",
+     "path": "reference/checklist"
+    },
+    {
+     "label": "Rules of engagement template and methodology",
+     "path": "docs/VAPT_METHODOLOGY.md"
+    },
+    {
+     "label": "Simulation vs hardware tiers",
+     "path": "docs/SIMULATION_VS_HARDWARE.md"
+    },
+    {
+     "label": "Artefact bundle (16 verified captures + offline lab data)",
+     "path": "public/pcaps/MANIFEST.md"
+    }
+   ]
+  }
+ ]
+}

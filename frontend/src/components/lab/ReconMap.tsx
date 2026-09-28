@@ -400,7 +400,7 @@ export function ReconMap({ pcapId }: Props) {
               {selectedAP.hidden && (
                 <div className="mt-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-400">
                   <div className="flex items-center gap-1 font-bold"><EyeOff className="w-3 h-3" /> Hidden SSID Reveal Evidence</div>
-                  <div className="mt-1 leading-relaxed text-slate-400">Beacon f{selectedAP.firstSeen} SSID empty length 0 BSSID {selectedAP.bssid} Ch{selectedAP.channel}, revealed via Probe Resp SA {selectedAP.bssid} DA client SSID {selectedAP.ssid} and Assoc Req SA client DA {selectedAP.bssid} SSID {selectedAP.ssid} and Probe Req SA client SSID {selectedAP.ssid} — filters wlan_mgt.ssid=="" && wlan.fc.type_subtype==8, wlan.fc.type_subtype==5 && wlan_mgt.ssid=={selectedAP.ssid}, wlan.fc.type_subtype==0 && wlan_mgt.ssid=={selectedAP.ssid}</div>
+                  <div className="mt-1 leading-relaxed text-slate-400">Beacon f{selectedAP.firstSeen} SSID empty length 0 BSSID {selectedAP.bssid} Ch{selectedAP.channel}, revealed via Probe Resp SA {selectedAP.bssid} DA client SSID {selectedAP.ssid} and Assoc Req SA client DA {selectedAP.bssid} SSID {selectedAP.ssid} and Probe Req SA client SSID {selectedAP.ssid} — filters wlan.ssid=="" && wlan.fc.type_subtype==8, wlan.fc.type_subtype==5 && wlan.ssid=={selectedAP.ssid}, wlan.fc.type_subtype==0 && wlan.ssid=={selectedAP.ssid}</div>
                 </div>
               )}
             </motion.div>
@@ -415,7 +415,7 @@ export function ReconMap({ pcapId }: Props) {
               Clients: {clients.map(c=>`${c.mac} PNL ${c.pnl.join(', ')}`).join('; ')}<br/>
               ESS: {Array.from(essGroups.entries()).filter(([,g])=>g.length>1).map(([ess,g])=>`${ess} ${g.map(a=>a.bssid).join(', ')}`).join('; ')}<br/>
               Channels: {data.summary.channels.join(', ')}<br/>
-              Filters: wlan.fc.type_subtype==8 beacons, wlan.fc.type_subtype==4 probe req, wlan.fc.type_subtype==5 probe resp, wlan_mgt.ssid=="" hidden<br/>
+              Filters: wlan.fc.type_subtype==8 beacons, wlan.fc.type_subtype==4 probe req, wlan.fc.type_subtype==5 probe resp, wlan.ssid=="" hidden<br/>
               Hash: SHA256 (calculate via sha256sum {pcapId}.pcapng)
             </div>
           </div>

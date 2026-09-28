@@ -1,0 +1,212 @@
+[
+ {
+  "category": "Setup & capability",
+  "command": "iw dev",
+  "proves": "interface list and each interface's current mode/channel",
+  "notes": "run first, on your own hardware"
+ },
+ {
+  "category": "Setup & capability",
+  "command": "iw dev <if> info",
+  "proves": "the mode, channel, width and TX power the interface is actually using",
+  "notes": "mode must be 'monitor' before capture"
+ },
+ {
+  "category": "Setup & capability",
+  "command": "iw phy <phy> info | grep -A6 'Supported interface modes'",
+  "proves": "whether the driver exposes monitor/AP modes \u2014 a hardware capability check, not a guess",
+  "notes": ""
+ },
+ {
+  "category": "Setup & capability",
+  "command": "rfkill list",
+  "proves": "whether a soft/hard block is silently preventing the radio from working",
+  "notes": "common cause of 'monitor mode does nothing'"
+ },
+ {
+  "category": "Setup & capability",
+  "command": "airmon-ng check kill",
+  "proves": "which processes (NetworkManager/wpa_supplicant) will fight for the interface",
+  "notes": "kill only in a lab VM; on a working machine prefer a dedicated adapter"
+ },
+ {
+  "category": "Setup & capability",
+  "command": "ip link set <if> down && iw dev <if> set type monitor && ip link set <if> up",
+  "proves": "the interface is now a passive observer",
+  "notes": "revert with 'set type managed' when finished"
+ },
+ {
+  "category": "Setup & capability",
+  "command": "iw dev <if> set channel <n>",
+  "proves": "the channel the observer watches (one channel at a time)",
+  "notes": "5/6 GHz channels need the right regulatory domain"
+ },
+ {
+  "category": "Setup & capability",
+  "command": "iw reg get",
+  "proves": "the regulatory domain your radio obeys and the AP's advertised country",
+  "notes": "read it; do not set a domain you are not entitled to use"
+ },
+ {
+  "category": "Reconnaissance",
+  "command": "airodump-ng --band abg -w recon --output-format pcapng <if>",
+  "proves": "an inventory capture: BSSs, channels, security, clients, with per-AP context",
+  "notes": "band-abg covers 2.4+5+6 GHz on capable hardware"
+ },
+ {
+  "category": "Reconnaissance",
+  "command": "tshark -r recon.pcapng -Y 'wlan.fc.type_subtype == 8' -T fields -e frame.number -e wlan.bssid -e wlan.ssid -e wlan.ds.current_channel -e wlan.rsn.akms.type",
+  "proves": "the BSS inventory as fields you can cite (frame-numbered)",
+  "notes": "subtype 8 = beacon"
+ },
+ {
+  "category": "Reconnaissance",
+  "command": "tshark -r recon.pcapng -Y 'wlan.fc.type_subtype == 4' -T fields -e frame.number -e wlan.sa -e wlan.ssid",
+  "proves": "client intent: which SSIDs are being probed for (PNL leak)",
+  "notes": "empty SSID = wildcard probe"
+ },
+ {
+  "category": "Reconnaissance",
+  "command": "tshark -r recon.pcapng -Y 'wlan.fc.type_subtype == 11' -T fields -e frame.number -e wlan.fixed.auth.alg",
+  "proves": "association behaviour: open (0), SAE (3), FT (2)",
+  "notes": "auth algorithm alone does not prove the key exchange happened"
+ },
+ {
+  "category": "Reconnaissance",
+  "command": "wash -i <if>",
+  "proves": "WPS-enabled BSSs and their WPS state from beacons",
+  "notes": "verify against the WPS IE in the capture"
+ },
+ {
+  "category": "Policy analysis",
+  "command": "tshark -r cap.pcapng -Y 'wlan.tag.number == 48' -T fields -e frame.number -e wlan.rsn.akms.type -e wlan.rsn.pcs.type -e wlan.rsn.gcs.type -e wlan.rsn.capabilities.mfpc -e wlan.rsn.capabilities.mfpr",
+  "proves": "the security policy as negotiated/announced (AKMs, ciphers, PMF bits)",
+  "notes": "element 48 = RSN; prefer this over 'encryption = good' assumptions"
+ },
+ {
+  "category": "Policy analysis",
+  "command": "tshark -r cap.pcapng -Y 'wlan.tag.number == 221' -T fields -e frame.number -e wps.version -e wps.config_methods -e wps.ap_setup_locked",
+  "proves": "WPS presence and state (version, methods, locked)",
+  "notes": "vendor-specific element; WPS attributes are dissected by Wireshark"
+ },
+ {
+  "category": "Policy analysis",
+  "command": "tshark -r cap.pcapng -Y 'wlan.ssid contains \"Corp\"' -T fields -e frame.number -e wlan.bssid -e wlan.ssid",
+  "proves": "which BSSIDs advertise a given SSID (ESS membership vs. look-alike)",
+  "notes": "the SSID is a name; the BSSID is the radio"
+ },
+ {
+  "category": "Key material",
+  "command": "tshark -r cap.pcapng -Y 'eapol.type == 3' -T fields -e frame.number -e wlan.sa -e wlan.da -e eapol.keydes.key_info -e eapol.keydes.replay_counter -e eapol.keydes.nonce",
+  "proves": "the 4-way handshake messages and their roles (key_info bits), with nonces",
+  "notes": "use key_info, not frame order, to classify M1\u2013M4"
+ },
+ {
+  "category": "Key material",
+  "command": "hcxpcapngtool -o audit.hc22000 cap.pcapng",
+  "proves": "extracts crackable material (EAPOL MIC / PMKID) into hashcat 22000 format",
+  "notes": "modern unified format; supersedes old separate modes"
+ },
+ {
+  "category": "Key material",
+  "command": "hashcat -m 22000 audit.hc22000 rockyou.txt --show",
+  "proves": "which candidate passphrases have already been verified offline",
+  "notes": "--show lists only recovered entries; absence of a line is the real result"
+ },
+ {
+  "category": "Key material",
+  "command": "hashcat -m 22000 audit.hc22000 rockyou.txt -d 1 --status --status-timer=30",
+  "proves": "the audit rate and estimated time \u2014 the number that quantifies passphrase strength",
+  "notes": "record rate + wall time as evidence"
+ },
+ {
+  "category": "Key material",
+  "command": "hcxpcapngtool --pmkid-only -o pmkid.hc22000 cap.pcapng",
+  "proves": "whether a clientless PMKID line exists in the capture",
+  "notes": "no output can mean the AP does not cache PMKs"
+ },
+ {
+  "category": "Key material",
+  "command": "hashcat -m 5500 mschapv2.txt rockyou.txt --show",
+  "proves": "cracked MS-CHAPv2 material captured from an unvalidated PEAP client",
+  "notes": "the material only exists if the client accepted a rogue authenticator"
+ },
+ {
+  "category": "Enterprise",
+  "command": "tshark -r cap.pcapng -Y 'eap' -T fields -e frame.number -e eap.code -e eap.type -e eap.identity",
+  "proves": "the EAP method, outer/inner identity, and exchange order",
+  "notes": "type 1=Identity, 13=TLS, 25=PEAP, 21=TTLS, 26=MSCHAPv2"
+ },
+ {
+  "category": "Enterprise",
+  "command": "tshark -r cap.pcapng -Y 'eap.type == 13' -T fields -e frame.number -e tls.handshake.type",
+  "proves": "the TLS handshake (ClientHello=1, Certificate=11, Alert=21) of the EAP tunnel",
+  "notes": "an alert right after ClientHello = validation failure"
+ },
+ {
+  "category": "Enterprise",
+  "command": "tshark -r cap.pcapng -Y 'radius' -T fields -e frame.number -e radius.code -e radius.id -e radius.message_authenticator -e radius.tunnel_private_group_id",
+  "proves": "RADIUS decisions, verifiable integrity and policy attributes",
+  "notes": "attribute 81 = dynamic VLAN"
+ },
+ {
+  "category": "Enterprise",
+  "command": "tshark -r cap.pcapng -Y 'radius.code == 3' -T fields -e frame.number -e radius.username",
+  "proves": "which identities were rejected, and how often (online guessing evidence)",
+  "notes": "correlate with the AP/NAS and client logs"
+ },
+ {
+  "category": "Enterprise",
+  "command": "wpa_supplicant -i <if> -c lab-client.conf -dd 2>&1 | grep -Ei 'certificate|TLS|alert'",
+  "proves": "what the supplicant does about the server certificate at connect time",
+  "notes": "the -d/-dd log is client-side evidence for validation findings"
+ },
+ {
+  "category": "Intrusive (authorised only)",
+  "command": "aireplay-ng --test <if>",
+  "proves": "whether injection works against your own AP before any test relies on it",
+  "notes": "capability check; never run against third-party infrastructure"
+ },
+ {
+  "category": "Intrusive (authorised only)",
+  "command": "aireplay-ng --deauth 5 -a <BSSID> -c <client> <if>",
+  "proves": "whether an unprotected deauth actually removes a specific client",
+  "notes": "requires written authorisation; add PMF testing to the retest"
+ },
+ {
+  "category": "Intrusive (authorised only)",
+  "command": "hostapd hostapd-rogue.conf",
+  "proves": "a rogue authenticator/BSS that presents a chosen SSID, security and certificate",
+  "notes": "lab/authorised window only; stop conditions in the RoE"
+ },
+ {
+  "category": "Intrusive (authorised only)",
+  "command": "openssl x509 -in rogue.pem -noout -subject -issuer",
+  "proves": "what identity your rogue authenticator presents (parts of the validation test)",
+  "notes": "compare with ca_cert/subject_match/domain_suffix_match in the client profile"
+ },
+ {
+  "category": "Evidence & reporting",
+  "command": "sha256sum cap.pcapng",
+  "proves": "the integrity value that makes the capture an artefact",
+  "notes": "store in the report next to every claim"
+ },
+ {
+  "category": "Evidence & reporting",
+  "command": "tshark -r cap.pcapng -Y '<filter>' -T fields -e frame.number ...",
+  "proves": "the reproducible extraction a reviewer can re-run",
+  "notes": "the filter string belongs in the finding"
+ },
+ {
+  "category": "Evidence & reporting",
+  "command": "capinfos cap.pcapng",
+  "proves": "capture metadata: interface type, packet count, duration, timestamps",
+  "notes": "use for provenance; if unavailable, note the tool used"
+ },
+ {
+  "category": "Evidence & reporting",
+  "command": "tshark -r before.pcapng -Y '<same filter>' > before.txt; tshark -r after.pcapng -Y '<same filter>' > after.txt; diff before.txt after.txt",
+  "proves": "the retest delta using an identical extraction",
+  "notes": "the retest is evidence, not a promise"
+ }
+]

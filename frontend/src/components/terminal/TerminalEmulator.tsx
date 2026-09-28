@@ -199,8 +199,8 @@ Filters (20+):
   wlan.fc.type_subtype==12 (Deauth)
   eapol, eap, wps, radius.code==1/2/3/11
   wlan.bssid==aa:bb:cc:dd:ee:ff
-  wlan_mgt.ssid==\"LAB-WIFI\"
-  wlan_mgt.rsn.capabilities.mfpc/mfpr
+  wlan.ssid==\"LAB-WIFI\"
+  wlan.rsn.capabilities.mfpc / .mfpr
 
 Type any command or 'clear' to reset. All simulated — zero-cost, no RF needed.
 Real RF commands marked RF_REQUIRED need ALFA AWUS036ACHM + bare-metal Kali.`,

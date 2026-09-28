@@ -11,7 +11,6 @@ import { lazy, Suspense, useMemo } from 'react'
 const AnalyticsDashboard = lazy(() => import('@/components/analytics/AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard })))
 const DailyChallenges = lazy(() => import('@/components/gamification/DailyChallenges').then(m => ({ default: m.DailyChallenges })))
 const BadgesShowcase = lazy(() => import('@/components/gamification/BadgesShowcase').then(m => ({ default: m.BadgesShowcase })))
-const RealtimeLeaderboard = lazy(() => import('@/components/analytics/RealtimeLeaderboard').then(m => ({ default: m.RealtimeLeaderboard })))
 
 export function Dashboard() {
   const getOverall = useProgressStore(s => s.getOverallProgress())
@@ -46,7 +45,7 @@ export function Dashboard() {
 
   const stats = [
     { label: 'XP Earned', value: `${totalXp}`, total: '2450', icon: Zap, color: 'amber', trend: `${level.title} Lv.${level.level}` },
-    { label: 'Lessons', value: `${completedLessons.length}`, total: '80', icon: BookOpen, color: 'cyan', trend: `${Math.round((completedLessons.length/80)*100)}% complete` },
+    { label: 'Lessons', value: `${completedLessons.length}`, total: '27', icon: BookOpen, color: 'cyan', trend: `${Math.round((completedLessons.length/27)*100)}% complete` },
     { label: 'Labs', value: `${completedLabs.length}`, total: '20', icon: FlaskConical, color: 'emerald', trend: '16 PCAPs live' },
   ]
 
@@ -485,11 +484,6 @@ export function Dashboard() {
         </Suspense>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="min-w-0 w-full">
-        <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Realtime Leaderboard…</div>}>
-          <RealtimeLeaderboard />
-        </Suspense>
-      </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.52 }} className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 min-w-0" data-tour="reports">
         <div className="flex items-center gap-2 mb-4">

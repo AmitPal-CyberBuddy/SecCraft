@@ -7,6 +7,7 @@ const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', badge: null, desc: 'Overview & progress' },
   { to: '/path', icon: Map, label: 'Learning Path', badge: null, desc: 'Visual journey' },
   { to: '/modules', icon: BookOpen, label: 'Modules', badge: '20', desc: '20 modules, 6 phases' },
+  { to: '/engagement', icon: Target, label: 'Engagement', badge: 'ENG-01', desc: 'Authorised engagement mode' },
   { to: '/labs', icon: FlaskConical, label: 'Labs', badge: '16', desc: '16 PCAPs, hands-on' },
   { to: '/challenges', icon: Swords, label: 'Challenges', badge: '15', desc: 'Guided → Assessment' },
   { to: '/reference', icon: Terminal, label: 'Reference', badge: null, desc: 'Commands & tools' },

@@ -30,7 +30,7 @@ Copied to `frontend/public/configs/`
 
 **08 WPA/WPA2 (2 lessons):**
 - `01-wpa-wpa2-architecture.md` — WPA TKIP vs WPA2 CCMP, PSK vs Enterprise, PMK PBKDF2, PTK PRF ANonce+SNonce+MACs, KCK/KEK/TK/GTK, 4-way handshake M1-M4, RSN IE, PMF 802.11w
-- `02-handshake-deep-dive.md` — ANonce/SNonce/MIC/Replay, offline audit needs SSID+BSSID+client+nonces+MIC, hcxpcapngtool + hashcat -m 22000, PMKID formula HMAC-SHA1-128(PMK, PMK Name|BSSID|STA), filter wlan_mgt.rsn.pmkid, evidence, defense strong PSK 20+ chars PMF required WPA3
+- `02-handshake-deep-dive.md` — ANonce/SNonce/MIC/Replay, offline audit needs SSID+BSSID+client+nonces+MIC, hcxpcapngtool + hashcat -m 22000, PMKID formula HMAC-SHA1-128(PMK, PMK Name|BSSID|STA), filter wlan.rsn.pmkid, evidence, defense strong PSK 20+ chars PMF required WPA3
 
 **09 WPA2 Practical (2 lessons):**
 - `01-handshake-analysis.md` — Lab objective with wpa2-handshake.pcapng (11 frames), tasks beacon analysis, handshake ID (4 EAPOL, replay counter), evidence collection, offline audit authorized lab only with wordlist containing WiFiForgeLab123!, hashcat and aircrack-ng, PMKID lab, VAPT methodology, safety

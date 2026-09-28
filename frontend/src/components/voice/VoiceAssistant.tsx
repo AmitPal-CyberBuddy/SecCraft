@@ -47,7 +47,7 @@ export function VoiceAssistant({ className = '' }: { className?: string }) {
       if (lower.includes('wps') || lower.includes('pin')) resp = 'WPS 11k PIN flaw — 10^4 + 10^3 = 11000 attempts — disable WPS wps_state=0 — flag WIFIFORGE{WPS_11K_PIN}'
       else if (lower.includes('handshake')) resp = 'WPA2 handshake 4 EAPOL messages — capture with airodump-ng — filter tshark -r -Y eapol — crack hashcat -m 22000 — flag WIFIFORGE{HANDSHAKE_CRACKED}'
       else if (lower.includes('search') || lower.includes('find')) { resp = `Searching for ${text} — opening global search cmd+K — 50+ items`; try { document.dispatchEvent(new CustomEvent('open-search')) } catch {} }
-      else if (lower.includes('lab')) resp = 'Opening labs — 16 PCAPs Scapy real — terminal 50+ cmds — evidence vault SHA256 — scoring hints timer — leaderboard live'
+      else if (lower.includes('lab')) resp = 'Opening labs — 16 verified captures, real 802.11 structure, evidence vault with SHA-256 and the engagement checklist'
       else resp = `Voice command: ${text} — AI tutor would process via OpenAI Whisper + RAG over 80 lessons 49572 lines — local-first no cloud — enterprise production`
       
       setResponse(resp)

@@ -32,12 +32,12 @@ def parse_with_tshark(pcap_path: Path, display_filter: Optional[str] = None) -> 
         "-e", "frame.number",
         "-e", "wlan.fc.type",
         "-e", "wlan.fc.type_subtype",
-        "-e", "wlan_mgt.ssid",
+        "-e", "wlan.ssid",
         "-e", "wlan.bssid",
         "-e", "wlan.sa",
         "-e", "wlan.da",
-        "-e", "wlan_mgt.ds.current_channel",
-        "-e", "wlan_mgt.fixed.beacon",
+        "-e", "wlan.ds.current_channel",
+        "-e", "wlan.fixed.beacon",
         "-e", "eapol",
     ]
     if display_filter:
@@ -62,11 +62,11 @@ def parse_with_tshark(pcap_path: Path, display_filter: Optional[str] = None) -> 
                 "number": get_first("frame.number"),
                 "type": get_first("wlan.fc.type"),
                 "subtype": get_first("wlan.fc.type_subtype"),
-                "ssid": get_first("wlan_mgt.ssid"),
+                "ssid": get_first("wlan.ssid"),
                 "bssid": get_first("wlan.bssid"),
                 "sa": get_first("wlan.sa"),
                 "da": get_first("wlan.da"),
-                "channel": get_first("wlan_mgt.ds.current_channel"),
+                "channel": get_first("wlan.ds.current_channel"),
                 "eapol": bool(layers.get("eapol")),
                 "raw": pkt
             })
