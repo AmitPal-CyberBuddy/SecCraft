@@ -122,8 +122,8 @@ export function LearningPath() {
                           <div className="flex-shrink-0">
                             {prog === 100 ? <div className="w-6 h-6 rounded-full bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center"><CheckCircle className="w-4 h-4 text-emerald-400" /></div> :
                              prog > 0 ? <div className="w-6 h-6 rounded-full bg-cyan-500/15 border border-cyan-500/20 flex items-center justify-center"><Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin" /></div> :
-                             isLocked ? <div className="w-6 h-6 rounded-full bg-[#1e293b] border border-[#334155] flex items-center justify-center"><Lock className="w-3 h-3 text-slate-600" /></div> :
-                             <div className="w-6 h-6 rounded-full bg-[#1e293b] border border-[#334155] flex items-center justify-center group-hover/module:bg-[#25354f] group-hover/module:border-[#475569] transition-colors"><Circle className="w-3.5 h-3.5 text-slate-600 group-hover/module:text-slate-400 transition-colors" /></div>}
+                             isLocked ? <div className="w-6 h-6 rounded-full bg-[#1e293b] border border-[#334155] flex items-center justify-center"><Lock className="w-3 h-3 text-slate-400" /></div> :
+                             <div className="w-6 h-6 rounded-full bg-[#1e293b] border border-[#334155] flex items-center justify-center group-hover/module:bg-[#25354f] group-hover/module:border-[#475569] transition-colors"><Circle className="w-3.5 h-3.5 text-slate-400 group-hover/module:text-slate-400 transition-colors" /></div>}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-[13px] font-medium text-slate-200 truncate group-hover/module:text-slate-100 transition-colors">{m.title}</div>
@@ -138,7 +138,7 @@ export function LearningPath() {
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <div className="text-[11px] text-slate-400 font-mono px-2 py-1 rounded-full bg-[#020617] border border-[#1e293b] group-hover/module:border-[#334155] transition-colors">{prog}%</div>
-                            <ChevronRight className="w-4 h-4 text-slate-600 group-hover/module:text-slate-400 group-hover/module:translate-x-0.5 transition-all duration-200" />
+                            <ChevronRight className="w-4 h-4 text-slate-400 group-hover/module:text-slate-400 group-hover/module:translate-x-0.5 transition-all duration-200" />
                           </div>
                         </Link>
                       </motion.div>
@@ -149,7 +149,7 @@ export function LearningPath() {
                 {phase.id < 6 && (
                   <div className="ml-5 mt-6 flex items-center gap-3">
                     <div className="w-px h-8 bg-gradient-to-b from-[#1e293b] to-transparent ml-5" />
-                    <div className="flex items-center gap-2 text-[11px] font-mono text-slate-600 px-3 py-1.5 rounded-full bg-[#020617]/60 border border-[#1e293b]/40">
+                    <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400 px-3 py-1.5 rounded-full bg-[#020617]/60 border border-[#1e293b]/40">
                       <div className="w-1.5 h-1.5 rounded-full bg-slate-600 animate-pulse" />
                       next phase
                       <ChevronRight className="w-3 h-3" />
@@ -173,9 +173,9 @@ export function LearningPath() {
           <span className="w-1 h-1 rounded-full bg-slate-700" />
           <span className="flex items-center gap-1.5 xs:gap-2 min-w-0"><Loader2 className="w-4 h-4 text-cyan-400" /> In Progress</span>
           <span className="w-1 h-1 rounded-full bg-slate-700" />
-          <span className="flex items-center gap-1.5 xs:gap-2 min-w-0"><Circle className="w-4 h-4 text-slate-600" /> Not Started</span>
+          <span className="flex items-center gap-1.5 xs:gap-2 min-w-0"><Circle className="w-4 h-4 text-slate-400" /> Not Started</span>
           <span className="w-1 h-1 rounded-full bg-slate-700" />
-          <span className="flex items-center gap-1.5 xs:gap-2 min-w-0"><Lock className="w-4 h-4 text-slate-600" /> Locked</span>
+          <span className="flex items-center gap-1.5 xs:gap-2 min-w-0"><Lock className="w-4 h-4 text-slate-400" /> Locked</span>
           <span className="w-1 h-1 rounded-full bg-slate-700" />
           <span className="text-emerald-400">SIMULATED</span> = No hardware
           <span className="w-1 h-1 rounded-full bg-slate-700" />

@@ -25,7 +25,8 @@ interface EvidenceRecord {
   at?: string
 }
 
-const EVIDENCE_KEY = 'wififorge-evidence-vault'
+const EVIDENCE_KEY = 'platform-evidence-vault'
+const LEGACY_EVIDENCE_KEY = 'wififorge-evidence-vault'
 
 interface TimelineEvent {
   at: string
@@ -41,7 +42,7 @@ export function TimelineViz({ className = '' }: { className?: string }) {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(EVIDENCE_KEY)
+      const raw = (localStorage.getItem(EVIDENCE_KEY) || localStorage.getItem(LEGACY_EVIDENCE_KEY))
       if (raw) setRecords(JSON.parse(raw) as EvidenceRecord[])
     } catch { /* storage unavailable or unreadable */ }
   }, [])
@@ -138,7 +139,7 @@ export function TimelineViz({ className = '' }: { className?: string }) {
       )}
 
       <div className="mt-5 p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 text-[11px] text-slate-500 leading-relaxed flex items-start gap-2">
-        <Zap className="w-3.5 h-3.5 mt-0.5 shrink-0 text-slate-600" />
+        <Zap className="w-3.5 h-3.5 mt-0.5 shrink-0 text-slate-400" />
         <span>
           Report writing tip: a defensible timeline cites the artefact and the reproducible extraction for each step
           (for example <span className="font-mono text-slate-400">wpa2-handshake.pcapng • frame 4 EAPOL-Key M1</span>),

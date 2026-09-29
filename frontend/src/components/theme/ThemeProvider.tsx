@@ -11,13 +11,29 @@ interface ThemeCtx {
 
 const Ctx = createContext<ThemeCtx>({ theme: 'dark', resolved: 'dark', setTheme: () => {} })
 
-function safeGet(k: string): string | null { try { if (typeof localStorage === 'undefined') return null; return localStorage.getItem(k) } catch { return null } }
-function safeSet(k: string, v: string) { try { if (typeof localStorage !== 'undefined') localStorage.setItem(k, v) } catch {} }
+function safeGet(k: string): string | null {
+  try {
+    if (typeof localStorage === 'undefined') return null
+    // Platform-first, legacy fallback
+    return localStorage.getItem(k) || localStorage.getItem(k.replace('platform-', 'wififorge-'))
+  } catch { return null }
+}
+function safeSet(k: string, v: string) {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(k, v)
+      const legacy = k.replace('platform-', 'wififorge-')
+      if (legacy !== k) {
+        try { localStorage.setItem(legacy, v) } catch {}
+      }
+    }
+  } catch {}
+}
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     try {
-      const saved = safeGet('wififorge-theme') as Theme | null
+      const saved = safeGet('platform-theme') as Theme | null
       return saved || 'dark'
     } catch { return 'dark' }
   })
@@ -34,7 +50,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         const meta = document.querySelector('meta[name="theme-color"]')
         if (meta) meta.setAttribute('content', res === 'light' ? '#f8fafc' : '#020617')
       }
-      safeSet('wififorge-theme', theme)
+      safeSet('platform-theme', theme)
     } catch {}
   }, [theme])
 

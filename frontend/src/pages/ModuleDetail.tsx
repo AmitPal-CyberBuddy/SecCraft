@@ -143,8 +143,9 @@ const quizData: Record<string, any[]> = {
 }
 
 export function ModuleDetail() {
-  const { id } = useParams<{ id: string }>()
+  const { id, pathId } = useParams<{ id: string; pathId?: string }>()
   const module = modules.find(m => m.id === id)
+  const effectivePathId = pathId || (module as any)?.learningPathId || 'wireless-pentesting'
   const [activeTab, setActiveTab] = useState<'overview' | 'theory' | 'lab' | 'quiz' | 'report'>('overview')
   const [activeLesson, setActiveLesson] = useState(0)
   const [lessonContent, setLessonContent] = useState<string>('')
@@ -260,7 +261,7 @@ export function ModuleDetail() {
     return (
       <div className="max-w-[800px] mx-auto p-12 text-center">
         <div className="w-16 h-16 rounded-2xl bg-[#1e293b] border border-[#334155] flex items-center justify-center mx-auto mb-4">
-          <AlertTriangle className="w-8 h-8 text-slate-500" />
+          <AlertTriangle className="w-8 h-8 text-slate-400" />
         </div>
         <div className="text-slate-400 font-heading text-[16px]">Module not found: {id}</div>
         <Link to="/modules" className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1e293b] border border-[#334155] text-[13px] text-slate-300 hover:bg-[#25354f] transition-colors">
@@ -334,7 +335,7 @@ export function ModuleDetail() {
           </Link>
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-1.5 xs:gap-2 mb-2 min-w-0">
-              <span className="text-[10px] xs:text-[11px] font-mono px-2 xs:px-2.5 py-1 rounded-full bg-[#020617]/60 border border-[#1e293b]/60 text-slate-500 backdrop-blur-sm shrink-0">{module.id}</span>
+              <span className="text-[10px] xs:text-[11px] font-mono px-2 xs:px-2.5 py-1 rounded-full bg-[#020617]/60 border border-[#1e293b]/60 text-slate-400 backdrop-blur-sm shrink-0">{module.id}</span>
               <TierBadge tier={(module as { lab_requirement?: string }).lab_requirement ?? module.status} />
               <span className={`text-[9px] xs:text-[10px] px-2 xs:px-2.5 py-1 rounded-full bg-[#020617]/60 border ${pc.border} ${pc.text} font-mono backdrop-blur-sm shrink-0`}>P{module.phase}</span>
               <span className="text-[10px] xs:text-[11px] px-2 xs:px-2.5 py-1 rounded-full bg-[#1e293b]/60 border border-[#334155]/60 text-slate-400 font-mono shrink-0 truncate max-w-[120px] xs:max-w-none">{module.difficulty}</span>
@@ -344,7 +345,7 @@ export function ModuleDetail() {
           </div>
           <div className="flex items-center gap-3 xs:gap-4 shrink-0 self-start lg:self-center">
             <div className="text-center min-w-0">
-              <div className="text-[10px] xs:text-[11px] font-semibold tracking-widest text-slate-500 uppercase">Progress</div>
+              <div className="text-[10px] xs:text-[11px] font-semibold tracking-widest text-slate-400 uppercase">Progress</div>
               <div className="text-[24px] xs:text-[28px] font-bold text-slate-100 font-mono leading-none mt-1">{progress}%</div>
               <div className="w-20 xs:w-28 h-1.5 bg-[#020617] rounded-full mt-2 border border-[#1e293b]/50 overflow-hidden">
                 <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }} className="h-full bg-gradient-to-r from-cyan-400 to-violet-400 rounded-full" />
@@ -381,14 +382,14 @@ export function ModuleDetail() {
               className={`relative flex items-center gap-1.5 xs:gap-2 px-3 xs:px-4 py-2.5 xs:py-2 rounded-lg text-[12px] xs:text-[13px] font-medium transition-all duration-200 shrink-0 touch-manipulation min-h-[44px] xs:min-h-0 ${
                 activeTab === tab.id 
                   ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' 
-                  : 'text-slate-500 hover:text-slate-300 hover:bg-[#1e293b]/50 active:bg-[#1e293b]/80 border border-transparent'
+                  : 'text-slate-400 hover:text-slate-300 hover:bg-[#1e293b]/50 active:bg-[#1e293b]/80 border border-transparent'
               }`}
             >
               <tab.icon className="w-4 h-4 shrink-0" />
               <span className="hidden xs:inline">{tab.label}</span>
               <span className="xs:hidden">{tab.short}</span>
               {tab.count !== null && (
-                <span className={`text-[10px] px-1.5 py-0 rounded-full font-mono border shrink-0 ${activeTab === tab.id ? 'bg-[#020617] border-[#334155] text-slate-300' : 'bg-[#020617] border-[#1e293b] text-slate-500'}`}>
+                <span className={`text-[10px] px-1.5 py-0 rounded-full font-mono border shrink-0 ${activeTab === tab.id ? 'bg-[#020617] border-[#334155] text-slate-300' : 'bg-[#020617] border-[#1e293b] text-slate-400'}`}>
                   {tab.count}
                 </span>
               )}
@@ -497,7 +498,7 @@ export function ModuleDetail() {
                       <BookOpen className="w-4 h-4 text-slate-400" />
                     </div>
                     Lessons
-                    <span className="ml-auto text-[11px] font-mono px-2 py-1 rounded-full bg-[#020617] border border-[#1e293b] text-slate-500">{lessons.length} lessons</span>
+                    <span className="ml-auto text-[11px] font-mono px-2 py-1 rounded-full bg-[#020617] border border-[#1e293b] text-slate-400">{lessons.length} lessons</span>
                   </h3>
                   <div className="space-y-2.5">
                     {lessons.map((lesson, idx) => {
@@ -507,7 +508,7 @@ export function ModuleDetail() {
                           <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 transition-all duration-200 ${completed ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 shadow-glow-emerald' : 'bg-[#1e293b] text-slate-400 group-hover:bg-[#25354f] group-hover:text-slate-300'}`}>{completed ? '✓' : idx + 1}</div>
                           <div className="flex-1 min-w-0">
                             <div className="text-[13px] font-medium text-slate-200 group-hover:text-slate-100 transition-colors truncate">{lesson.replace(/-/g, ' ')}</div>
-                            <div className="text-[11px] text-slate-500 font-mono">{lesson}.md</div>
+                            <div className="text-[11px] text-slate-400 font-mono">{lesson}.md</div>
                           </div>
                           {completed && <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />}
                         </div>
@@ -524,11 +525,11 @@ export function ModuleDetail() {
                     Module Info
                   </div>
                   <div className="space-y-3 text-[12px]">
-                    <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40"><span className="text-slate-500">Difficulty</span><span className="text-slate-200 font-medium">{module.difficulty}</span></div>
-                    <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40"><span className="text-slate-500">Est. Time</span><span className="text-slate-200 font-medium font-mono">{module.estimated_hours}h</span></div>
-                    <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40"><span className="text-slate-500">Lessons</span><span className="text-slate-200 font-medium font-mono">{lessons.length}</span></div>
-                    <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40"><span className="text-slate-500">Labs</span><span className="text-slate-200 font-medium font-mono">{labs.length}</span></div>
-                    <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40"><span className="text-slate-500">Quiz</span><span className="text-slate-200 font-medium font-mono">{quizzes.length} Qs</span></div>
+                    <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40"><span className="text-slate-400">Difficulty</span><span className="text-slate-200 font-medium">{module.difficulty}</span></div>
+                    <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40"><span className="text-slate-400">Est. Time</span><span className="text-slate-200 font-medium font-mono">{module.estimated_hours}h</span></div>
+                    <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40"><span className="text-slate-400">Lessons</span><span className="text-slate-200 font-medium font-mono">{lessons.length}</span></div>
+                    <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40"><span className="text-slate-400">Labs</span><span className="text-slate-200 font-medium font-mono">{labs.length}</span></div>
+                    <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40"><span className="text-slate-400">Quiz</span><span className="text-slate-200 font-medium font-mono">{quizzes.length} Qs</span></div>
                   </div>
                 </div>
 
@@ -581,10 +582,10 @@ export function ModuleDetail() {
                             className={`group w-full text-left p-3 rounded-xl flex items-center gap-3 transition-all duration-200 relative overflow-hidden ${isActive ? 'bg-[#1e293b] border border-cyan-500/30 text-slate-100 shadow-soft' : 'text-slate-400 hover:bg-[#1e293b]/50 hover:text-slate-200 border border-transparent'}`}
                           >
                             {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-cyan-400 rounded-full" />}
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 transition-all duration-200 ${completed ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-glow-emerald' : isActive ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'bg-[#020617] text-slate-500 group-hover:bg-[#1e293b] group-hover:text-slate-400'}`}>{completed ? '✓' : idx + 1}</div>
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 transition-all duration-200 ${completed ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-glow-emerald' : isActive ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'bg-[#020617] text-slate-400 group-hover:bg-[#1e293b] group-hover:text-slate-400'}`}>{completed ? '✓' : idx + 1}</div>
                             <div className="flex-1 min-w-0">
                               <span className="text-[12px] font-medium truncate block">{lesson.replace(/-/g, ' ').replace(/^\d+\s/, '')}</span>
-                              <span className="text-[10px] font-mono text-slate-500 truncate block">{completed ? 'Completed • +10 XP' : 'Not started'}</span>
+                              <span className="text-[10px] font-mono text-slate-400 truncate block">{completed ? 'Completed • +10 XP' : 'Not started'}</span>
                             </div>
                             {completed && <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />}
                             {isActive && !completed && <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />}
@@ -594,17 +595,17 @@ export function ModuleDetail() {
                     </div>
                     <div className="mt-4 pt-4 border-t border-[#1e293b]/60 space-y-3">
                       <div className="flex items-center justify-between">
-                        <div className="text-[11px] text-slate-500 font-mono">Progress</div>
+                        <div className="text-[11px] text-slate-400 font-mono">Progress</div>
                         <div className="text-[11px] text-cyan-400 font-mono font-bold">{lessons.filter(l => isLessonCompleted(module.id, l)).length}/{lessons.length}</div>
                       </div>
                       <div className="w-full h-2 bg-[#020617] rounded-full border border-[#1e293b]/50 overflow-hidden">
                         <motion.div initial={{ width: 0 }} animate={{ width: `${(lessons.filter(l => isLessonCompleted(module.id, l)).length / lessons.length) * 100}%` }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }} className="h-full bg-gradient-to-r from-cyan-400 to-violet-400 rounded-full" />
                       </div>
                       <div className="flex gap-2">
-                        <button onClick={() => setReadingMode(readingMode === 'focus' ? 'default' : 'focus')} className={`flex-1 px-3 py-2 rounded-xl border text-[11px] font-medium flex items-center justify-center gap-1.5 transition-all ${readingMode === 'focus' ? 'bg-violet-500/15 border-violet-500/30 text-violet-300' : 'bg-[#020617] border-[#1e293b] text-slate-500 hover:text-slate-300'}`}>
+                        <button onClick={() => setReadingMode(readingMode === 'focus' ? 'default' : 'focus')} className={`flex-1 px-3 py-2 rounded-xl border text-[11px] font-medium flex items-center justify-center gap-1.5 transition-all ${readingMode === 'focus' ? 'bg-violet-500/15 border-violet-500/30 text-violet-300' : 'bg-[#020617] border-[#1e293b] text-slate-400 hover:text-slate-300'}`}>
                           <Eye className="w-3.5 h-3.5" /> {readingMode === 'focus' ? 'Focus ON' : 'Focus'}
                         </button>
-                        <button onClick={() => setShowToc(!showToc)} className={`flex-1 px-3 py-2 rounded-xl border text-[11px] font-medium flex items-center justify-center gap-1.5 transition-all ${showToc ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300' : 'bg-[#020617] border-[#1e293b] text-slate-500 hover:text-slate-300'}`}>
+                        <button onClick={() => setShowToc(!showToc)} className={`flex-1 px-3 py-2 rounded-xl border text-[11px] font-medium flex items-center justify-center gap-1.5 transition-all ${showToc ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300' : 'bg-[#020617] border-[#1e293b] text-slate-400 hover:text-slate-300'}`}>
                           <List className="w-3.5 h-3.5" /> TOC
                         </button>
                       </div>
@@ -618,7 +619,7 @@ export function ModuleDetail() {
                       </div>
                       <div className="space-y-1 max-h-[300px] overflow-y-auto scrollbar-thin pr-1">
                         {toc.map((h, i) => (
-                          <a key={i} href={`#${h.id}`} onClick={(e) => { e.preventDefault(); document.getElementById(h.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} className={`block text-[12px] leading-relaxed py-1.5 px-2.5 rounded-lg hover:bg-[#1e293b] hover:text-slate-200 transition-colors ${h.level === 1 ? 'font-semibold text-slate-300' : h.level === 2 ? 'text-slate-400 ml-2 border-l border-[#1e293b] pl-3' : 'text-slate-500 ml-4 text-[11px]'}`}>
+                          <a key={i} href={`#${h.id}`} onClick={(e) => { e.preventDefault(); document.getElementById(h.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} className={`block text-[12px] leading-relaxed py-1.5 px-2.5 rounded-lg hover:bg-[#1e293b] hover:text-slate-200 transition-colors ${h.level === 1 ? 'font-semibold text-slate-300' : h.level === 2 ? 'text-slate-400 ml-2 border-l border-[#1e293b] pl-3' : 'text-slate-400 ml-4 text-[11px]'}`}>
                             {h.text}
                           </a>
                         ))}
@@ -651,9 +652,9 @@ export function ModuleDetail() {
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="hidden sm:flex items-center gap-1 p-1 rounded-xl bg-[#020617] border border-[#1e293b]">
-                              <button onClick={() => setReadingMode('default')} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${readingMode === 'default' ? 'bg-[#1e293b] text-slate-200 border border-[#334155]' : 'text-slate-500 hover:text-slate-300'}`}><Type className="w-3 h-3 inline mr-1" />Default</button>
-                              <button onClick={() => setReadingMode('focus')} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${readingMode === 'focus' ? 'bg-violet-500/15 text-violet-300 border border-violet-500/20' : 'text-slate-500 hover:text-slate-300'}`}><Eye className="w-3 h-3 inline mr-1" />Focus</button>
-                              <button onClick={() => setReadingMode('wide')} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${readingMode === 'wide' ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/20' : 'text-slate-500 hover:text-slate-300'}`}><Maximize2 className="w-3 h-3 inline mr-1" />Wide</button>
+                              <button onClick={() => setReadingMode('default')} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${readingMode === 'default' ? 'bg-[#1e293b] text-slate-200 border border-[#334155]' : 'text-slate-400 hover:text-slate-300'}`}><Type className="w-3 h-3 inline mr-1" />Default</button>
+                              <button onClick={() => setReadingMode('focus')} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${readingMode === 'focus' ? 'bg-violet-500/15 text-violet-300 border border-violet-500/20' : 'text-slate-400 hover:text-slate-300'}`}><Eye className="w-3 h-3 inline mr-1" />Focus</button>
+                              <button onClick={() => setReadingMode('wide')} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${readingMode === 'wide' ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/20' : 'text-slate-400 hover:text-slate-300'}`}><Maximize2 className="w-3 h-3 inline mr-1" />Wide</button>
                             </div>
                             <motion.button
                               whileHover={{ scale: 1.02 }}
@@ -708,7 +709,7 @@ export function ModuleDetail() {
                         >
                           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
                           <div className="text-left">
-                            <div className="text-[10px] font-mono text-slate-500 uppercase tracking-wide">Previous</div>
+                            <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wide">Previous</div>
                             <div className="text-[12px] font-medium">{activeLesson > 0 ? lessons[activeLesson - 1].replace(/-/g, ' ').slice(0, 30) : 'Start'}</div>
                           </div>
                         </button>
@@ -737,16 +738,16 @@ export function ModuleDetail() {
                       {/* Consistency: Completion Mark + Points Payoff */}
                       <div className="mt-6 p-4 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-xl border flex items-center justify-center ${isLessonCompleted(module.id, lessons[activeLesson]) ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' : 'bg-[#1e293b] border-[#334155] text-slate-500'}`}>
+                          <div className={`w-8 h-8 rounded-xl border flex items-center justify-center ${isLessonCompleted(module.id, lessons[activeLesson]) ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' : 'bg-[#1e293b] border-[#334155] text-slate-400'}`}>
                             {isLessonCompleted(module.id, lessons[activeLesson]) ? <CheckCircle className="w-4 h-4" /> : <BookOpen className="w-4 h-4" />}
                           </div>
                           <div>
                             <div className="text-[12px] font-medium text-slate-200">{isLessonCompleted(module.id, lessons[activeLesson]) ? 'Lesson Completed' : 'Mark as complete to earn XP'}</div>
-                            <div className="text-[11px] font-mono text-slate-500">{isLessonCompleted(module.id, lessons[activeLesson]) ? '+10 XP earned • Progress saved' : '10 XP • Contributes to level & certification'}</div>
+                            <div className="text-[11px] font-mono text-slate-400">{isLessonCompleted(module.id, lessons[activeLesson]) ? '+10 XP earned • Progress saved' : '10 XP • Contributes to level & certification'}</div>
                           </div>
                         </div>
                         <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono">
-                          <span className="px-2 py-1 rounded-full bg-[#1e293b] border border-[#334155] text-slate-500">{activeLesson + 1}/{lessons.length}</span>
+                          <span className="px-2 py-1 rounded-full bg-[#1e293b] border border-[#334155] text-slate-400">{activeLesson + 1}/{lessons.length}</span>
                           <span className="px-2 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">{Math.round(((activeLesson + 1)/lessons.length)*100)}%</span>
                         </div>
                       </div>
@@ -764,7 +765,7 @@ export function ModuleDetail() {
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="font-heading font-bold text-[15px] text-slate-100">Decision practice — what would you do next?</h3>
-                    <span className="text-[10.5px] font-mono text-slate-500">
+                    <span className="text-[10.5px] font-mono text-slate-400">
                       Observe → Interpret → Hypothesise → Choose the test → Evidence → Conclude
                     </span>
                   </div>
@@ -774,10 +775,10 @@ export function ModuleDetail() {
               {labs.length === 0 && (
                 <div className="rounded-2xl bg-[#0f172a]/60 border border-dashed border-[#334155]/60 p-12 text-center">
                   <div className="w-12 h-12 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center mx-auto mb-4">
-                    <FlaskConical className="w-6 h-6 text-slate-500" />
+                    <FlaskConical className="w-6 h-6 text-slate-400" />
                   </div>
                   <div className="text-slate-400 font-heading text-[14px]">No lab artefact for this module</div>
-                  <div className="text-[12px] text-slate-600 mt-1">
+                  <div className="text-[12px] text-slate-400 mt-1">
                     This module is worked through the lessons and decision practice; the capture-based labs start
                     at Module 02 (see Labs).
                   </div>
@@ -806,9 +807,9 @@ export function ModuleDetail() {
                           </h3>
                           <p className="text-[12px] text-slate-400 mt-1 leading-relaxed">
                             <span className="font-mono text-cyan-400">{lab.pcap ? `${lab.pcap}.pcapng` : 'hostapd.conf'}</span>
-                            <span className="mx-1.5 text-slate-600">•</span>
+                            <span className="mx-1.5 text-slate-400">•</span>
                             {lab.type}
-                            <span className="mx-1.5 text-slate-600">•</span>
+                            <span className="mx-1.5 text-slate-400">•</span>
                             {lab.description}
                           </p>
                         </div>
@@ -1004,7 +1005,7 @@ export function ModuleDetail() {
 
                       {id === '02-wifi-fundamentals' && lab.id === 'lab-02-beacon' && (
                         <>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">1. BSSID? (MAC)</label><input value={labAnswers['bssid'] || ''} onChange={e => setLabAnswers({...labAnswers, bssid: e.target.value})} placeholder="AA:BB:CC:DD:EE:FF" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 placeholder:text-slate-600 focus:border-cyan-500/30 focus:bg-[#0a1020] focus:outline-none hover:border-[#334155]/60 transition-all duration-200" /></div>
+                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">1. BSSID? (MAC)</label><input value={labAnswers['bssid'] || ''} onChange={e => setLabAnswers({...labAnswers, bssid: e.target.value})} placeholder="AA:BB:CC:DD:EE:FF" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 placeholder:text-slate-400 focus:border-cyan-500/30 focus:bg-[#0a1020] focus:outline-none hover:border-[#334155]/60 transition-all duration-200" /></div>
                           <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">2. Channel?</label><input value={labAnswers['channel'] || ''} onChange={e => setLabAnswers({...labAnswers, channel: e.target.value})} placeholder="6" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
                           <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">3. Security?</label><input value={labAnswers['security'] || ''} onChange={e => setLabAnswers({...labAnswers, security: e.target.value})} placeholder="Open" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
                           <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">4. Probe leak?</label><input value={labAnswers['leak'] || ''} onChange={e => setLabAnswers({...labAnswers, leak: e.target.value})} placeholder="PNL / Preferred networks" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
@@ -1066,7 +1067,7 @@ export function ModuleDetail() {
                         {id === '02-wifi-fundamentals' && "Beacons first. Enumerate SSID, BSSID, channel, security. Probe PNL leak useful for Evil Twin."}
                         {!['02-wifi-fundamentals','05-wireless-recon','06-traffic-analysis'].includes(id||'') && "Analyze PCAPs, configs, extract evidence with frame numbers and specific vulnerabilities. Document impact, recommendation, retest."}
                       </div>
-                      <div className="rounded-xl bg-[#020617] border border-[#1e293b] p-4 font-mono text-[11px] text-slate-500 backdrop-blur-sm">
+                      <div className="rounded-xl bg-[#020617] border border-[#1e293b] p-4 font-mono text-[11px] text-slate-400 backdrop-blur-sm">
                         <div className="text-slate-400 mb-2 flex items-center gap-2">
                           <div className="w-4 h-4 rounded bg-[#1e293b] border border-[#334155] flex items-center justify-center">
                             <span className="text-[8px]">$</span>
@@ -1133,12 +1134,12 @@ export function ModuleDetail() {
                     </div>
                     <div>
                       <h3 className="font-heading font-bold text-[16px] text-slate-100">Knowledge Check</h3>
-                      <p className="text-[12px] text-slate-500">{quizzes.length} questions • 80% to pass • {module.title}</p>
+                      <p className="text-[12px] text-slate-400">{quizzes.length} questions • 80% to pass • {module.title}</p>
                     </div>
                   </div>
                   {quizSubmitted && (
                     <div className="text-right">
-                      <div className="text-[11px] text-slate-500 uppercase tracking-widest">Score</div>
+                      <div className="text-[11px] text-slate-400 uppercase tracking-widest">Score</div>
                       <div className="text-[20px] font-bold text-slate-100 font-mono">{quizzes.filter((_, i) => quizAnswers[`q${i}`] === quizzes[i].correct).length} / {quizzes.length}</div>
                     </div>
                   )}
@@ -1240,20 +1241,20 @@ export function ModuleDetail() {
         </motion.div>
       </AnimatePresence>
 
-      <Suspense fallback={<div className="p-6 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Reading Experience…</div>}>
+      <Suspense fallback={<div className="p-6 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading Reading Experience…</div>}>
         <ReadingExperience content={lessonContent || ''} />
       </Suspense>
 
-      <Suspense fallback={<div className="p-6 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Notes & Bookmarks…</div>}>
+      <Suspense fallback={<div className="p-6 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading Notes & Bookmarks…</div>}>
         <NotesBookmarks moduleId={id || ''} lessonId={lessons[activeLesson] || ''} />
       </Suspense>
 
       <div className="flex flex-col sm:flex-row justify-between gap-4 pt-6 border-t border-[#1e293b]/60">
-        <Link to="/modules" className="inline-flex items-center gap-2 text-[12px] text-slate-500 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[#0f172a]/60 border border-transparent hover:border-[#1e293b]/60">
+        <Link to={effectivePathId ? `/paths/${effectivePathId}/modules` : "/modules"} className="inline-flex items-center gap-2 text-[12px] text-slate-400 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[#0f172a]/60 border border-transparent hover:border-[#1e293b]/60">
           <ArrowLeft className="w-4 h-4" />
-          All Modules
+          {effectivePathId ? `${effectivePathId} Modules` : "All Modules"}
         </Link>
-        <div className="flex items-center gap-2 text-[11px] text-slate-600 font-mono px-3 py-2 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40">
+        <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono px-3 py-2 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40">
           <Radio className="w-3 h-3" />
           Module {module.id} • {progress}% • {module.status} • Notes • Bookmarks • Enterprise
         </div>

@@ -151,7 +151,7 @@ export function CvssCalculator({ className = '' }: { className?: string }) {
               onChange={e => setContext(e.target.value)}
               rows={4}
               placeholder={'e.g. AV:A — attacker within RF range of the store front; AC:L — one unauthorised deauth and the client auto-reconnects to the twin; S:C — guest VLAN reaches the server VLAN (demonstrated); A:N — availability not tested.'}
-              className="mt-2 w-full rounded-xl bg-[#020617]/60 border border-[#1e293b] p-3 text-[12px] text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30 leading-relaxed"
+              className="mt-2 w-full rounded-xl bg-[#020617]/60 border border-[#1e293b] p-3 text-[12px] text-slate-300 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30 leading-relaxed"
             />
           </div>
         </div>

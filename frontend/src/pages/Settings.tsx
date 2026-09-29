@@ -57,7 +57,7 @@ export function Settings() {
                 onChange={e => setProfileForm({ ...profileForm, displayName: e.target.value })}
                 placeholder="Display name (optional)"
                 maxLength={64}
-                className="px-4 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/30"
+                className="px-4 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-violet-500/30"
               />
               <select
                 value={profileForm.role}
@@ -84,7 +84,7 @@ export function Settings() {
                 </div>
                 <div className="min-w-0">
                   <div className="text-[14px] font-bold text-slate-100 truncate">{profile?.displayName}</div>
-                  <div className="text-[11px] font-mono text-slate-500 truncate">
+                  <div className="text-[11px] font-mono text-slate-400 truncate">
                     {profile?.role} • {achievements.length} achievements • {totalXp} XP • stored in this browser only
                   </div>
                 </div>
@@ -109,12 +109,12 @@ export function Settings() {
           ].map(t => (
             <button key={t.id} onClick={() => setTheme(t.id as any)} className={`flex-1 min-w-[120px] p-3 rounded-xl border text-left transition-all touch-manipulation ${theme === t.id ? 'bg-[#1e293b] border-[#334155] shadow-soft' : 'bg-[#020617]/60 border-[#1e293b]/40 hover:bg-[#020617]/80'}`}>
               <div className="flex items-center gap-2 mb-1">
-                <t.icon className={`w-4 h-4 ${theme === t.id ? 'text-cyan-400' : 'text-slate-500'}`} />
+                <t.icon className={`w-4 h-4 ${theme === t.id ? 'text-cyan-400' : 'text-slate-400'}`} />
                 <span className={`text-[13px] font-medium ${theme === t.id ? 'text-slate-100' : 'text-slate-400'}`}>{t.label}</span>
                 {theme === t.id && <span className="ml-auto w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />}
               </div>
-              <div className="text-[11px] text-slate-500">{t.desc}</div>
-              <div className="text-[10px] font-mono text-slate-600 mt-1">Resolved: {resolved}</div>
+              <div className="text-[11px] text-slate-400">{t.desc}</div>
+              <div className="text-[10px] font-mono text-slate-400 mt-1">Resolved: {resolved}</div>
             </button>
           ))}
         </div>
@@ -124,7 +124,7 @@ export function Settings() {
 
       <LocalDataPanel />
 
-      <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Accessibility…</div>}>
+      <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading Accessibility…</div>}>
         <AccessibilityPanel />
       </Suspense>
 
@@ -143,31 +143,31 @@ export function Settings() {
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 xs:gap-4 min-w-0">
             <div className="p-3 xs:p-4 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 backdrop-blur-sm min-w-0">
-              <div className="flex items-center gap-2 text-[11px] text-slate-500 uppercase tracking-widest font-semibold mb-2"><Target className="w-3 h-3" />Overall</div>
-              <div className="flex items-baseline gap-2"><div className="text-[22px] xs:text-[24px] font-bold text-slate-100 font-mono">{overall}%</div><div className="text-[11px] text-slate-500">complete</div></div>
+              <div className="flex items-center gap-2 text-[11px] text-slate-400 uppercase tracking-widest font-semibold mb-2"><Target className="w-3 h-3" />Overall</div>
+              <div className="flex items-baseline gap-2"><div className="text-[22px] xs:text-[24px] font-bold text-slate-100 font-mono">{overall}%</div><div className="text-[11px] text-slate-400">complete</div></div>
               <div className="mt-2 h-1.5 bg-[#020617] rounded-full overflow-hidden border border-[#1e293b]/30"><div className="h-full bg-gradient-to-r from-cyan-400 to-violet-400 rounded-full" style={{ width: `${overall}%` }} /></div>
             </div>
             <div className="p-3 xs:p-4 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 backdrop-blur-sm min-w-0">
-              <div className="flex items-center gap-2 text-[11px] text-slate-500 uppercase tracking-widest font-semibold mb-2"><FlaskConical className="w-3 h-3" />Lessons</div>
+              <div className="flex items-center gap-2 text-[11px] text-slate-400 uppercase tracking-widest font-semibold mb-2"><FlaskConical className="w-3 h-3" />Lessons</div>
               <div className="text-[22px] xs:text-[24px] font-bold text-slate-100 font-mono">{lessons.length}/{TOTAL_LESSONS}</div>
-              <div className="text-[11px] text-slate-500 mt-1">{Math.round((lessons.length/TOTAL_LESSONS)*100)}% • {lessons.length*10} XP</div>
+              <div className="text-[11px] text-slate-400 mt-1">{Math.round((lessons.length/TOTAL_LESSONS)*100)}% • {lessons.length*10} XP</div>
             </div>
             <div className="p-3 xs:p-4 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 backdrop-blur-sm min-w-0">
-              <div className="flex items-center gap-2 text-[11px] text-slate-500 uppercase tracking-widest font-semibold mb-2"><Trophy className="w-3 h-3" />Labs</div>
+              <div className="flex items-center gap-2 text-[11px] text-slate-400 uppercase tracking-widest font-semibold mb-2"><Trophy className="w-3 h-3" />Labs</div>
               <div className="text-[22px] xs:text-[24px] font-bold text-slate-100 font-mono">{labs.length}/{TOTAL_LABS}</div>
-              <div className="text-[11px] text-slate-500 mt-1">{labs.length*25} XP • {TOTAL_PCAPS} captures</div>
+              <div className="text-[11px] text-slate-400 mt-1">{labs.length*25} XP • {TOTAL_PCAPS} captures</div>
             </div>
             <div className="p-3 xs:p-4 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 backdrop-blur-sm min-w-0">
-              <div className="flex items-center gap-2 text-[11px] text-slate-500 uppercase tracking-widest font-semibold mb-2"><Star className="w-3 h-3" />Achievements</div>
+              <div className="flex items-center gap-2 text-[11px] text-slate-400 uppercase tracking-widest font-semibold mb-2"><Star className="w-3 h-3" />Achievements</div>
               <div className="text-[22px] xs:text-[24px] font-bold text-slate-100 font-mono">{achievements.length}/20</div>
-              <div className="text-[11px] text-slate-500 mt-1">{achievements.reduce((a,b)=>a+b.points,0)} XP bonus</div>
+              <div className="text-[11px] text-slate-400 mt-1">{achievements.reduce((a,b)=>a+b.points,0)} XP bonus</div>
             </div>
           </div>
 
           <div className="mt-5 p-4 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Level Progress — {level.title} → {xpToNext.nextLevel?.title || 'MAX'}</span>
-              <span className="text-[11px] font-mono text-slate-500">{xpToNext.needed} XP to next</span>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Level Progress — {level.title} → {xpToNext.nextLevel?.title || 'MAX'}</span>
+              <span className="text-[11px] font-mono text-slate-400">{xpToNext.needed} XP to next</span>
             </div>
             <div className="h-2 bg-[#020617] rounded-full overflow-hidden border border-[#1e293b]/30">
               <div className="h-full bg-gradient-to-r from-amber-400 to-orange-400 rounded-full" style={{ width: `${xpToNext.percent}%` }} />
@@ -176,7 +176,7 @@ export function Settings() {
               {LEVELS.map(l => (
                 <div key={l.level} className={`p-1.5 rounded-lg border text-center ${level.level >= l.level ? 'bg-amber-500/10 border-amber-500/20' : 'bg-[#020617]/40 border-[#1e293b]/30'}`}>
                   <div className="text-[10px]">{l.icon}</div>
-                  <div className={`text-[9px] font-mono font-bold ${level.level >= l.level ? 'text-amber-300' : 'text-slate-600'}`}>Lv{l.level}</div>
+                  <div className={`text-[9px] font-mono font-bold ${level.level >= l.level ? 'text-amber-300' : 'text-slate-400'}`}>Lv{l.level}</div>
                 </div>
               ))}
             </div>
@@ -191,10 +191,10 @@ export function Settings() {
             <h4 className="font-bold text-[13px] text-slate-100">Shortcuts</h4>
           </div>
           <div className="space-y-1.5 text-[11px] font-mono">
-            <div className="flex justify-between"><span className="text-slate-500">Search</span><span className="text-slate-300">⌘K</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Shortcuts</span><span className="text-slate-300">?</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Labs</span><span className="text-slate-300">G L</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Dashboard</span><span className="text-slate-300">G D</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">Search</span><span className="text-slate-300">⌘K</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">Shortcuts</span><span className="text-slate-300">?</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">Labs</span><span className="text-slate-300">G L</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">Dashboard</span><span className="text-slate-300">G D</span></div>
           </div>
         </div>
         <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 min-w-0">
@@ -204,16 +204,16 @@ export function Settings() {
             <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono">static</span>
           </div>
           <div className="space-y-1.5 text-[11px] font-mono">
-            <div className="flex justify-between"><span className="text-slate-500">Offline (PWA)</span><span className="text-emerald-400">service worker</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Accounts</span><span className="text-slate-300">none in the static build</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Storage</span><span className="text-cyan-400">this browser only</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Local API</span><span className="text-amber-400">optional, same origin</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">Offline (PWA)</span><span className="text-emerald-400">service worker</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">Accounts</span><span className="text-slate-300">none in the static build</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">Storage</span><span className="text-cyan-400">this browser only</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">Local API</span><span className="text-amber-400">optional, same origin</span></div>
           </div>
         </div>
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex flex-col sm:flex-row gap-3">
-        <button onClick={() => { const data = JSON.stringify({ lessons, labs, achievements, totalXp, level, overall }, null, 2); const blob = new Blob([data], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `wififorge-progress-${Date.now()}.json`; a.click(); URL.revokeObjectURL(url) }} className="flex-1 py-3 rounded-xl bg-[#0f172a] border border-[#1e293b] text-[13px] font-medium text-slate-300 flex items-center justify-center gap-2 hover:bg-[#1e293b] hover:border-[#334155] transition-all touch-manipulation min-h-[44px]">
+        <button onClick={() => { const data = JSON.stringify({ lessons, labs, achievements, totalXp, level, overall }, null, 2); const blob = new Blob([data], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `platform-progress-${Date.now()}.json`; a.click(); URL.revokeObjectURL(url) }} className="flex-1 py-3 rounded-xl bg-[#0f172a] border border-[#1e293b] text-[13px] font-medium text-slate-300 flex items-center justify-center gap-2 hover:bg-[#1e293b] hover:border-[#334155] transition-all touch-manipulation min-h-[44px]">
           <Download className="w-4 h-4" />Export Progress JSON
         </button>
         <button onClick={() => { if (confirm('Reset all progress? This will clear XP, lessons, labs, achievements.')) reset() }} className="flex-1 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-[13px] font-medium text-red-400 flex items-center justify-center gap-2 hover:bg-red-500/15 hover:border-red-500/30 transition-all touch-manipulation min-h-[44px]">
@@ -221,8 +221,8 @@ export function Settings() {
         </button>
       </motion.div>
 
-      <div className="text-[11px] text-slate-600 font-mono text-center pb-4">
-        WiFiForge — zero-cost, local-first, offline-capable • {totalXp} XP • Lv.{level.level} {level.title} • {TOTAL_MODULES} modules • {TOTAL_LESSONS} lessons • {TOTAL_PCAPS} verified captures • {TOTAL_SCENARIOS} decision scenarios • checklist • evidence vault • no accounts, no tracking
+      <div className="text-[11px] text-slate-400 font-mono text-center pb-4">
+        Quench — zero-cost, local-first, offline-capable — Platform + Wireless path — Forge. Break. Fix. Quench. Retest. • {totalXp} XP • Lv.{level.level} {level.title} • {TOTAL_MODULES} modules • {TOTAL_LESSONS} lessons • {TOTAL_PCAPS} verified captures • {TOTAL_SCENARIOS} decision scenarios • checklist • evidence vault • no accounts, no tracking
       </div>
     </div>
   )

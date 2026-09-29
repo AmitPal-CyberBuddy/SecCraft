@@ -14,7 +14,8 @@ export interface EvidenceRecord {
   createdAt: string
 }
 
-const STORE_KEY = 'wififorge-evidence-vault'
+const STORE_KEY = 'platform-evidence-vault'
+const LEGACY_STORE_KEY = 'wififorge-evidence-vault'
 
 const KIND_COLORS: Record<EvidenceRecord['kind'], string> = {
   capture: 'text-cyan-400 border-cyan-500/25 bg-cyan-500/10',
@@ -51,13 +52,17 @@ export function EvidenceVault({ className = '' }: { className?: string }) {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORE_KEY)
+      const raw = localStorage.getItem(STORE_KEY) || localStorage.getItem(LEGACY_STORE_KEY)
       if (raw) setRecords(JSON.parse(raw))
     } catch { /* ignore malformed storage */ }
   }, [])
 
   useEffect(() => {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(records)) } catch { /* storage full/blocked */ }
+    try { 
+      localStorage.setItem(STORE_KEY, JSON.stringify(records))
+      // keep legacy in sync for backward compat during migration
+      try { localStorage.setItem(LEGACY_STORE_KEY, JSON.stringify(records)) } catch {}
+    } catch { /* storage full/blocked */ }
   }, [records])
 
   const stats = useMemo(() => ({
@@ -123,7 +128,7 @@ export function EvidenceVault({ className = '' }: { className?: string }) {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `wififorge-evidence-${new Date().toISOString().slice(0, 10)}.json`
+    a.download = `platform-evidence-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -164,7 +169,7 @@ export function EvidenceVault({ className = '' }: { className?: string }) {
               value={form.label}
               onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
               placeholder="Artefact label (wpa2-handshake.pcapng)"
-              className="rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[12px] text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30"
+              className="rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[12px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30"
             />
             <select
               value={form.kind}
@@ -183,20 +188,20 @@ export function EvidenceVault({ className = '' }: { className?: string }) {
             value={form.claim}
             onChange={e => setForm(f => ({ ...f, claim: e.target.value }))}
             placeholder="Claim this artefact supports (required)"
-            className="w-full rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[12px] text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30"
+            className="w-full rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[12px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30"
           />
           <div className="grid gap-2 sm:grid-cols-2">
             <input
               value={form.filter}
               onChange={e => setForm(f => ({ ...f, filter: e.target.value }))}
               placeholder="Filter / extraction (eapol.type == 3)"
-              className="rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[11.5px] font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30"
+              className="rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[11.5px] font-mono text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30"
             />
             <input
               value={form.frames}
               onChange={e => setForm(f => ({ ...f, frames: e.target.value }))}
               placeholder="Frames (9-12)"
-              className="rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[11.5px] font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30"
+              className="rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[11.5px] font-mono text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30"
             />
           </div>
 
@@ -211,7 +216,7 @@ export function EvidenceVault({ className = '' }: { className?: string }) {
             <input
               onChange={e => void handleHashOnly(e.target.value)}
               placeholder="sha256sum output"
-              className="flex-1 min-w-[160px] rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[11px] font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30"
+              className="flex-1 min-w-[160px] rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[11px] font-mono text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30"
             />
           </div>
 

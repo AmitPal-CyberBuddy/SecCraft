@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense, useCallback } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Shell } from '@/components/layout/Shell'
 import { ScrollToTop } from '@/components/layout/ScrollToTop'
 import { PointsToast } from '@/components/gamification/PointsToast'
@@ -9,6 +9,8 @@ import { ErrorBoundary } from '@/components/error/ErrorBoundary'
 import { OfflineIndicator } from '@/components/offline/OfflineIndicator'
 import { Dashboard } from '@/pages/Dashboard'
 import { LearningPath } from '@/pages/LearningPath'
+import { LearningPaths } from '@/pages/LearningPaths'
+import { PathDetail } from '@/pages/PathDetail'
 import { Modules } from '@/pages/Modules'
 import { ModuleDetail } from '@/pages/ModuleDetail'
 import { Labs } from '@/pages/Labs'
@@ -18,6 +20,9 @@ import { Reference } from '@/pages/Reference'
 import { Engagement } from '@/pages/Engagement'
 import { Settings } from '@/pages/Settings'
 import { Reports } from '@/pages/Reports'
+import { Analytics } from '@/pages/Analytics'
+import { Achievements } from '@/pages/Achievements'
+import { Daily } from '@/pages/Daily'
 
 const GuidedTour = lazy(() => import('@/components/tour/GuidedTour').then(m => ({ default: m.GuidedTour })))
 
@@ -55,17 +60,41 @@ function App() {
         <Shell>
           <Routes>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/path" element={<LearningPath />} />
+            {/* Platform-level learning paths */}
+            <Route path="/paths" element={<LearningPaths />} />
+            <Route path="/paths/:pathId" element={<PathDetail />} />
+            <Route path="/paths/:pathId/modules" element={<Modules />} />
+            <Route path="/paths/:pathId/modules/:id" element={<ModuleDetail />} />
+            {/* Legacy routes with redirects / backward compat — Stage 6 compatibility */}
+            <Route path="/path" element={<Navigate to="/paths/wireless-pentesting" replace />} />
+            <Route path="/learning-path" element={<Navigate to="/paths/wireless-pentesting" replace />} />
             <Route path="/modules" element={<Modules />} />
             <Route path="/modules/:id" element={<ModuleDetail />} />
             <Route path="/labs" element={<Labs />} />
+            <Route path="/paths/:pathId/labs" element={<Labs />} />
             <Route path="/challenges" element={<Challenges />} />
+            <Route path="/paths/:pathId/challenges" element={<Challenges />} />
             <Route path="/challenges/:id" element={<ChallengeDetail />} />
+            <Route path="/paths/:pathId/challenges/:id" element={<ChallengeDetail />} />
             <Route path="/reference" element={<Reference />} />
             <Route path="/engagement" element={<Engagement />} />
             <Route path="/engagement/:id" element={<Engagement />} />
+            <Route path="/assessments" element={<Engagement />} />
+            <Route path="/assessments/:id" element={<Engagement />} />
+            <Route path="/paths/:pathId/assessments" element={<Engagement />} />
+            <Route path="/paths/:pathId/engagements" element={<Engagement />} />
+            <Route path="/paths/:pathId/engagements/:id" element={<Engagement />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
+            {/* New: split dashboard — analytics, achievements, daily moved to separate pages */}
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/progress" element={<Analytics />} />
+            <Route path="/achievements" element={<Achievements />} />
+            <Route path="/badges" element={<Achievements />} />
+            <Route path="/daily" element={<Daily />} />
+            <Route path="/streak" element={<Daily />} />
+            {/* Keep legacy LearningPath component accessible for reference but redirect main entry */}
+            <Route path="/legacy/path" element={<LearningPath />} />
           </Routes>
         </Shell>
       </ErrorBoundary>

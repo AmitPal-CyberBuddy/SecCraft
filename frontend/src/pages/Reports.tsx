@@ -30,7 +30,7 @@ export function Reports() {
             <p className="text-[12px] xs:text-[13px] text-slate-400 mt-1.5 leading-relaxed">VAPT findings from your own evidence • evidence vault • PDF export • local completion record</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500 px-3 py-2 rounded-xl bg-[#0f172a]/60 border border-[#1e293b]/40 shrink-0">
+        <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400 px-3 py-2 rounded-xl bg-[#0f172a]/60 border border-[#1e293b]/40 shrink-0">
           <Sparkles className="w-3 h-3 text-violet-400" />
           <span className="hidden xs:inline">Professional VAPT structure • your data only</span>
           <span className="xs:hidden">Local</span>
@@ -50,7 +50,7 @@ export function Reports() {
             { id: 'forum', label: 'Forum', icon: MessageSquare },
             { id: 'teams', label: 'Teams', icon: Users },
           ].map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center gap-2 px-3 xs:px-4 py-2.5 rounded-lg text-[12px] xs:text-[13px] font-medium transition-all shrink-0 touch-manipulation min-h-[44px] ${activeTab === tab.id ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>
+            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center gap-2 px-3 xs:px-4 py-2.5 rounded-lg text-[12px] xs:text-[13px] font-medium transition-all shrink-0 touch-manipulation min-h-[44px] ${activeTab === tab.id ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-400 hover:text-slate-300 border border-transparent'}`}>
               <tab.icon className="w-4 h-4" />
               <span className="hidden xs:inline">{tab.label}</span>
               <span className="xs:hidden">{tab.label.split(' ')[0]}</span>
@@ -59,12 +59,12 @@ export function Reports() {
         </div>
       </motion.div>
 
-      {activeTab === 'certificate' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Certificate QR…</div>}><Certificate /></Suspense>}
-      {activeTab === 'vault' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Vault…</div>}><EvidenceVault /></Suspense>}
-      {activeTab === 'pdf' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading PDF/A Export…</div>}><ReportPdfExport /></Suspense>}
-      {activeTab === 'cvss' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading CVSS…</div>}><CvssCalculator /></Suspense>}
-      {activeTab === 'templates' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Templates…</div>}><ReportTemplates /></Suspense>}
-      {activeTab === 'timeline' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Timeline…</div>}><TimelineViz /></Suspense>}
+      {activeTab === 'certificate' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading Certificate QR…</div>}><Certificate /></Suspense>}
+      {activeTab === 'vault' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading Vault…</div>}><EvidenceVault /></Suspense>}
+      {activeTab === 'pdf' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading PDF/A Export…</div>}><ReportPdfExport /></Suspense>}
+      {activeTab === 'cvss' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading CVSS…</div>}><CvssCalculator /></Suspense>}
+      {activeTab === 'templates' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading Templates…</div>}><ReportTemplates /></Suspense>}
+      {activeTab === 'timeline' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading Timeline…</div>}><TimelineViz /></Suspense>}
             
       {activeTab === 'editor' && (
         <>
@@ -95,7 +95,7 @@ export function Reports() {
                     </div>
                     <h3 className="font-heading font-semibold text-[13px] xs:text-[14px] text-slate-100 truncate">{card.title}</h3>
                   </div>
-                  <p className="text-[11px] xs:text-[12px] text-slate-500 leading-relaxed">{card.desc}</p>
+                  <p className="text-[11px] xs:text-[12px] text-slate-400 leading-relaxed">{card.desc}</p>
                 </div>
               </motion.div>
             ))}

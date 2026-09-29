@@ -171,7 +171,7 @@ export function ModuleCard({ id, title, phase, difficulty, estimated_hours, stat
                   : 'bg-[#020617] border-[#1e293b] group-hover:border-[#334155]'
                 }
               `}>
-                {progress === 0 && <Circle className="w-3 h-3 text-slate-600 group-hover:text-slate-500 transition-colors" />}
+                {progress === 0 && <Circle className="w-3 h-3 text-slate-400 group-hover:text-slate-500 transition-colors" />}
                 {isInProgress && <Loader2 className="w-3 h-3 text-cyan-400 animate-spin" />}
                 {isCompleted && <CheckCircle className="w-3.5 h-3.5 text-white" />}
               </div>

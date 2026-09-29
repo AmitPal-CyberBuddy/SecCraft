@@ -148,7 +148,7 @@ export function NotificationCenter({ open, onClose }: { open: boolean; onClose: 
                         {!n.read && <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />}
                       </div>
                       <div className="text-[11px] text-slate-500 mt-1 leading-relaxed break-words">{n.desc}</div>
-                      <div className="text-[10px] font-mono text-slate-600 mt-1.5">{relative(n.at)} • {new Date(n.at).toLocaleString()}</div>
+                      <div className="text-[10px] font-mono text-slate-400 mt-1.5">{relative(n.at)} • {new Date(n.at).toLocaleString()}</div>
                     </div>
                   </motion.div>
                 ))
@@ -165,7 +165,7 @@ export function NotificationCenter({ open, onClose }: { open: boolean; onClose: 
                 </button>
               )}
               <div className="text-[11px] text-slate-500 flex items-start gap-2 leading-relaxed">
-                <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-slate-600" />
+                <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-slate-400" />
                 <span>Derived from this device&apos;s local progress records. No push service, no email, no server-side notification log.</span>
               </div>
             </div>

@@ -127,7 +127,7 @@ export function AttackDefenseRetest({ attack, defense, retest }: Props) {
           </motion.div>
         </div>
 
-        <div className="mt-6 flex items-center justify-center gap-2 text-[10px] font-mono text-slate-600 px-4 py-2 rounded-full bg-[#020617]/60 border border-[#1e293b]/40 backdrop-blur-sm">
+        <div className="mt-6 flex items-center justify-center gap-2 text-[10px] font-mono text-slate-400 px-4 py-2 rounded-full bg-[#020617]/60 border border-[#1e293b]/40 backdrop-blur-sm">
           <Target className="w-3 h-3 text-violet-400" />
           <span>Learn → Observe → Enumerate → Test → Validate → Evidence → Impact → Remediate → Retest → Report</span>
         </div>

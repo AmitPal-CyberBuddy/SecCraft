@@ -48,6 +48,7 @@ export interface Level {
   maxXp: number
   color: string
   icon: string
+  description?: string
 }
 
 export const POINTS = {
@@ -81,14 +82,14 @@ export const CERT_PROGRESS_THRESHOLD = 60
 
 
 export const LEVELS: Level[] = [
-  { level: 1, title: 'Initiate', minXp: 0, maxXp: 99, color: 'slate', icon: '🌱' },
-  { level: 2, title: 'Scout', minXp: 100, maxXp: 299, color: 'cyan', icon: '🔍' },
-  { level: 3, title: 'Analyst', minXp: 300, maxXp: 599, color: 'emerald', icon: '📡' },
-  { level: 4, title: 'Operator', minXp: 600, maxXp: 999, color: 'violet', icon: '⚡' },
-  { level: 5, title: 'Specialist', minXp: 1000, maxXp: 1499, color: 'amber', icon: '🛡️' },
-  { level: 6, title: 'Expert', minXp: 1500, maxXp: 1999, color: 'pink', icon: '🎯' },
-  { level: 7, title: 'Master', minXp: 2000, maxXp: 2449, color: 'cyan', icon: '👑' },
-  { level: 8, title: 'Forge Master', minXp: Math.round(MAX_XP * 0.75), maxXp: 999999, color: 'amber', icon: '🔥' },
+  { level: 1, title: 'Initiate', minXp: 0, maxXp: 99, color: 'slate', icon: '🌱', description: 'Welcome to the forge — learn the basics, observe traffic, and take your first steps.' },
+  { level: 2, title: 'Scout', minXp: 100, maxXp: 299, color: 'cyan', icon: '🔍', description: 'You can recon and enumerate — beacons, clients, and handshake capture.' },
+  { level: 3, title: 'Analyst', minXp: 300, maxXp: 599, color: 'emerald', icon: '📡', description: 'You analyze captures, understand impact, and collect evidence like a pro.' },
+  { level: 4, title: 'Operator', minXp: 600, maxXp: 999, color: 'violet', icon: '⚡', description: 'You operate tools, test vulnerabilities, and break things safely in the lab.' },
+  { level: 5, title: 'Specialist', minXp: 1000, maxXp: 1499, color: 'amber', icon: '🛡️', description: 'You remediate, harden, and quench — turning breaks into fixes.' },
+  { level: 6, title: 'Expert', minXp: 1500, maxXp: 1999, color: 'pink', icon: '🎯', description: 'You retest, report, and complete engagements with evidence.' },
+  { level: 7, title: 'Master', minXp: 2000, maxXp: 2449, color: 'cyan', icon: '👑', description: 'You master the full VAPT loop: Learn → Observe → Test → Quench → Report.' },
+  { level: 8, title: 'Forge Master', minXp: Math.round(MAX_XP * 0.75), maxXp: 999999, color: 'amber', icon: '🔥', description: 'Forge Master — you harden systems and quench attack chains. The forge is yours.' },
 ]
 
 
@@ -101,6 +102,7 @@ interface ProgressState {
   completedLabs: LabProgress[]
   quizScores: QuizProgress[]
   currentModule: string | null
+  currentLearningPathId: string | null
   streak: number
   lastActive: string | null
   totalXp: number
@@ -112,7 +114,9 @@ interface ProgressState {
   completeLab: (moduleId: string, labId: string, score?: number) => { points: number; isNew: boolean }
   completeQuiz: (moduleId: string, quizId: string, score: number, total: number) => { points: number; isNew: boolean }
   setCurrentModule: (id: string) => void
+  setCurrentLearningPath: (id: string) => void
   getModuleProgress: (moduleId: string) => number
+  getPathProgress: (pathId: string) => number
   getOverallProgress: () => number
   isLessonCompleted: (moduleId: string, lessonId: string) => boolean
   resetProgress: () => void
@@ -134,6 +138,7 @@ export const useProgressStore = create<ProgressState>()(
       completedLabs: [],
       quizScores: [],
       currentModule: "02-wifi-fundamentals",
+      currentLearningPathId: "wireless-pentesting",
       streak: 0,
       lastActive: new Date().toISOString(),
       totalXp: 0,
@@ -211,6 +216,28 @@ export const useProgressStore = create<ProgressState>()(
       },
 
       setCurrentModule: (id) => set({ currentModule: id }),
+      setCurrentLearningPath: (id) => set({ currentLearningPathId: id }),
+
+      getPathProgress: (pathId) => {
+        const state = get()
+        // modules in path
+        const pathModules = (modules as Array<{ id: string; learningPathId?: string }>).filter(m => m.learningPathId === pathId)
+        if (pathModules.length === 0) return 0
+        const progresses = pathModules.map(m => {
+          const lessonsDone = state.completedLessons.filter(l => l.moduleId === m.id).length
+          const labsDone = state.completedLabs.filter(l => l.moduleId === m.id).length
+          const quizDone = state.quizScores.filter(q => q.moduleId === m.id && q.completed).length
+          const meta = (modules as Array<{ id: string; lessons?: unknown[] }>).find(mm => mm.id === m.id)
+          const lessonTotal = Math.max(1, Array.isArray(meta?.lessons) ? meta!.lessons!.length : 1)
+          const labTotal = Math.max(1, LABS.filter(lab => lab.module === m.id).length)
+          const lessonProgress = Math.min((lessonsDone / lessonTotal) * 60, 60)
+          const labProgress = Math.min((labsDone / labTotal) * 25, 25)
+          const quizProgress = Math.min((quizDone / 1) * 15, 15)
+          return Math.round(lessonProgress + labProgress + quizProgress)
+        })
+        const avg = progresses.reduce((a, b) => a + b, 0) / progresses.length
+        return Number.isFinite(avg) ? Math.round(avg) : 0
+      },
 
       /**
        * Consecutive days with at least one recorded completion, counted back from today (a streak
@@ -383,6 +410,7 @@ export const useProgressStore = create<ProgressState>()(
         completedLabs: [],
         quizScores: [],
         currentModule: "02-wifi-fundamentals",
+        currentLearningPathId: "wireless-pentesting",
         streak: 0,
         totalXp: 0,
         achievements: [],
@@ -390,24 +418,45 @@ export const useProgressStore = create<ProgressState>()(
       })
     }),
     {
-      name: 'wififorge-progress',
-      version: 2,
+      name: 'platform-progress',
+      version: 3,
       migrate: (persistedState: any, version: number) => {
         try {
-          if (!persistedState) return persistedState
-          if (version === 0 || !persistedState.totalXp) {
+          if (!persistedState) {
+            // Try legacy key fallback
+            try {
+              const raw = localStorage.getItem('wififorge-progress')
+              if (raw) {
+                const legacy = JSON.parse(raw)
+                return {
+                  ...legacy,
+                  currentLearningPathId: legacy.currentLearningPathId || 'wireless-pentesting',
+                  currentModule: legacy.currentModule || '02-wifi-fundamentals',
+                }
+              }
+            } catch {}
+            return persistedState
+          }
+          if (version < 2 || !persistedState.totalXp) {
             const lessons = persistedState.completedLessons || []
             const labs = persistedState.completedLabs || []
             const quizzes = persistedState.quizScores || []
             const totalXp = lessons.length * POINTS.LESSON + labs.length * POINTS.LAB + quizzes.length * POINTS.QUIZ
             return {
               ...persistedState,
+              currentLearningPathId: persistedState.currentLearningPathId || 'wireless-pentesting',
               totalXp,
               achievements: persistedState.achievements || [],
               lastEarnedPoints: null,
               completedLessons: lessons.map((l: any) => ({ ...l, points: l.points || POINTS.LESSON })),
               completedLabs: labs.map((l: any) => ({ ...l, points: l.points || POINTS.LAB })),
               quizScores: quizzes.map((q: any) => ({ ...q, points: q.points || POINTS.QUIZ })),
+            }
+          }
+          if (version < 3) {
+            return {
+              ...persistedState,
+              currentLearningPathId: persistedState.currentLearningPathId || 'wireless-pentesting',
             }
           }
           return persistedState
@@ -418,8 +467,11 @@ export const useProgressStore = create<ProgressState>()(
       // Handle corrupted storage gracefully
       onRehydrateStorage: () => (state, error) => {
         if (error) {
-          console.warn('WiFiForge progress rehydrate error — clearing corrupted storage', error)
-          try { localStorage.removeItem('wififorge-progress') } catch {}
+          console.warn('Platform progress rehydrate error — clearing corrupted storage', error)
+          try { 
+            localStorage.removeItem('platform-progress')
+            localStorage.removeItem('wififorge-progress')
+          } catch {}
         }
       },
     }

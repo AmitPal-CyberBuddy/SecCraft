@@ -12,19 +12,21 @@ interface ChecklistGroup { group: string; items: ChecklistItem[] }
  */
 export function ChecklistPanel({ engagementId = 'general', className = '' }: { engagementId?: string; className?: string }) {
   const groups = checklist as ChecklistGroup[]
-  const storeKey = `wififorge-checklist-${engagementId}`
+  const STORE_KEY = `platform-checklist-${engagementId}`
+  const LEGACY_STORE_KEY = `wififorge-checklist-${engagementId}`
+  const storeKey = STORE_KEY
   const [done, setDone] = useState<Record<string, boolean>>({})
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(storeKey)
+      const raw = localStorage.getItem(STORE_KEY) || localStorage.getItem(LEGACY_STORE_KEY)
       if (raw) setDone(JSON.parse(raw))
     } catch { /* ignore */ }
   }, [storeKey])
 
   useEffect(() => {
-    try { localStorage.setItem(storeKey, JSON.stringify(done)) } catch { /* ignore */ }
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(done)); try { localStorage.setItem(LEGACY_STORE_KEY, JSON.stringify(done)) } catch {} } catch { /* ignore */ }
   }, [done, storeKey])
 
   const totals = useMemo(() => {
@@ -99,12 +101,12 @@ export function ChecklistPanel({ engagementId = 'general', className = '' }: { e
                   >
                     {done[item.id]
                       ? <CheckSquare className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                      : <Square className="w-4 h-4 text-slate-600 shrink-0 mt-0.5" />}
+                      : <Square className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />}
                     <span className="min-w-0">
                       <span className={`block text-[12.5px] leading-relaxed ${done[item.id] ? 'text-slate-500 line-through' : 'text-slate-200'}`}>{item.text}</span>
                       <span className="mt-1 block text-[11px] font-mono text-slate-500">evidence: {item.evidence}</span>
                     </span>
-                    <span className="ml-auto shrink-0 text-[10px] font-mono text-slate-600">{item.id}</span>
+                    <span className="ml-auto shrink-0 text-[10px] font-mono text-slate-400">{item.id}</span>
                   </button>
                 ))}
               </div>

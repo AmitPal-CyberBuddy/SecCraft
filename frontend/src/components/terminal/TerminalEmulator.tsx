@@ -166,7 +166,12 @@ wlan0: EAPOL: Successfully received EAPOL-Key msg 4/4
     type: 'success'
   },
   'help': {
-    output: `WiFiForge Terminal — simulated Kali-style shell
+    output: `Quench Terminal — Hands-on Cybersecurity Learning Platform — simulated Kali-style shell
+Platform: Quench • Tagline: Forge. Break. Fix. Quench. Retest. • Learn cybersecurity by doing.
+Wireless Pentesting is Learning Path #1 — this terminal simulates wireless tooling for that path, but the terminal engine is generic and will support Web, API, Android, Network, etc.
+Prompt: operator@anvil (quench (quench) retained for backward compat in docs)
+
+WiFiForge Terminal — simulated Kali-style shell
 
 Available commands (counted from the implementation below):
   iw dev                          — List wireless interfaces
@@ -269,7 +274,7 @@ export function TerminalEmulator({ className = '' }: { className?: string }) {
           </div>
           <div className="hidden xs:flex items-center gap-2 min-w-0">
             <Terminal className="w-4 h-4 text-slate-500 shrink-0" />
-            <span className="text-[12px] font-mono text-slate-400 truncate">kali@wififorge: ~/labs • simulated shell</span>
+            <span className="text-[12px] font-mono text-slate-400 truncate">operator@quench: ~/labs • simulated shell</span>
           </div>
           <div className="flex xs:hidden items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -303,14 +308,14 @@ export function TerminalEmulator({ className = '' }: { className?: string }) {
 
       {/* Input */}
       <form onSubmit={handleSubmit} className="flex items-center gap-2 p-3 bg-[#0a1020] border-t border-[#1e293b]/60 shrink-0">
-        <span className="text-emerald-400 font-mono text-[13px] shrink-0 hidden xs:inline">kali@wififorge:~$</span>
+        <span className="text-emerald-400 font-mono text-[13px] shrink-0 hidden xs:inline">operator@quench:~$</span>
         <span className="text-emerald-400 font-mono text-[13px] shrink-0 xs:hidden">$</span>
         <input
           ref={inputRef}
           value={input}
           onChange={e => setInput(e.target.value)}
           placeholder="Type command (help, iw dev, airodump-ng wlan0mon, tshark -r ...)"
-          className="flex-1 bg-[#020617] border border-[#1e293b] rounded-xl px-3 py-2.5 text-[13px] font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30 focus:bg-[#0a1020] min-w-0"
+          className="flex-1 bg-[#020617] border border-[#1e293b] rounded-xl px-3 py-2.5 text-[13px] font-mono text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30 focus:bg-[#0a1020] min-w-0"
         />
         <button type="submit" className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-[#020617] font-semibold text-[12px] transition-colors shrink-0 touch-manipulation min-h-[44px] sm:min-h-0">
           Run

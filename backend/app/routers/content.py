@@ -18,10 +18,9 @@ def get_modules_path():
     return p
 
 @router.get("/modules")
-async def list_modules():
-    path = get_modules_path()
-    if not path.exists():
-        # No content in this checkout — say so instead of inventing a module list.
+async def list_modules(path: str = None):
+    modules_path = get_modules_path()
+    if not modules_path.exists():
         raise HTTPException(
             status_code=503,
             detail=(
@@ -29,9 +28,32 @@ async def list_modules():
                 "Serve the API from a full checkout of the repository."
             ),
         )
-    with open(path) as f:
+    with open(modules_path) as f:
         data = json.load(f)
+    if path:
+        # path-aware filter: learningPathId
+        filtered = [m for m in data if m.get("learningPathId") == path or m.get("id") in (await _modules_for_path(path))]
+        # If filtered empty but path exists, return all with that learningPathId
+        if filtered:
+            return filtered
+        # fallback: filter by learningPathId directly
+        return [m for m in data if m.get("learningPathId") == path]
     return data
+
+async def _modules_for_path(path_id: str):
+    # helper to get module ids from learning-paths.json
+    try:
+        from app.core.config import REPO_ROOT
+        lp_path = REPO_ROOT / "frontend" / "src" / "content" / "learning-paths.json"
+        if lp_path.exists():
+            import json as _json
+            lps = _json.loads(lp_path.read_text())
+            for lp in lps:
+                if lp["id"] == path_id:
+                    return lp.get("modules", [])
+    except Exception:
+        pass
+    return []
 
 @router.get("/modules/{module_id}")
 async def get_module(module_id: str):

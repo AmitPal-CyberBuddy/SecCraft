@@ -45,7 +45,8 @@
    "pmf"
   ],
   "answer_basis": "computed from beacon frames with wififorge_labkit.decode",
-  "deliverable": "A four-row BSS table with frame numbers and the decoded policy fields."
+  "deliverable": "A four-row BSS table with frame numbers and the decoded policy fields.",
+  "learningPathId": "wireless-pentesting"
  },
  {
   "id": "chal-02-recon",
@@ -94,7 +95,8 @@
    "mac-randomisation"
   ],
   "answer_basis": "computed from probe/beacon frames with wififorge_labkit.decode",
-  "deliverable": "Inventory table (BSSID | SSID | ch | AKM | PMF | frames) + a limits paragraph."
+  "deliverable": "Inventory table (BSSID | SSID | ch | AKM | PMF | frames) + a limits paragraph.",
+  "learningPathId": "wireless-pentesting"
  },
  {
   "id": "chal-03-traffic",
@@ -142,7 +144,8 @@
    "eapol"
   ],
   "answer_basis": "computed from EAPOL/management frames with wififorge_labkit.decode",
-  "deliverable": "A frame-numbered timeline plus one complete evidence record."
+  "deliverable": "A frame-numbered timeline plus one complete evidence record.",
+  "learningPathId": "wireless-pentesting"
  },
  {
   "id": "chal-04-handshake",
@@ -190,7 +193,8 @@
    "offline-audit"
   ],
   "answer_basis": "computed from EAPOL-Key frames; MIC verification in scripts/verify-lab-artifacts.py",
-  "deliverable": "A short audit note: frames, PMK derivation, hashcat result, and what the key grants."
+  "deliverable": "A short audit note: frames, PMK derivation, hashcat result, and what the key grants.",
+  "learningPathId": "wireless-pentesting"
  },
  {
   "id": "chal-05-pmkid",
@@ -238,7 +242,8 @@
    "offline-audit"
   ],
   "answer_basis": "PMKID read from the capture and recomputed with wififorge_labkit.pmkid",
-  "deliverable": "PMKID value + derivation + a note on collection trade-offs."
+  "deliverable": "PMKID value + derivation + a note on collection trade-offs.",
+  "learningPathId": "wireless-pentesting"
  },
  {
   "id": "chal-06-wps",
@@ -286,7 +291,8 @@
    "reporting"
   ],
   "answer_basis": "WPS attributes decoded from beacons in the capture",
-  "deliverable": "A configuration finding (not an exploit claim) with retest criteria."
+  "deliverable": "A configuration finding (not an exploit claim) with retest criteria.",
+  "learningPathId": "wireless-pentesting"
  },
  {
   "id": "chal-07-wpa3-only",
@@ -335,7 +341,8 @@
    "reporting"
   ],
   "answer_basis": "RSNE/PMF fields decoded from the capture",
-  "deliverable": "A documented negative result: tests performed, evidence, limits."
+  "deliverable": "A documented negative result: tests performed, evidence, limits.",
+  "learningPathId": "wireless-pentesting"
  },
  {
   "id": "chal-08-transition",
@@ -383,7 +390,8 @@
    "reporting"
   ],
   "answer_basis": "authentication algorithms and EAPOL-Key frames decoded from the capture",
-  "deliverable": "A scoped finding plus remediation/exception plan."
+  "deliverable": "A scoped finding plus remediation/exception plan.",
+  "learningPathId": "wireless-pentesting"
  },
  {
   "id": "chal-09-deauth",
@@ -431,7 +439,8 @@
    "evidence"
   ],
   "answer_basis": "deauthentication/action frames decoded from the capture",
-  "deliverable": "An availability finding with effect evidence or an explicit statement that effect was not tested."
+  "deliverable": "An availability finding with effect evidence or an explicit statement that effect was not tested.",
+  "learningPathId": "wireless-pentesting"
  },
  {
   "id": "chal-10-rogue",
@@ -479,7 +488,8 @@
    "detection"
   ],
   "answer_basis": "beacon/EAPOL frames decoded from the capture",
-  "deliverable": "Two findings with distinct impacts, controls and owners."
+  "deliverable": "Two findings with distinct impacts, controls and owners.",
+  "learningPathId": "wireless-pentesting"
  },
  {
   "id": "chal-11-portal",
@@ -527,7 +537,8 @@
    "reporting"
   ],
   "answer_basis": "HTTP/ARP frames decoded from the capture",
-  "deliverable": "Two prioritised findings (credential exposure, missing isolation) plus a segmentation test plan."
+  "deliverable": "Two prioritised findings (credential exposure, missing isolation) plus a segmentation test plan.",
+  "learningPathId": "wireless-pentesting"
  },
  {
   "id": "chal-12-enterprise",
@@ -576,7 +587,8 @@
    "peap"
   ],
   "answer_basis": "EAP/EAPOL frames decoded from the capture",
-  "deliverable": "A role-labelled flow diagram plus a precondition analysis."
+  "deliverable": "A role-labelled flow diagram plus a precondition analysis.",
+  "learningPathId": "wireless-pentesting"
  },
  {
   "id": "chal-13-eap",
@@ -624,7 +636,8 @@
    "certificates"
   ],
   "answer_basis": "EAP/MS-CHAPv2 fields decoded from the capture; RFC 2759 derivation checked in verify-lab-artifacts.py",
-  "deliverable": "A precondition analysis plus a layered remediation."
+  "deliverable": "A precondition analysis plus a layered remediation.",
+  "learningPathId": "wireless-pentesting"
  },
  {
   "id": "chal-14-radius",
@@ -672,7 +685,8 @@
    "shared-secret"
   ],
   "answer_basis": "RADIUS attributes and authenticators decoded/verified from the capture",
-  "deliverable": "A verification record (packet bytes, secret used, calculation) plus an impact analysis."
+  "deliverable": "A verification record (packet bytes, secret used, calculation) plus an impact analysis.",
+  "learningPathId": "wireless-pentesting"
  },
  {
   "id": "chal-15-engagement",
@@ -721,6 +735,7 @@
    "retest"
   ],
   "answer_basis": "computed from the multi-BSS capture; findings verified in scripts/verify-lab-artifacts.py",
-  "deliverable": "An inventory, a sequenced test plan, findings with severity reasoning and retest criteria."
+  "deliverable": "An inventory, a sequenced test plan, findings with severity reasoning and retest criteria.",
+  "learningPathId": "wireless-pentesting"
  }
 ]

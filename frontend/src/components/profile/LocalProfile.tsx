@@ -11,6 +11,8 @@ import type { ReactNode } from 'react'
  *
  * If you run the optional FastAPI backend (see backend/ and docker-compose), real JWT authentication
  * for classroom use is available there — the static build never claims it.
+ *
+ * Storage: platform-profile with wififorge-profile fallback (Stage 6 compatibility)
  */
 
 export type ProfileRole = 'learner' | 'instructor'
@@ -28,12 +30,13 @@ interface Ctx {
   clear: () => void
 }
 
-const KEY = 'wififorge-profile'
+const KEY = 'platform-profile'
+const LEGACY_KEY = 'wififorge-profile'
 const Ctx = createContext<Ctx>({} as Ctx)
 
 function read(): LocalProfile | null {
   try {
-    const raw = localStorage.getItem(KEY)
+    const raw = localStorage.getItem(KEY) || localStorage.getItem(LEGACY_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as Partial<LocalProfile>
     if (!parsed || typeof parsed.displayName !== 'string' || !parsed.displayName.trim()) return null
@@ -60,11 +63,17 @@ export function LocalProfileProvider({ children }: { children: ReactNode }) {
         role: next.role === 'instructor' ? 'instructor' : 'learner',
       }
       setProfile(clean)
-      try { localStorage.setItem(KEY, JSON.stringify(clean)) } catch { /* storage unavailable */ }
+      try {
+        localStorage.setItem(KEY, JSON.stringify(clean))
+        localStorage.setItem(LEGACY_KEY, JSON.stringify(clean))
+      } catch { /* storage unavailable */ }
     },
     clear: () => {
       setProfile(null)
-      try { localStorage.removeItem(KEY) } catch { /* storage unavailable */ }
+      try {
+        localStorage.removeItem(KEY)
+        localStorage.removeItem(LEGACY_KEY)
+      } catch { /* storage unavailable */ }
     },
   }), [profile])
 

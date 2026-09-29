@@ -152,7 +152,7 @@ export function LabScoring({ labId, moduleId, className = '' }: Props) {
                   <span className="text-[11px] font-bold text-slate-400">Prompt {hint.level}</span>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-mono ${hint.xpPenalty === 0 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>-{hint.xpPenalty} XP</span>
                 </div>
-                <div className={`text-[12px] mt-1 leading-relaxed ${revealed ? 'text-slate-300' : 'text-slate-600 blur-[4px] select-none'}`}>{hint.text}</div>
+                <div className={`text-[12px] mt-1 leading-relaxed ${revealed ? 'text-slate-300' : 'text-slate-400 blur-[4px] select-none'}`}>{hint.text}</div>
               </div>
             </div>
           )

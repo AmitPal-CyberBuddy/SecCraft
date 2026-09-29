@@ -131,7 +131,7 @@ export function HandshakeDiagram({ pcapId = 'wpa2-handshake', bssid = 'AA:BB:CC:
               </div>
               <div className="text-[12px] font-semibold text-slate-100">{step.title}</div>
               <div className="text-[11px] font-mono text-slate-500 mt-1 truncate">SA {step.sa.slice(0, 8)}... DA {step.da.slice(0, 8)}...</div>
-              <div className="text-[10px] text-slate-600 mt-2 leading-relaxed">{step.nonce} • {step.mic} • {step.keyData}</div>
+              <div className="text-[10px] text-slate-400 mt-2 leading-relaxed">{step.nonce} • {step.mic} • {step.keyData}</div>
               {activeStep === idx && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-cyan-400 to-violet-400" />}
             </motion.div>
           ))}
@@ -180,17 +180,17 @@ export function HandshakeDiagram({ pcapId = 'wpa2-handshake', bssid = 'AA:BB:CC:
               <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
                 <div className="text-[11px] text-slate-500 uppercase tracking-widest">Group Cipher</div>
                 <div className={`text-[12px] font-mono mt-1 ${rsnInfo.groupCipher.includes('CCMP') ? 'text-emerald-400' : 'text-red-400'}`}>{rsnInfo.groupCipher}</div>
-                <div className="text-[10px] text-slate-600 mt-1">Filter: wlan.rsn.gcs.type==4 CCMP good, ==2 TKIP bad</div>
+                <div className="text-[10px] text-slate-400 mt-1">Filter: wlan.rsn.gcs.type==4 CCMP good, ==2 TKIP bad</div>
               </div>
               <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
                 <div className="text-[11px] text-slate-500 uppercase tracking-widest">Pairwise Cipher</div>
                 <div className={`text-[12px] font-mono mt-1 ${rsnInfo.pairwiseCipher.includes('CCMP') ? 'text-emerald-400' : 'text-red-400'}`}>{rsnInfo.pairwiseCipher}</div>
-                <div className="text-[10px] text-slate-600 mt-1">Filter: wlan.rsn.pcs.type==4 CCMP good</div>
+                <div className="text-[10px] text-slate-400 mt-1">Filter: wlan.rsn.pcs.type==4 CCMP good</div>
               </div>
               <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
                 <div className="text-[11px] text-slate-500 uppercase tracking-widest">AKM (Auth Key Mgmt)</div>
                 <div className="text-[12px] font-mono text-slate-200 mt-1">{rsnInfo.akm}</div>
-                <div className="text-[10px] text-slate-600 mt-1">Filter: wlan.rsn.akms.type==2 PSK, ==8 SAE WPA3, ==1 EAP, count&gt;1 transition</div>
+                <div className="text-[10px] text-slate-400 mt-1">Filter: wlan.rsn.akms.type==2 PSK, ==8 SAE WPA3, ==1 EAP, count&gt;1 transition</div>
                 <div className="flex gap-1 mt-2">
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">PSK 2</span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20">SAE 8 WPA3</span>
@@ -214,9 +214,9 @@ export function HandshakeDiagram({ pcapId = 'wpa2-handshake', bssid = 'AA:BB:CC:
               <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
                 <div className="text-[11px] text-slate-500 uppercase tracking-widest">PMKID & Group Management</div>
                 <div className="text-[12px] font-mono text-slate-200 mt-1">PMKID Count 0 or 1 — PMKID = HMAC-SHA1-128(PMK, "PMK Name" | BSSID | STA MAC) 16 bytes — clientless capture via hcxdumptool — single frame — no deauth</div>
-                <div className="text-[10px] text-slate-600 mt-1">Filter: wlan.rsn.pmkid or wlan_rsna_eapol.pmkid</div>
+                <div className="text-[10px] text-slate-400 mt-1">Filter: wlan.rsn.pmkid or wlan_rsna_eapol.pmkid</div>
                 <div className="text-[12px] font-mono text-slate-200 mt-2">Group Mgmt Cipher BIP (00-0F-AC-06) — for PMF — BIP-GMAC-128/256 for WPA3</div>
-                <div className="text-[10px] text-slate-600 mt-1">Filter: wlan.rsn.gmcs.type==6 BIP good</div>
+                <div className="text-[10px] text-slate-400 mt-1">Filter: wlan.rsn.gmcs.type==6 BIP good</div>
               </div>
               <div className={`p-3 rounded-xl border ${rsnInfo.wps ? 'bg-red-500/10 border-red-500/20' : 'bg-emerald-500/10 border-emerald-500/20'}`}>
                 <div className="text-[11px] uppercase tracking-widest flex items-center gap-1" style={{ color: rsnInfo.wps ? '#f87171' : '#34d399' }}>
@@ -254,7 +254,7 @@ export function HandshakeDiagram({ pcapId = 'wpa2-handshake', bssid = 'AA:BB:CC:
                 <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
                   <div className="text-[11px] text-slate-500 uppercase tracking-widest">PMKID Value</div>
                   <div className="text-[12px] font-mono text-violet-400 mt-1 break-all">{pmkid || 'aabbccddeeff00112233445566778899'}</div>
-                  <div className="text-[10px] text-slate-600 mt-1">16 bytes 32 hex chars — first 128 bits of HMAC-SHA1</div>
+                  <div className="text-[10px] text-slate-400 mt-1">16 bytes 32 hex chars — first 128 bits of HMAC-SHA1</div>
                 </div>
                 <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
                   <div className="text-[11px] text-slate-500 uppercase tracking-widest">Formula</div>

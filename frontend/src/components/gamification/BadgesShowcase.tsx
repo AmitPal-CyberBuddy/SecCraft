@@ -20,7 +20,7 @@ export function BadgesShowcase({ className = '' }: { className?: string }) {
   }))
 
   const getRarityColor = (rarity: string, unlocked: boolean) => {
-    if (!unlocked) return 'bg-[#020617]/40 border-[#1e293b]/40 text-slate-600 opacity-60'
+    if (!unlocked) return 'bg-[#020617]/40 border-[#1e293b]/40 text-slate-400 opacity-60'
     switch(rarity) {
       case 'common': return 'bg-slate-500/10 border-slate-500/20 text-slate-300'
       case 'rare': return 'bg-cyan-500/10 border-cyan-500/20 text-cyan-300 shadow-glow-cyan'
@@ -52,13 +52,13 @@ export function BadgesShowcase({ className = '' }: { className?: string }) {
         {allBadges.map((badge, idx) => (
           <motion.div key={badge.id} initial={{ opacity: 0, y: 8, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: idx * 0.02 }} whileHover={{ scale: badge.unlocked ? 1.05 : 1.02, y: -2 }} className={`group p-3 rounded-xl border flex flex-col items-center text-center transition-all min-w-0 ${getRarityColor(badge.rarity, badge.unlocked)}`}>
             <div className="text-[24px] mb-1 group-hover:scale-110 transition-transform">{badge.unlocked ? badge.icon : '🔒'}</div>
-            <div className={`text-[11px] font-bold leading-tight ${badge.unlocked ? 'text-slate-100' : 'text-slate-600'}`}>{badge.title}</div>
+            <div className={`text-[11px] font-bold leading-tight ${badge.unlocked ? 'text-slate-100' : 'text-slate-400'}`}>{badge.title}</div>
             <div className="text-[10px] text-slate-500 mt-1 leading-tight">{badge.desc}</div>
             <div className="mt-2 flex items-center gap-1">
               <span className={`text-[9px] px-1.5 py-0.5 rounded-full border font-mono ${badge.rarity === 'common' ? 'bg-slate-500/10 border-slate-500/20 text-slate-500' : badge.rarity === 'rare' ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400' : badge.rarity === 'epic' ? 'bg-violet-500/10 border-violet-500/20 text-violet-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>{badge.rarity}</span>
               <span className="text-[9px] font-mono text-slate-500">{badge.xp} XP</span>
             </div>
-            {!badge.unlocked && <Lock className="w-3 h-3 text-slate-600 mt-1.5" />}
+            {!badge.unlocked && <Lock className="w-3 h-3 text-slate-400 mt-1.5" />}
           </motion.div>
         ))}
       </div>

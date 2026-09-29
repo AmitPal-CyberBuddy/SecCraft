@@ -62,7 +62,7 @@ export function ChallengeCard({ id, title, module, difficulty, type, level, esti
                 <div className="text-[11px] font-mono text-slate-500 flex items-center gap-1.5">
                   <span>{module}</span>
                   <span className="w-1 h-1 rounded-full bg-slate-700" />
-                  <span className="text-slate-600">{id}</span>
+                  <span className="text-slate-400">{id}</span>
                 </div>
                 <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
                   <span className="capitalize">{type.replace('_', ' ')}</span>

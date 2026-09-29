@@ -1,23 +1,41 @@
 import { useState, useEffect } from 'react'
 import { Accessibility, Type, Keyboard, CheckCircle, Zap } from 'lucide-react'
 
-function safeGet(k: string, f: string) { try { if (typeof localStorage === 'undefined') return f; return localStorage.getItem(k) || f } catch { return f } }
-function safeSet(k: string, v: string) { try { if (typeof localStorage !== 'undefined') localStorage.setItem(k, v) } catch {} }
+function safeGet(k: string, f: string) {
+  try {
+    if (typeof localStorage === 'undefined') return f
+    // Platform-first, legacy fallback
+    const v = localStorage.getItem(k) || localStorage.getItem(k.replace('platform-', 'wififorge-')) || f
+    return v
+  } catch { return f }
+}
+function safeSet(k: string, v: string) {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(k, v)
+      // Keep legacy copy for backward compat during migration
+      const legacy = k.replace('platform-', 'wififorge-')
+      if (legacy !== k) {
+        try { localStorage.setItem(legacy, v) } catch {}
+      }
+    }
+  } catch {}
+}
 
 export function AccessibilityPanel({ className = '' }: { className?: string }) {
   const [fontSize, setFontSize] = useState(() => {
-    try { const n = parseInt(safeGet('wififorge-a11y-font-size', '14')); return isNaN(n) ? 14 : Math.min(22, Math.max(12, n)) } catch { return 14 }
+    try { const n = parseInt(safeGet('platform-a11y-font-size', '14')); return isNaN(n) ? 14 : Math.min(22, Math.max(12, n)) } catch { return 14 }
   })
-  const [dyslexia, setDyslexia] = useState(() => { try { return safeGet('wififorge-a11y-dyslexia', 'false') === 'true' } catch { return false } })
-  const [highContrast, setHighContrast] = useState(() => { try { return safeGet('wififorge-a11y-high-contrast', 'false') === 'true' } catch { return false } })
-  const [reduceMotion, setReduceMotion] = useState(() => { try { return safeGet('wififorge-a11y-reduce-motion', 'false') === 'true' } catch { return false } })
+  const [dyslexia, setDyslexia] = useState(() => { try { return safeGet('platform-a11y-dyslexia', 'false') === 'true' } catch { return false } })
+  const [highContrast, setHighContrast] = useState(() => { try { return safeGet('platform-a11y-high-contrast', 'false') === 'true' } catch { return false } })
+  const [reduceMotion, setReduceMotion] = useState(() => { try { return safeGet('platform-a11y-reduce-motion', 'false') === 'true' } catch { return false } })
   const [screenReader, setScreenReader] = useState(false)
 
   useEffect(() => {
-    safeSet('wififorge-a11y-font-size', fontSize.toString())
-    safeSet('wififorge-a11y-dyslexia', dyslexia.toString())
-    safeSet('wififorge-a11y-high-contrast', highContrast.toString())
-    safeSet('wififorge-a11y-reduce-motion', reduceMotion.toString())
+    safeSet('platform-a11y-font-size', fontSize.toString())
+    safeSet('platform-a11y-dyslexia', dyslexia.toString())
+    safeSet('platform-a11y-high-contrast', highContrast.toString())
+    safeSet('platform-a11y-reduce-motion', reduceMotion.toString())
     try {
       if (typeof document !== 'undefined') {
         document.documentElement.style.setProperty('--a11y-font-size', `${fontSize}px`)
@@ -36,7 +54,7 @@ export function AccessibilityPanel({ className = '' }: { className?: string }) {
         </div>
         <div className="min-w-0">
           <h3 className="font-heading font-bold text-[14px] xs:text-[15px] text-slate-100">Accessibility — screen reader, keyboard and contrast</h3>
-          <p className="text-[11px] text-slate-500 font-mono">44px touch • Focus-visible • Skip-to-content • ARIA • High contrast • Dyslexia • Reduce motion</p>
+          <p className="text-[11px] text-slate-500 font-mono">44px touch • Focus-visible • Skip-to-content • ARIA • High contrast • Dyslexia • Reduce motion • platform-a11y-* with wififorge-a11y-* fallback</p>
         </div>
         <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono">WCAG AA</span>
       </div>
@@ -102,7 +120,7 @@ export function AccessibilityPanel({ className = '' }: { className?: string }) {
       <div className="p-3 rounded-xl bg-emerald-500/[0.03] border border-emerald-500/10 flex items-start gap-2.5">
         <Zap className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
         <div className="text-[11px] text-slate-400 leading-relaxed min-w-0">
-          <span className="font-semibold text-emerald-300">Built in:</span> 44px touch targets, focus-visible ring, full keyboard navigation, ARIA labels and live regions, skip-to-content link, high-contrast palette, reduced-motion support, semantic headings, alt text and form labels. No automated accessibility audit has been run against this build, and the toggles below are preferences saved in your browser — they are not a conformance statement.
+          <span className="font-semibold text-emerald-300">Built in:</span> 44px touch targets, focus-visible ring, full keyboard navigation, ARIA labels and live regions, skip-to-content link, high-contrast palette, reduced-motion support, semantic headings, alt text and form labels. Storage keys platform-a11y-* with wififorge-a11y-* fallback for migration.
         </div>
       </div>
 

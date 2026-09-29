@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -24,13 +25,20 @@ export default {
           'surface-hover': "#25354f",
           border: "#1e293b",
           'border-strong': "#334155",
-          cyan: "#22d3ee",
+          cyan: "#33CFFF",
           'cyan-strong': "#06b6d4",
           violet: "#a78bfa",
           'violet-strong': "#8b5cf6",
           emerald: "#34d399",
-          amber: "#fbbf24",
+          amber: "#f59e0b",
+          orange: "#FF9F1C",
           pink: "#f472b6",
+        },
+        seccraft: {
+          bg: "#0A0F3D",
+          cyan: "#33CFFF",
+          orange: "#FF9F1C",
+          navy: "#0A0F3D",
         },
         slate: {
           950: "#020617",

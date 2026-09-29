@@ -89,7 +89,7 @@ export function ReportTemplates({ className = '' }: { className?: string }) {
           <div className="space-y-1">
             {preview.sections.map((section, i) => (
               <div key={section} className="flex items-start gap-2">
-                <span className="text-slate-600 shrink-0">{i + 1}.</span>
+                <span className="text-slate-400 shrink-0">{i + 1}.</span>
                 <span>{section}</span>
               </div>
             ))}

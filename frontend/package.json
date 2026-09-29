@@ -1,8 +1,8 @@
 {
-  "name": "wififorge",
+  "name": "seccraft",
   "private": true,
-  "version": "0.1.0",
-  "description": "WiFiForge — Wireless Pentest Academy — Frontend",
+  "version": "2.1.0",
+  "description": "SecCraft \u2014 Hands-on Cybersecurity Learning Platform \u2014 Learn. Practice. Investigate. Improve.",
   "type": "module",
   "scripts": {
     "dev": "vite",

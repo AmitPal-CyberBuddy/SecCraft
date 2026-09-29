@@ -72,11 +72,11 @@ export function DailyChallenges({ className = '' }: { className?: string }) {
               Daily Challenges
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 font-mono">{streak} day streak</span>
             </h3>
-            <p className="text-[11px] text-slate-500 font-mono">Local date • counted from your own completions • {completedCount}/{liveTasks.length} goals met today</p>
+            <p className="text-[11px] text-slate-400 font-mono">Local date • counted from your own completions • {completedCount}/{liveTasks.length} goals met today</p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[11px] px-2.5 py-1 rounded-full bg-[#020617] border border-[#1e293b] text-slate-500 font-mono">{totalXpToday} XP today</span>
+          <span className="text-[11px] px-2.5 py-1 rounded-full bg-[#020617] border border-[#1e293b] text-slate-400 font-mono">{totalXpToday} XP today</span>
           <span className="text-[11px] px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono flex items-center gap-1"><Calendar className="w-3 h-3" />Daily</span>
         </div>
       </div>
@@ -94,12 +94,12 @@ export function DailyChallenges({ className = '' }: { className?: string }) {
                   <span className={`text-[13px] font-medium truncate ${task.completed ? 'text-emerald-300 line-through' : 'text-slate-200'}`}>{task.title}</span>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-mono shrink-0 ${getTypeColor(task.type)}`}>{task.xp} XP</span>
                 </div>
-                <div className="text-[11px] text-slate-500 mt-1 truncate">{task.desc}</div>
+                <div className="text-[11px] text-slate-400 mt-1 truncate">{task.desc}</div>
                 <div className="mt-2 flex items-center gap-2">
                   <div className="flex-1 h-1.5 rounded-full bg-[#020617] border border-[#1e293b]/40 overflow-hidden">
                     <div className="h-full bg-gradient-to-r from-cyan-400 to-violet-400 rounded-full" style={{ width: `${(task.progress/task.total)*100}%` }} />
                   </div>
-                  <span className="text-[10px] font-mono text-slate-500 shrink-0">{task.progress}/{task.total}</span>
+                  <span className="text-[10px] font-mono text-slate-400 shrink-0">{task.progress}/{task.total}</span>
                 </div>
               </div>
             </motion.div>
@@ -116,7 +116,7 @@ export function DailyChallenges({ className = '' }: { className?: string }) {
               : 'These are practice goals; only the completions above are recorded in your progress.'}
           </span>
         </div>
-        <span className="text-[11px] font-mono text-slate-500 shrink-0">{new Date().toLocaleDateString()}</span>
+        <span className="text-[11px] font-mono text-slate-400 shrink-0">{new Date().toLocaleDateString()}</span>
       </div>
     </div>
   )

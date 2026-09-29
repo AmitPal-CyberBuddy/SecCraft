@@ -225,7 +225,8 @@
      "label": "Artefact bundle (16 verified captures + offline lab data)",
      "path": "public/pcaps/MANIFEST.md"
     }
-   ]
+   ],
+   "learningPathId": "wireless-pentesting"
   }
  ]
 }

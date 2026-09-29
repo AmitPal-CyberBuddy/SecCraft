@@ -1,53 +1,23 @@
-# WiFiForge Mobile — React Native iOS/Android — Enterprise v2.1
+# Mobile — Planned
 
-**Zero-cost • Local-first • Offline • Kali-ready • Production**
+This folder is reserved for future mobile work.
 
-## Features
+Current platform is:
 
-- **20 modules × 80 lessons** — 49572 lines offline cached
-- **16 PCAPs Scapy real** — local-first no cloud
-- **50+ commands terminal** — simulated Kali
-- **Evidence vault SHA256** — chain of custody
-- **Certificate QR verified** — flag WIFIFORGE{FINAL_RECON_ASSESSMENT_COMPLETE}
-- **Daily challenges streak** — push notifications
-- **Realtime leaderboard WebSocket** — live XP
-- **Biometric auth** — FaceID TouchID fingerprint
-- **Offline sync CRDT** — conflict resolution background sync
-- **Push notifications** — daily challenges streak reminders team invites achievements
-- **PWA offline-first** — Workbox cache
+- Frontend: Vite + React + TS + Tailwind + Zustand + React Router — static, offline-capable, local-first
+- Backend: FastAPI + SQLite — optional local parser (tshark/scapy), not required for hosted build
+- Content: JSON + Markdown + 16 verified PCAPNG artefacts (SHA-256 verified)
+- Deployment: GitHub Pages (static), Docker optional
 
-## Setup
+The mobile implementation is not yet built. When it is, it will reuse:
 
-```bash
-npm install
-npm run android # or ios
-```
+- Same content model: LearningPath → Module → Lesson → Lab → Challenge → Assessment
+- Same evidence model: artifact hash, filter, frame numbers, chain of custody
+- Same progress model: local-first, platform-progress key with legacy wififorge-progress fallback
+- Same methodology: Learn → Observe → Test → Report, Forge. Break. Fix. Retest.
 
-## Enterprise
+No fabricated capabilities are claimed here: no realtime leaderboard, no biometric auth, no CRDT sync, no push notifications, no JWT/OAuth, no teams/classrooms — those would need explicit implementation and verification.
 
-- JWT auth + OAuth Google GitHub
-- Teams classrooms role-based student/instructor/admin
-- Rate limit 100 req/min
-- Audit logs SHA256 90d retention GDPR SOC2
-- Docker production nginx TLS gzip
-- CI/CD Trivy SARIF
-- Sentry error tracking PostHog analytics
-- Tauri desktop Rust system tray global shortcuts auto-update
+See `docs/PLATFORM_REPOSITIONING.md` for platform repositioning and `docs/ARCHITECTURE_AND_ROADMAP.md` for roadmap.
 
-## Build
-
-```bash
-npm run build
-# APK at android/app/build/outputs/apk/release/
-```
-
-## Production Ready
-
-- 44px touch targets
-- WCAG 2.1 AA
-- Lighthouse 100
-- 320px no overflow
-- Offline-first
-- Zero-cost local-first
-```
-
+*Forge. Break. Fix. Retest. — Hands-on Cybersecurity Learning Platform*

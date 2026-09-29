@@ -84,10 +84,10 @@ export function AnalyticsDashboard({ className = '' }: { className?: string }) {
               <div className={`w-7 h-7 rounded-lg border flex items-center justify-center ${stat.color === 'amber' ? 'bg-amber-500/10 border-amber-500/20' : stat.color === 'cyan' ? 'bg-cyan-500/10 border-cyan-500/20' : stat.color === 'orange' ? 'bg-orange-500/10 border-orange-500/20' : 'bg-violet-500/10 border-violet-500/20'}`}>
                 <stat.icon className={`w-4 h-4 ${stat.color === 'amber' ? 'text-amber-400' : stat.color === 'cyan' ? 'text-cyan-400' : stat.color === 'orange' ? 'text-orange-400' : 'text-violet-400'}`} />
               </div>
-              <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wide">{stat.label}</span>
+              <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">{stat.label}</span>
             </div>
             <div className="text-[20px] font-bold font-mono text-slate-100 tracking-tight">{stat.value}</div>
-            <div className="text-[11px] text-slate-500 mt-1 truncate">{stat.sub}</div>
+            <div className="text-[11px] text-slate-400 mt-1 truncate">{stat.sub}</div>
           </motion.div>
         ))}
       </div>
@@ -97,13 +97,13 @@ export function AnalyticsDashboard({ className = '' }: { className?: string }) {
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="w-4 h-4 text-cyan-400" />
             <h3 className="font-heading font-bold text-[13px] text-slate-100">Module progress</h3>
-            <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-[#020617] border border-[#1e293b] text-slate-500 font-mono">{TOTAL_MODULES} modules</span>
+            <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-[#020617] border border-[#1e293b] text-slate-400 font-mono">{TOTAL_MODULES} modules</span>
           </div>
 
           {started.length === 0 ? (
             <div className="p-5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 text-center">
               <div className="text-[12.5px] text-slate-300">No module progress yet</div>
-              <p className="mt-1.5 text-[11.5px] text-slate-500 leading-relaxed">
+              <p className="mt-1.5 text-[11.5px] text-slate-400 leading-relaxed">
                 Progress appears here as soon as you complete a lesson, lab or quiz. Start with
                 <span className="font-mono text-slate-400"> Modules → {moduleRows[0]?.title ?? 'the first module'}</span>, then run the matching lab in the PCAP inspector.
               </p>
@@ -114,7 +114,7 @@ export function AnalyticsDashboard({ className = '' }: { className?: string }) {
                 <div key={m.id} className="space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] text-slate-400 truncate flex-1 mr-2">{m.title}</span>
-                    <span className="text-[11px] font-mono text-slate-500 shrink-0">{m.progress}%</span>
+                    <span className="text-[11px] font-mono text-slate-400 shrink-0">{m.progress}%</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-[#020617] border border-[#1e293b]/60 overflow-hidden">
                     <motion.div initial={{ width: 0 }} animate={{ width: `${m.progress}%` }} transition={{ duration: 0.8, delay: idx * 0.05 }} className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-violet-400" />
@@ -122,7 +122,7 @@ export function AnalyticsDashboard({ className = '' }: { className?: string }) {
                 </div>
               ))}
               {started.length < TOTAL_MODULES && (
-                <div className="text-[11px] text-slate-500 font-mono pt-1">{TOTAL_MODULES - started.length} modules not started</div>
+                <div className="text-[11px] text-slate-400 font-mono pt-1">{TOTAL_MODULES - started.length} modules not started</div>
               )}
             </div>
           )}
@@ -138,7 +138,7 @@ export function AnalyticsDashboard({ className = '' }: { className?: string }) {
           {weekly.tracked === 0 ? (
             <div className="p-5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 text-center">
               <div className="text-[12.5px] text-slate-300">No completions recorded this week</div>
-              <p className="mt-1.5 text-[11.5px] text-slate-500 leading-relaxed">
+              <p className="mt-1.5 text-[11.5px] text-slate-400 leading-relaxed">
                 The chart counts XP from completions stored on this device in the current Mon–Sun week. Complete a
                 lesson ({TOTAL_LESSONS} authored), a lab ({TOTAL_PCAPS} verified captures) or a decision scenario
                 ({TOTAL_SCENARIOS} available) and it will appear here.
@@ -156,22 +156,22 @@ export function AnalyticsDashboard({ className = '' }: { className?: string }) {
                       className="w-full rounded-t-lg bg-gradient-to-t from-cyan-500/20 to-violet-500/40 border border-violet-500/20 min-h-[8px]"
                       title={`${xp} XP`}
                     />
-                    <span className="text-[10px] font-mono text-slate-500">{weekly.labels[idx]}</span>
+                    <span className="text-[10px] font-mono text-slate-400">{weekly.labels[idx]}</span>
                   </div>
                 ))}
               </div>
               <div className="mt-4 grid grid-cols-3 gap-2">
                 <div className="p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-center">
                   <div className="text-[14px] font-bold font-mono text-slate-100">{peak}</div>
-                  <div className="text-[10px] text-slate-500">Best day</div>
+                  <div className="text-[10px] text-slate-400">Best day</div>
                 </div>
                 <div className="p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-center">
                   <div className="text-[14px] font-bold font-mono text-slate-100">{Math.round(weekTotal / 7)}</div>
-                  <div className="text-[10px] text-slate-500">Avg/day</div>
+                  <div className="text-[10px] text-slate-400">Avg/day</div>
                 </div>
                 <div className="p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-center">
                   <div className="text-[14px] font-bold font-mono text-slate-100">{weekly.buckets.filter(b => b > 0).length}</div>
-                  <div className="text-[10px] text-slate-500">Active days</div>
+                  <div className="text-[10px] text-slate-400">Active days</div>
                 </div>
               </div>
             </>
@@ -183,11 +183,11 @@ export function AnalyticsDashboard({ className = '' }: { className?: string }) {
         <div className="flex items-center gap-2 mb-3">
           <Trophy className="w-4 h-4 text-violet-400" />
           <h3 className="font-heading font-bold text-[13px] text-slate-100">Where you stand</h3>
-          <span className="ml-auto text-[10px] font-mono text-slate-500">{overall}% overall</span>
+          <span className="ml-auto text-[10px] font-mono text-slate-400">{overall}% overall</span>
         </div>
         {nothingRecorded ? (
           <p className="text-[12px] text-slate-400 flex items-start gap-2 leading-relaxed">
-            <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-slate-500" />
+            <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-slate-400" />
             Nothing recorded on this device yet, so there is nothing to compare. Progress, XP and achievements are
             stored only in this browser — clearing site data or using another device starts from zero.
           </p>

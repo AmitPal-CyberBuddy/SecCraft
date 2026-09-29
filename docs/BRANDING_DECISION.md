@@ -1,101 +1,119 @@
-# Branding Decision — Locked
+# Branding Decision — Evolution Log
 
 **Date:** 2026-09-28
-**Decided by:** Architect (per user delegation)
+**Status:** Platform repositioning — Stage 1-6 implemented, final name Quench chosen
+**Branch:** arena/01a0e917-wififorge
 
-## Final Lock
+## Decision History
 
-- **Product Name:** WiFiForge
-- **Full Title:** WiFiForge — Wireless Pentest Academy
-- **Short Name / Package:** wififorge
-- **Repo Name:** WiFiForge (keep as-is, GitHub: AmitPal-CyberBuddy/WiFiForge)
-- **Primary Tagline:** Forge. Break. Fix. Retest.
-- **Secondary Tagline:** Understand the Protocol. Test the Implementation.
-- **Tertiary / Hero Sub:** The Wireless Pentest Lab You Control.
-- **Visual Direction:** Technical Professional — Dark slate + cyan + violet
-- **Voice:** Senior pentester as mentor — professional, technical, no l33t speak, no corporate fluff
+### 2026-09-28 (Original) — WiFiForge Locked (Superseded)
 
-## Rationale
+**Product Name:** WiFiForge
+**Full Title:** WiFiForge — Wireless Pentest Academy
+**Short Name / Package:** wififorge
+**Repo Name:** WiFiForge (AmitPal-CyberBuddy/WiFiForge)
+**Primary Tagline:** Forge. Break. Fix. Retest.
+**Secondary Tagline:** Understand the Protocol. Test the Implementation.
+**Tertiary / Hero Sub:** The Wireless Pentest Lab You Control.
+**Visual Direction:** Technical Professional — Dark slate + cyan + violet
+**Voice:** Senior pentester as mentor
 
-1. **WiFiForge** is already in use, short, memorable, verb-driven, extensible to CLI (`wififorge`), Docker (`wififorge/academy`), future hardware labs.
-2. **Dot11** was strong but alienates beginners. **AirForge** is good but loses Wi-Fi SEO. WiFiForge balances both.
-3. **Technical Professional** theme matches HTB Academy but with own identity — dark, information-dense, readable for long-form learning. Avoids neon hacker cliché and boring corporate white.
-4. Repo keep capital W/F for brand — GitHub is case-insensitive, package.json will use lowercase `wififorge`.
-
-## Palette — Locked Tokens
-
+**Palette — Locked Tokens (retained for platform):**
 ```js
-// theme.ts
-export const theme = {
-  colors: {
-    bg: {
-      950: "#020617", // main bg
-      900: "#0f172a", // card bg
-      800: "#1e293b", // surface
-      700: "#334155", // border
-    },
-    text: {
-      primary: "#f1f5f9", // slate-100
-      secondary: "#94a3b8", // slate-400
-      muted: "#64748b", // slate-500
-    },
-    accent: {
-      cyan: "#22d3ee", // primary - Wi-Fi waves
-      violet: "#a78bfa", // secondary - enterprise
-      emerald: "#34d399", // success
-      amber: "#fbbf24", // warning
-      red: "#f87171", // danger
-      pink: "#f472b6", // code highlight
-    },
-    terminal: {
-      green: "#00ff88",
-      amber: "#ffb000",
-    }
-  },
-  font: {
-    heading: "'Sora', 'Space Grotesk', sans-serif",
-    body: "'Inter', system-ui, sans-serif",
-    mono: "'JetBrains Mono', monospace",
-  }
+colors: {
+  bg: { 950: "#020617", 900: "#0f172a", 800: "#1e293b", 700: "#334155" },
+  text: { primary: "#f1f5f9", secondary: "#94a3b8", muted: "#64748b" },
+  accent: { cyan: "#22d3ee", violet: "#a78bfa", emerald: "#34d399", amber: "#fbbf24", red: "#f87171", pink: "#f472b6" }
 }
+fonts: { heading: "Sora", body: "Inter", mono: "JetBrains Mono" }
+logo: { concept: "Forge Mark — anvil + Wi-Fi arcs" }
 ```
 
-## Logo — Locked Concept: Forge Mark
+**This decision was superseded by platform repositioning assessment.**
 
-Icon: Rounded square (slate-900, slate-700 border)
-- Anvil silhouette (slate-100)
-- 3 Wi-Fi arcs above anvil (cyan-400, opacity 100%/70%/40%)
-- Spark dot (amber-400) at hammer strike point
+### 2026-09-28 (Revised) — Platform Repositioning — Assessment
 
-Wordmark:
-- WiFi (slate-100, Sora Bold)
-- Forge (cyan-400, Sora Bold)
-- Subtitle: WIRELESS PT ACADEMY (Inter, 10px, letter-spacing 0.2em, slate-400)
+**Critical Finding:** WiFiForge name collides directly with Black Hills InfoSec WifiForge (github.com/blackhillsinfosec/WifiForge, 1.2k stars, 152 forks, Apache-2.0, 9 labs, mininet-wifi, Docker, zero-hardware, wififorge.github.io) — same niche (wireless security training, hands-on labs). Previous assessment claimed minor collision, none academy-style — inaccurate. BHIS WifiForge IS academy-style and well-known, part of BHIS Forge line (SDRForge).
 
-Favicon: Just the Forge Mark icon (anvil + waves)
+**Additional Conflicts Found (obvious Forge names):**
+- SecForge: secforge.de (German dev lab), secforge.io (DevSecOps immersive platform)
+- CyberForge: cyberforge-academy.com (AI cybersecurity university) — user asked about this, rejected due to direct training platform conflict + generic "Cyber" buzzword
+- LabForge: 12+ vulnerable labs dashboard
+- BreakForge: breakforge.io "Break to learn, Forge to grow" — similar to our tagline
+- BreachForge, TraceForge, ScopeForge (evidence-driven workflow very close to our methodology), Foundry/ForgePath, Crucible (CMU), EvidenceForge (Cisco Talos), RedForge, PurpleForge, SignalForge, VectorForge, VulnForge, HexForge, ByteForge, RootForge, ForgeCore, Exploit-Forge — all have moderate-strong conflicts (see PLATFORM_REPOSITIONING.md Section D)
 
-## Typography Scale
+**Decision:** Platform brand must change to domain-neutral. WiFiForge becomes Wireless path sub-brand.
 
-- H1: Sora Bold 36px / 40px
-- H2: Sora Semibold 24px / 32px
-- H3: Sora Medium 18px / 28px
-- Body: Inter Regular 14px / 22px
-- Small: Inter 12px / 16px
-- Mono: JetBrains Mono 13px
+### 2026-09-28 (Final) — Quench Chosen
 
-## Application
+**User decision:** Go with **Quench**
 
-- Browser Title: WiFiForge — Dashboard | WiFiForge — Wi-Fi Fundamentals
-- Sidebar: WiFiForge + WIRELESS PT ACADEMY subtitle
-- OG Image: Dark bg + logo + tagline
-- README Header: Banner with logo + tagline
-- CLI Banner: ASCII art (see BRANDING.md)
+**Why Quench — evaluation against criteria:**
 
-## Next Steps
+**Criteria:** domain-neutral, memorable, technically credible, GitHub org/repo usable, website suitable, not confusingly similar, not overly generic, not tied to tool, preserve Forge concept where appropriate.
 
-- [x] Decision locked
-- [ ] Generate logo SVG/PNG
-- [ ] Create theme.ts
-- [ ] Update README.md
-- [ ] Create favicon.svg
-- [ ] Proceed to Phase A scaffolding
+1. **Concept:** Quenching hardens metal after forging — maps to Fix→Retest loop, our differentiator (quench the attack chain by hardening, retest). In blacksmithing: heat → forge → quench → temper. Quench is the hardening step.
+2. **Why fits:** 
+   - Preserves Forge concept without using Forge word — avoids BHIS Forge line saturation (WifiForge, SDRForge) and 15+ other Forge conflicts
+   - Short, 1 syllable, memorable, verb, distinctive — not buzzword like Cyber
+   - Domain-neutral — not tied to Wi-Fi, Web, Android, API, tool
+   - Tagline evolution: `Forge. Break. Fix. Quench. Retest.` — adds quench as hardening step, retains original `Forge. Break. Fix. Retest.` as legacy philosophy
+   - Visual: Forge Mark anvil + quench droplet/hardening mark — platform anvil without Wi-Fi arcs + quench droplet, wireless path anvil with Wi-Fi arcs (legacy WiFiForge)
+3. **Conflicts:** Quench is used as minor tool name, no major hands-on cybersecurity learning platform named Quench Academy found. Low conflict — much lower than CyberForge (cyberforge-academy.com AI university direct competitor) and Anvil (AnvilSec, Anvil Corp ICS range). Search for Quench cybersecurity platform shows no direct training platform.
+4. **Scalability:** High — `Quench: Wireless Pentesting (legacy WiFiForge)`, `Quench: Web Application Security`, `Quench: API Security`, `Quench: Android`, `Network`, `AD`, `Cloud`, `AI/LLM` — works as prefix
+5. **Technical credibility:** High — metallurgy term quenching = hardening, maps to remediation that breaks attack chain, not generic "Cyber"
+6. **Repo:** `AmitPal-CyberBuddy/Quench` or `quench-academy` or `quench-labs` — GitHub auto-redirects old `WiFiForge` → new, `VITE_BASE` `/WiFiForge/` kept for now with redirect page later, package.json name `quench`
+
+**Platform Decision (Final):**
+
+- **Platform Name:** Quench
+- **Full Title:** Quench — Hands-on Cybersecurity Learning Platform
+- **Short Name / Package:** quench (legacy wififorge kept for backward compat)
+- **Legacy Name:** WiFiForge (retained as Wireless path sub-brand)
+- **Primary Tagline:** Forge. Break. Fix. Quench. Retest. (evolution from Forge. Break. Fix. Retest. — adds quench hardening step)
+- **Secondary Tagline:** Learn cybersecurity by doing.
+- **Tertiary:** Investigate systems, perform security testing, collect evidence, understand impact, remediate, quench the attack chain by hardening, retest fixes, and complete realistic assessments.
+- **Philosophy:** Learn → Understand → Observe → Enumerate → Test → Validate → Collect Evidence → Understand Impact → Remediate → Quench (Harden) → Retest → Report
+- **Philosophy Short:** Learn → Observe → Test → Quench → Report
+- **Palette:** Retained slate-950 #020617 bg, cyan #22d3ee primary, violet #a78bfa secondary, Sora + Inter + JetBrains Mono
+- **Logo:** Platform anvil without Wi-Fi arcs + quench droplet/hardening mark, Wireless path anvil with Wi-Fi arcs (legacy WiFiForge mark)
+- **Why Quench over Anvil:** User chose Quench — both are good, Quench is more distinctive (1 syllable vs 2), more directly maps to Fix→Retest hardening differentiator, even lower conflict than Anvil, still preserves Forge concept (quench is part of forging). Anvil is where forging happens, Quench is how you harden what you forged — both valid, Quench is more active verb.
+
+**Wireless Path Sub-Brand:**
+
+- **Path ID:** wireless-pentesting
+- **Title:** Wireless Pentesting
+- **Short Title:** Wireless
+- **Legacy Brand:** WiFiForge
+- **Legacy Flag Prefix:** WIFIFORGE{} retained
+- **Tagline:** Understand the Protocol. Test the Implementation.
+- **Content:** 20 modules, 27 lessons, 16 verified PCAPs, 15 challenges, 35 scenarios, 42-item checklist, ENG-01 engagement — all preserved
+
+**Repository Naming:**
+
+- Current: AmitPal-CyberBuddy/WiFiForge
+- Future: AmitPal-CyberBuddy/Quench or quench-academy or quench-labs (stakeholder decision)
+- Migration: GitHub auto-redirects repo renames, VITE_BASE /WiFiForge/ kept for now with redirect page later, package.json name quench, env vars PLATFORM_* with WIFIFORGE_* fallback, localStorage platform-* with wififorge-* fallback
+
+**Visual Identity Evolution:**
+
+- Keep: palette, fonts, anvil silhouette, technical professional aesthetic, senior pentester mentor voice
+- Change: platform logo anvil without Wi-Fi arcs + quench droplet (domain-neutral hardening), wireless path logo anvil + Wi-Fi arcs (legacy)
+- Evolution: tagline Forge. Break. Fix. Retest. → Forge. Break. Fix. Quench. Retest. (adds hardening step)
+
+**Implementation Status:**
+
+- Stage 1 architecture path-aware: Done
+- Stage 2 dual branding Quench: Done (platform.json, index.html, manifest.json, package.json, Sidebar, Dashboard, Topbar, backend main.py)
+- Stage 3 wireless into paths structure: Done for LearningPaths list/detail, Modules path-aware, ModuleDetail path-aware, Labs path-aware, Challenges path-aware, Engagement list+detail path-aware, GlobalSearch generic, Reference path-aware, Terminal platform-aware, Certificate path-aware, Modules phaseStats bug fix
+- Stage 4 docs: This file + BRANDING.md updated, ARCHITECTURE_AND_ROADMAP.md, GITHUB_PAGES.md updated to Quench
+- Stage 5 deployment: VITE_BASE /WiFiForge/ kept, backend config dual env vars done
+- Stage 6 compatibility: App.tsx explicit redirects /path → /paths/wireless-pentesting, localStorage dual keys, flag prefix retained, artifact names retained, labkit method alias
+
+**Rejected Alternative — CyberForge:**
+
+- User asked about CyberForge — evaluated: cyberforge-academy.com AI-operated cybersecurity university direct competitor, plus generic "Cyber" buzzword fails "not overly generic" and "technically credible", plus Forge word saturation. Recommend avoid. See Section D in PLATFORM_REPOSITIONING.md.
+
+See docs/PLATFORM_REPOSITIONING.md for full A-H assessment, docs/BRANDING_MIGRATION.md for staged migration, docs/IMPLEMENTATION_PLAN_STAGE3_6.md for remaining tasks.
+
+*Forge. Break. Fix. Quench. Retest. — Branding Decision Evolution — Final: Quench*
