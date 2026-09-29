@@ -1,0 +1,668 @@
+Based on the current repository, I'd consider these areas:
+
+1. Fonts — worth upgrading
+
+You currently have a strong technical typography direction, but you can get a more distinctive identity with free fonts.
+
+Good combinations:
+
+Role	Font	Why
+Main UI	Geist	Extremely clean, modern SaaS/product feel
+Technical UI	IBM Plex Sans	Technical without looking gimmicky
+Headings	Space Grotesk	More character and stronger display hierarchy
+Code	JetBrains Mono	Excellent for commands, payloads, terminal content
+Alternative	DM Sans + JetBrains Mono	Clean and understated
+
+My preference for SecCraft would be:
+
+Space Grotesk + Inter/Geist + JetBrains Mono
+
+But don't use 3–4 decorative fonts. Two families + monospace is enough.
+
+2. Advanced CSS — definitely
+
+There is a lot you can do without adding a heavy animation library.
+
+For example:
+
+Dynamic border lighting
+
+Instead of static card borders:
+
+.card {
+  position: relative;
+  isolation: isolate;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--angle),
+    transparent 0deg,
+    rgba(83, 215, 209, .4) 40deg,
+    transparent 80deg
+  );
+  z-index: -1;
+  animation: rotate-border 8s linear infinite;
+}
+
+@keyframes rotate-border {
+  to {
+    --angle: 360deg;
+  }
+}
+
+Used sparingly, this could look excellent on major interactive surfaces.
+
+3. Interactive “instrument” effects
+
+This is probably more appropriate for SecCraft than generic glassmorphism.
+
+Examples:
+
+cursor-reactive radial light
+subtle grid distortion
+animated telemetry lines
+scanning indicators
+progress traces
+signal-strength visualizations
+packet-flow animations
+waveform-like decorations
+topology lines
+network-node diagrams
+
+For example, your dashboard could have a subtle background that behaves like a security monitoring instrument, rather than just a gradient.
+
+That would reinforce the product's identity.
+
+4. Framer Motion — you already have it
+
+You don't need another animation framework.
+
+You're already using Framer Motion extensively.
+
+Instead, I'd make the existing animation system more sophisticated.
+
+For example:
+
+Page transition
+       ↓
+Section reveal
+       ↓
+Card stagger
+       ↓
+Interactive hover
+       ↓
+State transition
+       ↓
+Completion animation
+
+Different animation types should communicate different things.
+
+A completed challenge could have:
+
+VALIDATED
+    ↓
+evidence collected
+    ↓
++150 XP
+    ↓
+module progress updates
+
+with a short coordinated animation.
+
+That's much more valuable than making every card float on hover.
+
+5. Use Lottie / Rive selectively
+
+There are free resources available here.
+
+But I wouldn't put animated illustrations everywhere.
+
+Good use cases:
+
+Achievement unlocked
+
+Lab completed
+
+Challenge validated
+
+Empty state
+
+First-time onboarding
+
+Rive is particularly interesting if you want interactive visual states rather than simple animations.
+
+6. SVG graphics could transform the platform
+
+This is one of the biggest opportunities.
+
+Instead of generic illustrations, create a reusable SecCraft visual language from SVG.
+
+For example:
+
+┌────────────────────────────────────────────┐
+│                                            │
+│        ○──────○                            │
+│       /        \                           │
+│      ○          ○──────○                   │
+│       \        /                           │
+│        ○──────○                            │
+│                                            │
+│      NETWORK ATTACK SURFACE                │
+└────────────────────────────────────────────┘
+
+Use these for:
+
+learning paths
+attack flows
+authentication flows
+network diagrams
+protocol analysis
+vulnerability chains
+methodology
+challenge progression
+
+This would make SecCraft much more recognizable.
+
+7. Mermaid is potentially very useful
+
+For technical cybersecurity education, diagrams are extremely valuable.
+
+You could render:
+
+authentication flows
+request/response chains
+attack chains
+network topology
+privilege escalation paths
+API workflows
+TLS handshakes
+exploitation sequences
+
+Instead of presenting:
+
+Step 1 → Step 2 → Step 3
+
+you can give users an actual interactive technical diagram.
+
+This is much more aligned with SecCraft than decorative animation.
+
+8. Syntax highlighting
+
+This should be a priority.
+
+For a pentesting academy, code/commands are first-class content.
+
+Consider:
+
+Shiki
+Prism
+Refractor
+highlight.js
+
+Shiki in particular can produce very polished code rendering.
+
+You could support:
+
+nmap -sV -sC 192.168.1.10
+GET /api/v1/users HTTP/1.1
+Authorization: Bearer eyJ...
+{
+  "role": "admin",
+  "user_id": 1337
+}
+
+with proper language-aware highlighting and copy/run/test controls.
+
+9. Add “technical UI primitives”
+
+This is where I'd spend serious design effort.
+
+Instead of making everything a card, create a small design vocabulary:
+
+Security Status
+● VERIFIED
+● IN PROGRESS
+● BLOCKED
+● SIMULATED
+● HARDWARE
+Evidence block
+┌ EVIDENCE ────────────────────────────────┐
+│                                           │
+│ Request                                   │
+│ GET /api/v1/users/123                     │
+│                                           │
+│ Response                                  │
+│ HTTP/1.1 200 OK                           │
+│                                           │
+│ Finding                                   │
+│ BOLA                                      │
+│                                           │
+└───────────────────────────────────────────┘
+Attack chain
+RECON
+  ↓
+ENUMERATION
+  ↓
+EXPLOIT
+  ↓
+VALIDATE
+  ↓
+IMPACT
+Lab console
+┌── SEC CRAFT LAB ─────────────────────────┐
+│ TARGET      10.10.20.15                   │
+│ STATUS      ● ONLINE                      │
+│                                           │
+│ $ nmap -sV 10.10.20.15                   │
+│                                           │
+│ 22/tcp   open   ssh                       │
+│ 80/tcp   open   http                      │
+│ 443/tcp  open   https                     │
+│                                           │
+└───────────────────────────────────────────┘
+
+These components make the product feel purpose-built.
+
+10. WebGL / Three.js?
+
+Possible, but don't overdo it.
+
+I wouldn't put a giant 3D globe on the homepage.
+
+However, Three.js could be genuinely useful for:
+
+Network topology visualization
+
+                 ┌──────┐
+                 │ Web  │
+                 └───┬──┘
+                     │
+              ┌──────▼──────┐
+              │ API Gateway │
+              └──┬───────┬──┘
+                 │       │
+             ┌───▼───┐ ┌─▼─────┐
+             │ Auth  │ │  DB   │
+             └───────┘ └───────┘
+
+Users could rotate/inspect the environment.
+
+That would actually have educational value.
+
+11. Use CSS @property
+
+This is a relatively modern CSS capability that can produce very nice effects.
+
+For example:
+
+@property --angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+Then:
+
+.security-ring {
+  background:
+    conic-gradient(
+      from var(--angle),
+      transparent,
+      #53d7d1,
+      transparent
+    );
+  animation: rotate 6s linear infinite;
+}
+
+You can use that for:
+
+progress rings
+scanner indicators
+active lab status
+path progression
+challenge state
+
+It gives you sophisticated visuals without adding another dependency.
+
+12. View Transitions API
+
+This could make navigation feel much more like a native application.
+
+Instead of:
+
+Modules
+↓
+fade out
+↓
+new page
+
+you can have:
+
+Module card
+      ↓
+      expands
+      ↓
+Module detail
+
+React Router + View Transitions can make the application feel significantly more polished.
+
+13. Add subtle noise / texture
+
+A completely flat dark background can feel generic.
+
+A very subtle SVG noise texture can give the surfaces more physical depth.
+
+Something like:
+
+#0A0F17
+   +
+1–2% noise
+   +
+instrument grid
+   +
+very subtle radial lighting
+
+Important: 1–2%.
+
+Not the obvious “grainy cyberpunk website” treatment.
+
+14. Cursor-reactive lighting
+
+This would look particularly good on your dashboard.
+
+Imagine moving the mouse across:
+
+┌───────────────────────────────────────┐
+│                                       │
+│       CONTINUE LEARNING               │
+│                                       │
+│       WPA2 Enterprise                 │
+│                                       │
+│       ████████████░░░░ 62%            │
+│                                       │
+└───────────────────────────────────────┘
+
+and a very soft light follows the cursor.
+
+Something like:
+
+background:
+  radial-gradient(
+    500px circle at var(--mouse-x) var(--mouse-y),
+    rgba(83,215,209,.07),
+    transparent 40%
+  );
+
+That's enough.
+
+Don't turn it into a gaming website.
+
+15. Make the learning path visually alive
+
+This is probably the highest-value visual upgrade I'd make.
+
+Instead of:
+
+Phase 1
+Phase 2
+Phase 3
+Phase 4
+Phase 5
+Phase 6
+
+create a horizontal/vertical security progression map.
+
+For example:
+
+                    SECRAFT / WIRELESS
+
+     FOUNDATION
+         │
+         ●───────●───────●
+         │       │       │
+       Module  Module  Module
+         │
+         ▼
+     RECONNAISSANCE
+         │
+         ●───────●───────●
+         │
+         ▼
+     ATTACK SURFACE
+         │
+         ●───────●
+         │
+         ▼
+     EXPLOITATION
+         │
+         ●───────●───────●
+         │
+         ▼
+     VALIDATION
+         │
+         ▼
+     REPORTING
+
+Completed nodes glow.
+
+Current node pulses subtly.
+
+Locked nodes remain dim.
+
+Clicking a node opens the module.
+
+That would be far more memorable than a grid of cards.
+
+16. The “security telemetry” aesthetic can become your signature
+
+Your current CSS already hints at this.
+
+I'd formalize it:
+
+Background
+
+Instrument grid
+
+Borders
+
+Thin technical lines
+
+Data
+
+Monospace
+
+Status
+
+Small indicators
+
+Progress
+
+Signal/traces
+
+Navigation
+
+Command-center style
+
+Diagrams
+
+Network topology
+
+Animation
+
+Telemetry rather than decoration
+
+Color
+
+Cyan = active
+
+Violet = analytical
+
+Amber = progression
+
+Emerald = validated
+
+Red = security issue
+
+That becomes a coherent design system.
+
+17. Free resource stack I'd consider
+
+You don't need paid assets.
+
+Typography
+Geist
+Space Grotesk
+IBM Plex Sans
+JetBrains Mono
+Icons
+
+You already use Lucide, which I'd keep.
+
+Don't switch to random icon packs.
+
+Animation
+Framer Motion — already present
+CSS animations
+View Transitions API
+Lottie
+Rive
+Diagrams
+Mermaid
+React Flow
+custom SVG
+Code
+Shiki
+Prism
+Charts
+Recharts
+Apache ECharts
+3D
+Three.js
+React Three Fiber
+Visual effects
+CSS @property
+SVG filters
+masks
+gradients
+radial lighting
+noise textures
+
+All of these can be used without turning SecCraft into a paid-service dependency.
+
+18. But don't install everything
+
+This is important.
+
+Your current project already has a substantial dependency/feature surface.
+
+I would not do:
+
+Framer Motion
++ GSAP
++ Three.js
++ Rive
++ Lottie
++ Particles.js
++ AOS
++ another chart library
++ another icon library
+
+That's how the frontend becomes difficult to maintain.
+
+I'd choose:
+
+Framer Motion
+        +
+CSS / SVG
+        +
+Shiki
+        +
+Mermaid / React Flow
+        +
+optional Rive
+
+That's enough.
+
+19. If I were upgrading SecCraft, I'd do it in this order
+Phase 1 — Design system
+
+Highest priority
+
+typography upgrade
+spacing system
+surface hierarchy
+shadows
+borders
+semantic colors
+button system
+badges
+technical data components
+Phase 2 — Signature visual language
+
+Build:
+
+instrument grid
+telemetry traces
+security status indicators
+attack-chain graphics
+network topology
+animated progress paths
+Phase 3 — Learning experience
+
+Upgrade:
+
+Learning Path visualization
+Module cards
+Lesson reader
+labs
+challenges
+evidence blocks
+terminal/code blocks
+Phase 4 — Motion
+
+Add:
+
+page transitions
+path progression
+completion feedback
+challenge validation
+XP transitions
+subtle cursor effects
+Phase 5 — Advanced visualization
+
+Only then consider:
+
+React Flow
+interactive network topology
+3D lab environments
+advanced attack-chain visualization
+The visual target I'd aim for
+
+Not:
+
+HackTheBox clone
+
+Not:
+
+TryHackMe clone
+
+Not:
+
+Cyberpunk SaaS dashboard
+
+And definitely not:
+
+generic AI-generated cybersecurity website.
+
+I'd aim for:
+
+“A precision security instrument for learning offensive security.”
+
+That gives you permission to use advanced CSS, beautiful typography, animations, diagrams, telemetry-style visuals and technical interfaces without sacrificing seriousness.
+
+And importantly, the repository already has the architectural foundation for this. The next step shouldn't be another wholesale rebuild; it should be a visual/design-system layer over the existing product architecture.
