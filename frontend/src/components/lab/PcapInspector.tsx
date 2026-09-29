@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { LoadingPanel } from '@/components/common/LoadingPanel'
 import { Search, Filter, Radio, Wifi, Users, Hash, Zap, AlertCircle, CheckCircle, FileCode, Activity } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { apiFetch, discardResponseBody } from '@/lib/api'
 
 interface Frame {
   number: number
@@ -130,8 +131,11 @@ export function PcapInspector({ pcapId, initialFilter = '', onFrameSelect }: Pro
     try {
       const params = new URLSearchParams()
       if (f) params.set('filter', f)
-      const res = await fetch(`/api/pcaps/${pcapId}/analyze?${params.toString()}`)
-      if (!res.ok) throw new Error(`parser API responded ${res.status}`)
+      const res = await apiFetch(`/api/pcaps/${encodeURIComponent(pcapId)}/analyze?${params.toString()}`)
+      if (!res.ok) {
+        await discardResponseBody(res)
+        throw new Error(`parser API responded ${res.status}`)
+      }
       setData(await res.json())
     } catch (apiError: any) {
       try {

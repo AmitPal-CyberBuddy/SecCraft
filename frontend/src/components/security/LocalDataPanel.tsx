@@ -2,13 +2,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { HardDrive, ShieldCheck, Trash2, RefreshCw, Wifi, WifiOff, Info } from 'lucide-react'
 import { useProgressStore } from '@/store/useProgressStore'
+import { apiFetch } from '@/lib/api'
+import { supabase, supabaseConfigured } from '@/lib/supabase'
 
 /**
  * Local data & privacy panel (replaces the previous fabricated "audit trail").
  *
  * Everything here is measured, not invented: the storage keys are the ones this app actually uses,
  * the sizes are read from localStorage, and the network statement reflects what the code does
- * (relative /api calls only — no analytics, no third-party requests, no telemetry).
+ * (first-party API calls and optional configured identity-provider requests; no analytics or telemetry).
  */
 
 const KNOWN_KEYS: { key: string; label: string; description: string }[] = [
@@ -20,8 +22,8 @@ const KNOWN_KEYS: { key: string; label: string; description: string }[] = [
   { key: 'wififorge-checklist-general', label: 'Checklist (Reference, legacy)', description: 'Legacy master-checklist' },
   { key: 'platform-checklist-ENG-01', label: 'Checklist (ENG-01, platform)', description: 'Ticked engagement-checklist items' },
   { key: 'wififorge-checklist-ENG-01', label: 'Checklist (ENG-01, legacy)', description: 'Legacy engagement checklist' },
-  { key: 'platform-profile', label: 'Local profile (platform)', description: 'Display name and self-declared role — no credentials' },
-  { key: 'wififorge-profile', label: 'Local profile (legacy)', description: 'Legacy profile' },
+  { key: 'platform-profile', label: 'Local profile (platform)', description: 'Guest display name — no credentials or permissions' },
+  { key: 'wififorge-profile', label: 'Local profile (legacy)', description: 'Legacy display name; any self-declared role is ignored' },
   { key: 'platform-notes', label: 'Notes & bookmarks (platform)', description: 'Lesson notes and bookmarks — generic' },
   { key: 'wififorge-notes', label: 'Notes & bookmarks (legacy)', description: 'Legacy notes' },
   { key: 'theme', label: 'Theme preference', description: 'Dark / light / system' },
@@ -32,33 +34,35 @@ function bytesOf(value: string | null): number {
   return value ? new Blob([value]).size : 0
 }
 
+function readStorageSizes(): Record<string, number> {
+  const next: Record<string, number> = {}
+  for (const { key } of KNOWN_KEYS) {
+    try { next[key] = bytesOf(localStorage.getItem(key)) } catch { next[key] = 0 }
+  }
+  let other = 0
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i) || ''
+      if (!KNOWN_KEYS.some(entry => entry.key === key)) other += bytesOf(localStorage.getItem(key))
+    }
+  } catch { /* storage blocked */ }
+  next.__other__ = other
+  return next
+}
+
 export function LocalDataPanel({ className = '' }: { className?: string }) {
   const reset = useProgressStore(s => s.resetProgress)
-  const [sizes, setSizes] = useState<Record<string, number>>({})
+  const [sizes, setSizes] = useState<Record<string, number>>(readStorageSizes)
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine)
   const [apiReachable, setApiReachable] = useState<boolean | null>(null)
-  const [checkedAt, setCheckedAt] = useState<string>('')
+  const [checkedAt, setCheckedAt] = useState<string>(() => new Date().toLocaleTimeString())
 
   const measure = () => {
-    const next: Record<string, number> = {}
-    for (const { key } of KNOWN_KEYS) {
-      try { next[key] = bytesOf(localStorage.getItem(key)) } catch { next[key] = 0 }
-    }
-    // Anything else this origin stores (e.g. an older release's keys).
-    let other = 0
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i) || ''
-        if (!KNOWN_KEYS.some(entry => entry.key === k)) other += bytesOf(localStorage.getItem(k))
-      }
-    } catch { /* storage blocked */ }
-    next['__other__'] = other
-    setSizes(next)
+    setSizes(readStorageSizes())
     setCheckedAt(new Date().toLocaleTimeString())
   }
 
   useEffect(() => {
-    measure()
     const on = () => setOnline(true)
     const off = () => setOnline(false)
     window.addEventListener('online', on)
@@ -72,8 +76,9 @@ export function LocalDataPanel({ className = '' }: { className?: string }) {
   const checkApi = async () => {
     setApiReachable(null)
     try {
-      const res = await fetch('/api/health', { headers: { accept: 'application/json' } })
-      setApiReachable(res.ok)
+      const res = await apiFetch('/api/health')
+      const body = await res.json().catch(() => null)
+      setApiReachable(Boolean(res.ok && body?.status === 'ok' && body?.service === 'SecCraft API'))
     } catch {
       setApiReachable(false)
     }
@@ -92,10 +97,9 @@ export function LocalDataPanel({ className = '' }: { className?: string }) {
           <div className="min-w-0 flex-1">
             <h3 className="text-[14px] font-semibold text-slate-100">Local data &amp; privacy</h3>
             <p className="mt-1 text-[12px] text-slate-400 leading-relaxed">
-              This is a static, local-first build. There is <strong className="text-slate-200">no account, no server-side
-              logging and no telemetry</strong>: everything below lives in this browser's storage on this device, and the
-              only network request the app makes is to its own <span className="font-mono">/api</span> path when a local
-              backend is running.
+              Guest learning and its progress remain local to this browser. If account services are configured and you sign in,
+              authentication is handled by Supabase and synchronized records are sent to the configured SecCraft API.
+              The app does not add analytics or telemetry; local learning remains available if those services are offline.
             </p>
             <div className="mt-3 flex flex-wrap gap-2 text-[10.5px] font-mono">
               <span className={`px-2 py-1 rounded-full border ${online ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
@@ -103,9 +107,9 @@ export function LocalDataPanel({ className = '' }: { className?: string }) {
                 {online ? 'browser online' : 'browser offline (app still works)'}
               </span>
               <span className={`px-2 py-1 rounded-full border ${apiReachable === true ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : apiReachable === false ? 'bg-slate-500/10 border-slate-500/20 text-slate-400' : 'bg-[#020617] border-[#1e293b] text-slate-500'}`}>
-                local parser API: {apiReachable === true ? 'reachable' : apiReachable === false ? 'not running (offline lab data is used)' : 'not checked'}
+                platform API: {apiReachable === true ? 'reachable' : apiReachable === false ? 'not reachable (guest content still works)' : 'not checked'}
               </span>
-              <span className="px-2 py-1 rounded-full bg-[#020617] border border-[#1e293b] text-slate-400">third-party requests: none</span>
+              <span className="px-2 py-1 rounded-full bg-[#020617] border border-[#1e293b] text-slate-400">account provider: {supabaseConfigured ? 'configured' : 'not configured'}</span>
             </div>
           </div>
         </div>
@@ -152,18 +156,19 @@ export function LocalDataPanel({ className = '' }: { className?: string }) {
           <span className="text-[11px] font-mono text-slate-500">total: {total} B</span>
           <div className="flex items-center gap-2">
             <button onClick={checkApi} className="px-3 py-1.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[11.5px] text-slate-300 hover:border-[#334155] transition-colors">
-              Check local API
+              Check platform API
             </button>
             <button
-              onClick={() => {
-                if (!confirm('Erase all local SecCraft data (progress, vault, checklists, notes, profile)? This cannot be undone.')) return
+              onClick={async () => {
+                if (!confirm('Erase this browser’s known SecCraft data and sign out of the configured account? This does not delete your server account or synchronized records. This cannot be undone.')) return
                 for (const { key } of KNOWN_KEYS) { try { localStorage.removeItem(key) } catch { /* ignore */ } }
                 reset()
+                if (supabase) { try { await supabase.auth.signOut({ scope: 'local' }) } catch { /* local app data is still cleared */ } }
                 measure()
               }}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/20 text-[11.5px] text-red-400 hover:bg-red-500/15 transition-colors"
             >
-              <Trash2 className="w-3.5 h-3.5" /> Erase local data
+              <Trash2 className="w-3.5 h-3.5" /> Erase local data &amp; sign out
             </button>
           </div>
         </div>

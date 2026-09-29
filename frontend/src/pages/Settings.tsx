@@ -2,11 +2,12 @@ import { LoadingPanel } from '@/components/common/LoadingPanel'
 import { useProgressStore, LEVELS } from '@/store/useProgressStore'
 import { TOTAL_LABS, TOTAL_LESSONS, TOTAL_MODULES, TOTAL_PCAPS, TOTAL_SCENARIOS } from '@/content/stats'
 import { motion } from 'framer-motion'
-import { Settings as SettingsIcon, Download, Trash2, FlaskConical, Wifi, Shield, Zap, Sparkles, Award, Target, Trophy, Star, Crown, Moon, Sun, LogIn, LogOut, Users, Lock, BarChart3, Bell, Keyboard, Smartphone, Clock, Flag, Code, Plus, Mic, Accessibility } from 'lucide-react'
+import { Settings as SettingsIcon, Download, Trash2, FlaskConical, Award, Target, Trophy, Star, Moon, Sun, LogOut, Users, Lock, BarChart3, Keyboard } from 'lucide-react'
 import { LevelBadge, CertificationPayoff } from '@/components/gamification/LevelBadge'
 import { useTheme } from '@/components/theme/ThemeProvider'
 import { useLocalProfile } from '@/components/profile/LocalProfile'
 import { LocalDataPanel } from '@/components/security/LocalDataPanel'
+import { ProgressSyncPanel } from '@/components/progress/ProgressSyncPanel'
 import { SecurityPosture } from '@/components/security/SecurityPosture'
 import { useState, lazy, Suspense } from 'react'
 const AccessibilityPanel = lazy(() => import('@/components/accessibility/AccessibilityPanel').then(m => ({ default: m.AccessibilityPanel })))
@@ -22,10 +23,7 @@ export function Settings() {
   const xpToNext = useProgressStore(s => s.getXpToNextLevel())
   const { theme, resolved, setTheme } = useTheme()
   const { profile, hasProfile, save, clear } = useLocalProfile()
-  const [profileForm, setProfileForm] = useState<{ displayName: string; role: 'learner' | 'instructor' }>({
-    displayName: '',
-    role: 'learner',
-  })
+  const [profileForm, setProfileForm] = useState<{ displayName: string }>({ displayName: '' })
 
   return (
     <div className="max-w-[800px] mx-auto space-y-4 xs:space-y-6 md:space-y-8 min-w-0 w-full">
@@ -35,42 +33,31 @@ export function Settings() {
         </div>
         <div className="min-w-0">
           <h1 className="font-heading font-bold text-[22px] xs:text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none truncate sc-page-title">Settings</h1>
-          <p className="text-[12px] xs:text-[13px] text-slate-400 mt-1.5 leading-relaxed">Local-first • No account required • Theme • Accessibility • Offline (PWA) • Your data stays in this browser</p>
+          <p className="text-[12px] xs:text-[13px] text-slate-400 mt-1.5 leading-relaxed">Guest-first • Optional hosted account sync • Theme • Accessibility • Offline learning</p>
         </div>
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 sm:p-6 min-w-0">
         <h3 className="font-heading font-bold text-[14px] text-slate-100 mb-4 flex items-center gap-2">
-          <Lock className="w-4 h-4 text-violet-400" />Profile — local only, no authentication
+          <Lock className="w-4 h-4 text-violet-400" />Guest profile — local display name
           {hasProfile && <span className="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono">saved locally</span>}
         </h3>
         <p className="text-[11.5px] text-slate-400 leading-relaxed mb-4">
-          This build has no server and therefore no accounts: there is no password field because there is nothing to
-          authenticate against, and no session token pretending otherwise. The name below only labels your local
-          progress. The optional FastAPI backend (<span className="font-mono">docker compose up</span>) provides real
-          JWT-authenticated multi-user classrooms if you need them.
+          This display name is stored only in this browser and does not control account access. Optional hosted accounts
+          use Supabase Auth and require email verification followed by owner approval; user-selectable roles and classrooms
+          are not part of SecCraft. You can keep using the learning workspace as a guest.
         </p>
         {!hasProfile ? (
           <div className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input
-                value={profileForm.displayName}
-                onChange={e => setProfileForm({ ...profileForm, displayName: e.target.value })}
-                placeholder="Display name (optional)"
-                maxLength={64}
-                className="px-4 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-violet-500/30"
-              />
-              <select
-                value={profileForm.role}
-                onChange={e => setProfileForm({ ...profileForm, role: e.target.value as 'learner' | 'instructor' })}
-                className="px-4 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:outline-none focus:border-violet-500/30"
-              >
-                <option value="learner">Learner</option>
-                <option value="instructor">Instructor (self-declared)</option>
-              </select>
-            </div>
+            <input
+              value={profileForm.displayName}
+              onChange={e => setProfileForm({ displayName: e.target.value })}
+              placeholder="Display name (optional)"
+              maxLength={64}
+              className="w-full px-4 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-violet-500/30"
+            />
             <button
-              onClick={() => save({ displayName: profileForm.displayName || 'Learner', role: profileForm.role })}
+              onClick={() => save({ displayName: profileForm.displayName || 'Guest learner' })}
               className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-[13px] flex items-center justify-center gap-2 touch-manipulation min-h-[44px]"
             >
               <Users className="w-4 h-4" />Save local profile
@@ -86,7 +73,7 @@ export function Settings() {
                 <div className="min-w-0">
                   <div className="text-[14px] font-bold text-slate-100 truncate">{profile?.displayName}</div>
                   <div className="text-[11px] font-mono text-slate-400 truncate">
-                    {profile?.role} • {achievements.length} achievements • {totalXp} XP • stored in this browser only
+                    Guest profile • {achievements.length} local achievements • {totalXp} local XP • stored in this browser only
                   </div>
                 </div>
               </div>
@@ -124,6 +111,8 @@ export function Settings() {
       <SecurityPosture />
 
       <LocalDataPanel />
+
+      <ProgressSyncPanel />
 
       <Suspense fallback={<LoadingPanel label="Loading Accessibility…" />}>
         <AccessibilityPanel />
@@ -206,9 +195,9 @@ export function Settings() {
           </div>
           <div className="space-y-1.5 text-[11px] font-mono">
             <div className="flex justify-between"><span className="text-slate-400">Offline (PWA)</span><span className="text-emerald-400">service worker</span></div>
-            <div className="flex justify-between"><span className="text-slate-400">Accounts</span><span className="text-slate-300">none in the static build</span></div>
-            <div className="flex justify-between"><span className="text-slate-400">Storage</span><span className="text-cyan-400">this browser only</span></div>
-            <div className="flex justify-between"><span className="text-slate-400">Local API</span><span className="text-amber-400">optional, same origin</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">Accounts</span><span className="text-slate-300">optional • Supabase</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">Storage</span><span className="text-cyan-400">local + opt-in sync</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">API</span><span className="text-amber-400">proxy or configured host</span></div>
           </div>
         </div>
       </motion.div>
@@ -223,7 +212,7 @@ export function Settings() {
       </motion.div>
 
       <div className="text-[11px] text-slate-400 font-mono text-center pb-4">
-        SecCraft — local-first, offline-capable — Platform + Wireless path — Learn. Practice. Investigate. Improve. • {totalXp} XP • Lv.{level.level} {level.title} • {TOTAL_MODULES} modules • {TOTAL_LESSONS} lessons • {TOTAL_PCAPS} verified captures • {TOTAL_SCENARIOS} decision scenarios • checklist • evidence vault • no accounts, no tracking
+        SecCraft — guest-first, offline-capable • {totalXp} local XP (unverified) • Lv.{level.level} {level.title} • {TOTAL_MODULES} modules • {TOTAL_LESSONS} lessons • {TOTAL_PCAPS} supplied capture artifacts • {TOTAL_SCENARIOS} decision scenarios • account sync is optional and requires hosted services
       </div>
     </div>
   )

@@ -1,4 +1,5 @@
 import json
+import re
 from fastapi import APIRouter, Query, HTTPException
 from pathlib import Path
 from typing import Optional
@@ -8,7 +9,9 @@ from app.services.pcap_parser import parse_pcap, tshark_available, SCAPY_AVAILAB
 router = APIRouter()
 
 def find_pcap(pcap_id: str) -> Optional[Path]:
-    """Locate a capture by id in the locations this repository actually uses."""
+    """Locate a capture by safe repository id in locations this repository actually uses."""
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}", pcap_id):
+        return None
     candidates = [
         PCAP_DIR / f"{pcap_id}.pcapng",
         PCAP_DIR / f"{pcap_id}.pcap",
@@ -86,7 +89,6 @@ async def list_pcaps():
             pcaps.append({
                 "id": p.stem,
                 "filename": p.name,
-                "path": str(p),
                 "module": module,
                 "size": p.stat().st_size,
             })
@@ -122,7 +124,7 @@ async def list_pcaps():
     }
 
 @router.get("/pcaps/{pcap_id}/analyze")
-async def analyze_pcap(pcap_id: str, filter: Optional[str] = Query(None, description="Wireshark display filter, e.g., wlan.fc.type_subtype==8")):
+async def analyze_pcap(pcap_id: str, filter: Optional[str] = Query(None, max_length=512, description="Wireshark display filter, e.g., wlan.fc.type_subtype==8")):
     """Decode a capture with tshark/scapy, falling back to the offline dataset.
 
     If the capture file is not present in this checkout, the offline dataset for that id (generated
@@ -130,6 +132,8 @@ async def analyze_pcap(pcap_id: str, filter: Optional[str] = Query(None, descrip
     so via ``method``/``note``. A capture that is unknown in both places returns 404 — no placeholder
     frames are produced.
     """
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}", pcap_id):
+        raise HTTPException(status_code=404, detail="PCAP not found")
     pcap_path = find_pcap(pcap_id)
     if pcap_path:
         return parse_pcap(pcap_path, display_filter=filter, pcap_id=pcap_id)
@@ -180,7 +184,7 @@ def _summarise_frames(frames):
 
 
 @router.get("/pcaps/{pcap_id}/frames")
-async def get_frames(pcap_id: str, filter: Optional[str] = Query(None), limit: int = Query(100, le=1000), offset: int = Query(0, ge=0)):
+async def get_frames(pcap_id: str, filter: Optional[str] = Query(None, max_length=512), limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0, le=1000000)):
     pcap_path = find_pcap(pcap_id)
     if not pcap_path:
         raise HTTPException(status_code=404, detail="PCAP not found")

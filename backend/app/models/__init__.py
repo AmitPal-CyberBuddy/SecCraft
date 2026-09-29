@@ -1,3 +1,21 @@
-from .progress import LessonProgress, LabProgress, QuizProgress
+from .platform import (
+    AchievementAward,
+    AdminAuditEvent,
+    AssessmentAttempt,
+    PlatformAdmin,
+    PlatformSettings,
+    ProgressRecord,
+    UserProfile,
+    XpEvent,
+)
 
-__all__ = ["LessonProgress", "LabProgress", "QuizProgress"]
+__all__ = [
+    "AchievementAward",
+    "AdminAuditEvent",
+    "AssessmentAttempt",
+    "PlatformAdmin",
+    "PlatformSettings",
+    "ProgressRecord",
+    "UserProfile",
+    "XpEvent",
+]

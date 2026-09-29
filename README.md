@@ -20,7 +20,7 @@ Learn. Practice. Investigate. Improve.<br />
 
 SecCraft is a local-first platform for learning cybersecurity through practical, evidence-led assessment. Learners investigate a system, choose and run tests, record what the evidence supports, assess impact, recommend remediation, retest, and report. The platform is broader than its first available learning path: Wireless Pentesting.
 
-There is no hosted learner account or telemetry in the static app. Progress and profile data stay in the browser. The optional FastAPI service is for local use; GitHub Pages serves the static frontend and its bundled lab data.
+Guest learning is the default: authored content, local progress, and the offline-capable PWA remain usable without an account. Optional hosted accounts use Supabase Auth, FastAPI `/api/v1`, and PostgreSQL; the API supports email verification, owner approval, account-scoped progress sync/import, and owner controls. Account services require deployment configuration and are disabled by default. Local XP and practice records are not server-verified credentials; see [`docs/ACCOUNT_SYNC_PLATFORM.md`](docs/ACCOUNT_SYNC_PLATFORM.md) for setup, trust boundaries, limitations, and the production checklist.
 
 ## What is included
 
@@ -35,15 +35,22 @@ There is no hosted learner account or telemetry in the static app. Progress and 
 **Platform shell**
 
 - 8 learning paths are represented in the catalogue: 1 available and 7 planned
-- Path-aware learning, labs, challenges, analytics, and progress tracking
+- Path-aware learning, labs, challenges, analytics, and browser-local progress
 - Search, keyboard shortcuts, theme preferences, and offline-capable static app shell
 - Simulation, hybrid, and RF-required lab tiers are identified honestly; simulation labs require no wireless hardware
+
+**Optional account platform (configuration required)**
+
+- Supabase email/password Auth with server-side token and email-verification checks
+- FastAPI `/api/v1`, PostgreSQL/Alembic, pending/active/rejected/suspended account states, and owner-only administration
+- Generic account-scoped progress fetch and preview/merge import; imported records remain unverified and award no XP
+- Assessment attempts are metadata-only/unverified. No server grader or server-issued certificate is claimed yet.
 
 Counts above describe the content currently in the repository. The content catalogues under `frontend/src/content/` are the source of truth; totals displayed in the application are derived from those files.
 
 ## Quick start
 
-Requirements: Node.js 20.19+ or 22.12+ for the frontend (Vite 8), and Python 3.11 for the optional backend.
+Requirements: Node.js 20.19+ or 22.12+ for the frontend (Vite 8), and Python 3.11 for the optional API.
 
 ```bash
 # Terminal 1 — frontend
@@ -54,15 +61,15 @@ npm run dev
 ```
 
 ```bash
-# Terminal 2 — optional local API
+# Terminal 2 — local API (SQLite guest/dev mode by default)
 cd backend
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
-python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Vite proxies `/api` to the local API on port 8000. The frontend remains usable with bundled content when the optional API is not running.
+Vite proxies same-origin `/api` requests to port 8000. Without provider/database configuration, account endpoints fail closed; public content and guest progress continue working. For Supabase Auth, PostgreSQL migrations, owner bootstrap, deployment, and external service configuration, follow [`docs/ACCOUNT_SYNC_PLATFORM.md`](docs/ACCOUNT_SYNC_PLATFORM.md).
 
 To build and check the GitHub Pages sub-path locally:
 
@@ -88,13 +95,13 @@ See [`docs/GITHUB_PAGES.md`](docs/GITHUB_PAGES.md) for deployment checks, deep l
 
 ```text
 frontend/   Vite, React, TypeScript, Tailwind, Zustand, React Router; bundled content and PWA shell
-backend/    Optional local FastAPI service, SQLite, capture parsing integrations
+backend/    FastAPI `/api/v1`, Supabase token verification, SQLAlchemy/Alembic, PostgreSQL in deployment; SQLite for local tests/dev
 content/    Learning content and supporting datasets
 scripts/    Artifact generation, verification, and local tooling
-docs/       Product, learning-path, safety, architecture, and deployment documentation
+docs/       Product, learning-path, safety, account-sync, architecture, and deployment documentation
 ```
 
-The app is static-host friendly and uses no external font CDN, analytics, or third-party runtime requests. Builds include an audit for external requests and a verifier for the generated lab artifacts.
+Guest learning is static-host friendly and uses no analytics or external font CDN. Account builds make requests only to explicitly configured Supabase/API origins; the generated CSP includes those origins and the build audits literal third-party requests. CI also verifies the generated lab artifacts.
 
 ## Safety and evidence
 

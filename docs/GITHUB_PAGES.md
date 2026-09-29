@@ -14,7 +14,7 @@ The repository and Pages base are now both `SecCraft`. The Vite default base is 
 | Build + deploy | [`.github/workflows/pages.yml`](../.github/workflows/pages.yml) | `actions/deploy-pages` publishes `frontend/dist` on every push to `main` |
 | Sub-path base | `frontend/vite.config.ts` (`DEFAULT_BASE`, `VITE_BASE`) | Local default is `/SecCraft/`; the GitHub Actions build sets `VITE_BASE` from the actual repository name |
 | Deep links | `404.html` emitted by Vite's SPA fallback plugin (internal legacy plugin identifier retained) | GitHub Pages has no SPA rewrite; the shell answers `/SecCraft/labs` and the router takes over — platform routes /paths, /paths/:pathId, /paths/:pathId/modules/:id |
-| Router | `src/App.tsx` — `<BrowserRouter basename={import.meta.env.BASE_URL}>` + explicit redirects `/path` → `/paths/wireless-pentesting` (Stage 6 compatibility) | Links stay inside sub-path, legacy deep links still work via SPA fallback |
+| Router | `src/App.tsx` — `<BrowserRouter basename={import.meta.env.BASE_URL}>`; `/` is the public homepage and the guest workspace is `/app` | Public/account routes and guest learning stay inside the Pages sub-path; existing learning deep links still work via SPA fallback |
 | Service worker | `public/sw.js` — every URL derived from `self.registration.scope` | Offline shell + precache work at any mount point |
 | PWA manifest | `public/manifest.json` — relative `./` URLs — name SecCraft — Hands-on Cybersecurity Learning Platform | Resolves against manifest URL, no hard-coded `/` |
 | Local parity check | `scripts/serve-pages-preview.mjs` | Emulates Pages (sub-path + 404.html, no rewrite) before pushing |
@@ -69,7 +69,7 @@ Any one of these runs `pages.yml` on `main` and publishes:
    (`workflow_dispatch`).
 
 Then verify deep links:
-- Platform: `https://amitpal-cyberbuddy.github.io/SecCraft/` (dashboard platform overview)
+- Public homepage: `https://amitpal-cyberbuddy.github.io/SecCraft/`; guest workspace: `https://amitpal-cyberbuddy.github.io/SecCraft/app`
 - Learning paths: `https://amitpal-cyberbuddy.github.io/SecCraft/paths` (list all paths)
 - Path detail: `https://amitpal-cyberbuddy.github.io/SecCraft/paths/wireless-pentesting` (phases)
 - Module: `https://amitpal-cyberbuddy.github.io/SecCraft/paths/wireless-pentesting/modules/02-wifi-fundamentals`
@@ -86,24 +86,20 @@ After that, every push to `main` redeploys automatically.
 
 ## What works on Pages — Platform
 
-Everything the SPA ships itself: platform overview, 8 learning paths (1 available Wireless Pentesting with 20 modules / 27 authored lessons, 7 planned architecture ready), 16 verified artifacts, 15 challenges (45 tasks), 35 decision scenarios, 42-item checklist, ENG-01 engagement, reference, gamification, reports + PDF export, simulated terminal (`operator@seccraft` prompt), evidence vault (platform-evidence-vault with wififorge-evidence-vault fallback), theme (platform-theme with wififorge-theme fallback), search (generic index of paths, modules, labs, challenges, skills), plus offline use after first visit.
+Everything the SPA ships itself: public homepage, guest workspace, 8 learning paths (1 available Wireless Pentesting with 20 modules / 27 authored lessons, 7 planned), 16 verified artifacts, 15 challenges (45 tasks), 35 decision scenarios, 42-item checklist, ENG-01 engagement, reference, local gamification, reports + PDF export, simulated terminal, evidence vault, theme, generic search, and offline use after first visit. `/` is the public homepage; the existing workspace remains available at `/app` without registration.
 
-The **FastAPI backend cannot run on Pages.** Anything that needs the API degrades to
-its bundled offline datasets (`src/pages/Labs.tsx`,
-`src/components/lab/PcapInspector.tsx`) rather than erroring, so the UI is fully
-navigable. For live PCAP parsing, run the stack locally:
+The **FastAPI backend and PostgreSQL cannot run on Pages.** Without build-time `VITE_API_BASE`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_ANON_KEY`, the deployed app is guest-only and account controls stay unavailable. To enable accounts, deploy the API/database elsewhere, set those public frontend values as GitHub Actions repository variables, configure backend CORS and provider settings, then rebuild. Do not put service-role keys or database credentials in Pages variables or frontend builds. See [`ACCOUNT_SYNC_PLATFORM.md`](ACCOUNT_SYNC_PLATFORM.md) for the setup and provider-side signup limitation.
+
+Static lessons and bundled PCAP data work offline without the API. API-backed account synchronization and server PCAP parsing require the external API. In local development, run:
 
 ```bash
-Terminal 1: `cd backend && uvicorn app.main:app --reload --port 8000`
-Terminal 2: `cd frontend && npm run dev` (proxies `/api` to port 8000)
+# Terminal 1
+cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# Terminal 2
+cd frontend && npm run dev  # Vite proxies same-origin /api to port 8000
 ```
 
-Backend now supports platform-level routes:
-- `/api/learning-paths` — 8 paths
-- `/api/learning-paths/wireless-pentesting` — path detail
-- `/api/platform` — platform metadata SecCraft
-- `/api/modules?path=wireless-pentesting` — path-aware filter + backward compat returning all modules
-- `/api/health` — includes platform, legacy, learning_paths counts, message Learn. Practice. Investigate. Improve. — Learn cybersecurity by doing.
+Read-only content routes include `/api/learning-paths`, `/api/learning-paths/{path_id}`, `/api/platform`, `/api/modules?path=wireless-pentesting`, and `/api/health`. Versioned account routes use `/api/v1/*`; they fail closed when Supabase/database configuration is missing.
 
 ## Custom domain — Platform
 

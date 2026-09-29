@@ -71,32 +71,52 @@ function pagesHostingPlugin(base: string): Plugin {
  *   - `dist/robots.txt` so the reference material is not indexed by default,
  *   - a build-time audit that fails the build if any third-party URL sneaks into the bundle.
  */
-const CSP_POLICY = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "object-src 'none'",
-  "frame-ancestors 'none'",
-  "form-action 'self'",
-  "img-src 'self' data: blob:",
-  "font-src 'self' data:",
-  "style-src 'self' 'unsafe-inline'",
-  "script-src 'self'",
-  "connect-src 'self'",
-  "worker-src 'self' blob:",
-  "manifest-src 'self'",
-].join('; ')
+function createCspPolicy(connectSources: string[]): string {
+  return [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "img-src 'self' data: blob:",
+    "font-src 'self' data:",
+    "style-src 'self' 'unsafe-inline'",
+    "script-src 'self'",
+    `connect-src ${connectSources.join(' ')}`,
+    "worker-src 'self' blob:",
+    "manifest-src 'self'",
+  ].join('; ')
+}
 
-const HEADERS_FILE = [
-  '/*',
-  '  Content-Security-Policy: ' + CSP_POLICY,
-  '  X-Content-Type-Options: nosniff',
-  '  X-Frame-Options: DENY',
-  '  Referrer-Policy: no-referrer',
-  '  Permissions-Policy: geolocation=(), microphone=(), camera=(), usb=()',
-  '  Cross-Origin-Opener-Policy: same-origin',
-  '  Cross-Origin-Resource-Policy: same-origin',
-  '',
-].join('\n')
+function allowedConnectSources(env: Record<string, string | undefined>, productionBuild: boolean): string[] {
+  const sources = new Set(["'self'"])
+  for (const name of ['VITE_API_BASE', 'VITE_SUPABASE_URL']) {
+    const value = env[name]?.trim()
+    if (!value) continue
+    let url: URL
+    try { url = new URL(value) } catch { throw new Error(`${name} must be an absolute http(s) URL`) }
+    if (!['http:', 'https:'].includes(url.protocol)) throw new Error(`${name} must use http or https`)
+    if (url.pathname !== '/' || url.search || url.hash || url.username || url.password) throw new Error(`${name} must be a service origin without a path, query, or credentials`)
+    const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)
+    if (productionBuild && url.protocol !== 'https:' && !loopback) throw new Error(`${name} must use HTTPS in production (HTTP is allowed only for loopback development)`)
+    sources.add(url.origin)
+  }
+  return [...sources]
+}
+
+function headersFile(cspPolicy: string): string {
+  return [
+    '/*',
+    '  Content-Security-Policy: ' + cspPolicy,
+    '  X-Content-Type-Options: nosniff',
+    '  X-Frame-Options: DENY',
+    '  Referrer-Policy: no-referrer',
+    '  Permissions-Policy: geolocation=(), microphone=(), camera=(), usb=()',
+    '  Cross-Origin-Opener-Policy: same-origin',
+    '  Cross-Origin-Resource-Policy: same-origin',
+    '',
+  ].join('\n')
+}
 
 /**
  * Request-shaped external URLs. Documentation strings, XML namespaces and vendored comment links are
@@ -111,7 +131,7 @@ const REQUEST_PATTERNS: { label: string; regex: RegExp }[] = [
   { label: 'js', regex: /(?:fetch|import|importScripts|Worker|open)\s*\(\s*["'`]https?:\/\/(?!localhost|127\.0\.0\.1)[^"'`]+/gi },
 ]
 
-function securityPlugin(_base: string): Plugin {
+function securityPlugin(_base: string, cspPolicy: string): Plugin {
   let outDir = path.join(ROOT, 'dist')
   return {
     name: 'seccraft:security-headers',
@@ -123,7 +143,7 @@ function securityPlugin(_base: string): Plugin {
       order: 'post',
       handler(html: string) {
         const tags = [
-          `<meta http-equiv="Content-Security-Policy" content="${CSP_POLICY}">`,
+          `<meta http-equiv="Content-Security-Policy" content="${cspPolicy}">`,
           '<meta name="referrer" content="no-referrer">',
         ].join('\n    ')
         return html.replace('<head>', `<head>\n    ${tags}`)
@@ -131,7 +151,7 @@ function securityPlugin(_base: string): Plugin {
     },
     closeBundle() {
       if (!fs.existsSync(path.join(outDir, 'index.html'))) return
-      fs.writeFileSync(path.join(outDir, '_headers'), HEADERS_FILE)
+      fs.writeFileSync(path.join(outDir, '_headers'), headersFile(cspPolicy))
       fs.writeFileSync(path.join(outDir, 'robots.txt'), 'User-agent: *\nDisallow: /\n')
 
       // Fail the build on any request that would leave the origin. Documentation strings that merely
@@ -170,13 +190,14 @@ function securityPlugin(_base: string): Plugin {
   }
 }
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
   const env = { ...loadEnv(mode, ROOT, ''), ...process.env }
   const base = normalizeBase(env.VITE_BASE || DEFAULT_BASE)
+  const cspPolicy = createCspPolicy(allowedConnectSources(env, command === 'build'))
 
   return {
     base,
-    plugins: [react(), pagesHostingPlugin(base), securityPlugin(base)],
+    plugins: [react(), pagesHostingPlugin(base), securityPlugin(base, cspPolicy)],
     server: {
       host: '0.0.0.0',
       port: 3000,

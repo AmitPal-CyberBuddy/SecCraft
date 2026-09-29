@@ -35,14 +35,14 @@ export function GuidedTour() {
         {
           popover: {
             title: `Welcome to ${platform.name} — Hands-on Cybersecurity Platform`,
-            description: `${platform.name} is local-first, zero-cost, offline-capable. ${platform.tagline} — ${platform.secondaryTagline} Wireless Pentesting is Path #1 (${TOTAL_MODULES} modules, ${TOTAL_LESSONS} lessons, ${TOTAL_PCAPS} verified captures, ${TOTAL_CHALLENGES} challenges). This 90s tour shows where everything lives.`,
+            description: `${platform.name} is guest-first, zero-cost, and offline-capable. Optional account sync needs hosted services and owner approval. ${platform.tagline} — ${platform.secondaryTagline} Wireless Pentesting is Path #1 (${TOTAL_MODULES} modules, ${TOTAL_LESSONS} lessons, ${TOTAL_PCAPS} bundled capture artifacts, ${TOTAL_CHALLENGES} challenges). This 90s tour shows where everything lives.`,
           }
         },
         {
           element: '[data-tour="topbar"]',
           popover: {
             title: 'Topbar — Platform Status & Navigation',
-            description: `Left: Operator status (local-first, no account) + XP ${MAX_XP} ceiling + level. Center: Current module + Search (Cmd+K). Right: Theme toggle + Activity (real completions from this browser, not fake) + shortcuts. Sticky header — stays visible while you scroll.`,
+            description: `Left: Guest workspace status + local XP ${MAX_XP} ceiling + level. Center: Current module + Search (Cmd+K). Right: Theme toggle + Activity (completions from this browser) + shortcuts. Local XP and achievements are not server-verified; account sync is optional. Sticky header — stays visible while you scroll.`,
             side: 'bottom',
             align: 'start'
           }
@@ -51,7 +51,7 @@ export function GuidedTour() {
           element: '[data-tour="sidebar"]',
           popover: {
             title: 'Sidebar — Platform Navigation (Learn / Practice / Assess / Track)',
-            description: `Platform-level navigation, not Wi-Fi-only: Dashboard (platform overview), Learning Paths (${TOTAL_LEARNING_PATHS} total, ${AVAILABLE_LEARNING_PATHS} available), Modules (path-aware), Labs (${TOTAL_PCAPS} artifacts), Challenges (${TOTAL_CHALLENGES} guided→assessment), Engagements (ENG-01 authorised assessment), Reference (commands/filters/checklist), Reports (findings + evidence vault), Settings (profile, theme, privacy). Current path: ${learningPaths[0]?.title}.`,
+            description: `Platform-level navigation, not Wi-Fi-only: Dashboard (guest workspace), Learning Paths (${TOTAL_LEARNING_PATHS} total, ${AVAILABLE_LEARNING_PATHS} available), Modules (path-aware), Labs (${TOTAL_PCAPS} artifacts), Challenges (${TOTAL_CHALLENGES} guided→assessment), Engagements (ENG-01 authorised assessment), Reference (commands/filters/checklist), Reports (findings + evidence vault), Settings (profile, theme, privacy). Current path: ${learningPaths[0]?.title}.`,
             side: 'right',
             align: 'start'
           }
@@ -59,8 +59,8 @@ export function GuidedTour() {
         {
           element: '[data-tour="dashboard-stats"]',
           popover: {
-            title: 'Dashboard — Platform Overview',
-            description: `Platform stats: ${TOTAL_LEARNING_PATHS} learning paths, ${TOTAL_MODULES} modules, ${TOTAL_LESSONS} authored lessons, ${TOTAL_PCAPS} verified PCAPs, ${TOTAL_LABS} labs, ${TOTAL_CHALLENGES} challenges, ${ACHIEVEMENTS_DEF.length} achievements. All counted from your local completions. Featured path: Wireless Pentesting (20 modules, reference implementation). No placeholder content for future paths — one excellent path first.`,
+            title: 'Dashboard — Guest Workspace Overview',
+            description: `Platform stats: ${TOTAL_LEARNING_PATHS} learning paths, ${TOTAL_MODULES} modules, ${TOTAL_LESSONS} authored lessons, ${TOTAL_PCAPS} bundled PCAP artifacts, ${TOTAL_LABS} labs, ${TOTAL_CHALLENGES} challenges, ${ACHIEVEMENTS_DEF.length} achievements. Curriculum totals come from bundled content; the activity, XP, and achievements shown here are local records. Featured path: Wireless Pentesting (20 modules, reference implementation). No placeholder content for future paths — one excellent path first.`,
             side: 'bottom',
             align: 'start'
           }
@@ -69,7 +69,7 @@ export function GuidedTour() {
           element: '[data-tour="learning-paths"]',
           popover: {
             title: 'Learning Paths — Platform → Paths → Modules → Lessons → Labs → Challenges',
-            description: `Platform hierarchy: Platform (${platform.name}) → Learning Paths (8 total) → Modules (20 for Wireless) → Lessons (27) → Labs (16 verified captures) → Challenges (15) → Assessments (ENG-01). Wireless is Path #1, not entire platform. Future: Web, API, Android, Network, AD, Cloud, AI/LLM — architecture ready, content later.`,
+            description: `Platform hierarchy: Platform (${platform.name}) → Learning Paths (8 total) → Modules (20 for Wireless) → Lessons (27) → Labs (${TOTAL_PCAPS} bundled captures) → Challenges (15) → Assessments (ENG-01). Wireless is Path #1, not entire platform. Future: Web, API, Android, Network, AD, Cloud, AI/LLM — architecture ready, content later.`,
             side: 'top',
             align: 'start'
           }
@@ -77,8 +77,8 @@ export function GuidedTour() {
         {
           element: '[data-tour="daily"]',
           popover: {
-            title: 'Daily Goals & Progress — Your Local Progress',
-            description: `Three practice goals counted from your own completions today: 2 lessons, 1 capture analysed, 1 perfect quiz. Progress bar shows overall % + XP + level + streak. All stored in platform-progress (fallback wififorge-progress) — this browser only, no server.`,
+            title: 'Daily Goals & Progress — Local Records',
+            description: `Three practice goals counted from your own completions today: 2 lessons, 1 capture analysed, 1 perfect quiz. Progress bar shows overall % + XP + level + streak. These local records remain on this device; optional account sync is separate and imported records are unverified.`,
             side: 'top',
             align: 'start'
           }
@@ -105,7 +105,7 @@ export function GuidedTour() {
           element: '[data-tour="reports"]',
           popover: {
             title: 'Reports & Evidence — Professional VAPT Workflow',
-            description: `Finding editor, evidence vault (platform-evidence-vault generic, hashes files in browser, nothing uploaded), CVSS 3.1 calculator, timeline viz built from your own artefacts, certificate (platform + path certificate, local-first LOCAL- id, not accredited, printable). Methodology: ${platform.philosophyShort} — ${platform.tagline}`,
+            description: `Finding editor, evidence vault (platform-evidence-vault generic, hashes files in browser, nothing uploaded), CVSS 3.1 calculator, timeline viz built from your own artefacts, printable local practice summary (not server-issued, signed, or accredited). Methodology: ${platform.philosophyShort} — ${platform.tagline}`,
             side: 'top',
             align: 'start'
           }
@@ -114,7 +114,7 @@ export function GuidedTour() {
           element: '[data-tour="search"]',
           popover: {
             title: 'Global Search — Generic Index (Paths, Modules, Labs, Challenges, Skills)',
-            description: `Cmd+K opens generic search: 8 learning paths, ${TOTAL_MODULES} modules + ${TOTAL_LESSONS} lessons, ${TOTAL_PCAPS} labs, ${TOTAL_CHALLENGES} challenges, skills (generic + domain-specific), commands, filters, platform pages. Path-aware — search in Wireless path or all paths. No server, works offline.`,
+            description: `Cmd+K opens generic search: 8 learning paths, ${TOTAL_MODULES} modules + ${TOTAL_LESSONS} lessons, ${TOTAL_PCAPS} labs, ${TOTAL_CHALLENGES} challenges, skills (generic + domain-specific), commands, filters, platform pages. Path-aware — search in Wireless path or all paths. The bundled search index works offline; account synchronization is separate.`,
             side: 'bottom',
             align: 'start'
           }
@@ -149,11 +149,11 @@ export function GuidedTour() {
               </button>
             </div>
             <div className="mt-3 space-y-2 text-[11px] text-slate-400 leading-relaxed">
-              <div className="flex items-center gap-1.5"><LayoutDashboard className="w-3 h-3" /> Dashboard — platform overview + featured path</div>
+              <div className="flex items-center gap-1.5"><LayoutDashboard className="w-3 h-3" /> Dashboard — guest workspace + featured path</div>
               <div className="flex items-center gap-1.5"><GraduationCap className="w-3 h-3" /> Learning Paths — {TOTAL_LEARNING_PATHS} paths, {AVAILABLE_LEARNING_PATHS} available</div>
-              <div className="flex items-center gap-1.5"><FlaskConical className="w-3 h-3" /> Labs — {TOTAL_PCAPS} verified captures + terminal + vault</div>
+              <div className="flex items-center gap-1.5"><FlaskConical className="w-3 h-3" /> Labs — {TOTAL_PCAPS} bundled captures + terminal + vault</div>
               <div className="flex items-center gap-1.5"><Swords className="w-3 h-3" /> Challenges — {TOTAL_CHALLENGES} guided→assessment</div>
-              <div className="flex items-center gap-1.5"><FileText className="w-3 h-3" /> Reports — evidence + CVSS + certificate</div>
+              <div className="flex items-center gap-1.5"><FileText className="w-3 h-3" /> Reports — evidence + CVSS + local practice summary</div>
               <div className="flex items-center gap-1.5"><Search className="w-3 h-3" /> Search — Cmd+K generic index</div>
               <div className="flex items-center gap-1.5"><Bell className="w-3 h-3" /> Activity — real completions, not fake</div>
             </div>
@@ -163,7 +163,7 @@ export function GuidedTour() {
               </button>
               <button onClick={() => { setShowPrompt(false); try { localStorage.setItem('platform-tour-seen', 'true'); try { localStorage.setItem('wififorge-tour-seen', 'true') } catch {}; } catch {}; setHasSeenTour(true) }} className="px-4 py-2.5 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] text-slate-400 hover:text-slate-200 transition-colors">Skip</button>
             </div>
-            <div className="mt-2 text-[10px] text-slate-400 font-mono">Zero-cost • local-first • offline • {platform.name} • {TOTAL_LEARNING_PATHS} paths • {TOTAL_MODULES} modules • {TOTAL_LESSONS} lessons • {TOTAL_PCAPS} captures • {platform.tagline}</div>
+            <div className="mt-2 text-[10px] text-slate-400 font-mono">Zero-cost • guest-first • offline • optional account sync • {platform.name} • {TOTAL_LEARNING_PATHS} paths • {TOTAL_MODULES} modules • {TOTAL_LESSONS} lessons • {TOTAL_PCAPS} captures • {platform.tagline}</div>
           </motion.div>
         )}
       </AnimatePresence>

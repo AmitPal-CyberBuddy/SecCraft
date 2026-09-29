@@ -103,7 +103,7 @@ export function ReportTemplates({ className = '' }: { className?: string }) {
       )}
 
       <div className="mt-4 p-3 rounded-xl bg-violet-500/[0.03] border border-violet-500/10 text-[11px] text-slate-500 leading-relaxed">
-        <span className="font-semibold text-violet-300">How to use these:</span> pick the structure your reader needs, write findings from your own evidence vault records, score them with the CVSS 3.1 calculator, then export the report and the vault JSON together in Reports → Report Editor / Evidence Vault. There is no server-side review or approval workflow in this static build — version your work with git or your own copy of the exported JSON.
+        <span className="font-semibold text-violet-300">How to use these:</span> pick the structure your reader needs, write findings from your own evidence vault records, score them with the CVSS 3.1 calculator, then export the report and the vault JSON together in Reports → Report Editor / Evidence Vault. This report editor does not upload or sync report files; version your work with git or your own copy of the exported JSON.
       </div>
     </div>
   )

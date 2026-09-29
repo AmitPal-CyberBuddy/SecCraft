@@ -1,48 +1,79 @@
-version: '3.8'
 services:
-  wififorge:
-    build: .
-    ports:
-      - "8000:8000"
+  db:
+    image: postgres:16-alpine
     environment:
-      - ENV=production
-      # Required: the API refuses to issue tokens when this is unset (no default secret ships).
-      - WIFIFORGE_JWT_SECRET=${WIFIFORGE_JWT_SECRET:?set WIFIFORGE_JWT_SECRET in the environment}
-      - WIFIFORGE_ALLOWED_ORIGINS=${WIFIFORGE_ALLOWED_ORIGINS:-http://localhost:8080}
+      POSTGRES_DB: ${POSTGRES_DB:-seccraft}
+      POSTGRES_USER: ${POSTGRES_USER:-seccraft}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the ignored root .env file}
     volumes:
-      - ./data:/app/data:ro
-      - evidence:/app/evidence
-      - logs:/app/logs
-    restart: unless-stopped
+      - seccraft-postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - wififorge-net
-
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./frontend/dist:/usr/share/nginx/html:ro
-      - ./certs:/etc/nginx/certs:ro
-    depends_on:
-      - wififorge
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
     restart: unless-stopped
-    networks:
-      - wififorge-net
+    networks: [seccraft]
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend
+    environment: &backend-environment
+      PLATFORM_ENV: production
+      PLATFORM_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-seccraft}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the ignored root .env file}@db:5432/${POSTGRES_DB:-seccraft}
+      PLATFORM_AUTO_CREATE_TABLES: "false"
+      PLATFORM_ENABLE_API_DOCS: "false"
+      PLATFORM_ALLOWED_ORIGINS: ${PLATFORM_ALLOWED_ORIGINS:?Set the exact browser origin in the ignored root .env file}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
+      SUPABASE_JWT_ISSUER: ${SUPABASE_JWT_ISSUER:-}
+      SUPABASE_JWKS_URL: ${SUPABASE_JWKS_URL:-}
+      SUPABASE_JWT_AUDIENCE: ${SUPABASE_JWT_AUDIENCE:-authenticated}
+      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-}
+      SUPABASE_REQUIRE_VERIFIED_EMAIL: ${SUPABASE_REQUIRE_VERIFIED_EMAIL:-true}
+      SUPABASE_EMAIL_REDIRECT_URL: ${SUPABASE_EMAIL_REDIRECT_URL:-}
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles: ["ops"]
+    networks: [seccraft]
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend
+    environment: *backend-environment
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [seccraft]
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: web
+      args:
+        VITE_BASE: ${VITE_BASE:-/}
+        VITE_API_BASE: ${VITE_API_BASE:-}
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:-}
+    ports:
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8080}:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks: [seccraft]
 
 volumes:
-  evidence:
-    driver: local
-  logs:
-    driver: local
+  seccraft-postgres:
 
 networks:
-  wififorge-net:
+  seccraft:
     driver: bridge
