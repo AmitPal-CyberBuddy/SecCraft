@@ -38,10 +38,11 @@ def run() -> None:
             connection.execute(text(f'CREATE SCHEMA "{schema}"'))
 
         scoped_url = base_url.update_query_dict({"options": f"-csearch_path={schema}"})
+        rendered_scoped_url = scoped_url.render_as_string(hide_password=False)
         os.environ.update(
             {
                 "PLATFORM_ENV": "integration-test",
-                "PLATFORM_DATABASE_URL": str(scoped_url),
+                "PLATFORM_DATABASE_URL": rendered_scoped_url,
                 "PLATFORM_AUTO_CREATE_TABLES": "false",
                 "PLATFORM_ENABLE_API_DOCS": "false",
                 "PLATFORM_ALLOWED_ORIGINS": "http://localhost:3000",
@@ -52,11 +53,21 @@ def run() -> None:
                 "SUPABASE_REQUIRE_VERIFIED_EMAIL": "false",
             }
         )
+        if "app.core.config" in sys.modules:
+            import importlib
+
+            importlib.reload(sys.modules["app.core.config"])
+        if "app.core.database" in sys.modules:
+            db_module = sys.modules["app.core.database"]
+            db_module.engine.dispose()
+            db_module.engine = create_engine(rendered_scoped_url, pool_pre_ping=True)
+            db_module.SessionLocal.configure(bind=db_module.engine)
 
         from alembic import command
         from alembic.config import Config
 
         migration_config = Config(str(BACKEND_DIR / "alembic.ini"))
+        migration_config.set_main_option("script_location", str(BACKEND_DIR / "alembic"))
         command.upgrade(migration_config, "head")
 
         protected_tables = {
@@ -99,9 +110,9 @@ def run() -> None:
                     UserProfile(user_id=owner, email="owner@example.test", account_status="active"),
                     UserProfile(user_id=learner_a, email="a@example.test", account_status="pending"),
                     UserProfile(user_id=learner_b, email="b@example.test", account_status="pending"),
-                    PlatformSettings(id=1, signup_enabled=False, approved_user_limit=1),
                 ]
             )
+            db.merge(PlatformSettings(id=1, signup_enabled=False, approved_user_limit=1))
             db.commit()
 
         now = int(time.time())

@@ -589,6 +589,23 @@ def test_email_verification_is_checked_server_side(client: TestClient, monkeypat
     assert verified.json()["account_status"] == "pending"
 
 
+def test_postgres_smoke_url_preserves_password_and_config_reads_runtime_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    from sqlalchemy.engine import make_url
+
+    base_url = make_url("postgresql+psycopg://postgres.projectref:s3cr3t-pass@pooler.example.test:5432/postgres")
+    scoped_url = base_url.update_query_dict({"options": "-csearch_path=seccraft_audit_test"})
+    # SQLAlchemy 2.x str(URL) masks passwords with '***'; the smoke test must use render_as_string(hide_password=False).
+    assert make_url(str(scoped_url)).password == "***"
+    rendered = scoped_url.render_as_string(hide_password=False)
+    reparsed = make_url(rendered)
+    assert reparsed.username == "postgres.projectref"
+    assert reparsed.password == "s3cr3t-pass"
+    assert reparsed.query.get("options") == "-csearch_path=seccraft_audit_test"
+
+    monkeypatch.setenv("PLATFORM_DATABASE_URL", rendered)
+    assert config.get_database_url() == rendered
+
+
 def test_postgres_concurrent_approval_capacity_when_test_database_is_configured() -> None:
     test_database_url = os.environ.get("PLATFORM_TEST_POSTGRES_URL")
     if not test_database_url:

@@ -33,12 +33,16 @@ def _env_bool(name: str, default: bool) -> bool:
 
 
 # PostgreSQL is required for a deployed service. SQLite remains available for local tests/development.
-DATABASE_URL = _env_first(
-    "PLATFORM_DATABASE_URL",
-    "DATABASE_URL",
-    "PLATFORM_DB",
-    default=f"sqlite:///{BASE_DIR}/seccraft.db",
-)
+def get_database_url() -> str:
+    return _env_first(
+        "PLATFORM_DATABASE_URL",
+        "DATABASE_URL",
+        "PLATFORM_DB",
+        default=f"sqlite:///{BASE_DIR}/seccraft.db",
+    )
+
+
+DATABASE_URL = get_database_url()
 IS_SQLITE = DATABASE_URL.startswith("sqlite:")
 AUTO_CREATE_TABLES = _env_bool("PLATFORM_AUTO_CREATE_TABLES", IS_SQLITE)
 APP_ENV = _env_first("PLATFORM_ENV", "APP_ENV", default="development").lower()
