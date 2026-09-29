@@ -76,22 +76,22 @@ export function NotesBookmarks({ moduleId, lessonId, className = '' }: { moduleI
           <div className="flex gap-2">
             <div className="flex-1 relative">
               <StickyNote className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input value={newNote} onChange={e => setNewNote(e.target.value)} onKeyDown={e => e.key === 'Enter' && addNote()} placeholder="Add note for this lesson — markdown supported — e.g., WPS 11k PIN flaw" className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30" />
+              <input value={newNote} onChange={e => setNewNote(e.target.value)} onKeyDown={e => e.key === 'Enter' && addNote()} placeholder="Add note for this lesson — markdown supported — e.g., WPS 11k PIN flaw" className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30" />
             </div>
             <button onClick={addNote} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-[12px] flex items-center gap-1.5 shadow-glow-violet touch-manipulation min-h-[40px]"><Save className="w-4 h-4" />Save</button>
           </div>
 
           <div className="relative">
             <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search notes..." className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-[12px] text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-[#334155]/60" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search notes..." className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-[12px] text-slate-300 placeholder:text-slate-400 focus:outline-none focus:border-[#334155]/60" />
           </div>
 
           <div className="space-y-2 max-h-[300px] overflow-y-auto scrollbar-thin pr-1">
             {filteredNotes.length === 0 ? (
               <div className="p-6 text-center rounded-xl bg-[#020617]/40 border border-dashed border-[#1e293b]/40">
-                <StickyNote className="w-6 h-6 text-slate-600 mx-auto mb-2" />
+                <StickyNote className="w-6 h-6 text-slate-400 mx-auto mb-2" />
                 <div className="text-[13px] text-slate-500">No notes yet</div>
-                <div className="text-[11px] text-slate-600 mt-1">Add your first note — searchable, exportable, synced localStorage + backend ready</div>
+                <div className="text-[11px] text-slate-400 mt-1">Add your first note — searchable, exportable, synced localStorage + backend ready</div>
               </div>
             ) : filteredNotes.map((note, idx) => (
               <motion.div key={note.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }} className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 hover:bg-[#020617]/80 hover:border-[#334155]/40 group">
@@ -118,9 +118,9 @@ export function NotesBookmarks({ moduleId, lessonId, className = '' }: { moduleI
         <div className="space-y-2 max-h-[300px] overflow-y-auto scrollbar-thin pr-1">
           {bookmarks.length === 0 ? (
             <div className="p-6 text-center rounded-xl bg-[#020617]/40 border border-dashed border-[#1e293b]/40">
-              <Bookmark className="w-6 h-6 text-slate-600 mx-auto mb-2" />
+              <Bookmark className="w-6 h-6 text-slate-400 mx-auto mb-2" />
               <div className="text-[13px] text-slate-500">No bookmarks yet</div>
-              <div className="text-[11px] text-slate-600 mt-1">Bookmark lessons, labs, commands and filters — kept in this browser</div>
+              <div className="text-[11px] text-slate-400 mt-1">Bookmark lessons, labs, commands and filters — kept in this browser</div>
             </div>
           ) : bookmarks.map(b => (
             <div key={b.id} className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 flex items-center gap-3">

@@ -90,7 +90,7 @@ export function LevelBadge({ compact = false }: { compact?: boolean }) {
             const isCurrent = l.level === level.level
             const isPast = l.level < level.level
             return (
-              <div key={l.level} className={`p-2 rounded-xl border text-center transition-all duration-200 ${isCurrent ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300' : isPast ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-[#020617]/60 border-[#1e293b]/40 text-slate-600'}`}>
+              <div key={l.level} className={`p-2 rounded-xl border text-center transition-all duration-200 ${isCurrent ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300' : isPast ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-[#020617]/60 border-[#1e293b]/40 text-slate-400'}`}>
                 <div className="text-[12px]">{l.icon}</div>
                 <div className="text-[10px] font-bold mt-1">{l.title}</div>
                 <div className="text-[9px] font-mono opacity-60">Lv.{l.level}</div>

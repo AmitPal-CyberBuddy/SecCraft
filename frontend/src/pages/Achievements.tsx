@@ -52,8 +52,8 @@ export function Achievements() {
                     <span className="text-[12px] text-slate-400">{level.title}</span>
                     <span className="text-[11px] font-mono text-amber-400">Lv.{level.level}</span>
                   </div>
-                  <div className="text-[11px] text-slate-500 leading-relaxed">{level.description || 'Keep forging skills — each lesson, lab, and challenge adds XP.'}</div>
-                  <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                  <div className="text-[11px] text-slate-400 leading-relaxed">{level.description || 'Keep forging skills — each lesson, lab, and challenge adds XP.'}</div>
+                  <div className="flex items-center gap-2 text-[11px] text-slate-400">
                     <Zap className="w-3 h-3 text-amber-400" /> {totalXp} XP earned • {achievements.length} badges
                   </div>
                 </div>
@@ -71,7 +71,7 @@ export function Achievements() {
                 <h3 className="font-heading font-bold text-[15px] text-slate-100">Badges & milestones</h3>
                 <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono">{achievements.length} unlocked</span>
               </div>
-              <Suspense fallback={<div className="p-8 text-center text-[13px] text-slate-500 font-mono">Loading badges…</div>}>
+              <Suspense fallback={<div className="p-8 text-center text-[13px] text-slate-400 font-mono">Loading badges…</div>}>
                 <BadgesShowcase />
               </Suspense>
             </div>

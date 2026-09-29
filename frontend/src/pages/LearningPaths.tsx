@@ -32,7 +32,7 @@ export function LearningPaths() {
             </div>
           </div>
           <div className="mt-4 p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/60">
-            <div className="text-[11px] font-mono text-slate-500 uppercase tracking-widest mb-1">Platform Philosophy</div>
+            <div className="text-[11px] font-mono text-slate-400 uppercase tracking-widest mb-1">Platform Philosophy</div>
             <div className="text-[13px] text-slate-300 font-medium">Forge. Break. Fix. Retest.</div>
             <div className="text-[12px] text-slate-400 mt-1 leading-relaxed">
               Learn cybersecurity by doing — investigate systems, perform security testing, collect evidence, understand impact, remediate, retest, report.
@@ -71,17 +71,17 @@ export function LearningPaths() {
                           <div className="flex items-center gap-2">
                             <span className="text-[16px] font-bold text-slate-100 group-hover:text-white transition-colors">{path.title}</span>
                             {path.legacyBrand && (
-                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#020617] border border-[#1e293b] text-slate-500 font-mono">{path.legacyBrand}</span>
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#020617] border border-[#1e293b] text-slate-400 font-mono">{path.legacyBrand}</span>
                             )}
                           </div>
-                          <div className="text-[11px] text-slate-500 font-mono mt-0.5">{path.category} • {path.difficulty} • {path.estimatedHours}h</div>
+                          <div className="text-[11px] text-slate-400 font-mono mt-0.5">{path.category} • {path.difficulty} • {path.estimatedHours}h</div>
                         </div>
                       </div>
                       <span className="text-[10px] px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono">AVAILABLE</span>
                     </div>
                     <p className="mt-3 text-[12.5px] text-slate-400 leading-relaxed line-clamp-3">{path.description}</p>
                     {path.tagline && (
-                      <div className="mt-3 text-[11px] font-mono text-slate-500 italic">“{path.tagline}”</div>
+                      <div className="mt-3 text-[11px] font-mono text-slate-400 italic">“{path.tagline}”</div>
                     )}
                     <div className="mt-4 flex items-center gap-2 flex-wrap">
                       <span className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-[#020617]/60 border border-[#1e293b] text-slate-400">
@@ -99,7 +99,7 @@ export function LearningPaths() {
                     </div>
                     <div className="mt-4">
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[11px] text-slate-500 font-mono">Path progress</span>
+                        <span className="text-[11px] text-slate-400 font-mono">Path progress</span>
                         <span className="text-[11px] font-mono text-cyan-400">{prog}%</span>
                       </div>
                       <div className="h-1.5 bg-[#020617] rounded-full overflow-hidden border border-[#1e293b]/50">
@@ -119,10 +119,10 @@ export function LearningPaths() {
 
       <div>
         <div className="flex items-center gap-2 mb-4">
-          <Shield className="w-4 h-4 text-slate-500" />
+          <Shield className="w-4 h-4 text-slate-400" />
           <h2 className="font-heading font-bold text-[16px] text-slate-100">Planned Expansion</h2>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1e293b] border border-[#334155] text-slate-500 font-mono">{planned.length} planned</span>
-          <span className="ml-auto text-[11px] text-slate-500 font-mono hidden sm:inline">Architecture ready — content after Wireless maturity</span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1e293b] border border-[#334155] text-slate-400 font-mono">{planned.length} planned</span>
+          <span className="ml-auto text-[11px] text-slate-400 font-mono hidden sm:inline">Architecture ready — content after Wireless maturity</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {planned.map((path, idx) => (
@@ -137,25 +137,25 @@ export function LearningPaths() {
                 <div className="text-[20px] opacity-60">{path.icon}</div>
                 <div>
                   <div className="text-[13px] font-semibold text-slate-300">{path.title}</div>
-                  <div className="text-[10px] text-slate-500 font-mono">{path.category} • {path.estimatedHours}h • planned</div>
+                  <div className="text-[10px] text-slate-400 font-mono">{path.category} • {path.estimatedHours}h • planned</div>
                 </div>
-                <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-[#020617] border border-[#1e293b] text-slate-500 font-mono">PLANNED</span>
+                <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-[#020617] border border-[#1e293b] text-slate-400 font-mono">PLANNED</span>
               </div>
-              <p className="mt-2 text-[11.5px] text-slate-500 leading-relaxed line-clamp-2">{path.description}</p>
+              <p className="mt-2 text-[11.5px] text-slate-400 leading-relaxed line-clamp-2">{path.description}</p>
               <div className="mt-3 flex items-center gap-1.5 flex-wrap">
                 {path.skills.slice(0, 3).map(s => (
-                  <span key={s} className="text-[10px] px-2 py-0.5 rounded-full bg-[#020617]/60 border border-[#1e293b]/40 text-slate-500 font-mono">{s}</span>
+                  <span key={s} className="text-[10px] px-2 py-0.5 rounded-full bg-[#020617]/60 border border-[#1e293b]/40 text-slate-400 font-mono">{s}</span>
                 ))}
-                {path.skills.length > 3 && <span className="text-[10px] text-slate-600 font-mono">+{path.skills.length - 3}</span>}
+                {path.skills.length > 3 && <span className="text-[10px] text-slate-400 font-mono">+{path.skills.length - 3}</span>}
               </div>
-              <div className="mt-3 text-[11px] text-slate-600 font-mono flex items-center gap-1">
+              <div className="mt-3 text-[11px] text-slate-400 font-mono flex items-center gap-1">
                 <Sparkles className="w-3 h-3" /> Architecture ready, content coming soon
               </div>
             </motion.div>
           ))}
         </div>
         <div className="mt-6 p-4 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40">
-          <div className="text-[11px] font-mono text-slate-500 uppercase tracking-widest mb-1">Why one excellent path first?</div>
+          <div className="text-[11px] font-mono text-slate-400 uppercase tracking-widest mb-1">Why one excellent path first?</div>
           <div className="text-[12px] text-slate-400 leading-relaxed">
             A clean architecture with one excellent path is preferable to a shallow platform containing many empty paths.
             Wireless Pentesting (20 modules, 27 lessons, 16 verified captures, 15 challenges, ENG-01) serves as reference implementation.

@@ -212,7 +212,7 @@ export function ReportPdfExport({ className = '' }: { className?: string }) {
               <item.icon className="w-3 h-3" /> {item.label}
             </div>
             <div className="text-[15px] font-mono font-bold text-slate-100">{item.value}</div>
-            <div className="text-[10px] text-slate-600 mt-0.5">{item.desc}</div>
+            <div className="text-[10px] text-slate-400 mt-0.5">{item.desc}</div>
           </div>
         ))}
       </div>

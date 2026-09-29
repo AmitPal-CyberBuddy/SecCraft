@@ -86,7 +86,7 @@ export function ScenarioCard({ scenario }: { scenario: Scenario }) {
             <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-[#1e293b] border border-[#334155] text-slate-400">
               {meta.label}
             </span>
-            <span className="text-[9px] font-mono text-slate-600">{scenario.id}</span>
+            <span className="text-[9px] font-mono text-slate-400">{scenario.id}</span>
           </div>
           <h4 className="mt-2 text-[14px] font-semibold text-slate-100 leading-snug">{scenario.title}</h4>
           <p className="mt-1 text-[12px] text-slate-500 leading-relaxed line-clamp-2">{meta.hint}</p>
@@ -164,7 +164,7 @@ export function ScenarioCard({ scenario }: { scenario: Scenario }) {
                     onChange={e => setDraft(e.target.value)}
                     rows={5}
                     placeholder="Write your answer before revealing the model answer — the act of writing is the exercise."
-                    className="w-full rounded-xl bg-[#020617]/60 border border-[#1e293b] p-3 text-[12.5px] text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30 leading-relaxed"
+                    className="w-full rounded-xl bg-[#020617]/60 border border-[#1e293b] p-3 text-[12.5px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30 leading-relaxed"
                   />
                   <button
                     onClick={() => setRevealed(true)}

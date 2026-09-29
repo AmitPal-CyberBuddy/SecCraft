@@ -55,7 +55,7 @@ export function Challenges() {
     <div className="max-w-[1400px] mx-auto min-w-0 w-full space-y-6 md:space-y-8">
       {/* Path-aware breadcrumb */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Link to={`/paths/${effectivePathId}`} className="inline-flex items-center gap-2 text-[12px] text-slate-500 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[#0f172a]/60 border border-transparent hover:border-[#1e293b]/60">
+        <Link to={`/paths/${effectivePathId}`} className="inline-flex items-center gap-2 text-[12px] text-slate-400 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[#0f172a]/60 border border-transparent hover:border-[#1e293b]/60">
           <ArrowLeft className="w-4 h-4" />
           {currentPath.title} — Path Detail
         </Link>
@@ -88,7 +88,7 @@ export function Challenges() {
                   <span className="w-1 h-1 rounded-full bg-slate-600" />
                   <span className="font-mono text-amber-400 font-bold">{totalPoints} pts</span>
                   <span className="w-1 h-1 rounded-full bg-slate-600" />
-                  <span className="font-mono text-slate-500">{currentPath.shortTitle}</span>
+                  <span className="font-mono text-slate-400">{currentPath.shortTitle}</span>
                 </span>
               </p>
             </div>
@@ -113,7 +113,7 @@ export function Challenges() {
             { id: 'challenges', label: 'Challenges', icon: Swords, count: challengesForPath.length },
             { id: 'badges', label: 'Achievements', icon: Award, count: ACHIEVEMENTS_DEF.length },
           ].map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-medium transition-all shrink-0 touch-manipulation min-h-[44px] ${activeTab === tab.id ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>
+            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-medium transition-all shrink-0 touch-manipulation min-h-[44px] ${activeTab === tab.id ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-400 hover:text-slate-300 border border-transparent'}`}>
               <tab.icon className="w-4 h-4" />
               {tab.label}
               {tab.count && <span className="text-[10px] px-1.5 py-0 rounded-full bg-[#020617] border border-[#1e293b] font-mono">{tab.count}</span>}
@@ -122,17 +122,17 @@ export function Challenges() {
         </div>
       </motion.div>
 
-      {activeTab === 'badges' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading Badges…</div>}><BadgesShowcase /></Suspense>}
+      {activeTab === 'badges' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading Badges…</div>}><BadgesShowcase /></Suspense>}
 
       {activeTab === 'challenges' && (
       <>
       {currentPath.status !== 'available' ? (
         <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-8 text-center">
           <div className="w-12 h-12 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center mx-auto mb-3">
-            <Clock className="w-6 h-6 text-slate-500" />
+            <Clock className="w-6 h-6 text-slate-400" />
           </div>
           <div className="text-[14px] font-semibold text-slate-200">This path is planned — challenges coming soon</div>
-          <p className="mt-2 text-[12.5px] text-slate-500 max-w-[600px] mx-auto leading-relaxed">
+          <p className="mt-2 text-[12.5px] text-slate-400 max-w-[600px] mx-auto leading-relaxed">
             Architecture is ready — same challenge engine (guided → semi-guided → assessment) will be reused.
             Wireless Pentesting (15 challenges, 45 tasks, flags WIFIFORGE legacy) is reference implementation.
           </p>
@@ -184,7 +184,7 @@ export function Challenges() {
                       {lvl.icon}
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-[#020617] border border-[#1e293b] text-slate-500">{lvl.count} chals</span>
+                      <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-[#020617] border border-[#1e293b] text-slate-400">{lvl.count} chals</span>
                       <span className={`text-[11px] font-mono px-2 py-0.5 rounded-full border font-bold ${
                         lvl.color === 'cyan' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' :
                         lvl.color === 'violet' ? 'bg-violet-500/10 text-violet-400 border-violet-500/20' :
@@ -221,34 +221,34 @@ export function Challenges() {
             className="flex flex-col lg:flex-row gap-3 sticky top-[64px] z-20 bg-[#020617]/90 backdrop-blur-xl p-3 -mx-3 rounded-xl border border-[#1e293b]/30 shadow-lg shadow-black/10"
           >
             <div className="flex-1 relative group">
-              <Search className="w-4 h-4 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2 group-hover:text-slate-400 transition-colors" />
+              <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 group-hover:text-slate-400 transition-colors" />
               <input
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder={`Search challenges in ${currentPath.title}...`}
-                className="w-full pl-11 pr-4 py-3 rounded-xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm text-[13px] text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/30 focus:bg-[#0f172a] hover:border-[#334155]/60 hover:bg-[#111d33]/80 transition-all duration-200"
+                className="w-full pl-11 pr-4 py-3 rounded-xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm text-[13px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30 focus:bg-[#0f172a] hover:border-[#334155]/60 hover:bg-[#111d33]/80 transition-all duration-200"
               />
             </div>
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-thin">
               <div className="flex items-center gap-1 p-1 rounded-xl bg-[#0f172a]/60 border border-[#1e293b]/40 backdrop-blur-sm shrink-0">
-                <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold tracking-widest text-slate-400 uppercase">
                   <Layers className="w-3 h-3" />
                   Level
                 </div>
-                <button onClick={() => setFilterLevel(null)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 ${!filterLevel ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-500 hover:text-slate-300'}`}>All</button>
-                <button onClick={() => setFilterLevel('guided')} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 ${filterLevel === 'guided' ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/20 shadow-glow-cyan' : 'text-slate-500 hover:text-slate-300'}`}>Guided</button>
-                <button onClick={() => setFilterLevel('semi-guided')} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 ${filterLevel === 'semi-guided' ? 'bg-violet-500/15 text-violet-400 border border-violet-500/20' : 'text-slate-500 hover:text-slate-300'}`}>Semi</button>
-                <button onClick={() => setFilterLevel('assessment')} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 ${filterLevel === 'assessment' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' : 'text-slate-500 hover:text-slate-300'}`}>Assess</button>
+                <button onClick={() => setFilterLevel(null)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 ${!filterLevel ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-400 hover:text-slate-300'}`}>All</button>
+                <button onClick={() => setFilterLevel('guided')} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 ${filterLevel === 'guided' ? 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/20 shadow-glow-cyan' : 'text-slate-400 hover:text-slate-300'}`}>Guided</button>
+                <button onClick={() => setFilterLevel('semi-guided')} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 ${filterLevel === 'semi-guided' ? 'bg-violet-500/15 text-violet-400 border border-violet-500/20' : 'text-slate-400 hover:text-slate-300'}`}>Semi</button>
+                <button onClick={() => setFilterLevel('assessment')} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 ${filterLevel === 'assessment' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' : 'text-slate-400 hover:text-slate-300'}`}>Assess</button>
               </div>
 
               <div className="flex items-center gap-1 p-1 rounded-xl bg-[#0f172a]/60 border border-[#1e293b]/40 backdrop-blur-sm shrink-0">
-                <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold tracking-widest text-slate-400 uppercase">
                   <Filter className="w-3 h-3" />
                   Diff
                 </div>
-                <button onClick={() => setFilterDiff(null)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 ${!filterDiff ? 'bg-[#1e293b] text-slate-100 border border-[#334155]' : 'text-slate-500 hover:text-slate-300'}`}>All</button>
+                <button onClick={() => setFilterDiff(null)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 ${!filterDiff ? 'bg-[#1e293b] text-slate-100 border border-[#334155]' : 'text-slate-400 hover:text-slate-300'}`}>All</button>
                 {['Beginner','Intermediate','Advanced','Professional'].map(d => (
-                  <button key={d} onClick={() => setFilterDiff(d)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 whitespace-nowrap ${filterDiff === d ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-500 hover:text-slate-300 hover:bg-[#1e293b]/50'}`}>{d.slice(0,4)}</button>
+                  <button key={d} onClick={() => setFilterDiff(d)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 whitespace-nowrap ${filterDiff === d ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-400 hover:text-slate-300 hover:bg-[#1e293b]/50'}`}>{d.slice(0,4)}</button>
                 ))}
               </div>
 
@@ -295,10 +295,10 @@ export function Challenges() {
               className="rounded-2xl bg-[#0f172a]/60 border border-dashed border-[#334155]/60 p-12 text-center"
             >
               <div className="w-12 h-12 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center mx-auto mb-4">
-                <Search className="w-6 h-6 text-slate-500" />
+                <Search className="w-6 h-6 text-slate-400" />
               </div>
               <h3 className="font-heading font-semibold text-[16px] text-slate-300">No challenges found in {currentPath.title}</h3>
-              <p className="text-[13px] text-slate-500 mt-2">Try adjusting your filters — {currentPath.title} has {challengesForPath.length} challenges</p>
+              <p className="text-[13px] text-slate-400 mt-2">Try adjusting your filters — {currentPath.title} has {challengesForPath.length} challenges</p>
             </motion.div>
           )}
         </>

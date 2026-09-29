@@ -38,33 +38,33 @@ export function Daily() {
             <div className="p-4 rounded-2xl bg-[#0f172a] border border-[#1e293b] relative overflow-hidden group hover:border-[#334155] transition-all">
               <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative">
-                <div className="flex items-center gap-2 text-[11px] text-slate-500 uppercase tracking-wide"><Flame className="w-3 h-3 text-orange-400" /> Streak</div>
+                <div className="flex items-center gap-2 text-[11px] text-slate-400 uppercase tracking-wide"><Flame className="w-3 h-3 text-orange-400" /> Streak</div>
                 <div className="text-[22px] font-bold font-mono text-slate-100 mt-1">{streak} days</div>
-                <div className="text-[11px] text-slate-500">Keep the forge hot</div>
+                <div className="text-[11px] text-slate-400">Keep the forge hot</div>
               </div>
             </div>
             <div className="p-4 rounded-2xl bg-[#0f172a] border border-[#1e293b] relative overflow-hidden group hover:border-[#334155] transition-all">
               <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative">
-                <div className="flex items-center gap-2 text-[11px] text-slate-500 uppercase tracking-wide"><Zap className="w-3 h-3 text-amber-400" /> XP Today</div>
+                <div className="flex items-center gap-2 text-[11px] text-slate-400 uppercase tracking-wide"><Zap className="w-3 h-3 text-amber-400" /> XP Today</div>
                 <div className="text-[22px] font-bold font-mono text-slate-100 mt-1">+0</div>
-                <div className="text-[11px] text-slate-500">Complete tasks to earn</div>
+                <div className="text-[11px] text-slate-400">Complete tasks to earn</div>
               </div>
             </div>
             <div className="p-4 rounded-2xl bg-[#0f172a] border border-[#1e293b] relative overflow-hidden group hover:border-[#334155] transition-all">
               <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative">
-                <div className="flex items-center gap-2 text-[11px] text-slate-500 uppercase tracking-wide"><Target className="w-3 h-3 text-cyan-400" /> Goals</div>
+                <div className="flex items-center gap-2 text-[11px] text-slate-400 uppercase tracking-wide"><Target className="w-3 h-3 text-cyan-400" /> Goals</div>
                 <div className="text-[22px] font-bold font-mono text-slate-100 mt-1">3 active</div>
-                <div className="text-[11px] text-slate-500">Daily objectives</div>
+                <div className="text-[11px] text-slate-400">Daily objectives</div>
               </div>
             </div>
             <div className="p-4 rounded-2xl bg-[#0f172a] border border-[#1e293b] relative overflow-hidden group hover:border-[#334155] transition-all">
               <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative">
-                <div className="flex items-center gap-2 text-[11px] text-slate-500 uppercase tracking-wide"><Trophy className="w-3 h-3 text-violet-400" /> Completion</div>
+                <div className="flex items-center gap-2 text-[11px] text-slate-400 uppercase tracking-wide"><Trophy className="w-3 h-3 text-violet-400" /> Completion</div>
                 <div className="text-[22px] font-bold font-mono text-slate-100 mt-1">0%</div>
-                <div className="text-[11px] text-slate-500">Today's progress</div>
+                <div className="text-[11px] text-slate-400">Today's progress</div>
               </div>
             </div>
           </div>
@@ -74,7 +74,7 @@ export function Daily() {
           <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-5 md:p-6 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/[0.02] to-amber-500/[0.02] pointer-events-none" />
             <div className="relative">
-              <Suspense fallback={<div className="p-8 text-center text-[13px] text-slate-500 font-mono">Loading daily challenges…</div>}>
+              <Suspense fallback={<div className="p-8 text-center text-[13px] text-slate-400 font-mono">Loading daily challenges…</div>}>
                 <DailyChallenges />
               </Suspense>
             </div>
@@ -82,7 +82,7 @@ export function Daily() {
         </FadeIn>
 
         <FadeIn delay={0.3}>
-          <div className="flex items-center justify-center gap-2 text-[11px] text-slate-600 font-mono py-2">
+          <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 font-mono py-2">
             <Clock className="w-3 h-3" /> Resets daily • Streak tracked locally • No account needed
           </div>
         </FadeIn>

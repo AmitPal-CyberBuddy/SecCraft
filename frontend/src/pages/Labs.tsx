@@ -118,7 +118,7 @@ export function Labs() {
       {/* Path-aware header */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
-          <Link to={`/paths/${effectivePathId}`} className="inline-flex items-center gap-2 text-[12px] text-slate-500 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[#0f172a]/60 border border-transparent hover:border-[#1e293b]/60">
+          <Link to={`/paths/${effectivePathId}`} className="inline-flex items-center gap-2 text-[12px] text-slate-400 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[#0f172a]/60 border border-transparent hover:border-[#1e293b]/60">
             <ArrowLeft className="w-4 h-4" />
             {currentPath.title} — Path Detail
           </Link>
@@ -177,7 +177,7 @@ export function Labs() {
             { id: 'vault', label: 'Evidence Vault', icon: Shield, count: null },
             { id: 'scoring', label: 'Scoring', icon: Trophy, count: null },
           ].map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center gap-1.5 xs:gap-2 px-3 xs:px-4 py-2.5 rounded-lg text-[12px] xs:text-[13px] font-medium transition-all shrink-0 touch-manipulation min-h-[44px] xs:min-h-0 ${activeTab === tab.id ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-500 hover:text-slate-300 border border-transparent'}`}>
+            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center gap-1.5 xs:gap-2 px-3 xs:px-4 py-2.5 rounded-lg text-[12px] xs:text-[13px] font-medium transition-all shrink-0 touch-manipulation min-h-[44px] xs:min-h-0 ${activeTab === tab.id ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-400 hover:text-slate-300 border border-transparent'}`}>
               <tab.icon className="w-4 h-4" />
               <span className="hidden xs:inline">{tab.label}</span>
               <span className="xs:hidden">{tab.label.split(' ')[0]}</span>
@@ -187,14 +187,14 @@ export function Labs() {
         </div>
       </motion.div>
 
-      {activeTab === 'upload' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading PcapUploader…</div>}><PcapUploader /></Suspense>}
-      {activeTab === 'terminal' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading terminal…</div>}><TerminalEmulator /></Suspense>}
-      {activeTab === 'vault' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading evidence vault…</div>}><EvidenceVault /></Suspense>}
+      {activeTab === 'upload' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading PcapUploader…</div>}><PcapUploader /></Suspense>}
+      {activeTab === 'terminal' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading terminal…</div>}><TerminalEmulator /></Suspense>}
+      {activeTab === 'vault' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading evidence vault…</div>}><EvidenceVault /></Suspense>}
       {activeTab === 'scoring' && (
-        <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading lab scoring…</div>}>
+        <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading lab scoring…</div>}>
           <div className="space-y-4">
             <div className="sticky top-[64px] z-20 bg-[#020617]/90 backdrop-blur-xl rounded-2xl border border-[#1e293b] p-4 shadow-lg -mx-3 p-3 md:mx-0 md:p-4 xs:p-5">
-              <label htmlFor="scoring-lab" className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Lab to score — {currentPath.title}</label>
+              <label htmlFor="scoring-lab" className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Lab to score — {currentPath.title}</label>
               <select
                 id="scoring-lab"
                 value={selectedLabId}
@@ -205,7 +205,7 @@ export function Labs() {
                   <option key={lab.id} value={lab.id}>{lab.id} — {lab.title}</option>
                 ))}
               </select>
-              <p className="text-[11px] text-slate-500 mt-2">
+              <p className="text-[11px] text-slate-400 mt-2">
                 Pick the lab you are working on: the objective, artefact and method prompts below come from that lab's catalogue entry, so you are never shown another lab's answers.
               </p>
             </div>
@@ -219,10 +219,10 @@ export function Labs() {
           {currentPath.status !== 'available' ? (
             <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-8 text-center">
               <div className="w-12 h-12 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center mx-auto mb-3">
-                <Clock className="w-6 h-6 text-slate-500" />
+                <Clock className="w-6 h-6 text-slate-400" />
               </div>
               <div className="text-[14px] font-semibold text-slate-200">This learning path is planned</div>
-              <p className="mt-2 text-[12.5px] text-slate-500 max-w-[600px] mx-auto leading-relaxed">
+              <p className="mt-2 text-[12.5px] text-slate-400 max-w-[600px] mx-auto leading-relaxed">
                 Architecture is ready — labs will reuse same engine (artifact analysis, config audit, scenario) as Wireless path.
                 Wireless Pentesting (16 verified artifacts, 15 challenges) serves as reference implementation.
               </p>
@@ -247,11 +247,11 @@ export function Labs() {
                       </div>
                       <div className="min-w-0">
                         <h3 className="font-heading font-bold text-[13px] xs:text-[14px] text-slate-100 truncate">Artifact library — {currentPath.title} • {platform.name} generic engine</h3>
-                        <p className="text-[11px] text-slate-500 font-mono truncate">generated structure + decoded offline • verified by scripts/verify-lab-artifacts.py • {platform.tagline}</p>
+                        <p className="text-[11px] text-slate-400 font-mono truncate">generated structure + decoded offline • verified by scripts/verify-lab-artifacts.py • {platform.tagline}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 xs:gap-2 min-w-0 shrink-0">
-                      <span className="text-[11px] px-2.5 py-1 rounded-full bg-[#020617] border border-[#1e293b] text-slate-500 font-mono shrink-0">{filteredPcaps.length} shown • {currentPath.legacyBrand ? `legacy ${currentPath.legacyBrand}` : currentPath.id}</span>
+                      <span className="text-[11px] px-2.5 py-1 rounded-full bg-[#020617] border border-[#1e293b] text-slate-400 font-mono shrink-0">{filteredPcaps.length} shown • {currentPath.legacyBrand ? `legacy ${currentPath.legacyBrand}` : currentPath.id}</span>
                       <span className="text-[11px] px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-mono shrink-0">Offline dataset • {parserInfo?.method || 'platform-labkit'}</span>
                     </div>
                   </div>
@@ -276,10 +276,10 @@ export function Labs() {
                                 <span className="text-[12px] font-mono font-medium text-slate-200 truncate group-hover/pcap:text-slate-100 transition-colors">{p.filename}</span>
                               </div>
                               <div className="mt-1.5 flex items-center gap-2 text-[10px] font-mono flex-wrap">
-                                <span className="px-1.5 py-0.5 rounded bg-[#1e293b] border border-[#334155]/60 text-slate-500 truncate">{p.module}</span>
-                                <span className="text-slate-600 hidden xs:inline">•</span>
-                                <span className="text-slate-500">{p.size ? `${(p.size/1024).toFixed(1)}KB` : `${p.frames || '?'}f`}</span>
-                                {p.type && (<><span className="text-slate-600">•</span><span className="text-cyan-400/70">{p.type}</span></>)}
+                                <span className="px-1.5 py-0.5 rounded bg-[#1e293b] border border-[#334155]/60 text-slate-400 truncate">{p.module}</span>
+                                <span className="text-slate-400 hidden xs:inline">•</span>
+                                <span className="text-slate-400">{p.size ? `${(p.size/1024).toFixed(1)}KB` : `${p.frames || '?'}f`}</span>
+                                {p.type && (<><span className="text-slate-400">•</span><span className="text-cyan-400/70">{p.type}</span></>)}
                               </div>
                             </div>
                             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-glow-emerald shrink-0 mt-1" />
@@ -298,26 +298,26 @@ export function Labs() {
                 className="flex flex-col lg:flex-row gap-3 min-w-0"
               >
                 <div className="flex-1 relative group min-w-0">
-                  <Search className="w-4 h-4 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2 group-hover:text-slate-400 transition-colors" />
+                  <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 group-hover:text-slate-400 transition-colors" />
                   <input
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     placeholder={`Search labs in ${currentPath.title}, e.g., beacon, handshake, deauth, rogue, captive, Enterprise, EAP...`}
-                    className="w-full pl-11 pr-4 py-3 rounded-xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm text-[13px] text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/30 focus:bg-[#0f172a] hover:border-[#334155]/60 hover:bg-[#111d33]/80 transition-all duration-200 min-w-0"
+                    className="w-full pl-11 pr-4 py-3 rounded-xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm text-[13px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30 focus:bg-[#0f172a] hover:border-[#334155]/60 hover:bg-[#111d33]/80 transition-all duration-200 min-w-0"
                   />
                 </div>
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin shrink-0">
                   <div className="flex items-center gap-1 p-1 rounded-xl bg-[#0f172a]/60 border border-[#1e293b]/40 backdrop-blur-sm shrink-0">
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold tracking-widest text-slate-500 uppercase shrink-0">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold tracking-widest text-slate-400 uppercase shrink-0">
                       <Layers className="w-3 h-3" />Type
                     </div>
-                    <button onClick={() => setFilterType(null)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 shrink-0 ${!filterType ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-500 hover:text-slate-300'}`}>All</button>
+                    <button onClick={() => setFilterType(null)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 shrink-0 ${!filterType ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-400 hover:text-slate-300'}`}>All</button>
                     {typeFilters.slice(0, 6).map(type => (
-                      <button key={type} onClick={() => setFilterType(type)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 whitespace-nowrap shrink-0 ${filterType === type ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-500 hover:text-slate-300 hover:bg-[#1e293b]/50'}`}>{type.split(' ')[0]}</button>
+                      <button key={type} onClick={() => setFilterType(type)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 whitespace-nowrap shrink-0 ${filterType === type ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-400 hover:text-slate-300 hover:bg-[#1e293b]/50'}`}>{type.split(' ')[0]}</button>
                     ))}
                   </div>
                   <button className="w-9 h-9 rounded-xl bg-[#0f172a]/60 border border-[#1e293b]/40 flex items-center justify-center hover:bg-[#1e293b]/60 hover:border-[#334155]/60 transition-all duration-200 shrink-0 touch-manipulation">
-                    <Filter className="w-4 h-4 text-slate-500" />
+                    <Filter className="w-4 h-4 text-slate-400" />
                   </button>
                 </div>
               </motion.div>
@@ -345,7 +345,7 @@ export function Labs() {
                                 <FlaskConical className={`w-5 h-5 ${lab.color === 'cyan' ? 'text-cyan-400' : lab.color === 'emerald' ? 'text-emerald-400' : lab.color === 'violet' ? 'text-violet-400' : lab.color === 'amber' ? 'text-amber-400' : lab.color === 'red' ? 'text-red-400' : lab.color === 'pink' ? 'text-pink-400' : 'text-slate-400'}`} />
                               </div>
                               <div className="min-w-0">
-                                <div className="text-[11px] font-mono text-slate-500 tracking-wide truncate">{lab.module} • {currentPath.shortTitle}</div>
+                                <div className="text-[11px] font-mono text-slate-400 tracking-wide truncate">{lab.module} • {currentPath.shortTitle}</div>
                                 <div className="text-[12px] font-semibold text-slate-200 group-hover:text-slate-100 transition-colors truncate">{lab.type}</div>
                               </div>
                             </div>
@@ -356,10 +356,10 @@ export function Labs() {
                           <h3 className="font-heading font-bold text-[15px] text-slate-100 mb-3 leading-tight group-hover:text-white transition-colors duration-200 line-clamp-2">{lab.title}</h3>
                           <div className="flex flex-wrap items-center gap-2 min-w-0">
                             <span className="px-2.5 py-1 rounded-full bg-[#1e293b]/80 border border-[#334155]/60 text-[11px] font-medium text-slate-400 group-hover:bg-[#25354f]/80 group-hover:text-slate-300 transition-all duration-200 shrink-0">{lab.difficulty}</span>
-                            <span className="text-[11px] text-slate-600 hidden xs:inline">•</span>
-                            <span className="text-[11px] font-mono text-slate-500 truncate">{lab.id}</span>
-                            {lab.pcap && (<><span className="text-[11px] text-slate-600 hidden xs:inline">•</span><span className="flex items-center gap-1 text-[11px] font-mono text-cyan-400/80 group-hover:text-cyan-400 transition-colors shrink-0"><FileCode className="w-3 h-3" />{lab.pcap}.pcapng</span></>)}
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all duration-200 ml-auto shrink-0" />
+                            <span className="text-[11px] text-slate-400 hidden xs:inline">•</span>
+                            <span className="text-[11px] font-mono text-slate-400 truncate">{lab.id}</span>
+                            {lab.pcap && (<><span className="text-[11px] text-slate-400 hidden xs:inline">•</span><span className="flex items-center gap-1 text-[11px] font-mono text-cyan-400/80 group-hover:text-cyan-400 transition-colors shrink-0"><FileCode className="w-3 h-3" />{lab.pcap}.pcapng</span></>)}
+                            <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all duration-200 ml-auto shrink-0" />
                           </div>
                         </div>
                       </Link>
@@ -370,9 +370,9 @@ export function Labs() {
 
               {filteredLabs.length === 0 && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl bg-[#0f172a]/60 border border-dashed border-[#334155]/60 p-12 text-center">
-                  <div className="w-12 h-12 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center mx-auto mb-4"><Search className="w-6 h-6 text-slate-500" /></div>
+                  <div className="w-12 h-12 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center mx-auto mb-4"><Search className="w-6 h-6 text-slate-400" /></div>
                   <h3 className="font-heading font-semibold text-[16px] text-slate-300">No labs found in {currentPath.title}</h3>
-                  <p className="text-[13px] text-slate-500 mt-2">Try adjusting your search or filters — {labsForPath.length} labs total in this path</p>
+                  <p className="text-[13px] text-slate-400 mt-2">Try adjusting your search or filters — {labsForPath.length} labs total in this path</p>
                 </motion.div>
               )}
             </>
@@ -385,7 +385,7 @@ export function Labs() {
           <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0"><Sparkles className="w-4 h-4 text-emerald-400" /></div>
           <div className="text-[11px] xs:text-[12px] leading-relaxed min-w-0">
             <div className="font-semibold text-slate-300 mb-1">How these labs work — platform-level • {platform.tagline}</div>
-            <div className="text-slate-500 font-mono leading-relaxed break-words">
+            <div className="text-slate-400 font-mono leading-relaxed break-words">
               <span className="text-emerald-400 font-medium">SIMULATION</span> bundled offline dataset — zero-cost • <span className="text-cyan-400 font-medium">HYBRID</span> config audit + offline • <span className="text-violet-400 font-medium">REAL</span> requires authorized environment (alias RF_REQUIRED for wireless) • <span className="text-amber-400 font-medium">Vault</span> hash + claim + filter + frames • <span className="text-pink-400 font-medium">{TOTAL_PCAPS} artifacts</span> verified • <span className="text-slate-300">{platform.name} generic lab engine</span> supports PCAP, HTTP, APK, config, logs, IAM, Terraform
             </div>
           </div>

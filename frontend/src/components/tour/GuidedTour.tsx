@@ -163,7 +163,7 @@ export function GuidedTour() {
               </button>
               <button onClick={() => { setShowPrompt(false); try { localStorage.setItem('platform-tour-seen', 'true'); try { localStorage.setItem('wififorge-tour-seen', 'true') } catch {}; } catch {}; setHasSeenTour(true) }} className="px-4 py-2.5 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] text-slate-400 hover:text-slate-200 transition-colors">Skip</button>
             </div>
-            <div className="mt-2 text-[10px] text-slate-600 font-mono">Zero-cost • local-first • offline • {platform.name} • {TOTAL_LEARNING_PATHS} paths • {TOTAL_MODULES} modules • {TOTAL_LESSONS} lessons • {TOTAL_PCAPS} captures • {platform.tagline}</div>
+            <div className="mt-2 text-[10px] text-slate-400 font-mono">Zero-cost • local-first • offline • {platform.name} • {TOTAL_LEARNING_PATHS} paths • {TOTAL_MODULES} modules • {TOTAL_LESSONS} lessons • {TOTAL_PCAPS} captures • {platform.tagline}</div>
           </motion.div>
         )}
       </AnimatePresence>

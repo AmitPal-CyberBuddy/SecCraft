@@ -37,7 +37,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className="text-[13px] text-slate-500 mt-2 leading-relaxed">The details below stay in this tab — this build has no error-reporting service, no queue and no audit log.</p>
             <div className="mt-4 p-3 rounded-xl bg-[#020617] border border-[#1e293b] text-left">
               <div className="text-[11px] font-mono text-red-400 break-all">{this.state.error?.message || 'Unknown error'}</div>
-              <div className="text-[10px] font-mono text-slate-600 mt-2 line-clamp-6 whitespace-pre-wrap break-all">{this.state.error?.stack?.slice(0, 800) || ''}</div>
+              <div className="text-[10px] font-mono text-slate-400 mt-2 line-clamp-6 whitespace-pre-wrap break-all">{this.state.error?.stack?.slice(0, 800) || ''}</div>
             </div>
             <div className="mt-4 flex gap-2 justify-center">
               <button onClick={() => { try { localStorage.removeItem('platform-progress'); try { localStorage.removeItem('wififorge-progress') } catch {}; } catch {}; window.location.reload() }} className="px-4 py-2.5 rounded-xl bg-[#1e293b] border border-[#334155] text-[13px] text-slate-300 flex items-center gap-2 hover:bg-[#25354f] transition-colors">
@@ -47,7 +47,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 <Bug className="w-4 h-4" />Try Again
               </button>
             </div>
-            <div className="mt-4 flex items-center justify-center gap-2 text-[11px] text-slate-600 font-mono">
+            <div className="mt-4 flex items-center justify-center gap-2 text-[11px] text-slate-400 font-mono">
               <Shield className="w-3 h-3" />local only • no telemetry • clearing storage resets progress
             </div>
           </div>

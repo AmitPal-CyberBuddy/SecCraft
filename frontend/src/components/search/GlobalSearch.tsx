@@ -280,7 +280,7 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
                   <Search className="w-6 h-6 text-slate-500" />
                 </div>
                 <div className="text-[13px] text-slate-400">No results for "{query}" in {platform.name}</div>
-                <div className="text-[11px] text-slate-600 mt-1">Try: wireless, web, api, WPA3, handshake, deauth, hashcat, reconnaissance, evidence</div>
+                <div className="text-[11px] text-slate-400 mt-1">Try: wireless, web, api, WPA3, handshake, deauth, hashcat, reconnaissance, evidence</div>
               </div>
             ) : (
               <div className="space-y-1">
@@ -310,7 +310,7 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
                         </div>
                         <div className="text-[11px] text-slate-500 truncate mt-0.5">{item.description}</div>
                       </div>
-                      <ArrowRight className="w-4 h-4 text-slate-600 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all duration-200 shrink-0 hidden xs:block" />
+                      <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all duration-200 shrink-0 hidden xs:block" />
                     </motion.button>
                   )
                 })}

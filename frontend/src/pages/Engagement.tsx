@@ -338,10 +338,10 @@ export function Engagement() {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[12px] font-mono text-slate-200 truncate">{a.pid}</span>
-                    <ExternalLink className="w-3 h-3 text-slate-600 group-hover:text-cyan-400 shrink-0" />
+                    <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-cyan-400 shrink-0" />
                   </div>
                   <div className="mt-1.5 text-[10.5px] font-mono text-slate-500">{a.frames} frames • {a.bytes} B</div>
-                  <div className="mt-1 text-[10px] text-slate-600 truncate">{a.sha256.slice(0, 16)}…</div>
+                  <div className="mt-1 text-[10px] text-slate-400 truncate">{a.sha256.slice(0, 16)}…</div>
                 </Link>
               ))}
             </div>

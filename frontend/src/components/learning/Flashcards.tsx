@@ -94,7 +94,7 @@ export function Flashcards({ className = '' }: { className?: string }) {
       <div className="mt-4 flex items-center justify-between text-[11px] font-mono">
         <span className="text-slate-500">{current + 1}/{cards.length} • Next review: {new Date(card.nextReview).toLocaleDateString()}</span>
         <div className="flex items-center gap-2">
-          <span className="text-slate-600">{stats.correct}✓ {stats.wrong}✗</span>
+          <span className="text-slate-400">{stats.correct}✓ {stats.wrong}✗</span>
           <div className="w-20 h-1.5 bg-[#020617] rounded-full overflow-hidden border border-[#1e293b]/40"><div className="h-full bg-gradient-to-r from-violet-400 to-cyan-400 rounded-full" style={{ width: `${((current+1)/cards.length)*100}%` }} /></div>
         </div>
       </div>

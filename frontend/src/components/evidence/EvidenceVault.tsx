@@ -169,7 +169,7 @@ export function EvidenceVault({ className = '' }: { className?: string }) {
               value={form.label}
               onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
               placeholder="Artefact label (wpa2-handshake.pcapng)"
-              className="rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[12px] text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30"
+              className="rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[12px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30"
             />
             <select
               value={form.kind}
@@ -188,20 +188,20 @@ export function EvidenceVault({ className = '' }: { className?: string }) {
             value={form.claim}
             onChange={e => setForm(f => ({ ...f, claim: e.target.value }))}
             placeholder="Claim this artefact supports (required)"
-            className="w-full rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[12px] text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30"
+            className="w-full rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[12px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30"
           />
           <div className="grid gap-2 sm:grid-cols-2">
             <input
               value={form.filter}
               onChange={e => setForm(f => ({ ...f, filter: e.target.value }))}
               placeholder="Filter / extraction (eapol.type == 3)"
-              className="rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[11.5px] font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30"
+              className="rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[11.5px] font-mono text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30"
             />
             <input
               value={form.frames}
               onChange={e => setForm(f => ({ ...f, frames: e.target.value }))}
               placeholder="Frames (9-12)"
-              className="rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[11.5px] font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30"
+              className="rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[11.5px] font-mono text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30"
             />
           </div>
 
@@ -216,7 +216,7 @@ export function EvidenceVault({ className = '' }: { className?: string }) {
             <input
               onChange={e => void handleHashOnly(e.target.value)}
               placeholder="sha256sum output"
-              className="flex-1 min-w-[160px] rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[11px] font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30"
+              className="flex-1 min-w-[160px] rounded-xl bg-[#020617]/60 border border-[#1e293b] px-3 py-2 text-[11px] font-mono text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30"
             />
           </div>
 

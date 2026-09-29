@@ -187,7 +187,7 @@ export function PcapInspector({ pcapId, initialFilter = '', onFrameSelect }: Pro
             <div className="w-5 h-5 border-2 border-slate-600 border-t-cyan-400 rounded-full animate-spin" />
           </div>
           <div className="text-[13px] text-slate-400 font-medium">Loading frame analysis…</div>
-          <div className="text-[11px] text-slate-600 font-mono">{pcapId}.pcapng • local parser API, then bundled offline dataset</div>
+          <div className="text-[11px] text-slate-400 font-mono">{pcapId}.pcapng • local parser API, then bundled offline dataset</div>
         </div>
       </div>
     )
@@ -274,13 +274,13 @@ export function PcapInspector({ pcapId, initialFilter = '', onFrameSelect }: Pro
       <div className="rounded-2xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm p-4">
         <div className="flex flex-col md:flex-row gap-3">
           <div className="flex-1 relative group">
-            <Search className="w-4 h-4 text-slate-600 absolute left-3.5 top-1/2 -translate-y-1/2 group-hover:text-slate-500 transition-colors" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 group-hover:text-slate-500 transition-colors" />
             <input
               value={filter}
               onChange={e => setFilter(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleFilterApply()}
               placeholder="Wireshark display filter, e.g., wlan.fc.type_subtype==8, eapol, wlan.ssid==LAB-WIFI"
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[12px] font-mono text-slate-200 placeholder:text-slate-600 focus:border-cyan-500/30 focus:bg-[#0a1020] focus:outline-none hover:border-[#334155]/60 transition-all duration-200"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[12px] font-mono text-slate-200 placeholder:text-slate-400 focus:border-cyan-500/30 focus:bg-[#0a1020] focus:outline-none hover:border-[#334155]/60 transition-all duration-200"
             />
           </div>
           <motion.button
@@ -383,7 +383,7 @@ export function PcapInspector({ pcapId, initialFilter = '', onFrameSelect }: Pro
               <Search className="w-5 h-5 text-slate-500" />
             </div>
             <div className="text-[13px] text-slate-400">No frames match filter "{filter}"</div>
-            <div className="text-[11px] text-slate-600 mt-1 font-mono">Try a different Wireshark display filter</div>
+            <div className="text-[11px] text-slate-400 mt-1 font-mono">Try a different Wireshark display filter</div>
           </div>
         )}
       </div>

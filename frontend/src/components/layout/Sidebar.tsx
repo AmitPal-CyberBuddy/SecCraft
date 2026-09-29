@@ -64,7 +64,7 @@ export function Sidebar({ onClose, isMobile }: Props) {
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
           </div>
           <div className="flex items-center gap-2 mt-1 min-w-0">
-            <span className="text-[8px] xs:text-[9px] tracking-[0.15em] text-slate-500 font-semibold uppercase truncate">Hands-on Cybersecurity</span>
+            <span className="text-[8px] xs:text-[9px] tracking-[0.15em] text-slate-400 font-semibold uppercase truncate">Hands-on Cybersecurity</span>
             <span className="text-[7px] xs:text-[8px] px-1 py-0 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono shrink-0">v{platform.version}</span>
           </div>
         </div>
@@ -82,7 +82,7 @@ export function Sidebar({ onClose, isMobile }: Props) {
       {/* Current Learning Path — platform-level indicator, wireless as sub-brand */}
       <div className="relative px-4 xs:px-5 py-3 border-b border-[#1e293b]/40 shrink-0 bg-[#020617]/40">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-semibold tracking-widest text-slate-500 uppercase flex items-center gap-1.5">
+          <span className="text-[10px] font-semibold tracking-widest text-slate-400 uppercase flex items-center gap-1.5">
             <Layers className="w-3 h-3" /> Current Path
           </span>
           <span className="text-[10px] font-mono text-cyan-400 px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20">{currentPath?.shortTitle || 'Wireless'}</span>
@@ -91,12 +91,12 @@ export function Sidebar({ onClose, isMobile }: Props) {
           <div className="text-[16px]">{currentPath?.icon || '📡'}</div>
           <div className="min-w-0 flex-1">
             <div className="text-[12px] font-semibold text-slate-200 truncate">{currentPath?.title || 'Wireless Pentesting'}</div>
-            <div className="text-[10px] text-slate-500 font-mono truncate">{currentPath?.category} • {currentPath?.estimatedHours}h</div>
+            <div className="text-[10px] text-slate-400 font-mono truncate">{currentPath?.category} • {currentPath?.estimatedHours}h</div>
           </div>
         </div>
         <div className="mt-2.5">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-slate-500 font-mono">Overall</span>
+            <span className="text-[10px] text-slate-400 font-mono">Overall</span>
             <span className="text-[10px] font-mono font-semibold text-cyan-400">{overall}%</span>
           </div>
           <div className="relative h-1.5 bg-[#020617] rounded-full overflow-hidden border border-[#1e293b]/50">
@@ -114,12 +114,12 @@ export function Sidebar({ onClose, isMobile }: Props) {
               <div className="w-5 h-5 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
                 <Zap className="w-3 h-3 text-amber-400" />
               </div>
-              <span className="text-[10px] text-slate-500 font-mono truncate">{streak}d streak</span>
+              <span className="text-[10px] text-slate-400 font-mono truncate">{streak}d streak</span>
             </div>
             <div className="hidden xs:flex h-3 w-px bg-[#1e293b] shrink-0" />
             <div className="flex items-center gap-1.5 min-w-0">
               <Activity className="w-3 h-3 text-emerald-400 shrink-0" />
-              <span className="text-[10px] text-slate-500 font-mono truncate">{TOTAL_PCAPS} artifacts • offline</span>
+              <span className="text-[10px] text-slate-400 font-mono truncate">{TOTAL_PCAPS} artifacts • offline</span>
             </div>
           </div>
         </div>
@@ -135,8 +135,8 @@ export function Sidebar({ onClose, isMobile }: Props) {
             <div key={sectionKey} className="space-y-1">
               {sectionMeta && (
                 <div className="px-3 mb-2 flex items-center gap-2">
-                  <sectionMeta.icon className="w-3 h-3 text-slate-500" />
-                  <span className="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">{sectionMeta.label}</span>
+                  <sectionMeta.icon className="w-3 h-3 text-slate-400" />
+                  <span className="text-[10px] font-semibold tracking-widest text-slate-400 uppercase">{sectionMeta.label}</span>
                 </div>
               )}
               {sectionItems.map((item, idx) => {
@@ -176,7 +176,7 @@ export function Sidebar({ onClose, isMobile }: Props) {
                         <item.icon className={`w-[16px] h-[16px] transition-all duration-200 ${
                           isActive 
                             ? 'text-cyan-400' 
-                            : 'text-slate-500 group-hover:text-slate-300 group-hover:scale-110'
+                            : 'text-slate-400 group-hover:text-slate-300 group-hover:scale-110'
                         }`} />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -198,13 +198,13 @@ export function Sidebar({ onClose, isMobile }: Props) {
                             </span>
                           )}
                         </div>
-                        <div className="text-[11px] text-slate-500 truncate mt-0.5 group-hover:text-slate-400 transition-colors">
+                        <div className="text-[11px] text-slate-400 truncate mt-0.5 group-hover:text-slate-400 transition-colors">
                           {item.desc}
                         </div>
                       </div>
                       <ChevronRight className={`
                         w-3.5 h-3.5 transition-all duration-200 shrink-0
-                        ${isActive ? 'text-slate-400 opacity-100' : 'text-slate-600 opacity-0 group-hover:opacity-100 group-hover:text-slate-400 group-hover:translate-x-0.5'}
+                        ${isActive ? 'text-slate-400 opacity-100' : 'text-slate-400 opacity-0 group-hover:opacity-100 group-hover:text-slate-400 group-hover:translate-x-0.5'}
                       `} />
                     </NavLink>
                   </motion.div>
@@ -217,7 +217,7 @@ export function Sidebar({ onClose, isMobile }: Props) {
         <div className="pt-4 mt-4 border-t border-[#1e293b]/40">
           <div className="px-3 mb-3 flex items-center gap-2">
             <Target className="w-3 h-3 text-violet-400" />
-            <span className="text-[10px] font-semibold tracking-widest text-slate-500 uppercase">Methodology</span>
+            <span className="text-[10px] font-semibold tracking-widest text-slate-400 uppercase">Methodology</span>
           </div>
           <div className="mx-1 p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/60 backdrop-blur-sm relative overflow-hidden group hover:bg-[#020617]/80 hover:border-[#334155]/60 transition-all duration-300">
             <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-cyan-500/5 opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
@@ -226,7 +226,7 @@ export function Sidebar({ onClose, isMobile }: Props) {
                 <Shield className="w-3.5 h-3.5 text-violet-400 shrink-0" />
                 <span>{platform.philosophyShort}</span>
               </div>
-              <div className="mt-2 text-[10px] text-slate-500 font-mono leading-relaxed">
+              <div className="mt-2 text-[10px] text-slate-400 font-mono leading-relaxed">
                 {platform.tagline}
               </div>
               <div className="mt-2.5 flex items-center gap-1.5">
@@ -235,7 +235,7 @@ export function Sidebar({ onClose, isMobile }: Props) {
                     <div key={i} className={`w-1 h-1 rounded-full ${i <= 2 ? 'bg-cyan-400' : 'bg-slate-600'}`} />
                   ))}
                 </div>
-                <span className="text-[10px] text-slate-500 font-mono">Platform • Generic VAPT</span>
+                <span className="text-[10px] text-slate-400 font-mono">Platform • Generic VAPT</span>
               </div>
             </div>
           </div>
@@ -251,18 +251,18 @@ export function Sidebar({ onClose, isMobile }: Props) {
               </div>
               <div className="space-y-1.5 text-[11px]">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Status</span>
+                  <span className="text-slate-400">Status</span>
                   <span className="flex items-center gap-1.5 text-emerald-400 font-mono text-[10px]">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                     Active
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Mode</span>
+                  <span className="text-slate-400">Mode</span>
                   <span className="text-slate-300 font-mono text-[10px]">Zero-cost • Offline</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Artifacts</span>
+                  <span className="text-slate-400">Artifacts</span>
                   <span className="text-cyan-400 font-mono text-[10px]">{TOTAL_PCAPS} verified • local-first</span>
                 </div>
               </div>
@@ -281,12 +281,12 @@ export function Sidebar({ onClose, isMobile }: Props) {
             </div>
             <div>
               <div className="text-[11px] font-medium text-slate-300 leading-none">{platform.name}</div>
-              <div className="text-[9px] text-slate-500 font-mono">{TOTAL_LEARNING_PATHS} paths • {TOTAL_MODULES} modules • {TOTAL_LABS} labs</div>
+              <div className="text-[9px] text-slate-400 font-mono">{TOTAL_LEARNING_PATHS} paths • {TOTAL_MODULES} modules • {TOTAL_LABS} labs</div>
             </div>
           </div>
-          <div className="text-[10px] text-slate-600 font-mono">v{platform.version}</div>
+          <div className="text-[10px] text-slate-400 font-mono">v{platform.version}</div>
         </div>
-        <div className="mt-3 text-[9px] text-slate-600 text-center font-mono tracking-wide">
+        <div className="mt-3 text-[9px] text-slate-400 text-center font-mono tracking-wide">
           {platform.tagline} • Local-first • {platform.secondaryTagline}
         </div>
       </div>

@@ -132,9 +132,9 @@ export function LocalDataPanel({ className = '' }: { className?: string }) {
                 <div className="min-w-0">
                   <div className="text-[12.5px] text-slate-200">{label}</div>
                   <div className="text-[11px] text-slate-500 leading-relaxed">{description}</div>
-                  <div className="text-[10px] font-mono text-slate-600 mt-0.5">{key}</div>
+                  <div className="text-[10px] font-mono text-slate-400 mt-0.5">{key}</div>
                 </div>
-                <span className={`shrink-0 text-[11px] font-mono ${size ? 'text-cyan-400' : 'text-slate-600'}`}>
+                <span className={`shrink-0 text-[11px] font-mono ${size ? 'text-cyan-400' : 'text-slate-400'}`}>
                   {size ? `${size} B` : 'empty'}
                 </span>
               </div>

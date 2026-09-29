@@ -288,7 +288,7 @@ export function ReconMap({ pcapId }: Props) {
                   <div className={`h-12 rounded-lg border flex flex-col items-center justify-end p-1 ${apsOnCh.length ? 'bg-violet-500/10 border-violet-500/20' : 'bg-[#0f172a] border-[#1e293b]/40'}`}>
                     {apsOnCh.map(ap => <div key={ap.bssid} className="w-full h-2 rounded-full bg-violet-400 mb-1" />)}
                   </div>
-                  <div className="text-[9px] font-mono text-slate-600 mt-1">{ch}</div>
+                  <div className="text-[9px] font-mono text-slate-400 mt-1">{ch}</div>
                 </div>
               )
             })}
@@ -357,7 +357,7 @@ export function ReconMap({ pcapId }: Props) {
                     <div className="text-[10px] text-slate-500">{groupAps.map(a=>`Ch${a.channel}`).join(', ')}</div>
                   </div>
                   <div className="text-[11px] font-mono text-slate-500 mt-1">{groupAps.map(a=>a.bssid).join(', ')}</div>
-                  {groupAps.length>1 && <div className="text-[10px] text-slate-600 mt-1">Same SSID different BSSID = ESS multiple APs for roaming — check authorized list to rule out rogue. If authorized list says {ess} legit BSSIDs {groupAps.map(a=>a.bssid).join(', ')}, then not rogue.</div>}
+                  {groupAps.length>1 && <div className="text-[10px] text-slate-400 mt-1">Same SSID different BSSID = ESS multiple APs for roaming — check authorized list to rule out rogue. If authorized list says {ess} legit BSSIDs {groupAps.map(a=>a.bssid).join(', ')}, then not rogue.</div>}
                 </div>
               ))}
             </div>

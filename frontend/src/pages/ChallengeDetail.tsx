@@ -204,7 +204,7 @@ export function ChallengeDetail() {
                       value={answers[task.id] || ''}
                       onChange={e => setAnswers({...answers, [task.id]: e.target.value})}
                       placeholder="Your answer..."
-                      className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-[#1e293b] text-[13px] font-mono text-slate-200 placeholder:text-slate-600 focus:border-cyan-500/30 focus:bg-[#111d33]/80 focus:outline-none hover:border-[#334155]/60 transition-all duration-200"
+                      className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-[#1e293b] text-[13px] font-mono text-slate-200 placeholder:text-slate-400 focus:border-cyan-500/30 focus:bg-[#111d33]/80 focus:outline-none hover:border-[#334155]/60 transition-all duration-200"
                     />
                     <div className="flex items-center justify-between mt-3">
                       <button onClick={() => setShowHints({...showHints, [task.id]: !showHints[task.id]})} className="text-[11px] text-slate-500 hover:text-slate-300 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[#0f172a]/60 border border-[#1e293b]/40 hover:bg-[#1e293b]/60 hover:border-[#334155]/40 transition-all duration-200">
@@ -269,7 +269,7 @@ export function ChallengeDetail() {
                   value={flagInput}
                   onChange={e => setFlagInput(e.target.value)}
                   placeholder="WIFIFORGE{...}"
-                  className="flex-1 px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 placeholder:text-slate-600 focus:border-violet-500/30 focus:bg-[#0a1020] focus:outline-none hover:border-[#334155]/60 transition-all duration-200"
+                  className="flex-1 px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 placeholder:text-slate-400 focus:border-violet-500/30 focus:bg-[#0a1020] focus:outline-none hover:border-[#334155]/60 transition-all duration-200"
                 />
                 <motion.button
                   whileHover={{ scale: 1.02 }}

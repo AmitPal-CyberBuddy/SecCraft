@@ -26,7 +26,7 @@ export function PathDetail() {
 
   return (
     <div className="max-w-[1000px] mx-auto space-y-6 md:space-y-8">
-      <Link to="/paths" className="inline-flex items-center gap-2 text-[12px] text-slate-500 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[#0f172a]/60 border border-transparent hover:border-[#1e293b]/60">
+      <Link to="/paths" className="inline-flex items-center gap-2 text-[12px] text-slate-400 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[#0f172a]/60 border border-transparent hover:border-[#1e293b]/60">
         <ArrowLeft className="w-4 h-4" />
         All Learning Paths
       </Link>
@@ -40,7 +40,7 @@ export function PathDetail() {
         <div className="relative">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-[#020617]/70 border border-[#1e293b] text-slate-400">{path.id}</span>
-            <span className={`text-[10px] font-mono px-2.5 py-1 rounded-full border ${path.status === 'available' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-[#020617]/70 border-[#1e293b] text-slate-500'}`}>{path.status.toUpperCase()}</span>
+            <span className={`text-[10px] font-mono px-2.5 py-1 rounded-full border ${path.status === 'available' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-[#020617]/70 border-[#1e293b] text-slate-400'}`}>{path.status.toUpperCase()}</span>
             
             <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-[#020617]/70 border border-[#1e293b] text-slate-400">{path.estimatedHours}h</span>
           </div>
@@ -56,19 +56,19 @@ export function PathDetail() {
           <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40">
               <div className="text-[18px] font-bold font-mono text-slate-100">{stats.modules}</div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-wide">Modules</div>
+              <div className="text-[10px] text-slate-400 uppercase tracking-wide">Modules</div>
             </div>
             <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40">
               <div className="text-[18px] font-bold font-mono text-slate-100">{stats.lessons}</div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-wide">Lessons</div>
+              <div className="text-[10px] text-slate-400 uppercase tracking-wide">Lessons</div>
             </div>
             <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40">
               <div className="text-[18px] font-bold font-mono text-slate-100">{stats.labs}</div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-wide">Labs</div>
+              <div className="text-[10px] text-slate-400 uppercase tracking-wide">Labs</div>
             </div>
             <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40">
               <div className="text-[18px] font-bold font-mono text-cyan-300">{pathProgress}%</div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-wide">Path Progress</div>
+              <div className="text-[10px] text-slate-400 uppercase tracking-wide">Path Progress</div>
             </div>
           </div>
 
@@ -95,10 +95,10 @@ export function PathDetail() {
       {path.status !== 'available' ? (
         <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-8 text-center">
           <div className="w-12 h-12 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center mx-auto mb-3">
-            <Clock className="w-6 h-6 text-slate-500" />
+            <Clock className="w-6 h-6 text-slate-400" />
           </div>
           <div className="text-[14px] font-semibold text-slate-200">This path is planned</div>
-          <p className="mt-2 text-[12.5px] text-slate-500 max-w-[600px] mx-auto leading-relaxed">
+          <p className="mt-2 text-[12.5px] text-slate-400 max-w-[600px] mx-auto leading-relaxed">
             Architecture is ready — content will be built after Wireless Pentesting maturity.
             Wireless Pentesting (20 modules, 27 lessons, 16 verified captures) serves as reference implementation.
             Same lab engine, assessment engine, evidence model, skill model will be reused.
@@ -120,7 +120,7 @@ export function PathDetail() {
             </div>
             <div>
               <div className="font-heading font-bold text-[16px] text-slate-100">Phases & Modules</div>
-              <div className="text-[11px] font-mono text-slate-500">{path.modules.length} modules • 6 phases • {path.estimatedHours}h • zero-cost</div>
+              <div className="text-[11px] font-mono text-slate-400">{path.modules.length} modules • 6 phases • {path.estimatedHours}h • zero-cost</div>
             </div>
           </div>
 
@@ -142,9 +142,9 @@ export function PathDetail() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <span className="text-[14px] font-bold text-slate-100">Phase {phase.id} — {phase.name}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full border font-mono bg-[#020617]/60 border-[#1e293b] text-slate-500">{phase.modules.length} modules</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full border font-mono bg-[#020617]/60 border-[#1e293b] text-slate-400">{phase.modules.length} modules</span>
                       </div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">{phase.desc}</div>
+                      <div className="text-[11px] text-slate-400 mt-0.5">{phase.desc}</div>
                     </div>
                   </div>
 
@@ -165,11 +165,11 @@ export function PathDetail() {
                             <div className="flex-shrink-0">
                               {prog === 100 ? <div className="w-6 h-6 rounded-full bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center"><CheckCircle className="w-4 h-4 text-emerald-400" /></div> :
                                prog > 0 ? <div className="w-6 h-6 rounded-full bg-cyan-500/15 border border-cyan-500/20 flex items-center justify-center"><Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin" /></div> :
-                               <div className="w-6 h-6 rounded-full bg-[#1e293b] border border-[#334155] flex items-center justify-center"><Circle className="w-3.5 h-3.5 text-slate-600" /></div>}
+                               <div className="w-6 h-6 rounded-full bg-[#1e293b] border border-[#334155] flex items-center justify-center"><Circle className="w-3.5 h-3.5 text-slate-400" /></div>}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="text-[13px] font-medium text-slate-200 truncate">{m.title}</div>
-                              <div className="text-[11px] text-slate-500 font-mono flex items-center gap-1.5 mt-0.5">
+                              <div className="text-[11px] text-slate-400 font-mono flex items-center gap-1.5 mt-0.5">
                                 <span>{m.id}</span>
                                 <span className="w-1 h-1 rounded-full bg-slate-700" />
                                 <span>{m.difficulty}</span>
@@ -179,7 +179,7 @@ export function PathDetail() {
                             </div>
                             <div className="flex items-center gap-2">
                               <div className="text-[11px] text-slate-400 font-mono px-2 py-1 rounded-full bg-[#020617] border border-[#1e293b]">{prog}%</div>
-                              <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition-colors" />
+                              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-400 transition-colors" />
                             </div>
                           </Link>
                         </motion.div>
@@ -201,7 +201,7 @@ export function PathDetail() {
         <div className="text-[11px] font-mono text-slate-400 leading-relaxed bg-[#0f172a]/60 rounded-lg p-3 border border-[#1e293b]/30">
           Learn → Understand → Observe → Enumerate → Test → Validate → Collect Evidence → Understand Impact → Remediate → Retest → Report
         </div>
-        <div className="mt-3 text-[11px] text-slate-500 leading-relaxed">
+        <div className="mt-3 text-[11px] text-slate-400 leading-relaxed">
           This path preserves the existing Wireless Pentesting depth: 20 modules, 27 lessons, 16 verified captures, 15 challenges, 35 decision scenarios, 42-item checklist, ENG-01 engagement.
           Platform philosophy <span className="text-slate-300 font-medium">Forge. Break. Fix. Retest.</span> remains.
         </div>

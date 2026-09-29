@@ -33,17 +33,17 @@ export function CustomModuleCreator({ className = '' }: { className?: string }) 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
         <div>
           <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Module ID — e.g., 21-custom-wifi6</label>
-          <input value={moduleData.id} onChange={e => setModuleData({ ...moduleData, id: e.target.value })} placeholder="21-custom-wifi6" className="mt-1.5 w-full px-3 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/30" />
+          <input value={moduleData.id} onChange={e => setModuleData({ ...moduleData, id: e.target.value })} placeholder="21-custom-wifi6" className="mt-1.5 w-full px-3 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-violet-500/30" />
         </div>
         <div>
           <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Title — e.g., WiFi 6/6E Security</label>
-          <input value={moduleData.title} onChange={e => setModuleData({ ...moduleData, title: e.target.value })} placeholder="WiFi 6/6E Security" className="mt-1.5 w-full px-3 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/30" />
+          <input value={moduleData.title} onChange={e => setModuleData({ ...moduleData, title: e.target.value })} placeholder="WiFi 6/6E Security" className="mt-1.5 w-full px-3 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-violet-500/30" />
         </div>
       </div>
 
       <div className="mb-4">
         <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Description — Attack→Defense→Retest methodology</label>
-        <textarea value={moduleData.description} onChange={e => setModuleData({ ...moduleData, description: e.target.value })} placeholder="Learn WiFi 6 WPA3 Enhanced Open OWE, 6GHz band, security improvements, backward compatibility, transition mode risks..." className="mt-1.5 w-full px-3 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-violet-500/30 min-h-[80px]" />
+        <textarea value={moduleData.description} onChange={e => setModuleData({ ...moduleData, description: e.target.value })} placeholder="Learn WiFi 6 WPA3 Enhanced Open OWE, 6GHz band, security improvements, backward compatibility, transition mode risks..." className="mt-1.5 w-full px-3 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-violet-500/30 min-h-[80px]" />
       </div>
 
       <div className="space-y-3 mb-4">
@@ -55,10 +55,10 @@ export function CustomModuleCreator({ className = '' }: { className?: string }) 
           <div key={idx} className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 space-y-2">
             <div className="flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-cyan-400" />
-              <input value={lesson.title} onChange={e => { const lessons = [...moduleData.lessons]; lessons[idx] = { ...lessons[idx], title: e.target.value }; setModuleData({ ...moduleData, lessons }) }} placeholder={`Lesson ${idx+1} title — e.g., WiFi 6 Architecture`} className="flex-1 px-3 py-2 rounded-lg bg-[#020617] border border-[#1e293b] text-[12px] text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30" />
+              <input value={lesson.title} onChange={e => { const lessons = [...moduleData.lessons]; lessons[idx] = { ...lessons[idx], title: e.target.value }; setModuleData({ ...moduleData, lessons }) }} placeholder={`Lesson ${idx+1} title — e.g., WiFi 6 Architecture`} className="flex-1 px-3 py-2 rounded-lg bg-[#020617] border border-[#1e293b] text-[12px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30" />
               <span className="text-[10px] px-2 py-1 rounded-full bg-[#1e293b] border border-[#334155] text-slate-500 font-mono">#{idx+1}</span>
             </div>
-            <textarea value={lesson.content} onChange={e => { const lessons = [...moduleData.lessons]; lessons[idx] = { ...lessons[idx], content: e.target.value }; setModuleData({ ...moduleData, lessons }) }} placeholder={`Lesson ${idx+1} — write the concept, the exact commands and filters, what the evidence proves and what it does not, and the Attack → Defense → Retest path.`} className="w-full px-3 py-2 rounded-lg bg-[#020617] border border-[#1e293b] text-[11px] text-slate-400 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30 min-h-[60px]" />
+            <textarea value={lesson.content} onChange={e => { const lessons = [...moduleData.lessons]; lessons[idx] = { ...lessons[idx], content: e.target.value }; setModuleData({ ...moduleData, lessons }) }} placeholder={`Lesson ${idx+1} — write the concept, the exact commands and filters, what the evidence proves and what it does not, and the Attack → Defense → Retest path.`} className="w-full px-3 py-2 rounded-lg bg-[#020617] border border-[#1e293b] text-[11px] text-slate-400 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30 min-h-[60px]" />
           </div>
         ))}
       </div>

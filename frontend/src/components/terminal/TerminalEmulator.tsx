@@ -315,7 +315,7 @@ export function TerminalEmulator({ className = '' }: { className?: string }) {
           value={input}
           onChange={e => setInput(e.target.value)}
           placeholder="Type command (help, iw dev, airodump-ng wlan0mon, tshark -r ...)"
-          className="flex-1 bg-[#020617] border border-[#1e293b] rounded-xl px-3 py-2.5 text-[13px] font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30 focus:bg-[#0a1020] min-w-0"
+          className="flex-1 bg-[#020617] border border-[#1e293b] rounded-xl px-3 py-2.5 text-[13px] font-mono text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30 focus:bg-[#0a1020] min-w-0"
         />
         <button type="submit" className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-[#020617] font-semibold text-[12px] transition-colors shrink-0 touch-manipulation min-h-[44px] sm:min-h-0">
           Run

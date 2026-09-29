@@ -88,7 +88,7 @@ export function Reference() {
   return (
     <div className="max-w-[1200px] mx-auto space-y-5 md:space-y-6">
       <div className="flex items-center gap-2 flex-wrap">
-        <Link to={`/paths/${effectivePathId}`} className="inline-flex items-center gap-2 text-[12px] text-slate-500 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[#0f172a]/60 border border-transparent hover:border-[#1e293b]/60">
+        <Link to={`/paths/${effectivePathId}`} className="inline-flex items-center gap-2 text-[12px] text-slate-400 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[#0f172a]/60 border border-transparent hover:border-[#1e293b]/60">
           <ArrowLeft className="w-4 h-4" />
           {currentPath.title} — Path Detail
         </Link>
@@ -110,7 +110,7 @@ export function Reference() {
               Platform-level reference — generic methodology + path-specific examples. Commands and filters are organised by <strong className="text-slate-200">what they prove</strong>, not by
               what they do. Memorising flags is not the skill — choosing the test that falsifies a hypothesis is.
               Field names are Wireshark 3.x/4.x (<span className="font-mono text-slate-300">wlan.*</span>); the
-              pre-2.0 <span className="font-mono line-through text-slate-500">wlan_mgt.*</span> namespace is gone.
+              pre-2.0 <span className="font-mono line-through text-slate-400">wlan_mgt.*</span> namespace is gone.
               Current path: {currentPath.title} ({currentPath.status}) • {platform.tagline} • {platform.philosophyShort}
             </p>
           </div>
@@ -133,10 +133,10 @@ export function Reference() {
         {/* Path filter for commands/filters */}
         {(tab === 'commands' || tab === 'filters') && (
           <div className="mt-4 flex flex-wrap gap-2 items-center">
-            <span className="text-[11px] font-mono text-slate-500 uppercase tracking-widest">Path filter:</span>
-            <button onClick={() => setPathFilter(null)} className={`px-2.5 py-1 rounded-full text-[11px] font-mono border transition-colors ${!pathFilter ? 'bg-[#1e293b] text-slate-100 border-[#334155]' : 'bg-[#020617]/50 border-[#1e293b] text-slate-500 hover:border-[#334155]'}`}>All Paths</button>
+            <span className="text-[11px] font-mono text-slate-400 uppercase tracking-widest">Path filter:</span>
+            <button onClick={() => setPathFilter(null)} className={`px-2.5 py-1 rounded-full text-[11px] font-mono border transition-colors ${!pathFilter ? 'bg-[#1e293b] text-slate-100 border-[#334155]' : 'bg-[#020617]/50 border-[#1e293b] text-slate-400 hover:border-[#334155]'}`}>All Paths</button>
             {learningPaths.slice(0, 8).map(p => (
-              <button key={p.id} onClick={() => setPathFilter(p.id)} className={`px-2.5 py-1 rounded-full text-[11px] font-mono border transition-colors flex items-center gap-1 ${pathFilter === p.id ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30' : 'bg-[#020617]/50 border-[#1e293b] text-slate-500 hover:border-[#334155]'}`}>
+              <button key={p.id} onClick={() => setPathFilter(p.id)} className={`px-2.5 py-1 rounded-full text-[11px] font-mono border transition-colors flex items-center gap-1 ${pathFilter === p.id ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30' : 'bg-[#020617]/50 border-[#1e293b] text-slate-400 hover:border-[#334155]'}`}>
                 <span>{p.icon}</span> {p.shortTitle} {p.status !== 'available' ? '• planned' : ''}
               </button>
             ))}
@@ -145,12 +145,12 @@ export function Reference() {
 
         {(tab === 'commands' || tab === 'filters') && (
           <div className="relative mt-4 sticky top-[64px] z-20 bg-[#020617]/90 backdrop-blur-xl p-3 -mx-3 rounded-xl border border-[#1e293b]/30 shadow-lg shadow-black/10">
-            <Search className="w-4 h-4 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
             <input
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder={tab === 'commands' ? `Search commands in ${currentPath.title}, e.g. PMKID, RADIUS, deauth, retest…` : `Search filters in ${currentPath.title}, e.g. rsn, eapol, mfpr…`}
-              className="w-full pl-11 pr-4 py-2.5 rounded-xl bg-[#020617]/70 border border-[#1e293b] text-[12.5px] text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/30"
+              className="w-full pl-11 pr-4 py-2.5 rounded-xl bg-[#020617]/70 border border-[#1e293b] text-[12.5px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30"
             />
           </div>
         )}
@@ -162,17 +162,17 @@ export function Reference() {
             <motion.div key={category} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl bg-[#0f172a] border border-[#1e293b] overflow-hidden">
               <div className="px-4 py-3 border-b border-[#1e293b] text-[11px] font-mono uppercase tracking-widest text-cyan-400 flex items-center justify-between">
                 <span>{category}</span>
-                <span className="text-[10px] text-slate-500">{list.length} commands • {currentPath.shortTitle} • {pathFilter ? 'filtered' : 'all paths'}</span>
+                <span className="text-[10px] text-slate-400">{list.length} commands • {currentPath.shortTitle} • {pathFilter ? 'filtered' : 'all paths'}</span>
               </div>
               <div className="divide-y divide-[#1e293b]/70">
                 {list.map((c: any) => (
                   <div key={c.command} className="p-4">
                     <code className="text-[12px] font-mono text-emerald-300 break-all">{c.command}</code>
                     <p className="mt-2 text-[12px] text-slate-300 leading-relaxed">
-                      <span className="text-slate-500 font-mono text-[10.5px] uppercase tracking-widest mr-2">proves</span>
+                      <span className="text-slate-400 font-mono text-[10.5px] uppercase tracking-widest mr-2">proves</span>
                       {c.proves}
                     </p>
-                    {c.notes && <p className="mt-1.5 text-[11.5px] text-slate-500 leading-relaxed">{c.notes}</p>}
+                    {c.notes && <p className="mt-1.5 text-[11.5px] text-slate-400 leading-relaxed">{c.notes}</p>}
                   </div>
                 ))}
               </div>
@@ -216,7 +216,7 @@ export function Reference() {
                 </li>
               ))}
             </ol>
-            <div className="mt-4 text-[11px] font-mono text-slate-500 p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40">
+            <div className="mt-4 text-[11px] font-mono text-slate-400 p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40">
               Platform philosophy: {platform.philosophy}
             </div>
           </motion.div>
@@ -230,7 +230,7 @@ export function Reference() {
               <li>• Negative results and untested areas belong in the report; they define the coverage you are claiming.</li>
               <li>• Evidence standard generic: hash + filter + frame numbers (PCAP) or hash + config line + log excerpt (other artifacts) — works for Web, API, Android, Network, AD, Cloud, AI.</li>
             </ul>
-            <div className="mt-4 text-[11.5px] text-slate-500 font-mono space-y-1.5">
+            <div className="mt-4 text-[11.5px] text-slate-400 font-mono space-y-1.5">
               <div className="flex items-center gap-1.5"><ChevronRight className="w-3 h-3" /> docs/VAPT_METHODOLOGY.md</div>
               <div className="flex items-center gap-1.5"><ChevronRight className="w-3 h-3" /> docs/WIRELESS_VAPT_CHECKLIST.md</div>
               <div className="flex items-center gap-1.5"><ChevronRight className="w-3 h-3" /> docs/SIMULATION_VS_HARDWARE.md</div>
@@ -242,13 +242,13 @@ export function Reference() {
       )}
 
       {tab === 'terminal' && (
-        <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading terminal…</div>}>
+        <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading terminal…</div>}>
           <TerminalEmulator />
         </Suspense>
       )}
 
       {tab === 'flashcards' && (
-        <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-500 font-mono">Loading flashcards…</div>}>
+        <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading flashcards…</div>}>
           <Flashcards />
         </Suspense>
       )}
@@ -259,7 +259,7 @@ export function Reference() {
 function EmptyState() {
   return (
     <div className="rounded-2xl border border-dashed border-[#334155]/60 p-8 text-center">
-      <p className="text-[12.5px] text-slate-500">Nothing matches that search — try clearing path filter or search query.</p>
+      <p className="text-[12.5px] text-slate-400">Nothing matches that search — try clearing path filter or search query.</p>
     </div>
   )
 }

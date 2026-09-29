@@ -116,9 +116,9 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
               <span className="hidden md:inline-flex text-[9px] px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono font-medium shrink-0">ACTIVE</span>
             </div>
             <div className="hidden md:flex items-center gap-2 mt-0.5 min-w-0">
-              <span className="text-[11px] text-slate-500 font-mono truncate">local-first • no account</span>
+              <span className="text-[11px] text-slate-400 font-mono truncate">local-first • no account</span>
               <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0" />
-              <span className="text-[10px] text-slate-600 font-mono truncate">{TOTAL_PCAPS} captures • offline dataset</span>
+              <span className="text-[10px] text-slate-400 font-mono truncate">{TOTAL_PCAPS} captures • offline dataset</span>
             </div>
           </div>
           <div className="flex sm:hidden items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 shrink-0">
@@ -135,7 +135,7 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
               <Zap className="w-4 h-4 text-amber-400" />
             </div>
             <div className="min-w-0 hidden xl:block">
-              <div className="text-[10px] text-slate-500 leading-none font-medium tracking-wide uppercase flex items-center gap-1 truncate">
+              <div className="text-[10px] text-slate-400 leading-none font-medium tracking-wide uppercase flex items-center gap-1 truncate">
                 <span>{level.icon}</span> <span className="truncate">{level.title} Lv.{level.level}</span>
               </div>
               <div className="flex items-center gap-2 mt-1 min-w-0">
@@ -153,7 +153,7 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
               <Trophy className="w-4 h-4 text-cyan-400" />
             </div>
             <div className="min-w-0">
-              <div className="text-[10px] text-slate-500 leading-none font-medium tracking-wide uppercase truncate">Next Level</div>
+              <div className="text-[10px] text-slate-400 leading-none font-medium tracking-wide uppercase truncate">Next Level</div>
               <div className="text-[11px] font-bold text-slate-200 leading-none mt-1 font-mono truncate">{xpToNext.nextLevel ? `${xpToNext.needed} XP → ${xpToNext.nextLevel.title}` : 'MAX!'}</div>
             </div>
           </motion.div>
@@ -162,10 +162,10 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
 
       <div className="flex items-center gap-1.5 xs:gap-2 md:gap-3 relative shrink-0">
         <motion.button data-tour="search" onClick={openSearch} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl bg-[#0f172a]/60 border border-[#1e293b]/60 backdrop-blur-sm hover:bg-[#0f172a]/80 hover:border-[#334155]/60 transition-all duration-200 group cursor-pointer shrink-0 touch-manipulation min-h-[36px]">
-          <Search className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-400 transition-colors shrink-0" />
-          <span className="text-[12px] text-slate-500 font-mono group-hover:text-slate-400 transition-colors hidden lg:inline">Search...</span>
+          <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-400 transition-colors shrink-0" />
+          <span className="text-[12px] text-slate-400 font-mono group-hover:text-slate-400 transition-colors hidden lg:inline">Search...</span>
           <div className="ml-1 xl:ml-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#1e293b] border border-[#334155]/60 shrink-0">
-            <Command className="w-3 h-3 text-slate-500 shrink-0" />
+            <Command className="w-3 h-3 text-slate-400 shrink-0" />
             <span className="text-[10px] font-mono text-slate-400 hidden xl:inline">K</span>
           </div>
         </motion.button>
@@ -174,18 +174,18 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
           <div className="w-5 h-5 rounded-full bg-gradient-to-br from-violet-500/20 to-cyan-500/20 border border-violet-500/20 flex items-center justify-center shrink-0">
             <Target className="w-3 h-3 text-violet-400" />
           </div>
-          <span className="text-[11px] text-slate-500 font-medium shrink-0">Current:</span>
+          <span className="text-[11px] text-slate-400 font-medium shrink-0">Current:</span>
           <span className="text-[11px] font-semibold text-slate-200 font-mono tracking-wide truncate">{currentModule || '02-wifi-fundamentals'}</span>
           <div className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse ml-1 shrink-0" />
         </div>
 
         <motion.button whileTap={{ scale: 0.95 }} onClick={toggleTheme} aria-label="Toggle theme" className="w-11 h-11 xs:w-9 xs:h-9 rounded-xl bg-[#0f172a] border border-[#1e293b] flex items-center justify-center hover:bg-[#1e293b] hover:border-[#334155] transition-all duration-200 group shrink-0 touch-manipulation">
-          {theme === 'dark' ? <Moon className="w-4 h-4 text-slate-500 group-hover:text-slate-300" /> : <Sun className="w-4 h-4 text-amber-400" />}
+          {theme === 'dark' ? <Moon className="w-4 h-4 text-slate-400 group-hover:text-slate-300" /> : <Sun className="w-4 h-4 text-amber-400" />}
         </motion.button>
 
         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setNotifOpen(!notifOpen)} aria-label="Notifications" className="w-11 h-11 xs:w-9 xs:h-9 rounded-xl bg-[#0f172a] border border-[#1e293b] flex items-center justify-center hover:bg-[#1e293b] hover:border-[#334155] active:bg-[#1e293b] transition-all duration-200 group relative overflow-hidden shrink-0 touch-manipulation">
           <div className="absolute inset-0 bg-gradient-to-br from-violet-500/0 to-violet-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-          <Bell className="w-4 h-4 text-slate-500 group-hover:text-slate-300 relative z-10 group-hover:scale-110 transition-all duration-200" />
+          <Bell className="w-4 h-4 text-slate-400 group-hover:text-slate-300 relative z-10 group-hover:scale-110 transition-all duration-200" />
           {notifCount > 0 ? (
             <>
               <div className="absolute top-1 right-1 w-2 h-2 bg-cyan-400 rounded-full border border-[#0f172a] shadow-glow-cyan animate-pulse" />
