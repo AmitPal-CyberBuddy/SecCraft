@@ -46,18 +46,20 @@ the engagement's actual context.
 
 ## 3. Writing pattern
 
+> Illustrative hypothetical live engagement only. The named real-test evidence below is not bundled in this repository; `corporate-attacks.pcapng` is explicitly not proof of this PEAP finding.
+
 ```
 F-03 — PEAP-MSCHAPv2 credentials capturable by a rogue authenticator
 Severity : High    [example vector: CVSS:3.1/AV:A/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N — justify each metric]
 Summary  : Client profiles omit certificate validation; a rogue authenticator terminates PEAP and
            captures MS-CHAPv2 material that is offline-crackable.
-Evidence : corporate-attacks.pcapng (SHA-256 …), frames 9–14 (EAP exchange);
-           cracked password reproduced with hashcat -m 5500 (rate/time …);
-           client profile excerpt without ca_cert / domain_suffix_match.
+Evidence : authorized live-lab capture and hash; client supplicant logs showing association, negotiated method and validation outcome;
+           redacted effective client profile; test-account MS-CHAPv2 material and documented offline verification (rate/time …).
+           The bundled corporate-attacks.pcapng frames 15–17 are synthetic direct EAP-MSCHAPv2 examples, not evidence for this PEAP finding.
 Impact   : Captured credentials were valid for VPN and SSO (tested with an authorised test account);
            on-path attacker can move from RF proximity to network credentials.
-Remediation : Enforce ca_cert + domain_suffix_match via MDM; prefer EAP-TLS; require PMF; rotate credentials.
-Retest   : Re-run the rogue-authenticator test — expect a TLS alert and no MS-CHAPv2 exchange (see §4).
+Remediation : Enforce the correct trust anchor and server-name validation via managed profiles; prefer EAP-TLS; rotate exposed credentials.
+Retest   : Repeat the controlled rogue-authenticator test. Verify that the client rejects the untrusted/wrong-name server and that no inner credential exchange occurs; interpret supplicant logs alongside the capture (see §4).
 Limits   : Testing used the client profiles provided; other device families were not sampled.
 ```
 
@@ -71,8 +73,7 @@ A retest is credible only if it repeats the original test:
 * a new recommendation if the fix only moved the problem (e.g. "WPS disabled, but WPS IE still advertised
   by a repeater")
 
-Example — PMF: original deauth test disconnected a client; after `ieee80211w=2`, the same test produces no
-disconnection and the capture shows SA Query. That is a *verified fix*.
+Example — PMF: compare a controlled, defined unprotected robust-management-frame test before and after `ieee80211w=2`. A bounded retest should verify PMF negotiation, the AP/client policy and logs, and whether the test client remained associated; an SA Query frame or absence of a deauth in one capture is not sufficient by itself. State the result only for the tested device/configuration.
 
 ## 5. Reporting pitfalls to avoid
 

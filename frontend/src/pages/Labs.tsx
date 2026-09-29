@@ -1,3 +1,4 @@
+import { LoadingPanel } from '@/components/common/LoadingPanel'
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
 import { FlaskConical, Search, Filter, Radio, Wifi, FileCode, Activity, Zap, ChevronRight, Sparkles, Target, Layers, Terminal, Upload, Shield, Trophy, Clock, ArrowLeft, Map as MapIcon } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
@@ -138,7 +139,7 @@ export function Labs() {
                 <FlaskConical className="w-5 h-5 text-emerald-400" />
               </div>
               <div className="min-w-0">
-                <h1 className="font-heading font-bold text-[22px] xs:text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none truncate flex items-center gap-2">
+                <h1 className="font-heading font-bold text-[22px] xs:text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none truncate flex items-center gap-2 sc-page-title">
                   Labs <span className="text-[18px]">{currentPath.icon}</span>
                 </h1>
                 <p className="text-[12px] xs:text-[13px] text-slate-400 mt-1.5 flex flex-wrap items-center gap-2">
@@ -187,11 +188,11 @@ export function Labs() {
         </div>
       </motion.div>
 
-      {activeTab === 'upload' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading PcapUploader…</div>}><PcapUploader /></Suspense>}
-      {activeTab === 'terminal' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading terminal…</div>}><TerminalEmulator /></Suspense>}
-      {activeTab === 'vault' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading evidence vault…</div>}><EvidenceVault /></Suspense>}
+      {activeTab === 'upload' && <Suspense fallback={<LoadingPanel label="Loading PcapUploader…" />}><PcapUploader /></Suspense>}
+      {activeTab === 'terminal' && <Suspense fallback={<LoadingPanel label="Loading terminal…" />}><TerminalEmulator /></Suspense>}
+      {activeTab === 'vault' && <Suspense fallback={<LoadingPanel label="Loading evidence vault…" />}><EvidenceVault /></Suspense>}
       {activeTab === 'scoring' && (
-        <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading lab scoring…</div>}>
+        <Suspense fallback={<LoadingPanel label="Loading lab scoring…" />}>
           <div className="space-y-4">
             <div className="sticky top-[64px] z-20 bg-[#020617]/90 backdrop-blur-xl rounded-2xl border border-[#1e293b] p-4 shadow-lg -mx-3 p-3 md:mx-0 md:p-4 xs:p-5">
               <label htmlFor="scoring-lab" className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Lab to score — {currentPath.title}</label>
@@ -224,7 +225,7 @@ export function Labs() {
               <div className="text-[14px] font-semibold text-slate-200">This learning path is planned</div>
               <p className="mt-2 text-[12.5px] text-slate-400 max-w-[600px] mx-auto leading-relaxed">
                 Architecture is ready — labs will reuse same engine (artifact analysis, config audit, scenario) as Wireless path.
-                Wireless Pentesting (16 verified artifacts, 15 challenges) serves as reference implementation.
+                Wireless Pentesting (16 checked captures, 15 local self-review challenges) serves as the current reference implementation.
               </p>
               <Link to={`/paths/${effectivePathId}`} className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] text-slate-300 hover:bg-[#25354f] transition-colors">
                 <ArrowLeft className="w-4 h-4" /> Back to {currentPath.title}
@@ -255,7 +256,7 @@ export function Labs() {
                       <span className="text-[11px] px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-mono shrink-0">Offline dataset • {parserInfo?.method || 'platform-labkit'}</span>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 xs:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 xs:gap-3 min-w-0">
+                  <div className="lab-artifact-index grid grid-cols-1 sm:grid-cols-2 gap-2 xs:gap-3 min-w-0">
                     <AnimatePresence>
                       {filteredPcaps.map((p, idx) => (
                         <motion.div
@@ -266,7 +267,7 @@ export function Labs() {
                           exit={{ opacity: 0, y: -8, scale: 0.95 }}
                           transition={{ duration: 0.3, delay: idx * 0.02, ease: [0.16, 1, 0.3, 1] }}
                           whileHover={{ y: -2, scale: 1.02 }}
-                          className="group/pcap p-3.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/60 hover:bg-[#020617]/80 hover:border-[#334155]/60 backdrop-blur-sm transition-all duration-200 cursor-pointer relative overflow-hidden min-w-0"
+                          className="lab-artifact-row group/pcap p-3.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/60 hover:bg-[#020617]/80 hover:border-[#334155]/60 backdrop-blur-sm transition-all duration-200 cursor-pointer relative overflow-hidden min-w-0"
                         >
                           <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover/pcap:opacity-100 transition-opacity duration-300" />
                           <div className="relative flex items-start justify-between gap-3 min-w-0">
@@ -335,7 +336,7 @@ export function Labs() {
                       whileHover={{ y: -3, scale: 1.01 }}
                       className="min-w-0"
                     >
-                      <Link to={`/paths/${effectivePathId}/modules/${lab.module}`} className="group relative rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 hover:border-[#334155] hover:bg-[#111d33] hover:shadow-medium transition-all duration-300 ease-smooth block overflow-hidden min-w-0">
+                      <Link to={`/paths/${effectivePathId}/modules/${lab.module}`} aria-disabled={lab.status === 'PLANNED'} onClick={event => { if (lab.status === 'PLANNED') event.preventDefault() }} className={`group relative rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 hover:border-[#334155] hover:bg-[#111d33] hover:shadow-medium transition-all duration-300 ease-smooth block overflow-hidden min-w-0 ${lab.status === 'PLANNED' ? 'cursor-not-allowed opacity-80' : ''}`}>
                         <div className={`absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${lab.color === 'cyan' ? 'from-cyan-500/5 to-transparent' : lab.color === 'emerald' ? 'from-emerald-500/5 to-transparent' : lab.color === 'violet' ? 'from-violet-500/5 to-transparent' : lab.color === 'amber' ? 'from-amber-500/5 to-transparent' : lab.color === 'red' ? 'from-red-500/5 to-transparent' : lab.color === 'pink' ? 'from-pink-500/5 to-transparent' : 'from-slate-500/5 to-transparent'}`} />
                         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                         <div className="relative min-w-0">
@@ -356,6 +357,7 @@ export function Labs() {
                           <h3 className="font-heading font-bold text-[15px] text-slate-100 mb-3 leading-tight group-hover:text-white transition-colors duration-200 line-clamp-2">{lab.title}</h3>
                           <div className="flex flex-wrap items-center gap-2 min-w-0">
                             <span className="px-2.5 py-1 rounded-full bg-[#1e293b]/80 border border-[#334155]/60 text-[11px] font-medium text-slate-400 group-hover:bg-[#25354f]/80 group-hover:text-slate-300 transition-all duration-200 shrink-0">{lab.difficulty}</span>
+                            <span className={`px-2.5 py-1 rounded-full border text-[10px] font-mono shrink-0 ${lab.status === 'PLANNED' ? 'bg-amber-500/10 border-amber-500/20 text-amber-300' : lab.grading === 'verified' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' : 'bg-slate-500/10 border-slate-500/20 text-slate-300'}`}>{lab.status === 'PLANNED' ? 'PLANNED' : lab.grading === 'verified' ? 'ANSWER-CHECKED' : 'SELF-REVIEW'}</span>
                             <span className="text-[11px] text-slate-400 hidden xs:inline">•</span>
                             <span className="text-[11px] font-mono text-slate-400 truncate">{lab.id}</span>
                             {lab.pcap && (<><span className="text-[11px] text-slate-400 hidden xs:inline">•</span><span className="flex items-center gap-1 text-[11px] font-mono text-cyan-400/80 group-hover:text-cyan-400 transition-colors shrink-0"><FileCode className="w-3 h-3" />{lab.pcap}.pcapng</span></>)}

@@ -35,6 +35,15 @@ jobs:
         run: npx tsc -p tsconfig.app.json --noEmit
         working-directory: frontend
 
+      - name: Verify internal frontend routes
+        run: node scripts/verify-frontend-routes.mjs
+
+      - name: Verify local progress migration and reward semantics
+        run: node scripts/verify-progress-state.mjs
+
+      - name: Verify learning journey content contracts
+        run: node scripts/verify-learning-data.mjs
+
       # The lab datasets and challenge answers are generated artifacts; verify them before shipping
       # rather than trusting the copy in the repository.
       - name: Verify lab artifacts and challenge answers
@@ -74,7 +83,7 @@ jobs:
       - name: Tests
         run: |
           if [ -d backend/tests ]; then
-            pip install pytest
+            pip install pytest httpx
             pytest backend/tests -v
           else
             echo "No backend tests in this checkout."

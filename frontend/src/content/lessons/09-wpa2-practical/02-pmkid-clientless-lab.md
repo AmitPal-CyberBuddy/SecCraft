@@ -1,38 +1,35 @@
-# PMKID: Clientless Capture (Lab)
+# PMKID Collection Without a Full Handshake (Lab)
 
-> Artifact: `pmkid.pcapng` — six frames: beacon, auth, association, and **M1 carrying a PMKID KDE**.
-> The PMKID is the real `HMAC-SHA1-128(PMK, "PMK Name" | AA | SPA)` of the documented lab PSK.
+> Artifact: `pmkid.pcapng` — six synthetic teaching frames including authentication/association and an EAPOL-Key M1 carrying a PMKID KDE. The PMKID is derived from the documented lab PSK. This is not literally clientless: a station/AP exchange is represented, and collection availability depends on AP/client behavior.
 
 ## 1. What a PMKID is
 
-When an AP supports PMK caching (fast roaming/802.11r-style reassociation), M1 may include a **PMKID KDE**
-in its key data:
+A PMKID may be included in EAPOL-Key M1 key data when the AP/client use a PMKSA. Availability depends on implementation, association and caching behavior; it is not guaranteed merely because 802.11r is enabled.
 
-```
+```text
 dd 14 00 0f ac 04 ‖ PMKID(16)
  │  │  └── OUI 00-0F-AC, type 04 (PMKID KDE)
  │  └── KDE length 20
  └── vendor-specific element ID 221
 ```
 
-```
+```text
 PMKID = HMAC-SHA1-128(PMK, "PMK Name" ‖ AA(AP MAC) ‖ SPA(STA MAC))
 ```
 
-Because the PMKID is a keyed function of the PMK, a candidate passphrase can be tested **offline**:
-`hcxpcapngtool` extracts it into the same 22000 format, and no client handshake completion is required.
+For WPA-Personal, the PMKID gives a candidate passphrase an offline verification value. A collector may obtain a PMKID without capturing the complete four-message EAPOL handshake, and often without deauthenticating a victim. Depending on method/AP behavior, an associated or test station exchange may still be needed. “Clientless” is common shorthand for not requiring a full victim handshake; it does not mean no station participates.
 
-## 2. Why it matters operationally
+## 2. Operational comparison
 
-| | 4-way handshake | PMKID |
+| | Four-way handshake | PMKID |
 | --- | --- | --- |
-| needs a client to connect | yes (or you must disconnect one) | no |
-| frames needed | M1+M2 (MIC) | single M1 |
-| active disruption | often (deauth to force reconnection) | none |
-| availability | depends on clients roaming | only if PMK caching is enabled |
+| Evidence needed | Commonly M1+M2, or another sufficient message pair | PMKID-bearing M1 |
+| Full four-message exchange | Not required for an offline audit | Not required |
+| Station/AP activity | Usually an association/handshake; an authorized test may prompt reconnection | An AP/client PMKSA exchange must expose it; collection methods vary |
+| Forced disruption | Not inherently required; deauth is sometimes used to induce a handshake | Not inherently required |
+| Availability | Depends on a suitable captured handshake | Depends on AP/client behavior and PMKSA state |
 
-The security consequence is the same as any offline PSK guessing attack; the operational difference is
-that it can be collected **passively**, which changes the noise level of the test.
+Both can support offline PSK guessing. The PMKID method changes the capture requirements; it does not make a weak passphrase safe or prove a production network is vulnerable. A missing PMKID is inconclusive.
 
 ## 3. Lab
 
@@ -44,13 +41,11 @@ hcxpcapngtool -o pmkid.hc22000 pmkid.pcapng
 hashcat -m 22000 pmkid.hc22000 wordlists/wififorge-lab-psk.txt --show
 ```
 
+Use these commands only with the bundled lab artifact or an explicitly authorized capture.
+
 Tasks:
 
-1. Extract the PMKID bytes from the capture and re-derive it from the lab PSK/SSID
-   (`scripts/verify-lab-artifacts.py` shows the calculation).
-2. Explain why the client MAC (SPA) is part of the formula — and what that means for a PMKID captured
-   when the client is not present.
-3. Compare the hashcat lines produced from `pmkid.pcapng` and `wpa2-handshake.pcapng`: which fields differ,
-   and why does the 22000 format carry both?
-4. State the *limits*: which APs will never expose a PMKID, and why the absence of a PMKID does not mean
-   "no offline risk".
+1. Extract the PMKID and re-derive it from the lab PSK/SSID (`scripts/verify-lab-artifacts.py` shows the calculation).
+2. Explain why the formula includes both AP (AA) and station (SPA) addresses.
+3. Compare the hashcat lines produced from `pmkid.pcapng` and `wpa2-handshake.pcapng`: which fields differ, and why does the 22000 format carry both?
+4. State the limits: PMKID availability varies by AP/client behavior; its absence does not mean “no offline risk.”

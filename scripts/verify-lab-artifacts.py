@@ -11,7 +11,7 @@ Verifies
 --------
 1. every file is a real PCAPNG (SHB + IDB + EPB) with linktype 127 (radiotap),
 2. every frame decodes as 802.11 and the frame counts match the generated report,
-3. RSNE decoding: AKM/cipher suite numbers and the MFPC (B5) / MFPR (B4) bits,
+3. RSNE decoding: AKM/cipher suite numbers and the MFPC (bit 7) / MFPR (bit 6) bits,
 4. EAPOL-Key MICs recomputed from the documented PSK (PMK → PTK → KCK → MIC),
 5. PMKID = HMAC-SHA1-128(PMK, "PMK Name" | AA | SPA) as carried in key data,
 6. RADIUS Message-Authenticator (bare `[31]*64` in this lab) in OpenSSH `radtest`-style,
@@ -76,8 +76,29 @@ def verify_pcapng_structure(inventory: Dict[str, Dict[str, object]]) -> None:
         raw = open(path, "rb").read()
         check(raw[:4] == struct.pack("<I", 0x0A0D0D0A), f"{pcap_id}: section header block present")
         check(raw[8:12] == struct.pack("<I", 0x1A2B3C4D), f"{pcap_id}: byte-order magic")
+        offset = 0
+        block_types: List[int] = []
+        block_lengths_valid = True
+        while offset + 12 <= len(raw):
+            block_type, block_len = struct.unpack_from("<II", raw, offset)
+            if block_len < 12 or block_len % 4 or offset + block_len > len(raw):
+                block_lengths_valid = False
+                break
+            trailer_len = struct.unpack_from("<I", raw, offset + block_len - 4)[0]
+            if trailer_len != block_len:
+                block_lengths_valid = False
+                break
+            block_types.append(block_type)
+            offset += block_len
+        check(block_lengths_valid and offset == len(raw), f"{pcap_id}: all block lengths are aligned, bounded, and mirrored")
+        check(block_types[:2] == [0x0A0D0D0A, 0x00000001], f"{pcap_id}: section header followed by interface description")
+        idb_offset = struct.unpack_from("<I", raw, 4)[0]
+        linktype = struct.unpack_from("<H", raw, idb_offset + 8)[0] if idb_offset + 10 <= len(raw) else -1
+        check(linktype == 127, f"{pcap_id}: interface link type is radiotap (127)")
+        epb_count = block_types.count(0x00000006)
+        check(epb_count == meta["frames"], f"{pcap_id}: {epb_count} enhanced packet blocks == manifest ({meta['frames']})")
         blocks = read_pcapng(path)
-        check(len(blocks) == meta["frames"], f"{pcap_id}: {len(blocks)} frames == manifest ({meta['frames']})")
+        check(len(blocks) == meta["frames"], f"{pcap_id}: {len(blocks)} decoded frames == manifest ({meta['frames']})")
         check(hashlib.sha256(raw).hexdigest() == meta["sha256"], f"{pcap_id}: sha256 matches manifest")
 
 
@@ -89,7 +110,7 @@ def verify_rsn_and_filters() -> None:
     if rsns:
         caps = rsns[0]["rsn"]["caps"]  # type: ignore[index]
         check(bool(caps & RSNCAP_MFPC) and bool(caps & RSNCAP_MFPR),
-              f"wpa3-only: MFPC (B5) and MFPR (B4) both set (caps=0x{caps:04x})")
+              f"wpa3-only: MFPC (bit 7) and MFPR (bit 6) both set (caps=0x{caps:04x})")
         check(rsns[0]["rsn"]["akm"] == [8], "wpa3-only: AKM suite is 8 (SAE)")  # type: ignore[index]
     trans = [r for r in frames_of("wpa3-transition") if r.get("rsn")]
     check(bool(trans) and trans[0]["rsn"]["akm"] == [2, 8],  # type: ignore[index]
@@ -112,7 +133,8 @@ def verify_rsn_and_filters() -> None:
           "radius: Tunnel-Private-Group-Id = 100 (dynamic VLAN)")
 
     records = frames_of("captive-portal")
-    check(any(r.get("protocol") == "IPv4" for r in records), "captive-portal: upper-layer HTTP over IPv4 decodes")
+    check(any(r.get("protocol") == "HTTP" and r.get("http_method") == "POST" for r in records), "captive-portal: HTTP POST is decoded")
+    check(any(r.get("protocol") == "DHCP" and r.get("dhcp_message_type") == "ACK" for r in records), "captive-portal: DHCP ACK is decoded")
     check(any(r.get("subtype_name") == "Probe Request" for r in records) or True, "captive-portal: association flow present")
 
     records = frames_of("wps-beacon")
@@ -320,6 +342,10 @@ def verify_challenge_answers() -> None:
     check(len(challenges) >= 15, f"{len(challenges)} challenges present")
     ids = [c["id"] for c in challenges]
     check(len(ids) == len(set(ids)), "challenge ids unique")
+    learning_paths = json.load(open(os.path.join(REPO, "frontend", "src", "content", "learning-paths.json")))
+    valid_path_ids = {path["id"] for path in learning_paths}
+    check(all(c.get("learningPathId") in valid_path_ids for c in challenges),
+          "every challenge retains valid path ownership metadata")
     check(all(t.get("question") and t.get("answer") and t.get("hint") for c in challenges for t in c["tasks"]),
           "every task has question, answer and hint")
     check(all(c.get("level") in ("guided", "semi-guided", "assessment") for c in challenges),

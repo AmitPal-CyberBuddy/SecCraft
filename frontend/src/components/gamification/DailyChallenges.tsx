@@ -6,7 +6,6 @@ interface DailyTask {
   id: string
   title: string
   desc: string
-  xp: number
   type: 'lesson' | 'lab' | 'quiz' | 'streak'
   progress: number
   total: number
@@ -24,9 +23,9 @@ function buildTasks(completedLessons: { completedAt?: string }[], completedLabs:
   const labsToday = completedLabs.filter(l => onToday(l.completedAt)).length
   const perfectToday = quizScores.filter(q => onToday(q.completedAt) && q.total > 0 && q.score === q.total).length
   const defs: Omit<DailyTask, 'progress' | 'completed'>[] = [
-    { id: 'daily-lessons', title: 'Complete 2 lessons', desc: 'Any two authored lessons, today', xp: 25, type: 'lesson', total: 2 },
-    { id: 'daily-lab', title: 'Analyse 1 capture', desc: 'Open a lab capture in the PCAP inspector', xp: 30, type: 'lab', total: 1 },
-    { id: 'daily-quiz', title: 'Perfect quiz', desc: 'Score 100% on any module quiz', xp: 40, type: 'quiz', total: 1 },
+    { id: 'daily-lessons', title: 'Complete 2 lessons', desc: 'Any two authored lessons, today', type: 'lesson', total: 2 },
+    { id: 'daily-lab', title: 'Record 1 lab review', desc: 'Record a self-review or pass an answer-checked lab today', type: 'lab', total: 1 },
+    { id: 'daily-quiz', title: 'Perfect quiz', desc: 'Score 100% on any module quiz', type: 'quiz', total: 1 },
   ]
   const progress = [lessonsToday, labsToday, perfectToday]
   return defs.map((d, i) => ({ ...d, progress: Math.min(progress[i], d.total), completed: progress[i] >= d.total }))
@@ -41,7 +40,6 @@ export function DailyChallenges({ className = '' }: { className?: string }) {
   const liveTasks = buildTasks(completedLessons, completedLabs, quizScores)
 
   const completedCount = liveTasks.filter(t => t.completed).length
-  const totalXpToday = liveTasks.filter(t => t.completed).reduce((a, b) => a + b.xp, 0)
 
   const getTypeIcon = (type: string) => {
     switch(type) {
@@ -75,10 +73,7 @@ export function DailyChallenges({ className = '' }: { className?: string }) {
             <p className="text-[11px] text-slate-400 font-mono">Local date • counted from your own completions • {completedCount}/{liveTasks.length} goals met today</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[11px] px-2.5 py-1 rounded-full bg-[#020617] border border-[#1e293b] text-slate-400 font-mono">{totalXpToday} XP today</span>
-          <span className="text-[11px] px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono flex items-center gap-1"><Calendar className="w-3 h-3" />Daily</span>
-        </div>
+        <span className="text-[11px] px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono flex items-center gap-1 shrink-0"><Calendar className="w-3 h-3" />Daily practice</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
@@ -91,8 +86,8 @@ export function DailyChallenges({ className = '' }: { className?: string }) {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className={`text-[13px] font-medium truncate ${task.completed ? 'text-emerald-300 line-through' : 'text-slate-200'}`}>{task.title}</span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-mono shrink-0 ${getTypeColor(task.type)}`}>{task.xp} XP</span>
+                  <span className={`text-[13px] font-medium truncate ${task.completed ? 'text-emerald-300' : 'text-slate-200'}`}>{task.title}</span>
+                  {task.completed && <span className="text-[10px] px-1.5 py-0.5 rounded-full border font-mono shrink-0 bg-emerald-500/10 text-emerald-300 border-emerald-500/20">RECORDED</span>}
                 </div>
                 <div className="text-[11px] text-slate-400 mt-1 truncate">{task.desc}</div>
                 <div className="mt-2 flex items-center gap-2">
@@ -112,8 +107,8 @@ export function DailyChallenges({ className = '' }: { className?: string }) {
           <Zap className="w-4 h-4 text-amber-400 shrink-0" />
           <span className="text-[12px] text-slate-300 font-medium">
             {completedCount === liveTasks.length
-              ? 'All of today\u2019s goals met — the counts reset at local midnight.'
-              : 'These are practice goals; only the completions above are recorded in your progress.'}
+              ? 'All of today\u2019s practice goals met — no bonus XP; counts reset at local midnight.'
+              : 'Daily goals award no separate XP; the underlying learning activity follows its normal one-time reward rule.'}
           </span>
         </div>
         <span className="text-[11px] font-mono text-slate-400 shrink-0">{new Date().toLocaleDateString()}</span>

@@ -1,20 +1,14 @@
-# Content — Source of Truth
+# Repository content directory
 
-This folder mirrors `frontend/src/content/` for future backend-driven content.
+`content/` holds configuration examples and is reserved for content that may be loaded by the optional local API. The currently shipped learning paths, modules, lessons, challenges, and decoded offline lab datasets live under `frontend/src/content/` and `frontend/public/lab-data/`.
 
-Structure:
-- `modules/` — module.json, lessons/*.md, labs/*.yaml, quizzes/*.json
-- `pcaps/` — self-generated PCAPs (beacon, handshake, etc.)
-- `configs/` — hostapd.conf, radius configs
-- `reference/` — commands.json, filters.json, terminology.json
+## Capture artifacts
 
-For Phase A, content lives in `frontend/src/content/` for fast HMR.
-Backend will eventually load from here too.
-
-## Generating PCAPs
-
-Use Scapy on Kali:
+The authoritative PCAPNG files and their corresponding browser-ready decoded datasets are generated together by:
 
 ```bash
-python3 scripts/generate_pcap.py --type beacon --ssid LAB-WIFI --bssid AA:BB:CC:DD:EE:FF --channel 6 -o content/pcaps/wifi-fundamentals/beacon-only.pcapng
+python3 scripts/generate-lab-artifacts.py
+python3 scripts/verify-lab-artifacts.py
 ```
+
+Do not generate files directly into `content/pcaps/` or hand-edit the generated captures: the artifact manifest, hashes, offline datasets, and challenge-answer checks must remain synchronized. `scripts/wififorge_labkit.py` retains its historical module name for compatibility with the generator, verifier, challenge tooling, and existing curriculum references.

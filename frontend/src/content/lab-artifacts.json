@@ -11,146 +11,146 @@
   "beacon-only": {
    "group": "wifi-fundamentals",
    "frames": 4,
-   "sha256": "fcfe987b2efb920fd079694ff540431095a52f007c711c26873df082973cd94e",
+   "sha256": "e30dc7e89b38c6f918e088337147d062fae0c9aae9305382f8a4485e0ae3b562",
    "path": "wifi-fundamentals/beacon-only.pcapng",
-   "bytes": 841,
+   "bytes": 844,
    "real": "Beacon/probe fixed fields, IEs, RSNE (AKM, ciphers, MFPC/MFPR bits), country/VHT/HE/capability IEs",
    "synthetic": "nothing cryptographic \u2014 passive capture"
   },
   "recon-lab": {
    "group": "recon",
    "frames": 17,
-   "sha256": "0a761e2ccc8f9d272294f1683e122a3de59dd541fd8b14ad94b696530b14cc14",
+   "sha256": "9a4e2f9aa1ca7298bb1e67fba9004f66dafc87900a2ca2b1e4925aa5ed69a098",
    "path": "recon/recon-lab.pcapng",
-   "bytes": 2549,
+   "bytes": 2552,
    "real": "6 BSSs incl. an ESS, a hidden BSS revealed in the probe response, directed probes leaking a PNL, randomised client MAC",
    "synthetic": "nothing cryptographic \u2014 passive capture"
   },
   "traffic-analysis": {
    "group": "traffic",
-   "frames": 19,
-   "sha256": "14aa765ff29f4d368e976d78be390fa46361a0dab1170aaa4277237427bbe102",
+   "frames": 21,
+   "sha256": "5d954994bb4b7155234c6fb930bc45fe8e772a67b2084227404a929166b41d6d",
    "path": "traffic/traffic-analysis.pcapng",
-   "bytes": 2977,
+   "bytes": 4032,
    "real": "Full association state machine, EAPOL-Key M1\u2013M4 with MICs computed from the lab PSK, DHCP/ARP/ICMP/DNS/HTTP payloads",
    "synthetic": "DHCP option bytes are minimal (fixed-size); HTTP/DNS bodies are lab strings"
   },
   "wpa2-handshake": {
    "group": "wpa2",
    "frames": 13,
-   "sha256": "3dc9b2feccbb98d1a0e4a3bedb0f1cd9ac6836f5e4009de0b07c73f2d4678f55",
+   "sha256": "74d4519e42c7a9602751cd2548d392dbca9e23a3c2c93db1ffaa13c7fa228a2b",
    "path": "wpa2/wpa2-handshake.pcapng",
-   "bytes": 2009,
+   "bytes": 2012,
    "real": "M1\u2013M4 for one client and M1\u2013M2 for a second; MICs, nonces and replay counters consistent with the lab PSK",
    "synthetic": "key rsc/key id reserved bytes are zero (normal for a sniffer capture)"
   },
   "pmkid": {
    "group": "wpa2",
    "frames": 6,
-   "sha256": "963fbe2082c279a3ee31546d21c609fdaf0f823a81deeb255d0b0b2a8fdcb2df",
+   "sha256": "244e97380866ef7cecb915c2b3164add1bda79fb51b050c2b58790980315e436",
    "path": "wpa2/pmkid.pcapng",
-   "bytes": 869,
+   "bytes": 872,
    "real": "PMKID = HMAC-SHA1-128(PMK, \"PMK Name\" | AA | SPA) inside a real EAPOL-Key M1 header",
    "synthetic": "the association exchange around it is minimal"
   },
   "wps-beacon": {
    "group": "wps",
    "frames": 9,
-   "sha256": "6f3042407c26ced16864290d7e71bf265f3ad4c9d46018d9e32022c5ee0d6488",
+   "sha256": "c754b83f1423503f135ea1e4c8c796605dc0d169e7c5e59990f4ba0a0b7cdf7c",
    "path": "wps/wps-beacon.pcapng",
-   "bytes": 1333,
+   "bytes": 1336,
    "real": "WPS IE attributes (version, config methods, AP setup locked, selected registrar, device password id) for an unlocked and a locked AP; EAP-WSC identity/M1 framing",
    "synthetic": "no full M1\u2013M8 WSC exchange (would require a real registrar)"
   },
   "wpa3-transition": {
    "group": "wpa3",
    "frames": 11,
-   "sha256": "ac8b81adfd8c06d2024bfeb591d6b7dda943ab244ea9b5530ee3ac7a2acfbf4d",
+   "sha256": "795ede86f8ecab0b5dc0b16a44da4cc84e5fb3678221a3a5fef82c46b211b26d",
    "path": "wpa3/wpa3-transition.pcapng",
-   "bytes": 1925,
-   "real": "RSNE with AKM PSK+SAE and MFPC-only; a WPA2 PSK 4-way handshake captured against the transition BSS (the downgrade path)",
+   "bytes": 1928,
+   "real": "RSNE with AKM PSK+SAE and MFPC-only; a PSK 4-way handshake is present against that BSS, but the capture does not show an attacker-induced downgrade",
    "synthetic": "SAE commit/confirm payloads \u2014 real SAE scalars need a live DH exchange; the point of the lab is that they are not crackable offline"
   },
   "wpa3-only": {
    "group": "wpa3",
    "frames": 6,
-   "sha256": "b9416f4d9bcf0f80c0527888b644175faf2ff8bb3bf2b276ee2f56221670fc69",
+   "sha256": "2fa55e74519d7ada1e3b1f9c8478d63a1607950cd9406cc890a2a5901cb7d0d2",
    "path": "wpa3/wpa3-only.pcapng",
-   "bytes": 1045,
+   "bytes": 1048,
    "real": "RSNE with AKM SAE and MFPR set; no PSK handshake exists in the capture",
    "synthetic": "SAE payload and the BIP MIC of the protected deauth (IGTK is not knowable to a passive listener)"
   },
   "deauth": {
    "group": "deauth",
    "frames": 22,
-   "sha256": "5fe8081c3e9a1553fafc9a2c3f06c016094da92c6a530015088149a9e26b2c8b",
+   "sha256": "ba94f50f890c55eb659a329837be53684185bcc4f09ff7438aa890e227129b92",
    "path": "deauth/deauth.pcapng",
-   "bytes": 2141,
+   "bytes": 2144,
    "real": "Deauthentication/disassociation frames with reason codes 1/7/8/15, broadcast and directed floods, SA Query action frames",
-   "synthetic": "nothing cryptographic \u2014 the deauth flood is unauthenticated by design (that is the finding)"
+   "synthetic": "frames are synthetic teaching examples; no receiver acceptance or availability impact is established"
   },
   "rogue-ap": {
    "group": "rogue",
-   "frames": 17,
-   "sha256": "7d7128f5facf88ea17e68e0832a6758fed7d91dd2594c27593a8d526a9ad702f",
+   "frames": 20,
+   "sha256": "3817eb21f6bcae2e526d1aabf9abc02ead4a2b638bf02ab8080135c0a70d15ab",
    "path": "rogue/rogue-ap.pcapng",
-   "bytes": 2845,
-   "real": "Rogue twin with locally-administered BSSID, different AKM, IE fingerprint and a 50 TU beacon interval; client 4-way handshake against the twin with the weak lab PSK",
+   "bytes": 4112,
+   "real": "Same-SSID look-alike fixture with a locally administered BSSID, different AKM/IE profile and 50 TU beacon interval; scripted client association, lab PSK handshake and synthetic DHCP/HTTP sequence. Capture alone does not establish unauthorized ownership or deauthentication causality.",
    "synthetic": "captive portal HTML payload is a lab string"
   },
   "captive-portal": {
    "group": "captive",
-   "frames": 13,
-   "sha256": "cfadbea0646f6ee1c637a5ac3870b518de48178ea8939da69ed7bf95ad539736",
+   "frames": 17,
+   "sha256": "c8de89204a48c67619a1a16729da63a15b5d6ad4c01e75297c409363373a0687",
    "path": "captive/captive-portal.pcapng",
-   "bytes": 2077,
+   "bytes": 3508,
    "real": "Open BSS, DHCP, HTTP 302 redirect to the portal, cleartext POST credentials, session cookie, client-to-client ARP (no isolation)",
    "synthetic": "portal HTML/HTTP bodies are lab strings"
   },
   "radius": {
    "group": "radius",
    "frames": 9,
-   "sha256": "d39ca4a57b765cff9ead3f39666f27fbd3cf669bd4810a51dd15293ec3ab8015",
+   "sha256": "972e45d6f124d7d27c249bbc98e008d7ba7598e92b0f096cf588fae30eda4af8",
    "path": "radius/radius.pcapng",
-   "bytes": 2113,
+   "bytes": 2116,
    "real": "RADIUS over IPv4/UDP 1812-1813 with verifiable Message-Authenticator (Access-Request) and Response Authenticator (Accept/Challenge/Accounting), Tunnel-Private-Group-Id VLAN 100, MS-MPPE keys, a rogue NAS with a wrong Message-Authenticator, and real MS-CHAPv2 challenge/response material",
    "synthetic": "MS-MPPE key material is a lab value (the real keys are encrypted with the shared secret)"
   },
   "enterprise": {
    "group": "enterprise",
    "frames": 11,
-   "sha256": "54870cc3b57be9c9e50b5f0075f892562c3c37e4502f4ba2b1c6ccbb29ef060f",
+   "sha256": "6c2f955827f4999fd15359c846e0d8cfc425989aa16305b251250e292698c76c",
    "path": "enterprise/enterprise.pcapng",
-   "bytes": 1841,
-   "real": "802.1X/EAPOL-Start \u2192 EAP-Identity \u2192 PEAP \u2192 MSK \u2192 PMK \u2192 4-way handshake, anonymous outer identity, MICs consistent with the documented lab MSK",
-   "synthetic": "TLS records are structural only; the MSK is a documented lab value instead of one derived from a TLS master secret"
+   "bytes": 1844,
+   "real": "Synthetic EAPOL/EAP method identifiers and an illustrative handshake with MICs consistent with a documented lab MSK; not evidence of a complete PEAP/TLS negotiation or deployed 802.1X policy",
+   "synthetic": "TLS records are abbreviated structural bytes; the MSK is an inserted lab value, not derived from a TLS master secret or PEAP exchange"
   },
   "eap": {
    "group": "eap",
    "frames": 12,
-   "sha256": "c61499225e963629c7ed993728b1a8a6e155fd553525b1ac02386ba288bf8026",
+   "sha256": "9d15e7f0f47ed62059b64f2a4a96b9546be4d80162602067cc8109f2f3234f8d",
    "path": "eap/eap.pcapng",
-   "bytes": 1657,
-   "real": "PEAP / EAP-TLS / EAP-TTLS outer exchanges, and MS-CHAPv2 Challenge/Response/Success with values derived from the documented lab password (crackable material)",
-   "synthetic": "TLS record payloads are structural only"
+   "bytes": 1660,
+   "real": "EAP method identifiers and direct MS-CHAPv2 challenge/response/success fixture values; this is not a complete PEAP inner exchange or EAP-TLS/TTLS session",
+   "synthetic": "TLS payloads are abbreviated structural bytes; the direct MS-CHAPv2 exchange is intentionally visible and must not be described as a passive PEAP capture"
   },
   "corporate-attacks": {
    "group": "corporate",
    "frames": 19,
-   "sha256": "fa975f25e9cdf33f2c6aaa874739c04fb956c20b7d12b5ebf3f20378cac3b1b7",
+   "sha256": "eb65c6fb55edccd8094d29576a2533728dcf9dc0155b4e1df2ecf04245f2491b",
    "path": "corporate/corporate-attacks.pcapng",
-   "bytes": 3101,
-   "real": "Full chain: deauth, evil twin with weak PSK handshake, MS-CHAPv2 capture, guest\u2192corp segmentation success",
-   "synthetic": "TLS/MSK details as in `enterprise`"
+   "bytes": 3104,
+   "real": "Synthetic 19-frame collection with management frames, a look-alike/weak-PSK practice exchange, direct EAP-MSCHAPv2 packets and an ICMP pair; does not demonstrate successful deauth, PEAP, RADIUS or production segmentation",
+   "synthetic": "EAP/TLS payloads are abbreviated structural fixtures; no complete PEAP tunnel, RADIUS exchange, production configuration or live network path is represented"
   },
   "methodology": {
    "group": "methodology",
    "frames": 29,
-   "sha256": "08928da3074d001bdbb8920536ae49eddd1a2ab2088d3870dcb25fe7799eda3c",
+   "sha256": "c197f2090e3568e528fe3a40ab8e70d29ca0cf186edbc9df89568e4d1ed3a857",
    "path": "methodology/methodology.pcapng",
-   "bytes": 4789,
-   "real": "Multi-BSS engagement capture: ESS, hidden BSS reveal, weak-PSK handshake, PMF-disabled deauth, rogue twin, 802.1X/PEAP, MS-CHAPv2, segmentation and isolation evidence",
-   "synthetic": "TLS records and SAE payloads (as above)"
+   "bytes": 4792,
+   "real": "Multi-BSS teaching capture: beacons/probes, weak-PSK exercise handshake, deauthentication frame, look-alike, abbreviated EAP and synthetic ICMP examples; not a real engagement or validated segmentation/isolation test",
+   "synthetic": "EAP/TLS and SAE payloads are abbreviated structural examples; no complete PEAP negotiation, RADIUS policy, client certificate-validation result, or real segmentation/isolation test"
   }
  }
 }

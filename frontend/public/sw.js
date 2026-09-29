@@ -1,19 +1,19 @@
-// WiFiForge Service Worker — offline-first shell, static-host safe (GitHub Pages sub-path).
+// SecCraft Service Worker — offline-first shell, static-host safe (GitHub Pages sub-path).
 // Every URL is derived from the registration scope, so the same file works at
 // https://<owner>.github.io/<repo>/ and at a domain root.
-const VERSION = 'v2.2.0'
-const CACHE = `wififorge-${VERSION}`
+const VERSION = 'v2.3.0'
+const CACHE = `seccraft-${VERSION}`
 
 const BASE = new URL(self.registration.scope).pathname
 const INDEX = new URL('index.html', self.registration.scope).href
 const PRECACHE = ['index.html', 'manifest.json', 'favicon.svg'].map(p => new URL(p, self.registration.scope).href)
 
 const OFFLINE_PAGE = `<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>WiFiForge — Offline</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>SecCraft — Offline</title>
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#020617;color:#e2e8f0;
 font:16px/1.6 ui-sans-serif,system-ui,sans-serif;text-align:center;padding:2rem}
 h1{color:#22d3ee;font-size:1.25rem;margin:0 0 .5rem}p{color:#94a3b8;margin:0}</style></head>
-<body><div><h1>Forge mark: offline</h1><p>WiFiForge shell is not cached yet. Reconnect once to install it.</p></div></body></html>`
+<body><div><h1>Forge mark: offline</h1><p>SecCraft has not cached this page yet. Reconnect once to make it available offline.</p></div></body></html>`
 
 self.addEventListener('install', (e) => {
   e.waitUntil(

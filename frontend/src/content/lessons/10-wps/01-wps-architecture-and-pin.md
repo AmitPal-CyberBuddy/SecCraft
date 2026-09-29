@@ -35,8 +35,7 @@ generates its own nonces and can be faster, but they are implementation-specific
 * **Disable WPS** (`wps_state=0`). This is the only complete fix for the PIN method.
 * If a product requires WPS: enforce **attempt lockout** and lock the registrar aggressively, and use PBC
   only when physically attended.
-* **WPS 2.0 / "WPS with NFC"** removes the PIN method for newer devices, but the older IE may still be
-  advertised — always read the IE, never trust the product name.
+* WPS 2.0 does **not** by itself mean the PIN method is absent. Implementations may enforce lockout/rate limits, but behavior varies; NFC is an enrollment method, not proof that PIN is disabled. Check the advertised methods, setup-lock state, vendor configuration and authorized behavior rather than trusting a version label.
 * Monitoring: repeated WSC exchanges (`EAP-WSC`, type 254) against the same BSSID is a strong WIDS signal.
 
 ## 4. Lab

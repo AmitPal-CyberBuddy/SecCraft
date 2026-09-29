@@ -1,8 +1,9 @@
 import { useProgressStore, LEVELS } from '@/store/useProgressStore'
 import { Menu, X, Search, Bell, Command, Zap, Trophy, Target, Moon, Sun } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { NotificationCenter } from '@/components/notifications/NotificationCenter'
+import { useTheme } from '@/components/theme/ThemeProvider'
 import { TOTAL_PCAPS } from '@/content/stats'
 import platform from '@/content/platform.json'
 
@@ -13,7 +14,6 @@ interface Props {
 }
 
 export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
-  const overall = useProgressStore(s => s.getOverallProgress())
   const currentModule = useProgressStore(s => s.currentModule)
   const totalXp = useProgressStore(s => s.getTotalXp())
   const level = useProgressStore(s => s.getLevel())
@@ -33,31 +33,18 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
     const percent = Math.min(Math.max((progressInLevel / range) * 100, 0), 100)
     return { current: totalXp, needed: Math.max(0, needed), nextLevel, percent }
   }, [totalXp, level])
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+  const { resolved, setTheme } = useTheme()
   const [notifOpen, setNotifOpen] = useState(false)
+  const closeNotifications = useCallback(() => setNotifOpen(false), [])
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    try {
-      const saved = typeof localStorage !== 'undefined' ? (localStorage.getItem('platform-theme') || localStorage.getItem('wififorge-theme')) as 'dark' | 'light' | null : null
-      if (saved) setTheme(saved)
-    } catch {}
     const onScroll = () => setScrolled(window.scrollY > 8)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark'
-    setTheme(next)
-    try { 
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('platform-theme', next)
-        localStorage.setItem('wififorge-theme', next)
-      }
-    } catch {}
-    try { document.documentElement.classList.toggle('light', next === 'light') } catch {}
-  }
+  const toggleTheme = () => setTheme(resolved === 'dark' ? 'light' : 'dark')
 
   const notifCount = useMemo(() => {
     // Real activity count — lessons + labs + quizzes + achievements with timestamps
@@ -85,7 +72,10 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={onMenuToggle}
-            aria-label="Toggle menu"
+            aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={sidebarOpen}
+            aria-controls="primary-navigation"
+            id="mobile-navigation-toggle"
             className="w-11 h-11 xs:w-9 xs:h-9 rounded-xl bg-[#0f172a] border border-[#1e293b] flex items-center justify-center hover:bg-[#1e293b] hover:border-[#334155] active:bg-[#1e293b] transition-all duration-200 group lg:hidden shrink-0 touch-manipulation"
           >
             <motion.div animate={{ rotate: sidebarOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
@@ -175,15 +165,32 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
             <Target className="w-3 h-3 text-violet-400" />
           </div>
           <span className="text-[11px] text-slate-400 font-medium shrink-0">Current:</span>
-          <span className="text-[11px] font-semibold text-slate-200 font-mono tracking-wide truncate">{currentModule || '02-wifi-fundamentals'}</span>
+          <span className="text-[11px] font-semibold text-slate-200 font-mono tracking-wide truncate">{currentModule || '01-intro-wireless'}</span>
           <div className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse ml-1 shrink-0" />
         </div>
 
-        <motion.button whileTap={{ scale: 0.95 }} onClick={toggleTheme} aria-label="Toggle theme" className="w-11 h-11 xs:w-9 xs:h-9 rounded-xl bg-[#0f172a] border border-[#1e293b] flex items-center justify-center hover:bg-[#1e293b] hover:border-[#334155] transition-all duration-200 group shrink-0 touch-manipulation">
-          {theme === 'dark' ? <Moon className="w-4 h-4 text-slate-400 group-hover:text-slate-300" /> : <Sun className="w-4 h-4 text-amber-400" />}
+        <motion.button
+          whileTap={{ scale: 0.96 }}
+          onClick={toggleTheme}
+          role="switch"
+          aria-checked={resolved === 'light'}
+          aria-label={`Switch to ${resolved === 'dark' ? 'light' : 'dark'} mode`}
+          title={`Switch to ${resolved === 'dark' ? 'light' : 'dark'} mode`}
+          className="theme-switch relative w-[54px] h-[30px] rounded-full border flex items-center shrink-0 touch-manipulation focus-visible:outline-offset-4"
+        >
+          <Sun aria-hidden="true" className="absolute left-[6px] w-3.5 h-3.5" />
+          <Moon aria-hidden="true" className="absolute right-[6px] w-3.5 h-3.5" />
+          <motion.span
+            aria-hidden="true"
+            className="theme-switch-thumb relative z-[1] w-[22px] h-[22px] rounded-full flex items-center justify-center shadow-sm"
+            animate={{ x: resolved === 'light' ? 24 : 0 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 34 }}
+          >
+            {resolved === 'dark' ? <Moon className="w-3 h-3" /> : <Sun className="w-3 h-3" />}
+          </motion.span>
         </motion.button>
 
-        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setNotifOpen(!notifOpen)} aria-label="Notifications" className="w-11 h-11 xs:w-9 xs:h-9 rounded-xl bg-[#0f172a] border border-[#1e293b] flex items-center justify-center hover:bg-[#1e293b] hover:border-[#334155] active:bg-[#1e293b] transition-all duration-200 group relative overflow-hidden shrink-0 touch-manipulation">
+        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setNotifOpen(!notifOpen)} aria-label="Activity and notifications" aria-haspopup="dialog" aria-expanded={notifOpen} aria-controls="activity-panel" className="w-11 h-11 xs:w-9 xs:h-9 rounded-xl bg-[#0f172a] border border-[#1e293b] flex items-center justify-center hover:bg-[#1e293b] hover:border-[#334155] active:bg-[#1e293b] transition-all duration-200 group relative overflow-hidden shrink-0 touch-manipulation">
           <div className="absolute inset-0 bg-gradient-to-br from-violet-500/0 to-violet-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
           <Bell className="w-4 h-4 text-slate-400 group-hover:text-slate-300 relative z-10 group-hover:scale-110 transition-all duration-200" />
           {notifCount > 0 ? (
@@ -199,9 +206,12 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
         <motion.button onClick={openSearch} whileTap={{ scale: 0.95 }} className="hidden sm:flex w-9 h-9 rounded-xl bg-gradient-to-br from-[#1e293b] to-[#0f172a] border border-[#334155]/60 items-center justify-center shadow-soft hover:border-[#475569]/60 hover:from-[#25354f] hover:to-[#1e293b] transition-all duration-200 group cursor-pointer shrink-0 touch-manipulation">
           <span className="text-[10px] font-mono font-bold text-slate-400 group-hover:text-slate-300 tracking-wide">⌘K</span>
         </motion.button>
+        <motion.button onClick={openSearch} whileTap={{ scale: 0.94 }} aria-label={`Search ${platform.name}`} className="flex sm:hidden w-11 h-11 rounded-xl bg-[#0f172a] border border-[#1e293b] items-center justify-center hover:bg-[#1e293b] hover:border-cyan-500/30 transition-all group touch-manipulation shrink-0">
+          <Search className="w-4 h-4 text-slate-400 group-hover:text-cyan-300 transition-colors" />
+        </motion.button>
       </div>
     </header>
-    <NotificationCenter open={notifOpen} onClose={() => setNotifOpen(false)} />
+    <NotificationCenter open={notifOpen} onClose={closeNotifications} />
     </>
   )
 }

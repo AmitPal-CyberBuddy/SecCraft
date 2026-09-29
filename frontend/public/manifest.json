@@ -1,13 +1,13 @@
 {
-  "name": "SecCraft \u2014 Hands-on Cybersecurity Learning Platform",
+  "name": "SecCraft — Hands-on Cybersecurity Learning Platform",
   "short_name": "SecCraft",
-  "description": "SecCraft \u2014 Hands-on Cybersecurity Learning Platform \u2014 Forge. Break. Fix. SecCraft. Retest. \u2014 Learn cybersecurity by doing. Wireless Pentesting is Path #1 (legacy WiFiForge).",
+  "description": "Learn. Practice. Investigate. Improve. A local-first cybersecurity learning platform with hands-on labs, evidence-led exercises, and offline-capable content.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#020617",
-  "theme_color": "#020617",
+  "background_color": "#080d17",
+  "theme_color": "#080d17",
   "orientation": "any",
   "lang": "en",
   "dir": "ltr",
@@ -68,7 +68,7 @@
     {
       "name": "Learning Paths",
       "url": "./paths",
-      "description": "8 paths \u2022 1 available \u2022 Wireless Pentesting mature",
+      "description": "8 paths • 1 available • Wireless Pentesting is the first available path",
       "icons": [
         {
           "src": "favicon.svg",
@@ -79,7 +79,7 @@
     {
       "name": "Modules",
       "url": "./modules",
-      "description": "20 modules across 6 phases (Wireless path)",
+      "description": "20 modules across 6 phases in the Wireless Pentesting path",
       "icons": [
         {
           "src": "favicon.svg",

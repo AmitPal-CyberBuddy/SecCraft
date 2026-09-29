@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Map, BookOpen, FlaskConical, Swords, FileText, Settings, Terminal, Shield, Zap, Radio, X, ChevronRight, Activity, Wifi, Target, Layers, GraduationCap, BarChart3, Trophy, Flame, BarChart } from 'lucide-react'
+import { LayoutDashboard, Map, BookOpen, FlaskConical, Swords, FileText, Settings, Terminal, Shield, Zap, X, ChevronRight, Activity, Wifi, Target, Layers, GraduationCap, BarChart3, Trophy, Flame, BarChart } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useProgressStore } from '@/store/useProgressStore'
 import { TOTAL_CHALLENGES, TOTAL_LABS, TOTAL_MODULES, TOTAL_PCAPS, TOTAL_LEARNING_PATHS, AVAILABLE_LEARNING_PATHS } from '@/content/stats'
@@ -32,9 +32,10 @@ const sectionLabels: Record<string, { label: string; icon: any }> = {
 interface Props {
   onClose?: () => void
   isMobile?: boolean
+  isOpen?: boolean
 }
 
-export function Sidebar({ onClose, isMobile }: Props) {
+export function Sidebar({ onClose, isMobile, isOpen }: Props) {
   const location = useLocation()
   const overall = useProgressStore(s => s.getOverallProgress())
   const streak = useProgressStore(s => s.getStreak())
@@ -42,11 +43,11 @@ export function Sidebar({ onClose, isMobile }: Props) {
   const currentPath = learningPaths.find(p => p.id === currentPathId)
 
   return (
-    <aside data-tour="sidebar" className="w-full h-screen h-[100dvh] bg-[#0a1020]/95 backdrop-blur-2xl border-r border-[#1e293b]/60 flex flex-col relative overflow-hidden sticky top-0">
+    <aside id="primary-navigation" data-tour="sidebar" aria-hidden={isMobile && !isOpen ? true : undefined} inert={Boolean(isMobile && !isOpen)} className="w-full h-screen h-[100dvh] bg-[#0a1020]/95 backdrop-blur-2xl border-r border-[#1e293b]/60 flex flex-col relative overflow-hidden sticky top-0">
       <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] via-transparent to-transparent pointer-events-none" />
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
       
-      {/* Platform Logo — Quench — completely different, cybersecurity learning platform worthy */}
+      {/* SecCraft platform mark */}
       <div className="relative h-[64px] md:h-[72px] px-4 xs:px-5 flex items-center gap-3 border-b border-[#1e293b]/60 shrink-0 min-w-0">
         <div className="w-9 h-9 rounded-xl bg-[#020617] border border-[#1e293b] flex items-center justify-center relative overflow-hidden shadow-soft group shrink-0">
           <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 via-violet-500/10 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
@@ -197,9 +198,6 @@ export function Sidebar({ onClose, isMobile }: Props) {
                               {item.badge}
                             </span>
                           )}
-                        </div>
-                        <div className="text-[11px] text-slate-400 truncate mt-0.5 group-hover:text-slate-400 transition-colors">
-                          {item.desc}
                         </div>
                       </div>
                       <ChevronRight className={`

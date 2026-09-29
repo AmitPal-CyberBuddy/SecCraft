@@ -13,7 +13,7 @@
 | Mode | Sees | Can transmit | Typical use |
 | --- | --- | --- | --- |
 | managed | only its own BSS's frames | normal traffic | using a network |
-| monitor | all frames on the channel it listens to | no | capture, recon, analysis |
+| monitor | frames it can receive on the tuned channel | hardware/driver dependent; injection may be supported | capture, recon, analysis, authorized frame-injection tests |
 | AP / master | — | beacons, serves clients | running a test AP (authorised lab only) |
 | mesh / IBSS | mesh/adhoc frames | mesh | specific topologies, rarely needed |
 
@@ -63,7 +63,7 @@ iw reg get | grep -A3 global
 | rogue AP / enterprise rogue authenticator | `hostapd`, `eaphammer` (authorised lab only) | acts as the authenticator/AP |
 | run a legitimate test AP | `hostapd` | reference configuration and behaviour |
 | act as a supplicant to prove a client-side claim | `wpa_supplicant -d` | shows certificate/profile behaviour |
-| turn captures into crackable material | `hcxpcapngtool` → `hashcat` | offline audit of PSK/SAE-adjacent material |
+| turn WPA-Personal captures into audit material | `hcxpcapngtool` → `hashcat` | offline audit of supported EAPOL/PMKID formats; SAE commit/confirm captures do not provide an equivalent offline verifier |
 | craft/inspect frames programmatically | Scapy | reproducible lab artefacts |
 
 **Golden rule:** tools are chosen by the question you need answered. If you cannot state the question, the

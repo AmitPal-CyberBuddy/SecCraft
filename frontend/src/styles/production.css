@@ -107,24 +107,6 @@ body {
   .text-\[14px\] { font-size: 12px !important; }
   .text-\[13px\] { font-size: 11px !important; }
   
-  /* Badge and pill responsiveness */
-  .rounded-full {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  
-  /* Grid single column on tiny */
-  .grid-cols-2, .grid-cols-3, .grid-cols-4 {
-    grid-template-columns: 1fr !important;
-  }
-  
-  /* Flex wrap on tiny */
-  .flex {
-    flex-wrap: wrap;
-  }
-  
   /* Hide non-essential on tiny */
   .hidden-xs {
     display: none !important;
@@ -140,25 +122,10 @@ body {
   .text-\[28px\] { font-size: 24px !important; }
   .text-\[32px\] { font-size: 26px !important; }
   
-  .grid-cols-2 {
-    grid-template-columns: 1fr !important;
-  }
-  
-  .grid-cols-3, .grid-cols-4 {
-    grid-template-columns: 1fr !important;
-  }
 }
 
 @media (min-width: 376px) and (max-width: 640px) {
   /* Mobile - 640px */
-  .grid-cols-3, .grid-cols-4 {
-    grid-template-columns: 1fr !important;
-  }
-  
-  .grid-cols-2 {
-    grid-template-columns: 1fr !important;
-  }
-  
   .lg\:col-span-5, .lg\:col-span-4, .lg\:col-span-3, .lg\:col-span-8 {
     grid-column: span 1 / span 1 !important;
   }

@@ -10,8 +10,8 @@ import { TOTAL_LABS, TOTAL_LESSONS, TOTAL_MODULES, TOTAL_PCAPS } from '@/content
  *
  * The export contains the evidence-vault entries you added (label, claim, filter, frame numbers,
  * SHA-256) and the finding draft you wrote in the editor — nothing else. The previous version of this
- * component generated a random SHA-256, eight sample findings and a "chain verified" flag; that is
- * exactly the kind of invented material a report must never contain.
+ * component included invented evidence and an unsupported chain-verification label; reports must
+ * contain only material backed by the learner's own records.
  *
  * The SHA-256 printed for the exported PDF is computed from the generated file's bytes in the browser,
  * so the hash line is a real fingerprint of the file you are holding.
@@ -109,7 +109,7 @@ export function ReportPdfExport({ className = '' }: { className?: string }) {
 
     doc.setFontSize(18)
     doc.setTextColor(15, 23, 42)
-    doc.text('WiFiForge — engagement notes export', 15, y); y += 8
+    doc.text('SecCraft — engagement notes export', 15, y); y += 8
     line(`Generated ${date.toLocaleString()} on this device • record ${reportId}`, 9, 4, [100, 116, 139])
     line('This file contains only records you entered. It is not a signed or accredited report; every hash below is the value you recorded (or that the page computed from the file you exported).', 9, 4, [100, 116, 139])
 

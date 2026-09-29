@@ -1,4 +1,4 @@
-import { MAX_XP, useProgressStore, LEVELS } from '@/store/useProgressStore'
+import { useProgressStore, LEVELS } from '@/store/useProgressStore'
 import { TOTAL_CHALLENGES, TOTAL_LABS, TOTAL_LESSONS, TOTAL_MODULES, TOTAL_PCAPS, TOTAL_LEARNING_PATHS, AVAILABLE_LEARNING_PATHS, PLATFORM_STATS, getStatsForPath } from '@/content/stats'
 import { ProgressRing } from '@/components/dashboard/ProgressRing'
 import { ContinueCard } from '@/components/dashboard/ContinueCard'
@@ -15,7 +15,7 @@ export function Dashboard() {
   const getOverall = useProgressStore(s => s.getOverallProgress())
   const getModuleProgress = useProgressStore(s => s.getModuleProgress)
   const getPathProgress = useProgressStore(s => s.getPathProgress)
-  const currentModuleId = useProgressStore(s => s.currentModule) || '02-wifi-fundamentals'
+  const currentModuleId = useProgressStore(s => s.currentModule) || '01-intro-wireless'
   const currentPathId = useProgressStore(s => s.currentLearningPathId) || 'wireless-pentesting'
   const completedLessons = useProgressStore(s => s.completedLessons)
   const completedLabs = useProgressStore(s => s.completedLabs)
@@ -34,7 +34,7 @@ export function Dashboard() {
     return { current: totalXp, needed: Math.max(0, needed), nextLevel: next, percent: Math.min(Math.max((prog / range) * 100, 0), 100) }
   }, [totalXp, level])
 
-  const currentModule = modules.find(m => m.id === currentModuleId) || modules[1]
+  const currentModule = modules.find(m => m.id === currentModuleId) || modules[0]
   const currentPath = learningPaths.find(p => p.id === currentPathId) || learningPaths[0]
   const currentProgress = getModuleProgress(currentModule.id)
   const wirelessStats = getStatsForPath('wireless-pentesting')
@@ -63,10 +63,11 @@ export function Dashboard() {
     <div className="space-y-5 md:space-y-6 max-w-[1400px] mx-auto min-w-0 w-full">
       {/* Header */}
       <FadeIn>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="dashboard-intro flex flex-col md:flex-row md:items-end justify-between gap-3">
           <div className="min-w-0">
-            <div className="flex items-center gap-3">
-              <h1 className="font-heading font-bold text-[24px] md:text-[28px] text-slate-100 tracking-tight leading-none">{platform.name}</h1>
+            <div className="dashboard-eyebrow"><span className="dashboard-eyebrow-mark" /><span>YOUR PRACTICE SPACE</span><span className="dashboard-eyebrow-rule" /></div>
+            <div className="flex items-center gap-3 mt-2">
+              <h1 className="font-heading font-bold text-[26px] md:text-[32px] text-slate-100 tracking-tight leading-none sc-page-title">{platform.name}</h1>
               <div className="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20"><PulseDot color="cyan" /><span className="text-[10px] font-semibold text-cyan-400">v{platform.version}</span></div>
               <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20"><Flame className="w-3 h-3 text-orange-400" /><span className="text-[10px] font-semibold text-amber-400">{streak}d</span></div>
             </div>
@@ -76,7 +77,33 @@ export function Dashboard() {
         </div>
       </FadeIn>
 
-      {/* Top bento — dashboard-stats tour target */}
+      {/* Learning next, metrics second: make the learner's next useful action the first destination. */}
+      <StaggerContainer className="grid grid-cols-1 lg:grid-cols-12 gap-4" stagger={0.06}>
+        <StaggerItem className="lg:col-span-8"><ContinueCard moduleId={currentModule.id} pathTitle={currentPath.title} title={currentModule.title} description={currentModule.description} progress={currentProgress} lessonsCompleted={completedLessons.filter(l => l.moduleId === currentModule.id).length} totalLessons={currentModule.lessons.length} estimatedTime={`${currentModule.estimated_hours}h`} /></StaggerItem>
+        <StaggerItem className="lg:col-span-4">
+          <AnimatedCard glowColor="none" className="p-5 h-full">
+            <div className="flex items-center justify-between mb-4"><h3 className="font-heading font-bold text-[13px] text-slate-100 flex items-center gap-2"><Clock className="w-4 h-4 text-slate-400" /> Recent activity</h3><span className="text-[10px] px-2 py-1 rounded-full bg-[#1e293b] border border-[#334155] text-slate-400 font-mono">{recentActivity.length ? `${recentActivity.length} recent` : 'your timeline'}</span></div>
+            <div className={`space-y-2.5 ${recentActivity.length ? 'activity-timeline' : ''}`}>
+              {recentActivity.length === 0 ? (
+                <div className="empty-activity relative p-4 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 text-center overflow-hidden">
+                  <div className="activity-orbit mx-auto mb-2" aria-hidden="true"><Activity className="w-4 h-4 text-cyan-300" /></div>
+                  <div className="text-[12px] font-semibold text-slate-200">Your practice log starts here</div>
+                  <p className="mt-1 text-[11px] text-slate-400 leading-relaxed">Begin <Link to={`/paths/${currentPath.id}/modules/${currentModule.id}`} className="text-cyan-300 hover:text-cyan-200 underline decoration-cyan-400/30 underline-offset-4">{currentModule.title}</Link> and your completed work will appear here.</p>
+                </div>
+              ) : recentActivity.map((act, idx) => (
+                <motion.div key={act.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 + idx * 0.05 }} className="activity-row flex gap-2.5 p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 hover:border-[#334155]/60 transition-colors group/item">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 border ${act.type === 'lesson' ? 'bg-cyan-500/10 border-cyan-500/20' : act.type === 'lab' ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-violet-500/10 border-violet-500/20'}`}>{act.type === 'lesson' ? <BookOpen className="w-3.5 h-3.5 text-cyan-400" /> : act.type === 'lab' ? <FlaskConical className="w-3.5 h-3.5 text-emerald-400" /> : <Target className="w-3.5 h-3.5 text-violet-400" />}</div>
+                  <div className="flex-1 min-w-0"><div className="text-[12px] font-medium text-slate-200 truncate group-hover/item:text-slate-100">{act.title}</div><div className="text-[10px] text-slate-400 font-mono">{act.module} • +{act.points} XP</div></div>
+                  <div className="text-[10px] text-slate-400 font-mono">{ago(act.at)}</div>
+                </motion.div>
+              ))}
+              <Link to="/progress" className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#1e293b]/50 border border-[#334155]/50 text-[11px] text-slate-400 hover:text-slate-100 hover:border-cyan-500/30 transition-colors"><Activity className="w-3 h-3" /> View learning analytics <ChevronRight className="w-3 h-3" /></Link>
+            </div>
+          </AnimatedCard>
+        </StaggerItem>
+      </StaggerContainer>
+
+      {/* Progress cockpit — data is secondary to the next useful action. */}
       <div data-tour="dashboard-stats">
         <StaggerContainer className="grid grid-cols-1 lg:grid-cols-12 gap-4" stagger={0.06}>
           <StaggerItem className="lg:col-span-5">
@@ -86,7 +113,7 @@ export function Dashboard() {
                 <span className="text-[18px] font-bold font-mono text-slate-100">{getOverall}%</span>
               </div>
               <div className="flex items-center gap-5">
-                <div className="relative"><ProgressRing value={getOverall} size={72} strokeWidth={5} /><div className="absolute inset-0 flex items-center justify-center"><span className="text-[10px] font-bold text-slate-400 font-mono">{getOverall}%</span></div></div>
+                <ProgressRing value={getOverall} size={72} strokeWidth={5} />
                 <div className="flex-1 space-y-2.5">
                   <div className="grid grid-cols-3 gap-2">
                     <div className="text-center p-2 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40"><div className="text-[14px] font-bold text-slate-100 font-mono">{completedLessons.length}</div><div className="text-[9px] text-slate-400 uppercase">Lessons</div></div>
@@ -113,28 +140,6 @@ export function Dashboard() {
           </StaggerItem>
         </StaggerContainer>
       </div>
-
-      {/* Continue + Recent */}
-      <StaggerContainer className="grid grid-cols-1 lg:grid-cols-12 gap-4" stagger={0.06}>
-        <StaggerItem className="lg:col-span-8"><ContinueCard moduleId={currentModule.id} title={currentModule.title} description={currentModule.description} progress={currentProgress} lessonsCompleted={completedLessons.filter(l => l.moduleId === currentModule.id).length} totalLessons={4} estimatedTime={`${currentModule.estimated_hours}h`} /></StaggerItem>
-        <StaggerItem className="lg:col-span-4">
-          <AnimatedCard glowColor="none" className="p-5 h-full">
-            <div className="flex items-center justify-between mb-4"><h3 className="font-heading font-bold text-[13px] text-slate-100 flex items-center gap-2"><Clock className="w-4 h-4 text-slate-400" /> Recent</h3><span className="text-[10px] px-2 py-1 rounded-full bg-[#1e293b] border border-[#334155] text-slate-400 font-mono">{recentActivity.length ? `${recentActivity.length} recent` : 'no activity'}</span></div>
-            <div className="space-y-2.5">
-              {recentActivity.length === 0 ? (
-                <div className="p-4 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-center"><div className="text-[12px] text-slate-300">No activity yet</div><p className="mt-1 text-[11px] text-slate-400">Start <Link to={`/paths/${currentPath.id}/modules/${currentModule.id}`} className="text-cyan-400 hover:text-cyan-300">{currentModule.title}</Link> — 15–20 min/lesson.</p></div>
-              ) : recentActivity.map((act, idx) => (
-                <motion.div key={act.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 + idx * 0.05 }} className="flex gap-2.5 p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 hover:border-[#334155]/40 transition-colors group/item">
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 border ${act.type === 'lesson' ? 'bg-cyan-500/10 border-cyan-500/20' : act.type === 'lab' ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-violet-500/10 border-violet-500/20'}`}>{act.type === 'lesson' ? <BookOpen className="w-3.5 h-3.5 text-cyan-400" /> : act.type === 'lab' ? <FlaskConical className="w-3.5 h-3.5 text-emerald-400" /> : <Target className="w-3.5 h-3.5 text-violet-400" />}</div>
-                  <div className="flex-1 min-w-0"><div className="text-[12px] font-medium text-slate-200 truncate group-hover/item:text-slate-100">{act.title}</div><div className="text-[10px] text-slate-400 font-mono">{act.module} • +{act.points} XP</div></div>
-                  <div className="text-[10px] text-slate-400 font-mono">{ago(act.at)}</div>
-                </motion.div>
-              ))}
-              <Link to="/progress" className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#1e293b]/50 border border-[#334155]/50 text-[11px] text-slate-400 hover:text-slate-200 hover:border-[#475569] transition-colors"><Activity className="w-3 h-3" /> View analytics <ChevronRight className="w-3 h-3" /></Link>
-            </div>
-          </AnimatedCard>
-        </StaggerItem>
-      </StaggerContainer>
 
       {/* Quick Actions — labs + challenges tour targets */}
       <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3" stagger={0.05}>

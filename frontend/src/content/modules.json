@@ -382,7 +382,7 @@
   "description": "Converting a capture to hashcat material, running an authorised audit, and stating what a cracked PSK does and does not prove.",
   "objectives": [
    "Convert a capture with hcxpcapngtool and run hashcat mode 22000 (unified PMKID + EAPOL)",
-   "Compare clientless PMKID capture with a 4-way handshake capture (requirements, completeness)",
+   "Compare PMKID collection without a full 4-way handshake (requirements, completeness, station/AP behavior)",
    "Interpret a crack: what access does the key actually grant?",
    "Write the finding with defensible severity derived from impact, not from the technique name"
   ],
@@ -403,7 +403,7 @@
    },
    {
     "id": "02-pmkid-clientless-lab",
-    "title": "PMKID: clientless capture (lab)",
+    "title": "PMKID: reduced-handshake capture (lab)",
     "kind": "lab"
    }
   ],

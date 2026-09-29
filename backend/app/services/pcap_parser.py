@@ -1,5 +1,5 @@
 """
-WiFiForge — capture decoding service.
+SecCraft — capture decoding service.
 
 Order of preference, with no synthesised fallback:
   1. ``tshark`` if it is installed (most faithful dissection),

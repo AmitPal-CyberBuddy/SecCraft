@@ -1,74 +1,47 @@
 # Portal Testing and Client Isolation (Lab)
 
-> Artifact: `captive-portal.pcapng` — open `Guest-WLAN`, DHCP, HTTP 302 redirect, cleartext POST,
-> session cookie, and a client-to-client ARP exchange showing isolation is **not** enforced.
+> Artifact: `captive-portal.pcapng` — 17-frame deterministic simulation of an open `Guest-WLAN`, a DHCP DORA exchange, HTTP redirect/POST/response, and a client-to-client ARP request/reply forwarded through the simulated AP. It is not a running portal or a live network capture.
 
-## 1. Portal flow and where it breaks
+## 1. Reconstruct the fixture
 
-```
-client ──DHCP──► gateway (10.0.0.1)
-   │
-   ├─ DNS/HTTP to any destination ──► interception (302 to portal host)
-   ├─ GET /login (HTTP) ──► credential form served over cleartext
-   ├─ POST /login username=…&password=… ──► credentials visible on the air
-   └─ Set-Cookie: session=… ──► session tied to MAC/token, often weak
-```
+| Frames | Observation |
+| --- | --- |
+| 1–5 | Open BSS beacon, authentication and association |
+| 6–9 | DHCP Discover, Offer, Request and ACK |
+| 10–11 | HTTP connectivity-check GET and 302 redirect containing a portal URL |
+| 12–13 | HTTP POST with lab-only form values and an HTTP response with a session cookie |
+| 14–17 | ARP request/reply forwarded between two guest stations by the simulated AP |
 
-Findings to look for, in order of consequence:
+The HTTP and cookie bytes are visible because the fixture is an open BSS and the application flow uses HTTP. The example does **not** implement server-side authentication, session validation, a real MAC-bound authorization check, or a working MAC-spoof bypass. The URL contains a MAC value; that alone is not evidence that the portal trusts it.
 
-1. **Credentials over cleartext HTTP** — capturable by anyone on the open BSS (and by a twin).
-2. **Session fixation / MAC-bound sessions** — a replayed MAC or token can hijack an authenticated session;
-   a portal that authorises by MAC address can be bypassed by spoofing an authenticated client's MAC
-   (trivially observable in the clear, since an open BSS exposes every MAC).
-3. **Portal bypass via direct IP/alternative ports** — enforcement implemented with DNS/HTTP redirection
-   only, leaving other protocols open.
-4. **No encryption for guest traffic** — an open BSS means every payload is readable; OWE fixes the L2
-   confidentiality without changing the user experience.
-5. **Client isolation absent** — guests can attack each other (ARP spoofing, SMB, mDNS scanning).
+## 2. Distinguish the controls
 
-## 2. Isolation is not segmentation
-
-| Control | What it enforces | Test |
+| Control | What it enforces | Evidence to collect in a real scoped test |
 | --- | --- | --- |
-| Client isolation (`ap_isolate=1`) | no client-to-client frames forwarded through the AP | ARP/ICMP between two guest clients |
-| VLAN separation | guest traffic and corporate traffic are different L2 broadcast domains | can a guest reach a corporate host/l3? |
-| ACL/firewall between VLANs | explicit inter-VLAN policy | TCP/UDP reachability to corporate subnets, not just ping |
-| NAC/802.1X on the wired side | device-level admission | out of wireless scope |
+| Client isolation (`ap_isolate=1`) | Prevents station-to-station forwarding through the AP | Controlled two-client traffic in both directions and AP/config evidence |
+| VLAN separation | Distinct L2 broadcast domains | Address/prefix, gateway, VLAN assignment and ARP behavior |
+| Inter-VLAN ACL/firewall | Explicit routed traffic policy | Approved source/target/service tests plus rule/config evidence |
+| Portal authorization | Whether a client has a valid session | Server-side policy/logs, token lifecycle and controlled negative tests |
 
-Isolation and segmentation are independent: a guest network can be isolated between guests yet still reach
-the corporate VLAN, and vice versa. Test both, and report them as separate findings.
+The four ARP frames in this fixture model an AP forwarding an exchange between two stations. They are evidence about the *fixture*, not proof of an AP configuration or of a production isolation setting. A real finding needs a controlled pair of clients and confirmation of what the AP/router forwarded.
 
 ## 3. Lab tasks
 
 ```bash
-tshark -r captive-portal.pcapng -Y 'http.request' -T fields -e frame.number -e http.request.method -e http.host -e http.request.uri
-tshark -r captive-portal.pcapng -Y 'http.request.method == "POST"' -T fields -e frame.number -e http.file_data
-tshark -r captive-portal.pcapng -Y 'arp' -T fields -e frame.number -e arp.src.proto_ipv4 -e arp.dst.proto_ipv4
+tshark -r captive-portal.pcapng -Y 'http' \
+  -T fields -e frame.number -e http.request.method -e http.response.code -e http.location -e http.cookie
+tshark -r captive-portal.pcapng -Y 'bootp' -T fields -e frame.number -e bootp.option.dhcp
+tshark -r captive-portal.pcapng -Y 'arp' -T fields -e frame.number -e arp.opcode -e arp.src.proto_ipv4 -e arp.dst.proto_ipv4
 ```
 
-1. Reconstruct the portal flow with frame numbers and mark where credentials appear in cleartext.
-2. Identify the session token and the mechanism that binds it (cookie, MAC). What would you test to prove
-   hijacking in a lab with two clients you own?
-3. Which frames prove isolation is off? What would the capture look like if `ap_isolate=1` were set?
-4. Write the two findings separately (credential exposure; missing isolation) with distinct impacts.
-5. Design the retest: which frames must disappear, and which must still work (portal access)?
+1. Reconstruct DHCP and the HTTP request/response sequence by frame number. Which lab-only values appear in plaintext?
+2. What additional server-side evidence would be required to claim the session is bound only to a spoofable MAC or can be hijacked?
+3. What do frames 14–17 show in this simulated topology? What would you collect to prove a real client-isolation failure?
+4. Keep portal credential exposure, client isolation and inter-VLAN reachability as separate findings with separate evidence.
+5. Design a safe retest that proves the fix while preserving authorized guest portal access.
 
-## 4. Remediation
+## 4. Remediation themes
 
-```
-# hostapd — isolate clients, keep the portal reachable
-ap_isolate=1
-# guest SSID: encrypted, not open
-wpa=2
-wpa_key_mgmt=OWE
-ieee80211w=2
-```
+Use HTTPS-only portal flows with HSTS and strong server-side session controls; do not treat a MAC address as an authenticator. Configure client isolation and guest VLAN ACLs independently, then retest each with controlled endpoints. OWE can add link-layer confidentiality to an otherwise open guest experience where supported; it does not replace portal or network access controls.
 
-Plus: HTTPS-only portal with HSTS, tokens bound to a strong server-side session (not to a spoofable MAC),
-open-flow enforcement at the switch/router (not just DNS/HTTP redirection), and a guest VLAN with an
-explicit deny to internal ranges.
-
-## 5. Decision practice
-
-**`scn-14-isolation-vs-segmentation`** — guests are isolated from each other but can ping a corporate
-server. Which finding is it, and what evidence do you need?
+**Decision practice:** `scn-14-isolation-vs-segmentation` — identify the control actually tested and the evidence still needed.

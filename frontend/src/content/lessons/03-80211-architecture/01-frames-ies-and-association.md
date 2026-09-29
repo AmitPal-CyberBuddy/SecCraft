@@ -40,7 +40,7 @@ wlan.bssid == 00:11:22:33:44:55       # one BSS
 * **TIM (5)** — DTIM/beacon count; useful when you interpret power-save client wake-ups.
 * **Country (7)** — the regulatory triplet the AP claims to use (channel ranges and EIRP limits).
 * **RSN (48)** — cipher/AKM suites + capabilities (see module 02).
-* **Extended Capabilities (127)** — capabilities such as BSS Transition (802.11v) and OCV.
+* **Extended Capabilities (127)** — capabilities such as BSS Transition (802.11v); check the appropriate RSN/management elements separately for OCV-related policy.
 * **HT/VHT/HE (45/61, 191/192, ext 35)** — channel width, MCS, spatial streams, OFDMA.
 * **Vendor (221)** — WPS (`00:50:F2` type `04`) and vendor-specific extensions; fingerprinting material.
 
@@ -65,7 +65,7 @@ What each step proves:
 * **Authentication (open, algorithm 0)**: nothing. It is a formality; do not report it as "authentication".
 * **Association**: which capabilities the AP and client agreed on (RSNE is echoed here).
 * **4-way handshake**: both parties proved knowledge of the PMK and derived the same PTK.
-* **Status/reason codes**: the only place the network tells you *why* something failed — always quote them.
+* **Status/reason codes**: protocol-level reasons for the frame outcome, not necessarily the underlying cause. Quote the code and correlate it with supplicant/AP logs and other evidence.
 
 ## 4. What the capture cannot show you
 

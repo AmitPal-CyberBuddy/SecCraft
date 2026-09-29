@@ -35,19 +35,20 @@ export default {
           pink: "#f472b6",
         },
         seccraft: {
-          bg: "#0A0F3D",
-          cyan: "#33CFFF",
-          orange: "#FF9F1C",
-          navy: "#0A0F3D",
+          bg: "#080d17",
+          cyan: "#22d3ee",
+          teal: "#53d7d1",
+          orange: "#f59e0b",
+          navy: "#0b111b",
         },
         slate: {
           950: "#020617",
         }
       },
       fontFamily: {
-        heading: ["Sora", "Space Grotesk", "sans-serif"],
-        body: ["Inter", "system-ui", "sans-serif"],
-        mono: ["JetBrains Mono", "Fira Code", "monospace"],
+        heading: ["Inter Variable", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        body: ["Inter Variable", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"],
       },
       boxShadow: {
         'soft': '0 4px 24px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.4)',

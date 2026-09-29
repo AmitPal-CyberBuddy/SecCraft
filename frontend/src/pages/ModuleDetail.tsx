@@ -1,3 +1,4 @@
+import { LoadingPanel } from '@/components/common/LoadingPanel'
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
@@ -14,133 +15,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import modules from '@/content/modules.json'
 import { TierBadge } from '@/components/common/TierBadge'
 import { DecisionPractice, getScenariosForModule } from '@/components/learning/DecisionPractice'
-import { LABS } from '@/content/labs'
+import { AVAILABLE_LABS, LABS } from '@/content/labs'
 
 const NotesBookmarks = lazy(() => import('@/components/learning/NotesBookmarks').then(m => ({ default: m.NotesBookmarks })))
 const ReadingExperience = lazy(() => import('@/components/learning/ReadingExperience').then(m => ({ default: m.ReadingExperience })))
 import { ArrowLeft, BookOpen, FlaskConical, CheckCircle, Clock, Shield, FileText, Swords, Radio, AlertTriangle, Wifi, Target, Sparkles, ChevronRight, Layers, Award, Zap, List, Eye, Type, Maximize2 } from 'lucide-react'
 
-const quizData: Record<string, any[]> = {
-  "02-wifi-fundamentals": [
-    { id: "q1", question: "What does a BSSID identify?", options: ["Wireless network (SSID)", "Specific AP/radio", "VLAN", "Encryption algorithm"], correct: 1, explanation: "BSSID is MAC of AP radio. SSID is human name." },
-    { id: "q2", question: "How many non-overlapping channels in 2.4 GHz US?", options: ["1", "3", "6", "11"], correct: 1, explanation: "Only 1,6,11 are non-overlapping." },
-    { id: "q3", question: "40 MHz in 2.4 GHz is:", options: ["Best practice", "Bad practice — causes overlap", "Required for WPA3", "Only for 6 GHz"], correct: 1, explanation: "40 MHz in 2.4 overlaps, bad practice." },
-    { id: "q4", question: "Beacon frames are sent by:", options: ["Client", "AP", "Both", "RADIUS server"], correct: 1, explanation: "AP beacons every ~100ms." },
-    { id: "q5", question: "Probe request can leak:", options: ["AP password", "Preferred networks (PNL)", "RADIUS secret", "Nothing"], correct: 1, explanation: "PNL = list of SSIDs client trusts." },
-  ],
-  "05-wireless-recon": [
-    { id: "q1", question: "Hidden SSID beacon has SSID IE length:", options: ["32", "0", "6", "11"], correct: 1, explanation: "Hidden beacon has empty SSID, len 0, but probe response reveals." },
-    { id: "q2", question: "How to reveal hidden SSID?", options: ["Deauth AP", "Probe response or assoc request contains SSID", "Brute force", "Cannot be revealed"], correct: 1, explanation: "Probe Response and Association Request contain real SSID." },
-    { id: "q3", question: "PNL stands for:", options: ["Preferred Network List", "Private Network Layer", "Probe Network Log", "Protected Network List"], correct: 0, explanation: "PNL = Preferred Network List — SSIDs client has connected to." },
-    { id: "q4", question: "OUI in MAC identifies:", options: ["Channel", "Vendor", "Security", "Signal strength"], correct: 1, explanation: "First 3 bytes = vendor OUI." },
-    { id: "q5", question: "Same SSID, different BSSIDs means:", options: ["Different networks", "Same ESS, multiple APs", "Rogue AP", "Hidden SSID"], correct: 1, explanation: "Same SSID, different BSSIDs = ESS, multiple APs for roaming." },
-  ],
-  "06-traffic-analysis": [
-    { id: "q1", question: "Wireshark filter for beacons:", options: ["wlan.fc.type==0", "wlan.fc.type_subtype==8", "eapol", "wlan.ssid==\"\""], correct: 1, explanation: "Type_subtype 8 = beacon." },
-    { id: "q2", question: "4-way handshake frames are:", options: ["Beacons", "EAPOL", "Probe requests", "Deauth"], correct: 1, explanation: "EAPOL = 4-way handshake." },
-    { id: "q3", question: "Association flow order:", options: ["Beacon→Probe→Auth→Assoc→EAPOL", "EAPOL→Beacon→Probe", "Auth→Beacon→Assoc", "Probe→EAPOL→Beacon"], correct: 0, explanation: "Correct order: Beacon, Probe, Auth, Assoc, EAPOL, Data." },
-    { id: "q4", question: "Filter for specific BSSID:", options: ["wlan.bssid==AA:BB:CC:DD:EE:FF", "ssid==LAB-WIFI", "channel==6", "eapol"], correct: 0, explanation: "wlan.bssid filters AP." },
-    { id: "q5", question: "Probe request reveals:", options: ["AP password", "Client PNL", "RADIUS secret", "Nothing"], correct: 1, explanation: "Client PNL leakage." },
-  ],
-  "07-wep-legacy": [
-    { id: "q1", question: "WEP IV size:", options: ["24-bit", "48-bit", "128-bit", "256-bit"], correct: 0, explanation: "24-bit IV too small, repeats fast, leads to reuse." },
-    { id: "q2", question: "WEP uses:", options: ["AES", "RC4", "ChaCha20", "DES"], correct: 1, explanation: "RC4 stream cipher with weak scheduling." },
-    { id: "q3", question: "PTW attack needs how many frames?", options: ["4M", "500k", "40k", "10"], correct: 2, explanation: "PTW needs ~40k frames, 10 sec." },
-    { id: "q4", question: "WEP ICV is:", options: ["HMAC-SHA1", "CRC32", "AES-CMAC", "MD5"], correct: 1, explanation: "CRC32 not cryptographic, malleable." },
-    { id: "q5", question: "WEP finding severity:", options: ["Low", "Medium", "High", "Critical"], correct: 3, explanation: "WEP is Critical, key recovery in minutes." },
-  ],
-  "08-wpa-wpa2": [
-    { id: "q1", question: "WPA2 uses:", options: ["RC4 TKIP", "AES CCMP", "DES", "ChaCha20"], correct: 1, explanation: "CCMP = AES-CTR + CBC-MAC." },
-    { id: "q2", question: "PMK in PSK mode derived from:", options: ["BSSID only", "Passphrase + SSID via PBKDF2", "Random", "ANonce"], correct: 1, explanation: "PBKDF2-HMAC-SHA1 4096 iter." },
-    { id: "q3", question: "PTK derived from:", options: ["PMK only", "PMK + ANonce + SNonce + BSSID + Client MAC", "Password only", "GTK only"], correct: 1, explanation: "PRF with PMK, nonces, MACs." },
-    { id: "q4", question: "4-way handshake messages:", options: ["2", "3", "4", "5"], correct: 2, explanation: "M1 ANonce, M2 SNonce+MIC, M3 GTK+MIC, M4 ACK." },
-    { id: "q5", question: "PMF protects:", options: ["Data frames", "Management frames (deauth/disassoc)", "Beacons only", "Nothing"], correct: 1, explanation: "802.11w protects management frames." },
-  ],
-  "09-wpa2-practical": [
-    { id: "q1", question: "For offline audit you need:", options: ["SSID, BSSID, Client MAC, ANonce, SNonce, MIC", "Only BSSID", "Only SSID", "Only channel"], correct: 0, explanation: "Need SSID for PBKDF2, BSSID/client for PTK, nonces and MIC for verification." },
-    { id: "q2", question: "PMKID is:", options: ["HMAC-SHA1-128(PMK, 'PMK Name' | BSSID | STA MAC)", "Random", "ANonce", "GTK"], correct: 0, explanation: "PMKID formula." },
-    { id: "q3", question: "PMKID advantage:", options: ["Needs client", "Clientless, single frame, no deauth", "Needs 4-way", "Needs WPS"], correct: 1, explanation: "PMKID can be captured without client, single EAPOL." },
-    { id: "q4", question: "Tool to convert PCAP to hashcat format:", options: ["aircrack-ng", "hcxpcapngtool", "iw", "wireshark"], correct: 1, explanation: "hcxpcapngtool -o capture.hc22000 capture.pcapng" },
-    { id: "q5", question: "Hashcat mode for WPA2 22000 format:", options: ["2500", "22000", "16800", "0"], correct: 1, explanation: "22000 = WPA2 EAPOL + PMKID." },
-  ],
-  "10-wps": [
-    { id: "q1", question: "WPS PIN digits:", options: ["4", "6", "8", "10"], correct: 2, explanation: "8 digits, last is checksum." },
-    { id: "q2", question: "WPS PIN brute-force max due to halves:", options: ["100M", "11k", "100", "1M"], correct: 1, explanation: "First half 10^4 + second half 10^3 = 11000, not 10^8." },
-    { id: "q3", question: "WPS IE OUI:", options: ["00:50:F2:04", "00:11:22:33", "AA:BB:CC:DD", "FF:FF:FF:FF"], correct: 0, explanation: "WPS vendor OUI 00:50:F2 type 4." },
-    { id: "q4", question: "WPS enumeration tool:", options: ["wash", "aircrack-ng", "iw", "tshark only"], correct: 0, explanation: "wash -i wlan0 shows WPS APs." },
-    { id: "q5", question: "Defense for WPS:", options: ["Enable WPS", "Disable WPS (wps_state=0)", "Use WEP", "Use open"], correct: 1, explanation: "Disable WPS." },
-  ],
-  "11-wpa3": [
-    { id: "q1", question: "WPA3-Personal uses:", options: ["PSK", "SAE Dragonfly", "WEP", "TKIP"], correct: 1, explanation: "SAE = Simultaneous Authentication of Equals." },
-    { id: "q2", question: "WPA3 requires:", options: ["PMF disabled", "PMF required (802.11w=2)", "WPS enabled", "TKIP"], correct: 1, explanation: "PMF required for WPA3." },
-    { id: "q3", question: "SAE provides:", options: ["No forward secrecy", "Forward secrecy, offline audit not possible", "Same as PSK", "WEP"], correct: 1, explanation: "SAE has forward secrecy, resists offline audit." },
-    { id: "q4", question: "Transition mode AKMs:", options: ["PSK only", "SAE only", "PSK+SAE", "WEP"], correct: 2, explanation: "Transition has both PSK(2) and SAE(8)." },
-    { id: "q5", question: "Transition mode with PMF optional risk:", options: ["No risk", "Downgrade to WPA2 + deauth possible", "WPS risk", "WEP risk"], correct: 1, explanation: "PMF optional allows deauth, downgrade to WPA2 handshake capture." },
-  ],
-  "12-deauth-disassoc": [
-    { id: "q1", question: "Deauth subtype:", options: ["0", "8", "12", "4"], correct: 2, explanation: "Subtype 12 = deauth, 10 = disassoc." },
-    { id: "q2", question: "Without PMF, deauth frames are:", options: ["Encrypted", "Unauthenticated, spoofable", "Protected", "WPA3 only"], correct: 1, explanation: "Without PMF, management frames unauthenticated, spoofable for DoS and handshake capture." },
-    { id: "q3", question: "PMF required is:", options: ["ieee80211w=0", "ieee80211w=1", "ieee80211w=2", "wps_state=0"], correct: 2, explanation: "ieee80211w=2 = PMF required, 1 = capable optional, 0 = disabled." },
-    { id: "q4", question: "WPA3 mandates PMF:", options: ["Disabled", "Optional", "Required", "No PMF"], correct: 2, explanation: "WPA3 requires PMF required." },
-    { id: "q5", question: "Deauth flood detection:", options: ["1 deauth per hour", "Many deauth same BSSID short interval", "Beacon only", "EAPOL only"], correct: 1, explanation: "Many deauth same BSSID reason 7 short interval = likely attack." },
-  ],
-  "13-rogue-ap": [
-    { id: "q1", question: "Rogue AP with same SSID different BSSID is:", options: ["Same network", "ESS or rogue, need authorized list", "Hidden SSID", "WPS"], correct: 1, explanation: "Same SSID different BSSID could be ESS (multiple APs same network) or rogue, check authorized list, channel, vendor." },
-    { id: "q2", question: "Evil Twin with same SSID and PSK (if PSK known) will:", options: ["Client will not connect", "Client may auto-connect if stronger or deauthed", "Requires WPS", "Requires PMF disabled only"], correct: 1, explanation: "If PSK known and same, client may connect to Evil Twin if stronger or after deauth." },
-    { id: "q3", question: "Enterprise Evil Twin captures:", options: ["PSK", "EAP credentials via rogue RADIUS", "WEP key", "Nothing"], correct: 1, explanation: "Rogue RADIUS can capture EAP credentials like PEAP MSCHAPv2 if cert validation disabled." },
-    { id: "q4", question: "Defense for rogue AP:", options: ["Disable WPS", "WIDS authorized AP list + 802.1X cert validation + PMF required + strong PSK + WPA3", "Use WEP", "Use open"], correct: 1, explanation: "Layered defense." },
-    { id: "q5", question: "Client association to rogue in rogue-ap.pcapng frame?", options: ["No association", "Yes, 12:34:56:78:9A:BC to rogue 11:22:33:44:55:66 frame 6-7", "Only legit", "Only deauth"], correct: 1, explanation: "Client 12:34:56:78:9A:BC associates to rogue BSSID 11:22:33:44:55:66." },
-  ],
-  "14-captive-portals": [
-    { id: "q1", question: "Captive portal SSID is typically:", options: ["WPA2-PSK", "Open", "WPA3-only", "WEP"], correct: 1, explanation: "Open with portal redirect, no encryption for data (unless OWE)." },
-    { id: "q2", question: "Open network risk:", options: ["No risk", "Traffic sniffable, no encryption", "WPS risk", "PMF required"], correct: 1, explanation: "Open = no TK, traffic sniffable unless HTTPS." },
-    { id: "q3", question: "MAC-based session bypass:", options: ["Not possible", "Sniff authenticated client MAC (open, no encryption) and spoof to bypass portal", "Requires WPS", "Requires deauth only"], correct: 1, explanation: "Open no encryption, MAC visible, firewall allows MAC after auth, spoof bypass." },
-    { id: "q4", question: "Client isolation should be:", options: ["Disabled ap_isolate=0", "Enabled ap_isolate=1", "Not needed", "WEP only"], correct: 1, explanation: "ap_isolate=1 prevents client-to-client attacks on guest." },
-    { id: "q5", question: "Better than pure open for guest:", options: ["WEP", "WPA3 OWE or WPA2-PSK with portal + isolation + HTTPS", "Open with no portal", "WPS"], correct: 1, explanation: "OWE gives encryption for open, or WPA2-PSK with portal, plus isolation and HTTPS." },
-  ],
-  "15-enterprise-fundamentals": [
-    { id: "q1", question: "Enterprise vs Personal difference:", options: ["Same PSK for all", "Per-user credentials via 802.1X/RADIUS, PMK from MSK", "No auth", "WEP only"], correct: 1, explanation: "Enterprise uses 802.1X, per-user, PMK from MSK not PBKDF2." },
-    { id: "q2", question: "802.1X roles:", options: ["Only AP", "Supplicant (client), Authenticator (AP), Authentication Server (RADIUS)", "Only RADIUS", "Only client"], correct: 1, explanation: "Supplicant → Authenticator → Authentication Server." },
-    { id: "q3", question: "PEAP without ca_cert risk:", options: ["No risk", "Evil Twin + rogue RADIUS captures MSCHAPv2 for offline crack", "WPS risk", "WEP risk"], correct: 1, explanation: "Without cert validation, client accepts any cert, sends MSCHAPv2 to attacker." },
-    { id: "q4", question: "RADIUS shared secret should be:", options: ["testing123", "Strong 22+ chars random", "password", "secret"], correct: 1, explanation: "Strong 22+ chars, not default." },
-    { id: "q5", question: "Enterprise benefit:", options: ["No benefit", "Per-user revocation, VLAN, accounting, no shared PSK", "WPS only", "Open only"], correct: 1, explanation: "Per-user, revocation, VLAN, accounting." },
-  ],
-  "16-eap": [
-    { id: "q1", question: "Most secure EAP:", options: ["PEAP without validation", "EAP-TLS mutual cert auth", "EAP-FAST", "PAP"], correct: 1, explanation: "EAP-TLS mutual cert, requires PKI, most secure." },
-    { id: "q2", question: "PEAP-MSCHAPv2 without cert validation allows:", options: ["Nothing", "Rogue RADIUS captures challenge/response for hashcat -m 5500", "WPS", "WEP"], correct: 1, explanation: "MSCHAPv2 challenge/response captured, offline crack." },
-    { id: "q3", question: "Client must validate server cert via:", options: ["No validation", "ca_cert + subject_match/altsubject_match/domain_suffix_match", "WPS", "Open"], correct: 1, explanation: "ca_cert + subject_match ensures cert for expected server." },
-    { id: "q4", question: "EAP-TLS requires:", options: ["Only password", "Client cert + server cert mutual", "WPS PIN", "No cert"], correct: 1, explanation: "Mutual cert auth." },
-    { id: "q5", question: "Defense for PEAP:", options: ["Disable cert validation", "Enforce ca_cert + subject_match via MDM/GPO, prefer EAP-TLS, strong RADIUS secret, PMF, WIDS", "Use WEP", "Use open"], correct: 1, explanation: "Layered defense." },
-  ],
-  "17-radius": [
-    { id: "q1", question: "RADIUS ports:", options: ["80/443", "1812 auth 1813 accounting", "22/23", "53"], correct: 1, explanation: "1812 auth, 1813 accounting (old 1645/1646)." },
-    { id: "q2", question: "RADIUS shared secret should be:", options: ["testing123", "Strong 22+ chars random per NAS", "password", "secret"], correct: 1, explanation: "Strong 22+ chars, unique per NAS if possible, not default." },
-    { id: "q3", question: "RadSec is:", options: ["RADIUS over UDP no encryption", "RADIUS over TLS for encryption", "WPS", "Open"], correct: 1, explanation: "RadSec = RADIUS over TLS, encrypts traffic, better than UDP with MD5 obfuscation." },
-    { id: "q4", question: "RADIUS users file should have:", options: ["Weak passwords", "Strong passwords, VLAN assignment, complexity, lockout", "No passwords", "WPS"], correct: 1, explanation: "Strong passwords, VLAN, lockout, 2FA maybe." },
-    { id: "q5", question: "clients.conf should restrict:", options: ["0.0.0.0/0 any IP with weak secret", "Only AP IPs with strong secret", "No restriction", "WEP only"], correct: 1, explanation: "Restrict to AP IPs, not 0.0.0.0/0." },
-  ],
-  "18-corporate-attacks": [
-    { id: "q1", question: "Corporate attack chain rogue AP + Enterprise:", options: ["No attack", "Recon → rogue same SSID → deauth if PMF not required → client without cert validation connects to rogue → capture MSCHAPv2 → offline crack → network access", "WPS only", "Open only"], correct: 1, explanation: "Full chain." },
-    { id: "q2", question: "Segmentation bypass means:", options: ["No bypass", "Corp VLAN can ping Guest VLAN when ACL misconfigured, should be isolated", "WPS bypass", "Open bypass"], correct: 1, explanation: "VLAN ACL should deny inter-VLAN, if allows, bypass." },
-    { id: "q3", question: "Client isolation bypass if ap_isolate=0:", options: ["No bypass", "Clients on same SSID can ARP spoof, sniff, attack each other", "WPS only", "PMF only"], correct: 1, explanation: "Isolation disabled allows client-to-client attacks." },
-    { id: "q4", question: "Defense layers for corporate:", options: ["None", "WIDS authorized list + 802.1X cert validation + EAP-TLS + strong RADIUS secret + RadSec + PMF required + VLAN ACL deny + ap_isolate=1 + monitoring SIEM + training", "WEP", "Open"], correct: 1, explanation: "Layered defense." },
-    { id: "q5", question: "Rogue detection via:", options: ["No detection", "WIDS authorized AP list BSSID channel vendor signal, alert, contain", "WPS only", "Open only"], correct: 1, explanation: "WIDS detects rogue same SSID different BSSID/channel not in authorized list." },
-  ],
-  "19-methodology": [
-    { id: "q1", question: "Wireless PT methodology order:", options: ["Exploit first", "Scope → Recon → Enum → Vuln Analysis → Exploitation (authorized) → Post-Exploitation → Reporting → Retest", "Report first", "Retest first"], correct: 1, explanation: "Standard methodology." },
-    { id: "q2", question: "Evidence chain of custody includes:", options: ["No evidence", "PCAP hash SHA256, frame numbers, filters, config hash, logs, screenshots, commands, reproducible", "Only screenshots", "Only logs"], correct: 1, explanation: "Evidence must be reproducible with hashes, frame numbers, filters, commands." },
-    { id: "q3", question: "Finding severity based on:", options: ["Technical only", "Impact and likelihood, business risk, not just technical", "Only CVSS", "Only WPS"], correct: 1, explanation: "Severity based on impact and likelihood, business risk." },
-    { id: "q4", question: "Recommendation should be:", options: ["Fix it", "Actionable with config snippets, not just 'fix it'", "No recommendation", "WEP"], correct: 1, explanation: "Actionable with config snippets." },
-    { id: "q5", question: "Retest verifies:", options: ["Nothing", "Fixes via new PCAPs, configs, logs, what should happen vs what actually happened", "Only old PCAPs", "Only screenshots"], correct: 1, explanation: "Retest with new evidence." },
-  ],
-  "20-final-assessment": [
-    { id: "q1", question: "Final assessment includes how many APs in methodology.pcapng?", options: ["1", "3", "6 APs + 1 rogue", "10"], correct: 2, explanation: "6 legit + 1 rogue = 7 total, 6 legit: Enterprise, Guest, IoT, Hidden, WPA3-TRANS, WPS." },
-    { id: "q2", question: "Top findings for final should include:", options: ["Only WPS", "WPS High 11k, WPA2-PSK weak High, PEAP no cert High, RADIUS weak secret Medium, open no isolation Medium, captive MAC bypass Medium, rogue High, segmentation bypass High", "Only open", "Only WEP"], correct: 1, explanation: "Multiple High findings." },
-    { id: "q3", question: "Overall risk for final with multiple High:", options: ["Low", "Medium", "High", "Critical"], correct: 2, explanation: "Multiple High = High overall, if Critical like WEP or segmentation to sensitive VLAN, Critical." },
-    { id: "q4", question: "Quick wins vs long-term:", options: ["No quick wins", "Quick wins: disable WPS, strong PSK 20+, PMF required, ca_cert, strong RADIUS secret, ap_isolate=1, VLAN ACL deny; Long-term: WPA3-only, EAP-TLS, RadSec, WIDS, monitoring, training, audits", "Only long-term", "Only WEP"], correct: 1, explanation: "Prioritized recommendation." },
-    { id: "q5", question: "Final flag:", options: ["WIFIFORGE{RECON}", "WIFIFORGE{FINAL_RECON_ASSESSMENT_COMPLETE}", "WIFIFORGE{WPS}", "WIFIFORGE{DEAUTH}"], correct: 1, explanation: "Final assessment flag." },
-  ],
-}
+import { quizData } from '@/content/quizData'
+
 
 export function ModuleDetail() {
   const { id, pathId } = useParams<{ id: string; pathId?: string }>()
@@ -152,13 +34,18 @@ export function ModuleDetail() {
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({})
   const [quizSubmitted, setQuizSubmitted] = useState(false)
   const [labAnswers, setLabAnswers] = useState<Record<string, string>>({})
-  const [labCompleted, setLabCompleted] = useState<Record<string, boolean>>({})
+  const completedLabs = useProgressStore(s => s.completedLabs)
+  const labCompleted = useMemo(() => Object.fromEntries(completedLabs.map(l => { const catalogueEntry = LABS.find(item => item.id === l.labId && item.module === l.moduleId); return [l.labId, catalogueEntry?.grading !== 'verified' || l.score === 100] })), [completedLabs])
 
   const completeLesson = useProgressStore(s => s.completeLesson)
   const completeLab = useProgressStore(s => s.completeLab)
   const completeQuiz = useProgressStore(s => s.completeQuiz)
   const isLessonCompleted = useProgressStore(s => s.isLessonCompleted)
   const getProgress = useProgressStore(s => s.getModuleProgress)
+  const setCurrentModule = useProgressStore(s => s.setCurrentModule)
+  useEffect(() => {
+    if (id && modules.some(item => item.id === id)) setCurrentModule(id)
+  }, [id, setCurrentModule])
 
   const moduleEntry = useMemo(
     () => (modules as Array<{ id: string; lessons?: { id: string; title: string; kind: string }[] }>).find(m => m.id === id),
@@ -200,10 +87,20 @@ export function ModuleDetail() {
   // Labs come from the single catalogue (content/labs.ts) so the module view and the Labs page
   // can never disagree about which lab ids exist.
   const labs = useMemo(
-    () => LABS.filter(lab => lab.module === id).map(lab => ({ ...lab, pcap: lab.pcap ?? '' })),
+    () => AVAILABLE_LABS.filter(lab => lab.module === id).map(lab => ({ ...lab, pcap: lab.pcap ?? '' })),
     [id],
   )
   const quizzes = quizData[id || ''] || []
+  const [quizQuestions, setQuizQuestions] = useState<any[]>([])
+  useEffect(() => {
+    setQuizQuestions(quizzes.map(q => {
+      const options = q.options.map((text: string, index: number) => ({ text, index }))
+      for (let i = options.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [options[i], options[j]] = [options[j], options[i]] }
+      return { ...q, options: options.map((o: { text: string; index: number }) => o.text), correct: options.findIndex((o: { text: string; index: number }) => o.index === q.correct) }
+    }))
+    setActiveTab('overview'); setActiveLesson(0); setLessonContent(''); setLabAnswers({})
+    setQuizAnswers({}); setQuizSubmitted(false)
+  }, [id])
   const theoryContentRef = useRef<HTMLDivElement>(null)
   const [readingMode, setReadingMode] = useState<'default' | 'focus' | 'wide'>('default')
   const [showToc, setShowToc] = useState(false)
@@ -275,38 +172,49 @@ export function ModuleDetail() {
   const progress = getProgress(module.id)
 
   const handleQuizSubmit = () => {
-    let score = 0
-    quizzes.forEach((_, idx) => {
-      if (quizAnswers[`q${idx}`] === quizzes[idx].correct) score++
-    })
-    completeQuiz(module.id, 'quiz-01', score, quizzes.length)
+    if (quizQuestions.length === 0 || quizQuestions.some((_, idx) => quizAnswers[`q${idx}`] === undefined)) {
+      alert('Answer every question before submitting.')
+      return
+    }
+    const score = quizQuestions.reduce((n, q, idx) => n + (quizAnswers[`q${idx}`] === q.correct ? 1 : 0), 0)
+    completeQuiz(module.id, 'quiz-01', score, quizQuestions.length)
     setQuizSubmitted(true)
   }
 
   const handleLabCheck = (labId: string) => {
+    const record = (score?: number) => completeLab(module.id, labId, score)
+    const norm = (key: string) => (labAnswers[key] || '').trim().toLowerCase()
+    let valid = false
     if (id === '02-wifi-fundamentals') {
-      const bssidCorrect = labAnswers['bssid']?.toUpperCase().includes('AA:BB:CC') || (labAnswers['bssid']?.length || 0) >= 10
-      const channelCorrect = labAnswers['channel']?.includes('6')
-      if (bssidCorrect && channelCorrect) {
-        setLabCompleted({...labCompleted, [labId]: true})
-        completeLab(module.id, labId, 100)
-      } else {
-        alert('Check answers. Hint: BSSID MAC, channel 6')
-      }
+      valid = norm('bssid').includes('00:11:22:33:44:55') && norm('channel') === '6'
+        && ['wpa2', 'psk', 'ccmp'].every(token => norm('security').includes(token))
+        && ['none', '0'].some(token => norm('leak') === token)
+      if (!valid) { alert('Use the beacon-only evidence: BSSID 00:11:22:33:44:55, channel 6, WPA2-PSK/CCMP, and zero probe requests.'); return }
+      record(100)
     } else if (id === '05-wireless-recon') {
-      const apCount = labAnswers['apCount']
-      const hidden = labAnswers['hidden']?.toLowerCase()
-      if (apCount && hidden) {
-        setLabCompleted({...labCompleted, [labId]: true})
-        completeLab(module.id, labId, 100)
-      } else {
-        alert('Fill all tasks. Check PcapInspector summary: SSIDs, BSSIDs, hidden reveal.')
-      }
+      valid = norm('apCount') === '6' && ['hidden-lab', 'probe response'].every(token => norm('hidden').includes(token))
+        && ['12:34:56:78:9a:bc', 'homewifi-2345', 'airport_free_wifi'].every(token => norm('clients').includes(token))
+        && norm('ess').includes('no') && norm('ess').includes('authorized')
+      if (!valid) { alert('Review the 6 beacon BSSIDs, hidden-SSID probe response, client probe requests, and why a shared SSID alone cannot prove an ESS.'); return }
+      record(100)
+    } else if (id === '06-traffic-analysis') {
+      const handshakeFrames = (labAnswers['handshake'] || '').match(/\d+/g)?.map(Number) ?? []
+      valid = norm('frameCount') === '21' && norm('client').includes('12:34:56:78:9a:bc')
+        && handshakeFrames.length === 4 && [8, 9, 10, 11].every(frame => handshakeFrames.includes(frame))
+        && ['dhcp', 'arp', 'icmp', 'dns', 'http'].every(token => norm('protocols').includes(token))
+      if (!valid) { alert('Check the 21-frame capture: client 12:34:56:78:9a:bc, M1–M4 at frames 8–11, then DHCP/ARP/ICMP/DNS/HTTP.'); return }
+      record(100)
     } else {
-      setLabCompleted({...labCompleted, [labId]: true})
-      completeLab(module.id, labId, 100)
+      // Other catalogue entries currently provide artefacts and guided review, not machine-graded tasks.
+      // Record only that the learner reviewed the material; do not claim a score or verified skill.
+      record()
     }
+    setLabAnswers({ ...labAnswers, [`reviewed:${labId}`]: 'true' })
   }
+
+  const quizScore = quizQuestions.filter((_, i) => quizAnswers[`q${i}`] === quizQuestions[i]?.correct).length
+  const quizPassed = quizQuestions.length > 0 && quizScore / quizQuestions.length >= 0.8
+  const quizPerfect = quizQuestions.length > 0 && quizScore === quizQuestions.length
 
   const phaseColors: Record<number, { bg: string, border: string, text: string, glow: string }> = {
     1: { bg: 'from-cyan-500/10 to-cyan-600/5', border: 'border-cyan-500/20', text: 'text-cyan-400', glow: 'shadow-glow-cyan' },
@@ -340,7 +248,7 @@ export function ModuleDetail() {
               <span className={`text-[9px] xs:text-[10px] px-2 xs:px-2.5 py-1 rounded-full bg-[#020617]/60 border ${pc.border} ${pc.text} font-mono backdrop-blur-sm shrink-0`}>P{module.phase}</span>
               <span className="text-[10px] xs:text-[11px] px-2 xs:px-2.5 py-1 rounded-full bg-[#1e293b]/60 border border-[#334155]/60 text-slate-400 font-mono shrink-0 truncate max-w-[120px] xs:max-w-none">{module.difficulty}</span>
             </div>
-            <h1 className="font-heading font-bold text-[18px] xs:text-[20px] sm:text-[22px] md:text-[26px] text-slate-100 leading-tight tracking-tight min-w-0 break-words">{module.title}</h1>
+            <h1 className="font-heading font-bold text-[18px] xs:text-[20px] sm:text-[22px] md:text-[26px] text-slate-100 leading-tight tracking-tight min-w-0 break-words sc-page-title">{module.title}</h1>
             <p className="text-[12px] xs:text-[13px] text-slate-400 mt-2 max-w-[700px] leading-relaxed min-w-0 break-words line-clamp-3 xs:line-clamp-none">{module.description}</p>
           </div>
           <div className="flex items-center gap-3 xs:gap-4 shrink-0 self-start lg:self-center">
@@ -372,7 +280,7 @@ export function ModuleDetail() {
             { id: 'lab', label: 'Lab', short: 'Lab', icon: FlaskConical, count: labs.length },
             { id: 'quiz', label: 'Quiz', short: 'Quiz', icon: Swords, count: quizzes.length },
             { id: 'report', label: 'Report', short: 'Report', icon: FileText, count: null },
-          ].map(tab => (
+          ].filter(tab => tab.id !== 'quiz' || quizzes.length > 0).map(tab => (
             <button
               key={tab.id}
               onClick={() => {
@@ -458,35 +366,30 @@ export function ModuleDetail() {
                       <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
                         <Shield className="w-4 h-4 text-violet-400" />
                       </div>
-                      Attack → Defense → Retest
+                      Illustrative Attack → Defense → Retest
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div className="p-4 rounded-xl bg-red-500/[0.04] border border-red-500/10 hover:bg-red-500/[0.06] hover:border-red-500/15 transition-all duration-200">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-6 h-6 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-                            <Zap className="w-3 h-3 text-red-400" />
-                          </div>
-                          <div className="font-bold text-[11px] tracking-widest text-red-400 uppercase">Attack</div>
-                        </div>
-                        <div className="text-[12px] text-slate-400 leading-relaxed">{id === '05-wireless-recon' ? 'Map APs, hidden SSID, PNL leak' : id === '06-traffic-analysis' ? 'Observe handshake, association flow' : 'Observe SSID leakage, hidden SSID in probes'}</div>
+                      <div className="p-4 rounded-xl bg-cyan-500/[0.04] border border-cyan-500/10">
+                        <div className="font-bold text-[11px] tracking-widest text-cyan-300 uppercase mb-2">Learning focus</div>
+                        <div className="text-[12px] text-slate-300 leading-relaxed">{module.description}</div>
                       </div>
                       <div className="p-4 rounded-xl bg-emerald-500/[0.04] border border-emerald-500/10 hover:bg-emerald-500/[0.06] hover:border-emerald-500/15 transition-all duration-200">
                         <div className="flex items-center gap-2 mb-2">
                           <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
                             <Shield className="w-3 h-3 text-emerald-400" />
                           </div>
-                          <div className="font-bold text-[11px] tracking-widest text-emerald-400 uppercase">Defense</div>
+                          <div className="font-bold text-[11px] tracking-widest text-emerald-400 uppercase">Control theme</div>
                         </div>
-                        <div className="text-[12px] text-slate-400 leading-relaxed">{id === '05-wireless-recon' ? 'SSID hiding is not security, focus on WPA2/3' : 'Enable PMF, disable WPS, use WPA3'}</div>
+                        <div className="text-[12px] text-slate-400 leading-relaxed">{module.retest_focus || 'Use the safeguards and prerequisites described in this module; no live controls are changed here.'}</div>
                       </div>
                       <div className="p-4 rounded-xl bg-cyan-500/[0.04] border border-cyan-500/10 hover:bg-cyan-500/[0.06] hover:border-cyan-500/15 transition-all duration-200">
                         <div className="flex items-center gap-2 mb-2">
                           <div className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
                             <CheckCircle className="w-3 h-3 text-cyan-400" />
                           </div>
-                          <div className="font-bold text-[11px] tracking-widest text-cyan-400 uppercase">Retest</div>
+                          <div className="font-bold text-[11px] tracking-widest text-cyan-400 uppercase">Evidence / retest</div>
                         </div>
-                        <div className="text-[12px] text-slate-400 leading-relaxed">Verify fix, confirm no leak, document evidence</div>
+                        <div className="text-[12px] text-slate-400 leading-relaxed">{module.evidence_focus || 'State which evidence would verify the control and what the current fixture cannot prove.'}</div>
                       </div>
                     </div>
                   </div>
@@ -743,7 +646,7 @@ export function ModuleDetail() {
                           </div>
                           <div>
                             <div className="text-[12px] font-medium text-slate-200">{isLessonCompleted(module.id, lessons[activeLesson]) ? 'Lesson Completed' : 'Mark as complete to earn XP'}</div>
-                            <div className="text-[11px] font-mono text-slate-400">{isLessonCompleted(module.id, lessons[activeLesson]) ? '+10 XP earned • Progress saved' : '10 XP • Contributes to level & certification'}</div>
+                            <div className="text-[11px] font-mono text-slate-400">{isLessonCompleted(module.id, lessons[activeLesson]) ? '+10 XP earned • Progress saved' : '10 XP • Contributes to local progress and level'}</div>
                           </div>
                         </div>
                         <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono">
@@ -840,10 +743,10 @@ export function ModuleDetail() {
                       title="hostapd.conf — LAB-WIFI (Bad)"
                       config={`# Bad config — LAB-WIFI\ninterface=wlan0\nssid=LAB-WIFI\nhw_mode=g\nchannel=6\nwpa=2\nwpa_key_mgmt=WPA-PSK\nrsn_pairwise=CCMP\nwpa_passphrase=WeakPass123\n# Weaknesses\nwps_state=2\nap_setup_locked=0\nieee80211w=0\nht_capab=[HT40+][HT40-]\n`}
                       issues={[
-                        { line: "wps_state=2", severity: "high", message: "WPS enabled — PIN brute-force risk (11k tries), WPS IE in beacon", recommendation: "Disable WPS: wps_state=0" },
-                        { line: "ieee80211w=0", severity: "high", message: "PMF disabled — deauth/disassoc spoofing possible, handshake capture via deauth", recommendation: "Enable PMF required: ieee80211w=2" },
-                        { line: "ht_capab=[HT40+]", severity: "medium", message: "40MHz in 2.4GHz causes overlap, bad practice", recommendation: "Use 20MHz only in 2.4GHz" },
-                        { line: "wpa_passphrase=WeakPass123", severity: "medium", message: "Weak PSK, in wordlists, 11 chars", recommendation: "Strong PSK 20+ chars random" },
+                        { line: "wps_state=2", severity: "info", message: "WPS is enabled in this illustrative configuration. PIN attack feasibility depends on implementation, rate limiting, lockout and exposure; the beacon alone does not prove PIN recovery", recommendation: "Disable WPS: wps_state=0" },
+                        { line: "ieee80211w=0", severity: "info", message: "PMF is disabled in this example; susceptible receivers may accept spoofed robust management frames. This configuration view does not prove a successful disconnect or handshake capture", recommendation: "Enable PMF required: ieee80211w=2" },
+                        { line: "ht_capab=[HT40+]", severity: "info", message: "40 MHz operation in crowded 2.4 GHz may increase contention/interference; assess channel plan and regulatory constraints", recommendation: "Use 20MHz only in 2.4GHz" },
+                        { line: "wpa_passphrase=WeakPass123", severity: "info", message: "Weak PSK, in wordlists, 11 chars", recommendation: "Strong PSK 20+ chars random" },
                       ]}
                     />
                   )}
@@ -851,9 +754,9 @@ export function ModuleDetail() {
                   {id === '07-wep-legacy' && (
                     <ConfigViewer
                       title="hostapd.conf — LEGACY-WIFI (WEP)"
-                      config={`# WEP — Critical\ninterface=wlan0\nssid=LEGACY-WIFI\nhw_mode=g\nchannel=6\nwep_default_key=0\nwep_key0=12345\n`}
+                      config={`# WEP — obsolete (rate severity in context)\ninterface=wlan0\nssid=LEGACY-WIFI\nhw_mode=g\nchannel=6\nwep_default_key=0\nwep_key0=12345\n`}
                       issues={[
-                        { line: "wep_key0=12345", severity: "critical", message: "WEP uses 24-bit IV + RC4 weak scheduling, key recovery in minutes (PTW 40k frames), no replay protection, CRC32 ICV", recommendation: "Migrate to WPA3 or WPA2-PSK CCMP, PMF required, strong PSK" },
+                        { line: "wep_key0=12345", severity: "info", message: "WEP is obsolete and vulnerable; practical recovery depends on captured traffic and conditions. Do not assign a fixed recovery time/frame count or severity without contextual analysis", recommendation: "Migrate to WPA3 or WPA2-PSK CCMP, PMF required, strong PSK" },
                       ]}
                     />
                   )}
@@ -863,8 +766,8 @@ export function ModuleDetail() {
                       title="hostapd.conf — LAB-WPS (WPS Enabled)"
                       config={`# WPS enabled — weak\ninterface=wlan0\nssid=LAB-WPS\nhw_mode=g\nchannel=6\nwpa=2\nwpa_key_mgmt=WPA-PSK\nrsn_pairwise=CCMP\nwpa_passphrase=StrongPass123\nwps_state=2\nap_setup_locked=0\neap_server=1\nwps_pin=12345670\n`}
                       issues={[
-                        { line: "wps_state=2", severity: "high", message: "WPS PIN 8-digit with flaw: 10^4 + 10^3 = 11k max, not 10^8. Beacon has WPS IE (221 OUI 00:50:F2:04)", recommendation: "Disable WPS: wps_state=0, no PBC via UPnP" },
-                        { line: "wps_pin=12345670", severity: "medium", message: "Default PIN or weak PIN, checksum reduces entropy", recommendation: "Disable WPS, use strong PSK" },
+                        { line: "wps_state=2", severity: "info", message: "WPS PIN 8-digit with flaw: 10^4 + 10^3 = 11k max, not 10^8. Beacon has WPS IE (221 OUI 00:50:F2:04)", recommendation: "Disable WPS: wps_state=0, no PBC via UPnP" },
+                        { line: "wps_pin=12345670", severity: "info", message: "Default PIN or weak PIN, checksum reduces entropy", recommendation: "Disable WPS, use strong PSK" },
                       ]}
                     />
                   )}
@@ -872,11 +775,11 @@ export function ModuleDetail() {
                   {id === '11-wpa3' && lab.id === 'lab-11-transition' && (
                     <ConfigViewer
                       title="hostapd.conf — LAB-WPA3-TRANS (Bad Transition)"
-                      config={`# Bad transition\ninterface=wlan0\nssid=LAB-WPA3-TRANS\nhw_mode=a\nchannel=36\nwpa=2\nwpa_key_mgmt=WPA-PSK SAE\nrsn_pairwise=CCMP\nwpa_passphrase=WeakPass123\nsae_password=WeakPass123\nieee80211w=0\n`}
+                      config={`# Bad transition\ninterface=wlan0\nssid=LAB-WPA3-TRANS\nhw_mode=a\nchannel=36\nwpa=2\nwpa_key_mgmt=WPA-PSK SAE\nrsn_pairwise=CCMP\nwpa_passphrase=WeakPass123\nsae_password=WeakPass123\nieee80211w=1\n`}
                       issues={[
-                        { line: "wpa_key_mgmt=WPA-PSK SAE", severity: "medium", message: "Transition mode: same password for WPA2 and WPA3, downgrade risk", recommendation: "Prefer WPA3-only with SAE, PMF required" },
-                        { line: "ieee80211w=0", severity: "high", message: "PMF disabled — defeats WPA3 benefit, allows deauth, downgrade to WPA2 handshake capture", recommendation: "PMF required: ieee80211w=2 for WPA3-only, at least 1 for transition" },
-                        { line: "WeakPass123", severity: "medium", message: "Weak PSK same for both, if WPA2 handshake captured and weak, WPA3 also compromised", recommendation: "Strong PSK 20+ chars random, not in wordlists" },
+                        { line: "wpa_key_mgmt=WPA-PSK SAE", severity: "info", message: "Transition mode advertises PSK compatibility alongside SAE. The selected AKM and any downgrade claim require client/AP negotiation evidence.", recommendation: "Prefer SAE-only where the managed client fleet supports it; otherwise assess transition policy and passphrase strength" },
+                        { line: "ieee80211w=1", severity: "info", message: "PMF is capable but not required in this illustrative transition profile. This does not show that deauthentication or downgrade succeeded.", recommendation: "Enforce PMF where compatible and verify negotiated capabilities; WPA3-only deployments require PMF" },
+                        { line: "WeakPass123", severity: "info", message: "Weak PSK same for both, if WPA2 handshake captured and weak, WPA3 also compromised", recommendation: "Strong PSK 20+ chars random, not in wordlists" },
                       ]}
                     />
                   )}
@@ -894,31 +797,21 @@ export function ModuleDetail() {
                       title="hostapd.conf — LAB-DEAUTH (PMF Disabled vs Required)"
                       config={`# Bad — PMF disabled, deauth possible\ninterface=wlan0\nssid=LAB-DEAUTH\nhw_mode=g\nchannel=6\nwpa=2\nwpa_key_mgmt=WPA-PSK\nrsn_pairwise=CCMP\nwpa_passphrase=StrongPass123\nieee80211w=0\n\n# Good — PMF required\n# ieee80211w=2\n`}
                       issues={[
-                        { line: "ieee80211w=0", severity: "high", message: "PMF disabled — management frames unauthenticated, deauth/disassoc spoofing possible, DoS, handshake capture", recommendation: "Enable PMF required: ieee80211w=2, WPA3-only mandates PMF" },
+                        { line: "ieee80211w=0", severity: "info", message: "PMF disabled — management frames unauthenticated, deauth/disassoc spoofing possible, DoS, handshake capture", recommendation: "Enable PMF required: ieee80211w=2, WPA3-only mandates PMF" },
                       ]}
                     />
                   )}
 
                   {id === '13-rogue-ap' && (
-                    <ConfigViewer
-                      title="Authorized AP List vs Rogue"
-                      config={`# Authorized APs (WIDS)\n# Corp-WLAN legit: AA:BB:CC:DD:EE:FF Ch6 WPA2-PSK Cisco\n# Observed rogue: 11:22:33:44:55:66 Ch11 WPA2-PSK same SSID Corp-WLAN different BSSID channel not in authorized list\n# Client 12:34:56:78:9A:BC associated to rogue frame 6-7\n\n# Rogue hostapd.conf (attacker)\ninterface=wlan0\nssid=Corp-WLAN\nbssid=11:22:33:44:55:66\nhw_mode=g\nchannel=11\nwpa=2\nwpa_key_mgmt=WPA-PSK\nrsn_pairwise=CCMP\nwpa_passphrase=WeakPass123  # If PSK known/cracked\n`}
-                      issues={[
-                        { line: "Rogue BSSID 11:22:33:44:55:66", severity: "high", message: "Same SSID Corp-WLAN different BSSID different channel not in authorized list, client assoc to rogue", recommendation: "WIDS authorized AP list, detect rogue, 802.1X cert validation, PMF required, strong PSK, WPA3" },
-                      ]}
-                    />
+                    <div className="rounded-2xl bg-amber-500/[0.04] border border-amber-500/15 p-4 text-[12px] text-slate-300 leading-relaxed">
+                      <strong className="text-amber-300">Artifact boundary:</strong> This teaching capture contains BSSIDs de:ad:be:ef:00:01 (channel 36) and 02:11:22:33:44:55 (channel 6). A matching SSID does not prove ESS membership or unauthorized ownership; no authorized inventory is bundled.
+                    </div>
                   )}
 
                   {id === '14-captive-portals' && (
-                    <ConfigViewer
-                      title="hostapd.conf — Guest-WLAN (Open + Portal)"
-                      config={`# Open with captive portal — weak\ninterface=wlan0\nssid=Guest-WLAN\nhw_mode=g\nchannel=6\nwpa=0\n# Weaknesses\nap_isolate=0\n# Portal: https://portal.guest.com/login but login POST over HTTP\n# Session: MAC-based firewall allows MAC after auth, no timeout\n\n# Good\n# ap_isolate=1\n# Portal HTTPS, MAC+cookie+timeout, OWE or WPA2-PSK for guest\n`}
-                      issues={[
-                        { line: "wpa=0", severity: "medium", message: "Open network, no encryption, traffic sniffable (unless HTTPS), no 4-way handshake", recommendation: "Use WPA3 OWE for open with encryption or WPA2-PSK for guest with portal" },
-                        { line: "ap_isolate=0", severity: "medium", message: "Client isolation disabled, clients can ARP spoof, sniff, attack each other on same open network", recommendation: "Enable client isolation: ap_isolate=1" },
-                        { line: "MAC-based session", severity: "medium", message: "Portal uses MAC-based session, open no encryption, attacker can sniff authenticated client MAC and spoof to bypass portal", recommendation: "Use MAC+cookie+IP+token, timeout, re-auth, HTTPS, isolation" },
-                      ]}
-                    />
+                    <div className="rounded-2xl bg-amber-500/[0.04] border border-amber-500/15 p-4 text-[12px] text-slate-300 leading-relaxed">
+                      <strong className="text-amber-300">Artifact boundary:</strong> This PCAP simulates an open guest BSS and HTTP/ARP exchanges. It does not include a real hostapd configuration, session service, MAC authorization check, or tested bypass.
+                    </div>
                   )}
 
                   {id === '15-enterprise-fundamentals' && (
@@ -926,8 +819,8 @@ export function ModuleDetail() {
                       title="hostapd.conf — Corp-Enterprise (WPA2-EAP) + wpa_supplicant.conf bad"
                       config={`# hostapd.conf Enterprise\ninterface=wlan0\nssid=Corp-Enterprise\nhw_mode=g\nchannel=6\nieee8021x=1\nwpa=2\nwpa_key_mgmt=WPA-EAP\nrsn_pairwise=CCMP\nauth_server_addr=192.168.1.10\nauth_server_port=1812\nauth_server_shared_secret=testing123\n\n# wpa_supplicant.conf BAD — no ca_cert\nnetwork={\n  ssid="Corp-Enterprise"\n  key_mgmt=WPA-EAP\n  eap=PEAP\n  identity="user@corp.com"\n  password="StrongPass123"\n  phase2="auth=MSCHAPV2"\n  # NO ca_cert!\n}\n\n# GOOD\n# ca_cert="/etc/certs/ca.pem"\n# subject_match="CN=radius.corp.com"\n# altsubject_match="DNS:radius.corp.com"\n`}
                       issues={[
-                        { line: "auth_server_shared_secret=testing123", severity: "medium", message: "RADIUS secret weak default testing123, should be 22+ chars random", recommendation: "Strong secret 22+ chars random per NAS, RadSec TLS" },
-                        { line: "NO ca_cert", severity: "high", message: "PEAP without ca_cert, client accepts any cert, Evil Twin + rogue RADIUS captures MSCHAPv2 challenge/response for offline crack hashcat -m 5500", recommendation: "Enforce ca_cert + subject_match via MDM/GPO, prefer EAP-TLS mutual cert, strong secret, PMF required, WIDS" },
+                        { line: "auth_server_shared_secret=testing123", severity: "info", message: "Example shared secret is short and reused; choose a unique high-entropy value per NAS under current policy (22 characters is not a protocol requirement)", recommendation: "Use unique high-entropy per-NAS secrets; consider RadSec with validated peer certificates where supported" },
+                        { line: "NO ca_cert", severity: "info", message: "Missing CA trust and expected-server-name validation can permit a rogue authenticator under some client policies. This illustrative profile does not demonstrate a successful attack; test both checks in an authorized environment", recommendation: "Enforce ca_cert + subject_match via MDM/GPO, prefer EAP-TLS mutual cert, strong secret, PMF required, WIDS" },
                       ]}
                     />
                   )}
@@ -937,7 +830,7 @@ export function ModuleDetail() {
                       title="wpa_supplicant.conf — PEAP vs EAP-TLS"
                       config={`# BAD PEAP without validation\nnetwork={\n  ssid="Corp-Enterprise"\n  key_mgmt=WPA-EAP\n  eap=PEAP\n  identity="user@corp.com"\n  password="StrongPass123"\n  phase2="auth=MSCHAPV2"\n  # NO ca_cert\n}\n\n# GOOD PEAP with validation\nnetwork={\n  ssid="Corp-Enterprise"\n  key_mgmt=WPA-EAP\n  eap=PEAP\n  identity="user@corp.com"\n  ca_cert="/etc/certs/ca.pem"\n  subject_match="CN=radius.corp.com"\n  altsubject_match="DNS:radius.corp.com"\n  phase2="auth=MSCHAPV2"\n}\n\n# GOOD EAP-TLS mutual\nnetwork={\n  ssid="Corp-Enterprise"\n  key_mgmt=WPA-EAP\n  eap=TLS\n  identity="user@corp.com"\n  ca_cert="/etc/certs/ca.pem"\n  client_cert="/etc/certs/client.pem"\n  private_key="/etc/certs/client.key"\n  private_key_passwd="..."\n  subject_match="CN=radius.corp.com"\n}\n`}
                       issues={[
-                        { line: "NO ca_cert", severity: "high", message: "PEAP without ca_cert allows rogue RADIUS to capture MSCHAPv2 challenge/response, offline crack", recommendation: "ca_cert + subject_match, EAP-TLS mutual cert, strong RADIUS secret, PMF, WIDS" },
+                        { line: "NO ca_cert", severity: "info", message: "Incomplete server validation may expose inner authentication to a rogue authenticator, depending on profile and EAP method; require trusted CA and expected server identity, then test", recommendation: "ca_cert + subject_match, EAP-TLS mutual cert, strong RADIUS secret, PMF, WIDS" },
                       ]}
                     />
                   )}
@@ -947,51 +840,25 @@ export function ModuleDetail() {
                       title="FreeRADIUS clients.conf + users + eap.conf"
                       config={`# clients.conf BAD\nclient AP1 {\n  ipaddr = 192.168.1.1\n  secret = testing123\n  shortname = AP1\n}\nclient all {\n  ipaddr = 0.0.0.0/0\n  secret = testing123\n}\n\n# GOOD\n# client AP1 {\n#   ipaddr = 192.168.1.1\n#   secret = StrongRandomSecret123!@#With22+Chars\n# }\n\n# users\nuser1 Cleartext-Password := "WeakPass"\n  Tunnel-Type = VLAN,\n  Tunnel-Medium-Type = IEEE-802,\n  Tunnel-Private-Group-Id = 100\n\n# eap.conf — certs\n# ca_cert, server_cert, private_key\n`}
                       issues={[
-                        { line: "secret = testing123", severity: "medium", message: "RADIUS secret weak default, should be 22+ chars random, per NAS unique", recommendation: "Strong secret 22+ chars random per NAS, RadSec TLS, isolated management VLAN" },
-                        { line: "ipaddr = 0.0.0.0/0", severity: "medium", message: "clients.conf allows any IP as NAS with weak secret, should restrict to AP IPs", recommendation: "Restrict to AP IPs, not 0.0.0.0/0" },
-                        { line: "Cleartext-Password := \"WeakPass\"", severity: "medium", message: "User password weak, no complexity, no lockout", recommendation: "Strong passwords, complexity, lockout, 2FA, EAP-TLS, monitoring" },
+                        { line: "secret = testing123", severity: "info", message: "Example secret is illustrative; use unique high-entropy per-NAS secrets and protect/rotate them (length is policy, not a protocol requirement)", recommendation: "Use unique high-entropy per-NAS secrets; consider RadSec with validated peer certificates where supported, isolated management VLAN" },
+                        { line: "ipaddr = 0.0.0.0/0", severity: "info", message: "clients.conf allows any IP as NAS with weak secret, should restrict to AP IPs", recommendation: "Restrict to AP IPs, not 0.0.0.0/0" },
+                        { line: "Cleartext-Password := \"WeakPass\"", severity: "info", message: "User password weak, no complexity, no lockout", recommendation: "Use strong per-user credentials and enforce appropriate identity, lockout and monitoring policy" },
                       ]}
                     />
                   )}
 
                   {id === '18-corporate-attacks' && (
-                    <ConfigViewer
-                      title="Corporate Wi-Fi — 3 SSIDs + VLAN ACL + WIDS"
-                      config={`# hostapd.conf 3 SSIDs\n# Corp-Enterprise WPA2-EAP Ch6 AA:BB:CC:DD:EE:FF VLAN 100\n# Corp-Guest Open Ch11 BB:CC:DD:EE:FF:00 VLAN 200 ap_isolate=0 weak\n# IoT-PSK WPA2-PSK Ch1 CC:DD:EE:FF:00:11 WPS enabled weak PSK WeakPass123\n\n# VLAN ACL BAD — allows Corp→Guest\n# iptables -A FORWARD -s 192.168.100.0/24 -d 192.168.200.0/24 -j ACCEPT\n# Should be DROP\n\n# WIDS authorized list missing rogue 11:22:33:44:55:66\n# Authorized: AA:BB:CC:DD:EE:FF Ch6, BB:CC:DD:EE:FF:00 Ch11, CC:DD:EE:FF:00:11 Ch1\n# Observed rogue: 11:22:33:44:55:66 Ch11 clones Corp-Enterprise\n\n# wpa_supplicant.conf no ca_cert\n# RADIUS secret testing123\n`}
-                      issues={[
-                        { line: "iptables ACCEPT Corp→Guest", severity: "high", message: "VLAN ACL misconfigured allows Corp VLAN 100 to ping Guest VLAN 200, should be isolated", recommendation: "VLAN ACL deny inter-VLAN, private VLANs, firewall rules, deny Corp→Guest and Guest→Corp" },
-                        { line: "ap_isolate=0", severity: "medium", message: "Guest isolation disabled, clients can ARP spoof", recommendation: "ap_isolate=1 for Guest" },
-                        { line: "Rogue 11:22:33:44:55:66", severity: "high", message: "Rogue AP clones Corp-Enterprise Ch11 not in authorized list, client assoc to rogue, credential capture", recommendation: "WIDS authorized list + alert + contain, 802.1X cert validation, EAP-TLS, strong secret, PMF, VLAN ACL deny, monitoring" },
-                        { line: "wps_state=2", severity: "high", message: "WPS enabled on IoT", recommendation: "wps_state=0" },
-                        { line: "WeakPass123", severity: "high", message: "Weak PSK in wordlist", recommendation: "Strong PSK 20+ random" },
-                      ]}
-                    />
+                    <div className="rounded-2xl bg-amber-500/[0.04] border border-amber-500/15 p-4 text-[12px] text-slate-300 leading-relaxed">
+                      <strong className="text-amber-300">Artifact boundary:</strong> This 19-frame fixture has management/EAPOL and ICMP packets only. It does not contain DHCP, PEAP/TLS, RADIUS or an ACL configuration; see the lesson before making any chain claim.
+                    </div>
                   )}
 
-                  {id === '19-methodology' && (
-                    <ConfigViewer
-                      title="Methodology — Full Assessment Prep"
-                      config={`# Scope: 6 APs +1 rogue, 5 clients, 1 hidden HIDDEN-LAB, WPS, weak PSK, PMF disabled, PEAP no cert, RADIUS weak, open no isolation, rogue, segmentation\n# Methodology: Scope ROE → Recon passive → Enum per SSID → Vuln Analysis → Exploitation simulated → Post-Exploitation → Reporting → Retest\n# Evidence: PCAPs with frame numbers, config hashes, logs, screenshots, commands reproducible\n# Findings: WPS High 11k, WPA2 weak High, PEAP no cert High, RADIUS weak Medium, open no isolation Medium, captive MAC bypass Medium, rogue High, segmentation High\n# Overall risk High, quick wins vs long-term\n# Report: Executive summary, scope, methodology, findings, risk summary, recommendation summary, retest, references, appendices\n`}
-                      issues={[
-                        { line: "6 APs +1 rogue", severity: "high", message: "Multiple High findings, credential capture, network access, segmentation bypass", recommendation: "Quick wins: disable WPS, strong PSK 20+, PMF required, ca_cert+subject_match, strong RADIUS secret 22+, ap_isolate=1, VLAN ACL deny; Long-term: WPA3-only, EAP-TLS, RadSec, WIDS, monitoring, training, audits" },
-                      ]}
-                    />
-                  )}
-
-                  {id === '20-final-assessment' && (
-                    <ConfigViewer
-                      title="Final Assessment — All Issues Combined"
-                      config={`# Final scope: Corp-Enterprise WPA2-EAP Ch6 AA:BB:CC:DD:EE:FF PEAP without ca_cert RADIUS testing123 weak PMF capable, Corp-Guest Open Ch11 BB:CC:DD:EE:FF:00 ap_isolate=0 captive portal HTTP POST weak MAC bypass, IoT-PSK Ch1 CC:DD:EE:FF:00:11 weak PSK WeakPass123 WPS enabled PMF disabled, HIDDEN-LAB Ch6 DD:EE:FF:00:11:22 hidden WPS PMF disabled, LAB-WPA3-TRANS Ch36 EE:FF:00:11:22:33 PSK+SAE same WeakPass123 PMF optional downgrade, LAB-WPS Ch6 FF:00:11:22:33:44 WPS 11k, rogue 11:22:33:44:55:66 clones Enterprise Ch11, VLAN 100 Corp 200 Guest 300 IoT ACL allows Corp→Guest, clients 5 with PNL leak\n# Flag: WIFIFORGE{FINAL_RECON_ASSESSMENT_COMPLETE}\n`}
-                      issues={[
-                        { line: "WPS enabled 3 SSIDs", severity: "high", message: "WPS 11k PIN flaw on IoT, HIDDEN-LAB, LAB-WPS", recommendation: "wps_state=0" },
-                        { line: "WeakPass123", severity: "high", message: "Weak PSK on IoT and TRANS, same for WPA2 and WPA3, in wordlist", recommendation: "Strong PSK 20+ random unique per SSID, WPA3-only" },
-                        { line: "PEAP without ca_cert", severity: "high", message: "Enterprise client without cert validation, rogue RADIUS captures MSCHAPv2", recommendation: "ca_cert+subject_match via MDM, EAP-TLS, strong secret, RadSec, PMF, WIDS" },
-                        { line: "RADIUS testing123", severity: "medium", message: "Weak secret", recommendation: "Strong 22+ chars, RadSec" },
-                        { line: "Open Guest ap_isolate=0", severity: "medium", message: "No isolation, client attack, captive MAC bypass HTTP", recommendation: "ap_isolate=1, HTTPS portal, MAC+cookie+timeout, OWE" },
-                        { line: "Rogue 11:22:33:44:55:66", severity: "high", message: "Rogue clones Enterprise not in authorized list", recommendation: "WIDS authorized list + alert + contain" },
-                        { line: "VLAN ACL Corp→Guest", severity: "high", message: "Segmentation bypass Corp VLAN 100 to Guest 200", recommendation: "VLAN ACL deny inter-VLAN, private VLANs, firewall" },
-                      ]}
-                    />
+                  {(id === '19-methodology' || id === '20-final-assessment') && (
+                    <div className="rounded-2xl bg-amber-500/[0.04] border border-amber-500/15 p-5 text-[12px] text-slate-300 leading-relaxed space-y-2">
+                      <h4 className="font-bold text-amber-300">What is actually bundled</h4>
+                      <p><code>methodology.pcapng</code> is a 29-frame synthetic capture with eight distinct BSSIDs, one deauthentication frame, a weak-PSK practice handshake, and EAPOL exchanges. It does not include a complete RADIUS transaction, a validated PEAP/TLS certificate failure, DHCP, or captive-portal behavior.</p>
+                      <p><code>ENG-01</code> below is a written capstone scenario brief, not an executable or automatically graded final exam. The referenced Northwind topology, four per-SSID captures, RADIUS logs, configuration excerpts, portal rules and retest artefacts are not bundled. Do not present this brief as a completed assessment.</p>
+                    </div>
                   )}
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-6 border-t border-[#1e293b]/60">
@@ -1005,36 +872,35 @@ export function ModuleDetail() {
 
                       {id === '02-wifi-fundamentals' && lab.id === 'lab-02-beacon' && (
                         <>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">1. BSSID? (MAC)</label><input value={labAnswers['bssid'] || ''} onChange={e => setLabAnswers({...labAnswers, bssid: e.target.value})} placeholder="AA:BB:CC:DD:EE:FF" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 placeholder:text-slate-400 focus:border-cyan-500/30 focus:bg-[#0a1020] focus:outline-none hover:border-[#334155]/60 transition-all duration-200" /></div>
+                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">1. `LAB-WIFI` BSSID?</label><input value={labAnswers['bssid'] || ''} onChange={e => setLabAnswers({...labAnswers, bssid: e.target.value})} placeholder="00:11:22:33:44:55" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 placeholder:text-slate-400 focus:border-cyan-500/30 focus:bg-[#0a1020] focus:outline-none hover:border-[#334155]/60 transition-all duration-200" /></div>
                           <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">2. Channel?</label><input value={labAnswers['channel'] || ''} onChange={e => setLabAnswers({...labAnswers, channel: e.target.value})} placeholder="6" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">3. Security?</label><input value={labAnswers['security'] || ''} onChange={e => setLabAnswers({...labAnswers, security: e.target.value})} placeholder="Open" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">4. Probe leak?</label><input value={labAnswers['leak'] || ''} onChange={e => setLabAnswers({...labAnswers, leak: e.target.value})} placeholder="PNL / Preferred networks" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
+                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">3. RSN authentication/cipher?</label><input value={labAnswers['security'] || ''} onChange={e => setLabAnswers({...labAnswers, security: e.target.value})} placeholder="WPA2-PSK, CCMP" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
+                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">4. Probe requests captured? (0 / none)</label><input value={labAnswers['leak'] || ''} onChange={e => setLabAnswers({...labAnswers, leak: e.target.value})} placeholder="0" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
                         </>
                       )}
 
                       {id === '05-wireless-recon' && (
                         <>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">1. How many APs in total?</label><input value={labAnswers['apCount'] || ''} onChange={e => setLabAnswers({...labAnswers, apCount: e.target.value})} placeholder="e.g., 5" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
+                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">1. How many beacon BSSIDs?</label><input value={labAnswers['apCount'] || ''} onChange={e => setLabAnswers({...labAnswers, apCount: e.target.value})} placeholder="6" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
                           <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">2. Which SSID is hidden? How revealed?</label><input value={labAnswers['hidden'] || ''} onChange={e => setLabAnswers({...labAnswers, hidden: e.target.value})} placeholder="HIDDEN-LAB revealed via probe response" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
                           <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">3. List clients and their PNL</label><input value={labAnswers['clients'] || ''} onChange={e => setLabAnswers({...labAnswers, clients: e.target.value})} placeholder="12:34:56:78:9A:BC → LAB-WIFI, HomeWiFi, Corp-WLAN" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">4. Which BSSIDs share same ESS?</label><input value={labAnswers['ess'] || ''} onChange={e => setLabAnswers({...labAnswers, ess: e.target.value})} placeholder="00:11:22:33:44:55 and 00:11:22:33:44:56 = LAB-WIFI ESS" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
+                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">4. Do matching SSIDs prove one ESS? Why?</label><input value={labAnswers['ess'] || ''} onChange={e => setLabAnswers({...labAnswers, ess: e.target.value})} placeholder="No; verify authorized inventory and deployment context" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
                         </>
                       )}
 
                       {id === '06-traffic-analysis' && (
                         <>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">1. How many beacons? Security?</label><input value={labAnswers['beacons'] || ''} onChange={e => setLabAnswers({...labAnswers, beacons: e.target.value})} placeholder="2 beacons, WPA2-PSK" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">2. Full association flow (frame numbers)</label><input value={labAnswers['flow'] || ''} onChange={e => setLabAnswers({...labAnswers, flow: e.target.value})} placeholder="1:Beacon, 3:ProbeReq, 5-6:Auth, 7-8:Assoc, 9-12:EAPOL" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">3. EAPOL count? Complete handshake?</label><input value={labAnswers['eapol'] || ''} onChange={e => setLabAnswers({...labAnswers, eapol: e.target.value})} placeholder="4 EAPOL, complete handshake" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">4. BSSID, Client, Channel</label><input value={labAnswers['bssid2'] || ''} onChange={e => setLabAnswers({...labAnswers, bssid2: e.target.value})} placeholder="AA:BB:CC:DD:EE:FF, 11:22:33:44:55:66, Ch6" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
+                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">1. Total frames?</label><input value={labAnswers['frameCount'] || ''} onChange={e => setLabAnswers({...labAnswers, frameCount: e.target.value})} placeholder="21" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
+                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">2. Associated client MAC?</label><input value={labAnswers['client'] || ''} onChange={e => setLabAnswers({...labAnswers, client: e.target.value})} placeholder="12:34:56:78:9a:bc" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
+                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">3. EAPOL M1–M4 frame numbers?</label><input value={labAnswers['handshake'] || ''} onChange={e => setLabAnswers({...labAnswers, handshake: e.target.value})} placeholder="8, 9, 10, 11" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
+                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">4. Name post-association protocols</label><input value={labAnswers['protocols'] || ''} onChange={e => setLabAnswers({...labAnswers, protocols: e.target.value})} placeholder="DHCP, ARP, ICMP, DNS, HTTP" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
                         </>
                       )}
 
                       {!['02-wifi-fundamentals','05-wireless-recon','06-traffic-analysis'].includes(id||'') && (
                         <div className="rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 p-4">
                           <div className="text-[12px] text-slate-400 leading-relaxed">
-                            Analyze the artifacts above. Extract key evidence: BSSIDs, channels, security, frame numbers, vulnerabilities.
-                            Document your findings with specific evidence for reporting practice.
+                            Guided self-review only: inspect the listed artifact and its lesson, then record that you reviewed it. This entry is not machine-graded; no answer validation or skill score is claimed.
                           </div>
                         </div>
                       )}
@@ -1050,7 +916,7 @@ export function ModuleDetail() {
                             : 'bg-gradient-to-r from-cyan-500 to-violet-500 hover:from-cyan-400 hover:to-violet-400 text-white shadow-glow-cyan hover:shadow-glow-violet'
                         }`}
                       >
-                        {labCompleted[lab.id] ? <><CheckCircle className="w-4 h-4" /> Lab Completed</> : <><Target className="w-4 h-4" /> Validate & Complete Lab</>}
+                        {labCompleted[lab.id] ? <><CheckCircle className="w-4 h-4" /> {lab.grading === 'verified' ? 'Evidence Check Passed' : 'Review Recorded'}</> : <><Target className="w-4 h-4" /> Record Lab Review</>}
                       </motion.button>
                     </div>
 
@@ -1062,8 +928,8 @@ export function ModuleDetail() {
                         VAPT Context & Evidence
                       </div>
                       <div className="rounded-xl bg-amber-500/[0.03] border border-amber-500/10 p-4 text-[11px] text-slate-400 leading-relaxed backdrop-blur-sm">
-                        {id === '05-wireless-recon' && "Recon: Map APs, clients, hidden SSIDs, PNL. Evidence: BSSIDs, channels, security, clients PNL. Report: '5 APs, 2 in ESS LAB-WIFI, 1 hidden HIDDEN-LAB revealed via probe response f10, 2 clients PNL leak.'"}
-                        {id === '06-traffic-analysis' && "Traffic analysis: Beacon f1 → Probe f3 → Auth f5-6 → Assoc f7-8 → EAPOL f9-12 complete. Evidence: frame numbers."}
+                        {id === '05-wireless-recon' && "Recon: this 17-frame artifact contains 6 beacon BSSIDs, six directed probes, and one hidden-SSID probe response (frame 13). A shared SSID alone does not establish ESS membership."}
+                        {id === '06-traffic-analysis' && "Traffic analysis: 21 frames. Beacon 1, probe request/response 2–3, auth 4–5, association 6–7, EAPOL M1–M4 8–11, DHCP DORA 12–15, ARP 16–17, ICMP 18–19, DNS 20, HTTP 21. Post-handshake data is unprotected in this synthetic fixture."}
                         {id === '02-wifi-fundamentals' && "Beacons first. Enumerate SSID, BSSID, channel, security. Probe PNL leak useful for Evil Twin."}
                         {!['02-wifi-fundamentals','05-wireless-recon','06-traffic-analysis'].includes(id||'') && "Analyze PCAPs, configs, extract evidence with frame numbers and specific vulnerabilities. Document impact, recommendation, retest."}
                       </div>
@@ -1090,7 +956,7 @@ export function ModuleDetail() {
                           className="rounded-xl bg-emerald-500/[0.04] border border-emerald-500/15 p-4 text-[11px] text-emerald-400 flex items-center gap-2"
                         >
                           <CheckCircle className="w-4 h-4" />
-                          Lab evidence collected. Skill unlocked. Proceed to quiz or next.
+                          Review recorded locally. This activity is not machine-graded.
                         </motion.div>
                       )}
                     </div>
@@ -1100,20 +966,20 @@ export function ModuleDetail() {
                     <div className="pt-2">
                       <AttackDefenseRetest
                         attack={{
-                          title: id === '07-wep-legacy' ? 'WEP Key Recovery (PTW 40k frames)' : id === '10-wps' ? 'WPS PIN Brute-Force 11k' : id === '11-wpa3' ? 'Transition Downgrade + Deauth' : id === '12-deauth-disassoc' ? 'Deauth Flood DoS + Handshake Capture' : id === '13-rogue-ap' ? 'Rogue AP Evil Twin Corp-WLAN' : id === '14-captive-portals' ? 'Captive Portal Bypass via MAC Spoof + HTTP Sniff' : id === '15-enterprise-fundamentals' ? 'Enterprise PEAP Without Cert Validation — Rogue RADIUS' : id === '16-eap' ? 'EAP PEAP-MSCHAPv2 Credential Capture' : id === '17-radius' ? 'RADIUS Weak Secret + No RadSec' : id === '18-corporate-attacks' ? 'Corporate Rogue + Segmentation + Isolation Bypass' : id === '19-methodology' || id === '20-final-assessment' ? 'Final Assessment — All Issues Combined' : 'Handshake Capture + Offline Audit',
-                          description: id === '07-wep-legacy' ? 'IV reuse + RC4 weak, collect 40k frames, recover key in seconds' : id === '10-wps' ? 'WPS IE present, PIN halves flaw, 11k tries max, no rate limiting' : id === '11-wpa3' ? 'Transition PSK+SAE PMF optional, force WPA2 via deauth, capture handshake' : id === '12-deauth-disassoc' ? '12 deauth frames reason 7 AP→client + 2 client→AP + disassoc, PMF disabled, unauthenticated, DoS + force reconnect to capture handshake' : id === '13-rogue-ap' ? 'Rogue BSSID 11:22:33:44:55:66 clones SSID Corp-WLAN Ch11 vs legit AA:BB:CC:DD:EE:FF Ch6, client 12:34:56:78:9A:BC assoc to rogue f6-7, Evil Twin if PSK known' : id === '14-captive-portals' ? 'Open SSID Guest-WLAN, HTTP GET example.com → 302 redirect portal.guest.com/login, POST login over HTTP, MAC-based session, sniff MAC spoof bypass' : id === '15-enterprise-fundamentals' ? 'Corp-Enterprise WPA2-EAP, PEAP without ca_cert, rogue BSSID 11:22:33:44:55:66 clones Enterprise, client assoc to rogue, MSCHAPv2 challenge/response captured, hashcat -m 5500, RADIUS secret testing123 weak' : id === '16-eap' ? 'PEAP-MSCHAPv2, user@corp.com, TLS tunnel without cert validation, rogue RADIUS captures challenge/response, offline crack' : id === '17-radius' ? 'RADIUS secret testing123 weak, clients.conf 0.0.0.0/0, users weak password, no RadSec, no monitoring, VLAN 100' : id === '18-corporate-attacks' ? '3 SSIDs Enterprise/Guest/IoT + rogue 11:22:33:44:55:66 clones Enterprise Ch11, deauth, client assoc to rogue, MSCHAPv2 captured, Guest ap_isolate=0 ARP spoof, Corp VLAN 100→Guest 200 ping success ACL misconfigured' : id === '19-methodology' || id === '20-final-assessment' ? '6 APs +1 rogue, 5 clients, 1 hidden HIDDEN-LAB, WPS 3 SSIDs 11k, weak PSK WeakPass123 IoT and TRANS, PMF disabled, PEAP no cert, RADIUS weak, open no isolation, captive MAC bypass, rogue, segmentation bypass Corp→Guest' : 'WPA2 handshake captured, PMKID present, weak PSK in wordlist',
-                          evidence: lab.pcap ? `PCAP: ${lab.pcap}.pcapng` : 'Config: hostapd.conf',
-                          impact: 'Credential capture, network access, lateral movement',
+                          title: `${module.title} — scripted tabletop`,
+                          description: `Local tabletop illustration for ${module.title}. It does not transmit frames, execute an attack, or validate a real network; use the linked lesson and artifact for bounded evidence.`,
+                          evidence: lab.pcap ? `Bundled teaching artifact: ${lab.pcap}.pcapng (see manifest and lesson for limits)` : 'No configuration artifact is bundled for this review.',
+                          impact: 'Potential impact is context-dependent; this local panel does not establish a finding.',
                         }}
                         defense={{
                           title: 'Defense & Hardening',
-                          description: 'Layered defense: disable WPS, strong PSK, PMF required, cert validation, EAP-TLS, strong RADIUS secret, RadSec, VLAN ACL deny, isolation, WIDS, monitoring',
+                          description: module.retest_focus || 'Review module controls; this scripted panel changes no configuration.',
                           config: 'ieee80211w=2\nwps_state=0\n# Strong PSK 20+\n# ca_cert + subject_match\n# Strong RADIUS secret 22+',
                         }}
                         retest={{
                           title: 'Verify Fix',
-                          description: 'Retest with new PCAPs, configs, verify beacon, handshake audit fails, rogue detection, VLAN ACL deny',
-                          verification: 'Reproducible evidence: PCAP hash, frame numbers, config hash',
+                          description: 'A real retest requires a new, authorized capture or configuration artifact; this panel does not perform one.',
+                          verification: 'Record artifact hash, frame numbers, filter, configuration source and test limits in an authorized engagement.',
                         }}
                       />
                     </div>
@@ -1140,13 +1006,13 @@ export function ModuleDetail() {
                   {quizSubmitted && (
                     <div className="text-right">
                       <div className="text-[11px] text-slate-400 uppercase tracking-widest">Score</div>
-                      <div className="text-[20px] font-bold text-slate-100 font-mono">{quizzes.filter((_, i) => quizAnswers[`q${i}`] === quizzes[i].correct).length} / {quizzes.length}</div>
+                      <div className="text-[20px] font-bold text-slate-100 font-mono">{quizQuestions.filter((_, i) => quizAnswers[`q${i}`] === quizQuestions[i].correct).length} / {quizzes.length}</div>
                     </div>
                   )}
                 </div>
               </div>
 
-              {quizzes.map((q, idx) => (
+              {quizQuestions.map((q, idx) => (
                 <motion.div
                   key={idx}
                   initial={{ opacity: 0, y: 8 }}
@@ -1161,7 +1027,7 @@ export function ModuleDetail() {
                   <div className="space-y-2">
                     {q.options.map((opt: string, optIdx: number) => (
                       <label key={optIdx} className={`group flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200 ${quizAnswers[`q${idx}`] === optIdx ? 'bg-[#1e293b] border-cyan-500/30 text-slate-100 shadow-soft' : 'bg-[#020617]/60 border-[#1e293b]/60 text-slate-400 hover:border-[#334155]/60 hover:text-slate-200 hover:bg-[#020617]/80'}`}>
-                        <input type="radio" name={`q${idx}`} checked={quizAnswers[`q${idx}`] === optIdx} onChange={() => setQuizAnswers({...quizAnswers, [`q${idx}`]: optIdx})} className="accent-cyan-400" />
+                        <input type="radio" name={`q${idx}`} checked={quizAnswers[`q${idx}`] === optIdx} onChange={() => setQuizAnswers({...quizAnswers, [`q${idx}`]: optIdx})} disabled={quizSubmitted} className="accent-cyan-400" />
                         <span className="text-[13px] leading-relaxed">{opt}</span>
                       </label>
                     ))}
@@ -1184,18 +1050,20 @@ export function ModuleDetail() {
               <motion.button
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
-                onClick={handleQuizSubmit}
-                disabled={quizSubmitted}
+                onClick={() => { if (quizSubmitted) { setQuizAnswers({}); setQuizSubmitted(false) } else handleQuizSubmit() }}
+                disabled={quizSubmitted && quizPerfect}
                 className={`w-full py-4 rounded-xl font-bold text-[14px] transition-all duration-300 flex items-center justify-center gap-2 ${
-                  quizSubmitted 
-                    ? 'bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 shadow-glow-emerald' 
+                  quizSubmitted
+                    ? quizPassed
+                      ? quizPerfect ? 'bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 shadow-glow-emerald cursor-default' : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/15'
+                      : 'bg-amber-500/10 border border-amber-500/20 text-amber-300'
                     : 'bg-gradient-to-r from-cyan-500 to-violet-500 hover:from-cyan-400 hover:to-violet-400 text-white shadow-glow-cyan hover:shadow-glow-violet'
                 }`}
               >
                 {quizSubmitted ? (
                   <>
-                    <Award className="w-5 h-5" />
-                    Score: {quizzes.filter((_, i) => quizAnswers[`q${i}`] === quizzes[i].correct).length} / {quizzes.length}
+                    {quizPassed ? <CheckCircle className="w-5 h-5" /> : <Target className="w-5 h-5" />}
+                    {quizPerfect ? `Passed · Perfect score · ${quizScore} / ${quizzes.length}` : quizPassed ? `Passed · Retake to improve · ${quizScore} / ${quizzes.length}` : `Not passed · Retry · ${quizScore} / ${quizzes.length}`}
                   </>
                 ) : (
                   <>
@@ -1221,17 +1089,17 @@ export function ModuleDetail() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Title</label>
-                      <div className="p-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-300">{id === '05-wireless-recon' ? 'Wireless Recon: 5 APs, Hidden SSID, PNL Leakage' : id === '06-traffic-analysis' ? 'Traffic Analysis: Complete Association Flow' : 'Insecure Wi-Fi Configuration'}</div>
+                      <div className="p-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-300">{id === '05-wireless-recon' ? 'Wireless Recon: 6 BSSIDs, Hidden SSID & Probe Requests' : id === '06-traffic-analysis' ? 'Traffic Analysis: 21-frame Association & Data Flow' : 'Wireless Evidence Review'}</div>
                     </div>
                     <div className="space-y-2">
                       <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Severity</label>
-                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[13px] text-amber-400 font-medium">Medium</div>
+                      <div className="p-3 rounded-xl bg-slate-500/10 border border-slate-500/20 text-[13px] text-slate-300 font-medium">Not pre-assigned — justify from evidence, likelihood and impact</div>
                     </div>
                   </div>
                   <div className="mt-4 space-y-2">
                     <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Evidence</label>
                     <div className="p-4 rounded-xl bg-[#020617] border border-[#1e293b] font-mono text-[11px] text-slate-400 leading-relaxed">
-                      {id === '05-wireless-recon' ? 'PCAP: recon-lab.pcapng — 5 APs, HIDDEN-LAB revealed in frame 10 probe response, 2 clients, PNL leak' : 'PCAP with frame numbers, BSSID, channel, security'}
+                      {id === '05-wireless-recon' ? 'PCAP: recon-lab.pcapng — cite the exact beacon/probe frame numbers and decoded fields. A look-alike or randomized MAC requires corroboration before attribution.' : id === '06-traffic-analysis' ? 'PCAP: traffic-analysis.pcapng — cite frames and decoded fields; synthetic application payloads do not establish a production session.' : 'Select the linked artifact, state what it directly shows, cite frame numbers, and separate observation from inference. No finding or severity is pre-assigned.'}
                     </div>
                   </div>
                 </div>
@@ -1241,11 +1109,11 @@ export function ModuleDetail() {
         </motion.div>
       </AnimatePresence>
 
-      <Suspense fallback={<div className="p-6 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading Reading Experience…</div>}>
+      <Suspense fallback={<LoadingPanel label="Loading Reading Experience…" />}>
         <ReadingExperience content={lessonContent || ''} />
       </Suspense>
 
-      <Suspense fallback={<div className="p-6 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading Notes & Bookmarks…</div>}>
+      <Suspense fallback={<LoadingPanel label="Loading Notes & Bookmarks…" />}>
         <NotesBookmarks moduleId={id || ''} lessonId={lessons[activeLesson] || ''} />
       </Suspense>
 

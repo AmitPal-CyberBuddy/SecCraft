@@ -166,7 +166,7 @@ export function SecurityPosture({ className = '' }: { className?: string }) {
       </div>
 
       <a
-        href="https://github.com/AmitPal-CyberBuddy/WiFiForge/blob/main/SECURITY.md"
+        href="https://github.com/AmitPal-CyberBuddy/SecCraft/blob/main/SECURITY.md"
         target="_blank"
         rel="noopener noreferrer"
         className="mt-3 inline-flex items-center gap-1.5 text-[11px] text-cyan-400 hover:text-cyan-300"

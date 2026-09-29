@@ -1,7 +1,6 @@
 # RADIUS Mechanics and Verifiable Integrity
 
-> Artifact: `radius.pcapng` — Access-Request → Access-Challenge → Access-Accept (+ Accounting-Request),
-> a rogue NAS whose Message-Authenticator fails, VLAN 100 assignment.
+> Artifact: `radius.pcapng` — synthetic Access-Request/Challenge/Accept examples (+ accounting), a deliberately invalid Message-Authenticator example, and a VLAN attribute. This does not establish a deployed NAS, production shared secret, real authentication decision, or VLAN enforcement.
 
 ## 1. Protocol essentials
 
@@ -22,17 +21,17 @@ loses the rest of the EAP packet — concat all attributes with type 79 before p
   Offers integrity of the packet *and* proof of knowledge of the secret.
 * **Response Authenticator**: `MD5(Code ‖ ID ‖ Length ‖ Request-Authenticator ‖ Attributes ‖ Secret)`
   for responses; a request's Authenticator field is a random value used as the seed.
-* **User-Password (2)** is XOR-encrypted with a keystream built from the Request Authenticator and the
-  secret — reversible by anyone who knows the secret, i.e. **not** mutual confidentiality from the NAS.
+* **User-Password (2)** is obfuscated with a keystream derived from the Request Authenticator and shared
+  secret. A party holding that secret can recover it; this is not modern end-to-end confidentiality and
+  does not protect the password from the NAS or a compromised RADIUS endpoint.
 
 ```bash
 tshark -r radius.pcapng -Y 'radius' -T fields -e frame.number -e radius.code \
   -e radius.id -e radius.message_authenticator -e radius.tunnel_private_group_id
 ```
 
-`scripts/verify-lab-artifacts.py` verifies the Message-Authenticator of every request and the Response
-Authenticator of every reply, and confirms that the deliberately wrong-secret "rogue NAS" request fails —
-which is what you should reproduce by hand at least once.
+`scripts/verify-lab-artifacts.py` verifies the Message-Authenticator of the constructed requests and the Response
+Authenticator of the constructed replies, and confirms that one deliberately invalid request fails candidate-secret verification. That packet does not, by itself, prove a rogue NAS or identify a production secret; reproduce the calculation with the disclosed lab fixture values.
 
 ## 3. The shared secret: why it is a high-value target
 
@@ -40,10 +39,12 @@ which is what you should reproduce by hand at least once.
   configured with it.
 * With a captured request **and** a candidate secret, the Message-Authenticator can be recomputed offline
   — an offline dictionary check against the secret itself (no rate limit, no lockout).
-* The secret also decrypts User-Password attributes and lets an attacker forge accepts if they can answer
-  as the NAS (e.g. by spoofing the NAS IP when the server does not restrict source addresses).
+* A party with the shared secret and network reachability may be able to impersonate that configured
+  RADIUS client and construct valid requests; a party impersonating the server may also forge responses
+  accepted by a NAS using that secret. Source-address allowlists and network controls reduce exposure but
+  are not substitutes for strong, unique secrets and protected transport.
 * Requirements: `require_message_authenticator = yes` server-side, per-device secrets, source-IP
-  restriction, and RadSec (RADIUS over TLS, TCP 2083) for the transport.
+  restriction, and RadSec (RADIUS over TLS, typically TCP 2083) for transport protection with validated peers and suitable policy.
 
 ## 4. Lab tasks
 
@@ -51,8 +52,7 @@ which is what you should reproduce by hand at least once.
 2. Verify the Access-Request Message-Authenticator with the lab secret `testing123`; then try a wrong
    secret and show the mismatch.
 3. Verify the Access-Accept Response Authenticator using the request's Authenticator field.
-4. Explain the VLAN assignment you see (attribute 81) and list two ways an attacker could abuse a
-   trust-the-reply design.
+4. Identify the VLAN attribute in the example and distinguish a RADIUS attribute from proof that an AP/switch applied the VLAN. State what infrastructure/log evidence would verify enforcement.
 5. Find the rogue NAS request and explain *precisely* why it fails verification.
 
 ## 5. Decision practice

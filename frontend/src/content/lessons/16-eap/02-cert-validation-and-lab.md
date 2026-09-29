@@ -1,8 +1,6 @@
 # Certificate Validation and the PEAP Lab
 
-> Lab: `eap.pcapng`, `radius.pcapng`, plus the rogue-authenticator material in `corporate-attacks.pcapng`.
-> Everything here uses documented lab values; the technique must only ever be run against a network you
-> own or are authorised to test, with the roaming-capture risk explicitly accepted in writing.
+> Conceptual procedure, not an executable capture lab: the bundled `eap.pcapng`, `radius.pcapng` and `corporate-attacks.pcapng` are separate synthetic fixtures. None contains a complete rogue PEAP/TLS session, certificate-validation result, or coherent credential-capture chain. Any live test must use an isolated, authorized lab and test accounts.
 
 ## 1. The rogue authenticator, conceptually
 
@@ -27,23 +25,21 @@ real AP (Corp-WLAN, 802.1X)              rogue authenticator (same SSID, stronge
 
 Two outcomes, two completely different findings:
 
-* **Validation enforced** → the attempt fails. Evidence: supplicant log ("certificate verify failed"),
-  TLS alert in the capture. Report it as *control verified*, not as a finding.
-* **Validation missing** → credentials captured. Evidence: MS-CHAPv2 material, the cracked password,
-  the client profile setting. That is a credential-compromise finding with a lateral-movement impact.
+* **Validation enforced** → the client should reject a server with the wrong trust/identity. Verify with the supplicant log and a controlled test; a TLS alert alone does not identify why the handshake failed.
+* **Validation missing** → a rogue authenticator may be able to terminate the tunnel and obtain inner-method material, depending on profile and method. Demonstrate only with a controlled client/test account; establish impact separately.
 
 ## 2. Lab procedure (own hardware, authorised lab)
 
-1. Configure `hostapd` with `WPA-EAP` and a self-signed certificate for the SSID under test; verify with
-   `openssl s_client` that the certificate is *not* the corporate CA.
+1. In an isolated, authorized lab, configure a test authenticator with a test server certificate and matching private key; do not target a production SSID. Validate the certificate chain and server name through the actual supplicant profile and its logs (`openssl s_client` does not emulate EAP).
 2. Configure a test client **without** `ca_cert`; connect. Capture with `tshark`.
 3. Repeat with `ca_cert` and `domain_suffix_match` set. Capture the difference.
-4. Extract and crack the material from step 2 only; confirm step 3 produced none.
+4. Compare only lab-generated evidence and supplicant logs. Do not infer credential exposure from a missing field in a packet capture alone.
 
 ```bash
-# hostapd side (rogue authenticator, lab only)
-#   ssid=Corp-Lab, wpa_key_mgmt=WPA-EAP, eap_server=1, ca_cert=/etc/hostapd/lab-ca.pem
-#   ieee80211w=1 (optional: offer PMF capable)
+# hostapd side (isolated test authenticator; exact options depend on hostapd version)
+#   ssid=Corp-Lab, wpa_key_mgmt=WPA-EAP, eap_server=1
+#   server_cert=/path/to/lab-server.pem, private_key=/path/to/lab-server.key
+#   ieee80211w=1 (PMF capable/optional; not an evil-twin defense by itself)
 
 # client side: confirm which identity/cert is presented
 sudo wpa_supplicant -i wlan0 -c lab-client.conf -dd 2>&1 | grep -Ei 'certificate|TLS|alert'
@@ -53,12 +49,12 @@ sudo wpa_supplicant -i wlan0 -c lab-client.conf -dd 2>&1 | grep -Ei 'certificate
 
 | Artefact | Why it is needed |
 | --- | --- |
-| Rogue BSSID + beacon (IE fingerprint) | proves the infrastructure was not the client's authorised AP |
-| Client association to the twin | proves the client accepted the impersonation |
-| Inner exchange capture | the credential material itself |
-| Client configuration excerpt (redacted) | the root cause: missing `ca_cert` / `domain_suffix_match` |
-| Cracked password (lab only) | impact: credential replay against other services |
-| Failed attempt with validation on | proof the control works (retest evidence) |
+| BSSID/beacon compared with an authorized inventory | supports identification; a beacon alone does not prove unauthorized ownership |
+| Client association and supplicant log | establishes which BSS the test client joined and its observed validation decision |
+| Inner exchange capture (test account only) | shows the material actually exposed; method and tunnel context must be verified |
+| Redacted client profile | helps identify trust/name-validation settings; correlate with runtime logs |
+| Lab-only password recovery | demonstrates a test-account risk, not credential reuse or lateral movement |
+| Repeated controlled test with validation enforced | evidence for the tested profile/client; do not generalize to all devices |
 
 ## 4. Remediation, in order of strength
 
@@ -67,14 +63,12 @@ sudo wpa_supplicant -i wlan0 -c lab-client.conf -dd 2>&1 | grep -Ei 'certificate
    (and machine-level, GPO/MDM-managed profiles that users cannot edit).
 3. **Disable PEAP-MSCHAPv2** server-side where possible; if not, require machine/user certificate checks
    before evaluating the password.
-4. **PMF required** so a client cannot be trivially moved to the twin by deauth.
+4. **PMF required** to protect robust management frames on supporting clients. This reduces spoofed deauth/disassoc paths but does not authenticate an AP or prevent every evil-twin technique.
 5. **Monitoring** for rogue BSSIDs / duplicate SSIDs and for anomalous EAP flows.
 
 ## 5. Retest
 
-Repeat step 2 with the fixed profile: the capture must contain a TLS alert and no MS-CHAPv2 exchange.
-Record both captures and their hashes. This is the retest evidence the client needs — a config change
-alone is not proof.
+Repeat a controlled test with the corrected profile. Verify expected server identity and rejection of the untrusted test server in client logs; do not rely on a TLS alert alone or treat a packet capture as proof of profile configuration. Record the test inputs, relevant logs, captures and hashes.
 
 ## 6. Decision practice
 

@@ -4,18 +4,18 @@
   "shortName": "seccraft",
   "legacyName": "WiFiForge",
   "tagline": "Learn. Practice. Investigate. Improve.",
-  "secondaryTagline": "Hands-on cybersecurity by doing.",
-  "description": "A hands-on cybersecurity learning platform where learners don't just consume security content — they investigate systems, perform security testing, collect evidence, understand impact, remediate vulnerabilities, retest fixes, and complete realistic assessments. Learn, practice, investigate, improve — in a safe, legal, zero-hardware environment.",
+  "secondaryTagline": "Learn cybersecurity by doing.",
+  "description": "A local-first, hands-on cybersecurity learning platform. Learners investigate systems, perform authorized security tests, collect evidence, assess impact, remediate findings, retest, and report. The static app works with bundled learning and lab content; the optional FastAPI service is for local use. Simulation labs need no wireless hardware, while hybrid and RF-required labs state their limits.",
   "philosophy": "Learn → Practice → Investigate → Evidence → Impact → Improve → Report",
   "philosophyShort": "Learn → Practice → Investigate → Improve",
   "contentVersion": "2.1",
   "version": "2.1",
   "palette": {
     "bg": {
-      "950": "#020617",
-      "900": "#0a0f3d",
-      "800": "#1e293b",
-      "700": "#334155"
+      "950": "#080d17",
+      "900": "#0d1421",
+      "800": "#131e2d",
+      "700": "#223044"
     },
     "accent": {
       "cyan": "#22d3ee",
@@ -25,31 +25,32 @@
       "amber": "#f59e0b",
       "orange": "#FF9F1C",
       "red": "#f87171",
-      "pink": "#f472b6"
+      "pink": "#f472b6",
+      "teal": "#53d7d1"
     }
   },
   "fonts": {
-    "heading": "Sora, Space Grotesk, sans-serif",
-    "body": "Inter, system-ui, sans-serif",
-    "mono": "JetBrains Mono, monospace"
+    "heading": "Inter Variable (self-hosted), Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
+    "body": "Inter Variable (self-hosted), Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
+    "mono": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
   },
   "logo": {
     "icon": "shield-magnifying-check",
     "wordmark": "SecCraft",
-    "concept": "SecCraft — Shield with checkmark + magnifying glass — shield in cyan #33CFFF represents protection and hardening, checkmark represents validation and proof, magnifying glass in orange #FF9F1C represents investigation. Learn. Practice. Investigate. Improve. Dark navy #0a0f3d background. Technical professional, serious, premium, hands-on craft.",
+    "concept": "SecCraft shield, checkmark, and magnifier mark. The current SVG uses cyan #22d3ee, amber #f59e0b, and a dark navy #0a0f3d logo field.",
     "platformIcon": "shield with checkmark + magnifying glass — cyan shield + orange magnifier",
     "wirelessPathIcon": "shield with checkmark + magnifying glass + subtle Wi-Fi arcs for Wireless path",
     "colors": {
-      "shield": "#33CFFF",
-      "magnifier": "#FF9F1C",
+      "shield": "#22d3ee",
+      "magnifier": "#f59e0b",
       "checkmark": "#22d3ee",
       "bg": "#0a0f3d"
     }
   },
   "links": {
-    "github": "https://github.com/AmitPal-CyberBuddy/WiFiForge",
-    "docs": "/docs",
-    "liveDemo": "https://amitpal-cyberbuddy.github.io/WiFiForge/"
+    "github": "https://github.com/AmitPal-CyberBuddy/SecCraft",
+    "docs": "https://github.com/AmitPal-CyberBuddy/SecCraft/tree/main/docs",
+    "liveDemo": "https://amitpal-cyberbuddy.github.io/SecCraft/"
   },
   "principles": {
     "domainAgnosticCore": "Platform engine should not assume Wi-Fi",

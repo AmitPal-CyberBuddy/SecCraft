@@ -1,3 +1,4 @@
+import { LoadingPanel } from '@/components/common/LoadingPanel'
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Terminal, Filter, Search, ClipboardList, FileText, BookOpen, ChevronRight, MapIcon, ArrowLeft } from 'lucide-react'
@@ -103,7 +104,7 @@ export function Reference() {
             <Terminal className="w-5 h-5 text-cyan-400" />
           </div>
           <div className="min-w-0">
-            <h1 className="font-heading font-bold text-[24px] md:text-[28px] text-slate-100 tracking-tight leading-none flex items-center gap-2">
+            <h1 className="font-heading font-bold text-[24px] md:text-[28px] text-slate-100 tracking-tight leading-none flex items-center gap-2 sc-page-title">
               Reference <span className="text-[18px]">{currentPath.icon}</span>
             </h1>
             <p className="mt-2 max-w-[760px] text-[12.5px] text-slate-400 leading-relaxed">
@@ -235,20 +236,19 @@ export function Reference() {
               <div className="flex items-center gap-1.5"><ChevronRight className="w-3 h-3" /> docs/WIRELESS_VAPT_CHECKLIST.md</div>
               <div className="flex items-center gap-1.5"><ChevronRight className="w-3 h-3" /> docs/SIMULATION_VS_HARDWARE.md</div>
               <div className="flex items-center gap-1.5"><ChevronRight className="w-3 h-3" /> docs/CONTENT_MODEL.md</div>
-              <div className="flex items-center gap-1.5"><ChevronRight className="w-3 h-3" /> docs/PLATFORM_REPOSITIONING.md</div>
             </div>
           </motion.div>
         </div>
       )}
 
       {tab === 'terminal' && (
-        <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading terminal…</div>}>
+        <Suspense fallback={<LoadingPanel label="Loading terminal…" />}>
           <TerminalEmulator />
         </Suspense>
       )}
 
       {tab === 'flashcards' && (
-        <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading flashcards…</div>}>
+        <Suspense fallback={<LoadingPanel label="Loading flashcards…" />}>
           <Flashcards />
         </Suspense>
       )}

@@ -1,18 +1,28 @@
-from fastapi import FastAPI, Request
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import content, progress, labs, pcaps, enterprise, auth, learning_paths
 from app.core.database import init_db
 from app.core import config
 
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    init_db()
+    yield
+
+
 app = FastAPI(
-    title="SecCraft API — Hands-on Cybersecurity Learning Platform (optional local parser)",
+    title="SecCraft API — Hands-on Cybersecurity Learning Platform",
     description=(
-        "Local, zero-cost helper API for the SecCraft hands-on cybersecurity learning platform (legacy WiFiForge): "
-        "learning paths, content metadata, offline capture decoding and optional multi-user progress storage. "
-        "The hosted build is static and does not require this service; nothing here is exposed to the internet by default. "
-        "SecCrafting hardens metal after forging — maps to Fix→Retest loop. Tagline: Forge. Break. Fix. SecCraft. Retest."
+        "Optional local API for SecCraft: learning-path and content metadata, offline capture decoding, "
+        "and optional progress storage. The GitHub Pages frontend is static and uses bundled learning "
+        "and lab data; it does not require this service. This API is intended for local development "
+        "and should only be exposed with an explicitly configured origin allowlist and secrets."
     ),
     version="2.1.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -23,30 +33,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.on_event("startup")
-def startup():
-    init_db()
 
-app.include_router(content.router)
-app.include_router(progress.router)
-app.include_router(labs.router)
-app.include_router(pcaps.router)
-app.include_router(enterprise.router)
-app.include_router(auth.router)
-app.include_router(learning_paths.router)
+# Keep every API surface under the same prefix used by the frontend and reverse-proxy config.
+for router in (content.router, progress.router, labs.router, pcaps.router, enterprise.router, auth.router, learning_paths.router):
+    app.include_router(router, prefix="/api")
 
 
 @app.get("/api/health")
 def health():
     return {
         "status": "ok",
-        "service": "SecCraft API — Hands-on Cybersecurity Learning Platform (legacy WiFiForge)",
+        "service": "SecCraft API — Hands-on Cybersecurity Learning Platform",
         "version": "2.1.0",
         "platform": "SecCraft",
+        # Retained for clients that identify the former product name.
         "legacy": "WiFiForge",
         "learning_paths": 8,
-        "tagline": "Forge. Break. Fix. SecCraft. Retest.",
+        "available_learning_paths": 1,
+        "tagline": "Learn. Practice. Investigate. Improve.",
         "secondary": "Learn cybersecurity by doing.",
-        "philosophy": "Learn → Understand → Observe → Enumerate → Test → Validate → Collect Evidence → Understand Impact → Remediate → SecCraft (Harden) → Retest → Report",
-        "message": "Forge. Break. Fix. SecCraft. Retest. — Learn cybersecurity by doing. — Wireless Pentesting is Learning Path #1 (legacy WiFiForge).",
+        "philosophy": "Investigate → Test → Collect evidence → Assess impact → Remediate → Retest → Report",
+        "message": "SecCraft — Learn. Practice. Investigate. Improve. Wireless Pentesting is the first available learning path.",
     }

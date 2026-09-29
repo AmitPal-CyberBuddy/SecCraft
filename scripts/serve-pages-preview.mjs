@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * WiFiForge — local GitHub Pages emulator.
+ * SecCraft — local GitHub Pages emulator.
  *
  * Serves the production build the way GitHub Pages does for a project site:
- * everything under a sub-path (/WiFiForge/), and unknown paths answered with
+ * everything under a sub-path (/SecCraft/), and unknown paths answered with
  * 404.html + HTTP 404 instead of a client-side rewrite. If the app boots here,
  * it boots on Pages.
  *
  * Usage:
  *   cd frontend && npm run build
- *   node ../scripts/serve-pages-preview.mjs [--port 4173] [--base /WiFiForge/]
+ *   node ../scripts/serve-pages-preview.mjs [--port 4173] [--base /SecCraft/]
  */
 import http from 'node:http'
 import fs from 'node:fs'
@@ -75,9 +75,15 @@ http
       return send(res, 404, path.join(DIST, '404.html'))
     }
 
-    const rel = decodeURIComponent(url.pathname.slice(BASE.length)) || 'index.html'
-    const file = path.join(DIST, rel)
-    if (!file.startsWith(DIST)) {
+    let rel
+    try {
+      rel = decodeURIComponent(url.pathname.slice(BASE.length)) || 'index.html'
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' })
+      return res.end('Malformed URL path')
+    }
+    const file = path.resolve(DIST, rel)
+    if (file !== DIST && !file.startsWith(`${DIST}${path.sep}`)) {
       return send(res, 403, path.join(DIST, '404.html'))
     }
     if (fs.existsSync(file) && fs.statSync(file).isFile()) {

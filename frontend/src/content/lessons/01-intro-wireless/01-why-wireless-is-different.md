@@ -8,10 +8,11 @@
 
 ## 1. Radio is a broadcast medium
 
-Ethernet gives you a cable: frames exist only where the copper goes. 802.11 radiates, so a monitor-mode
-receiver inside the coverage area receives everything that is not spatially separated from it — beacons,
-probe requests, authentication and association frames, and the unprotected parts of the security
-handshake. No address, no port, no account.
+Ethernet uses a physical medium; 802.11 uses radio, so a monitor-mode receiver may hear over-the-air
+frames within its RF conditions. It must be tuned to the relevant channel/band, and reception depends on
+range, interference, antenna, hardware and capture configuration. Beacons, probes, authentication and
+association frames are often observable; some handshake material is transmitted in the clear. A capture
+is never guaranteed to contain every frame or every client.
 
 What that means in practice:
 
@@ -31,7 +32,7 @@ What that means in practice:
 3. **The authentication infrastructure** — RADIUS shared secrets, EAP methods, certificate handling, VLAN/ACL assignment.
 4. **The air itself** — availability: unauthenticated management frames, RF jamming/resource exhaustion.
 
-A professional test touches all four and says which weakness belongs to which surface.
+A professional test considers all four surfaces, then states which were in scope, which were tested, and what each evidence source can actually support.
 
 ## 3. What stays the same as a wired test
 
@@ -52,8 +53,9 @@ reproducible artefact is an opinion**.
 ## 5. Legal and ethical boundary (read this twice)
 
 * Test only infrastructure you own, or that a client has authorised in writing for a defined window.
-* Never capture traffic from networks you are not authorised to test — in most jurisdictions
-  interference, injection and credential capture are criminal offences regardless of intent.
+* Do not capture or inject on networks outside the written scope. Wireless interception, disruption and
+  credential handling are legally sensitive; applicable law varies by jurisdiction and facts. Obtain
+  explicit authorization and follow client/legal requirements before testing.
 * Do not "tidy up" captures: keep the raw file, record the SHA-256, and note the tool and filter used.
 * If a test could disrupt production (deauth, rogue AP, RF flooding), it needs explicit written
   approval in the Rules of Engagement — and a rollback plan.

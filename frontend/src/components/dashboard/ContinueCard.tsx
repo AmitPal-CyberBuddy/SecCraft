@@ -1,9 +1,10 @@
-import { ArrowRight, Clock, BookOpen, FlaskConical, Sparkles, Target, Zap, ChevronRight } from 'lucide-react'
+import { ArrowRight, Clock, BookOpen, FlaskConical, Zap, CheckCircle2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 
 interface Props {
   moduleId: string
+  pathTitle?: string
   title: string
   description: string
   progress: number
@@ -12,12 +13,12 @@ interface Props {
   estimatedTime: string
 }
 
-export function ContinueCard({ moduleId, title, description, progress, lessonsCompleted, totalLessons, estimatedTime }: Props) {
+export function ContinueCard({ moduleId, pathTitle, title, description, progress, lessonsCompleted, totalLessons, estimatedTime }: Props) {
   return (
     <motion.div
       whileHover={{ y: -2, scale: 1.01 }}
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className="group relative rounded-2xl bg-[#0f172a] border border-[#1e293b] p-6 overflow-hidden hover:border-[#334155]/60 hover:bg-[#111d33] hover:shadow-medium transition-all duration-300"
+      className="learning-continue group relative rounded-2xl bg-[#0f172a] border border-[#1e293b] p-6 overflow-hidden hover:border-[#334155]/60 hover:bg-[#111d33] hover:shadow-medium transition-all duration-300"
     >
       <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/[0.04] via-violet-500/[0.02] to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
       <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-cyan-500/10 to-violet-500/10 rounded-full blur-3xl opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
@@ -31,8 +32,9 @@ export function ContinueCard({ moduleId, title, description, progress, lessonsCo
             </div>
             <div>
               <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
-                <span className="text-[11px] text-cyan-400 font-bold tracking-widest uppercase">Continue Learning</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-glow-cyan" />
+                <span className={`text-[11px] font-bold tracking-widest uppercase ${progress >= 100 ? 'text-emerald-400' : 'text-cyan-400'}`}>{progress >= 100 ? 'Module complete' : 'Continue learning'}</span>
+                {pathTitle && <span className="hidden xs:inline text-[10px] text-slate-400 font-medium truncate max-w-[150px]">/ {pathTitle}</span>}
+                <span className={`w-1.5 h-1.5 rounded-full shadow-glow-cyan ${progress >= 100 ? 'bg-emerald-400' : 'bg-cyan-400 animate-pulse'}`} />
               </div>
               <div className="text-[11px] text-slate-500 font-mono mt-0.5 flex items-center gap-1.5">
                 <span>{moduleId}</span>
@@ -42,9 +44,9 @@ export function ContinueCard({ moduleId, title, description, progress, lessonsCo
             </div>
           </div>
           <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
-            <span className="text-[10px] px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono font-medium tracking-widest flex items-center gap-1">
-              <Zap className="w-3 h-3" />
-              ACTIVE
+            <span className={`text-[10px] px-2.5 py-1 rounded-full border font-mono font-medium tracking-widest flex items-center gap-1 ${progress >= 100 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'}`}>
+              {progress >= 100 ? <CheckCircle2 className="w-3 h-3" /> : <Zap className="w-3 h-3" />}
+              {progress >= 100 ? 'COMPLETE' : 'ACTIVE'}
             </span>
           </div>
         </div>
@@ -63,7 +65,7 @@ export function ContinueCard({ moduleId, title, description, progress, lessonsCo
             <span className="text-[13px] font-bold text-slate-200 font-mono">{progress}%</span>
           </div>
           
-          <div className="relative h-2 bg-[#020617] rounded-full overflow-hidden border border-[#1e293b]/50">
+          <div className="relative h-2 bg-[#020617] rounded-full overflow-hidden border border-[#1e293b]/50" role="progressbar" aria-label="Current module progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}>
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
@@ -82,8 +84,8 @@ export function ContinueCard({ moduleId, title, description, progress, lessonsCo
         >
           <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
           <span className="relative flex items-center gap-2">
-            Continue
-            <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform duration-200" />
+            {progress >= 100 ? 'Review module' : 'Continue learning'}
+            {progress >= 100 ? <CheckCircle2 className="w-4 h-4" /> : <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform duration-200" />}
           </span>
         </Link>
       </div>

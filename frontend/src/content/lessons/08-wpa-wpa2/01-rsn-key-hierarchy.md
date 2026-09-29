@@ -22,7 +22,7 @@ passphrase/SAE or 802.1X MSK
         │            └─ wraps the GTK during the handshake (NIST AES key wrap)
         └─ computes the EAPOL-Key MIC (HMAC-SHA1 for CCMP, AES-CMAC for GCMP)
         │
-   GTK (from M3) ── protects broadcast/multicast and, in WPA2, group-addressed management frames
+   GTK (distributed in M3) ── protects group-addressed data; IGTK/BIGTK provide integrity protection for relevant group-addressed management/beacon frames
 ```
 
 Two consequences worth stating out loud:
@@ -39,8 +39,8 @@ Two consequences worth stating out loud:
 | group cipher | cipher for broadcast/multicast | TKIP or WEP-40 present |
 | pairwise list | unicast ciphers offered | TKIP offered alongside CCMP (downgrade surface) |
 | AKM list | authentication/key management | PSK + SAE together = transition mode; 802.1X without cert validation on clients |
-| RSN caps B4/B5 | MFPR required / MFPC capable | B4 clear = unprotected management frames |
-| PMKID list (optional) | cached PMKIDs | helps clientless PSK audits |
+| RSN capabilities bits 6/7 (`0x0040`/`0x0080`) | MFPR required / MFPC capable | Advertisement alone does not establish the negotiated PMF state of a station |
+| PMKID list (optional) | PMKSA identifiers in some association/cache exchanges | may enable offline PSK verification without the complete four-way handshake; availability varies and a station exchange is represented |
 
 ## 3. What WPA2 does well, and what it does not
 

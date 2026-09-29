@@ -1,3 +1,4 @@
+import { LoadingPanel } from '@/components/common/LoadingPanel'
 import { motion } from 'framer-motion'
 import { Flame, Target, Clock, Zap, Calendar, Trophy } from 'lucide-react'
 import { lazy, Suspense } from 'react'
@@ -17,7 +18,7 @@ export function Daily() {
         <FadeIn>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="font-heading font-bold text-[26px] md:text-[30px] text-slate-100 tracking-tight flex items-center gap-3">
+              <h1 className="font-heading font-bold text-[26px] md:text-[30px] text-slate-100 tracking-tight flex items-center gap-3 sc-page-title">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/10 border border-orange-500/20 flex items-center justify-center">
                   <Flame className="w-5 h-5 text-orange-400" />
                 </div>
@@ -74,7 +75,7 @@ export function Daily() {
           <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-5 md:p-6 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/[0.02] to-amber-500/[0.02] pointer-events-none" />
             <div className="relative">
-              <Suspense fallback={<div className="p-8 text-center text-[13px] text-slate-400 font-mono">Loading daily challenges…</div>}>
+              <Suspense fallback={<LoadingPanel label="Loading daily challenges…" />}>
                 <DailyChallenges />
               </Suspense>
             </div>

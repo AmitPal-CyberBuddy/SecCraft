@@ -29,7 +29,7 @@ export function ConfigViewer({ title, config, issues = [], onFix }: Props) {
     }
   }
 
-  const fixedConfig = config
+  const suggestedConfig = config
     .replace('WPS: ENABLED', 'WPS: DISABLED')
     .replace('wps_state=2', 'wps_state=0')
     .replace('PMF: DISABLED', 'PMF: REQUIRED')
@@ -37,6 +37,8 @@ export function ConfigViewer({ title, config, issues = [], onFix }: Props) {
     .replace('HT: 40MHz in 2.4GHz', 'HT: 20MHz in 2.4GHz')
     .replace('wpa=1', 'wpa=2')
     .replace('rsn_pairwise=TKIP', 'rsn_pairwise=CCMP')
+
+  const hasSuggestedChanges = suggestedConfig !== config
 
   return (
     <motion.div
@@ -58,16 +60,16 @@ export function ConfigViewer({ title, config, issues = [], onFix }: Props) {
               {issues.length > 0 ? (
                 <span className="text-[10px] px-2.5 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-mono font-medium tracking-widest flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" />
-                  {issues.length} ISSUES
+                  {issues.filter(issue => issue.severity !== 'info').length || issues.length} {issues.every(issue => issue.severity === 'info') ? 'NOTES' : 'ISSUES'}
                 </span>
               ) : (
-                <span className="text-[10px] px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono font-medium tracking-widest flex items-center gap-1">
+                <span className="text-[10px] px-2.5 py-1 rounded-full bg-slate-500/10 text-slate-300 border border-slate-500/20 font-mono font-medium tracking-widest flex items-center gap-1">
                   <CheckCircle className="w-3 h-3" />
-                  SECURE
+                  NO NOTES SUPPLIED
                 </span>
               )}
             </div>
-            <div className="text-[11px] text-slate-500 font-mono mt-0.5">Config audit • Security analysis • Hardening</div>
+            <div className="text-[11px] text-slate-500 font-mono mt-0.5">Illustrative config view • No runtime validation</div>
           </div>
         </div>
         <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
@@ -75,13 +77,14 @@ export function ConfigViewer({ title, config, issues = [], onFix }: Props) {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setShowFixed(!showFixed)}
+            disabled={!hasSuggestedChanges}
             className={`px-4 py-2 rounded-xl text-[11px] font-medium border transition-all duration-200 flex items-center gap-2 ${
               showFixed 
                 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 shadow-glow-emerald' 
                 : 'bg-[#1e293b] border-[#334155] text-slate-400 hover:text-slate-200 hover:bg-[#25354f] hover:border-[#475569]'
             }`}
           >
-            {showFixed ? <><EyeOff className="w-3.5 h-3.5" /> Show Original</> : <><Eye className="w-3.5 h-3.5" /> Show Fixed</>}
+            {showFixed ? <><EyeOff className="w-3.5 h-3.5" /> Show Original</> : <><Eye className="w-3.5 h-3.5" /> Show Example Suggestions</>}
           </motion.button>
         </div>
       </div>
@@ -93,14 +96,14 @@ export function ConfigViewer({ title, config, issues = [], onFix }: Props) {
               <div className="w-4 h-4 rounded bg-[#1e293b] border border-[#334155] flex items-center justify-center">
                 <span className="text-[8px]">#</span>
               </div>
-              {showFixed ? 'Fixed Config' : 'Current Config'}
+              {showFixed ? 'Illustrative Suggestions' : 'Current Config'}
             </div>
             <div className="text-[10px] px-2 py-1 rounded-full bg-[#1e293b] border border-[#334155] text-slate-500 font-mono">
-              {showFixed ? fixedConfig.split('\n').length : config.split('\n').length} lines
+              {showFixed ? suggestedConfig.split('\n').length : config.split('\n').length} lines
             </div>
           </div>
           <pre className="font-mono text-[12px] text-slate-300 leading-relaxed whitespace-pre-wrap p-4 rounded-xl bg-[#020617] border border-[#1e293b]/60 overflow-x-auto scrollbar-thin">
-            {showFixed ? fixedConfig : config}
+            {showFixed ? suggestedConfig : config}
           </pre>
         </div>
 
@@ -108,7 +111,7 @@ export function ConfigViewer({ title, config, issues = [], onFix }: Props) {
           <div className="flex items-center justify-between">
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
               <Shield className="w-3 h-3" />
-              Security Audit
+              Review Notes
             </div>
             <div className="text-[10px] px-2 py-1 rounded-full bg-[#020617] border border-[#1e293b] text-slate-500 font-mono">
               {issues.length} findings
@@ -125,8 +128,8 @@ export function ConfigViewer({ title, config, issues = [], onFix }: Props) {
                 <CheckCircle className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
-                <div className="text-[13px] font-semibold text-emerald-400">No issues — good configuration</div>
-                <div className="text-[11px] text-slate-500 mt-1">Config follows security best practices</div>
+                <div className="text-[13px] font-semibold text-slate-300">No review notes supplied</div>
+                <div className="text-[11px] text-slate-500 mt-1">This view does not validate a running service or prove the configuration is secure.</div>
               </div>
             </motion.div>
           ) : (
@@ -181,20 +184,20 @@ export function ConfigViewer({ title, config, issues = [], onFix }: Props) {
                   <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
                   </div>
-                  <div className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest">✓ Fixed Config</div>
+                  <div className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest">Example changes only</div>
                 </div>
                 <div className="text-[11px] text-slate-400 leading-relaxed">
-                  WPS disabled, PMF required, 20MHz in 2.4GHz, CCMP only. Retest: verify beacon no WPS IE, PMF required in RSN, 20MHz.
+                  These text substitutions are examples only, not a validated remediation. Check protocol/version compatibility, all related settings, the effective runtime configuration, and retest the actual service.
                 </div>
                 {onFix && (
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => onFix(fixedConfig)}
+                    onClick={() => onFix(suggestedConfig)}
                     className="mt-3 w-full px-4 py-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/20 text-[11px] font-semibold text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/30 transition-all duration-200 flex items-center justify-center gap-2 shadow-glow-emerald"
                   >
                     <Zap className="w-3.5 h-3.5" />
-                    Apply Fix & Retest
+                    Copy Suggested Text
                   </motion.button>
                 )}
               </motion.div>

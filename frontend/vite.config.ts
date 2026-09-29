@@ -12,7 +12,7 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url))
  * Override for other hosts (Netlify "/", custom domain, local root dev):
  *   VITE_BASE=/ npm run build
  */
-const DEFAULT_BASE = '/WiFiForge/'
+const DEFAULT_BASE = '/SecCraft/'
 
 function normalizeBase(raw: string): string {
   if (!raw || raw === './') return '/'
@@ -26,7 +26,7 @@ function normalizeBase(raw: string): string {
  * Static-host (GitHub Pages) hardening:
  *  1. `public/` files are copied verbatim, so `/favicon.svg` in index.html is NOT
  *     rewritten by Vite and would 404 under a sub-path. Re-point it at the base.
- *  2. Emit `404.html` (the SPA shell) so deep links like /WiFiForge/labs are served
+ *  2. Emit `404.html` (the SPA shell) so deep links like /SecCraft/labs are served
  *     by the client-side router instead of GitHub's 404 page.
  *  3. Emit `.nojekyll` so GitHub Pages serves `_`-prefixed paths untouched.
  */
@@ -34,11 +34,11 @@ function pagesHostingPlugin(base: string): Plugin {
   let outDir = path.join(ROOT, 'dist')
   const isSubPath = base !== '/'
   const escapedBase = base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  // href="/x" or src="/x", but never already-prefixed (/WiFiForge/...) and never protocol-relative (//cdn...)
+  // href="/x" or src="/x", but never already-prefixed (/SecCraft/...) and never protocol-relative (//cdn...)
   const rootAbsoluteUrl = new RegExp(`(href|src)="(?!${escapedBase})(/(?!/)[^"]*)"`, 'g')
 
   return {
-    name: 'wififorge:static-hosting',
+    name: 'seccraft:static-hosting',
     apply: 'build',
     configResolved(config) {
       outDir = path.resolve(ROOT, config.build.outDir)
@@ -114,7 +114,7 @@ const REQUEST_PATTERNS: { label: string; regex: RegExp }[] = [
 function securityPlugin(_base: string): Plugin {
   let outDir = path.join(ROOT, 'dist')
   return {
-    name: 'wififorge:security-headers',
+    name: 'seccraft:security-headers',
     apply: 'build',
     configResolved(config) {
       outDir = path.resolve(ROOT, config.build.outDir)

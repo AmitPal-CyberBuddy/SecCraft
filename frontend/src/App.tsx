@@ -23,6 +23,7 @@ import { Reports } from '@/pages/Reports'
 import { Analytics } from '@/pages/Analytics'
 import { Achievements } from '@/pages/Achievements'
 import { Daily } from '@/pages/Daily'
+import { NotFound } from '@/pages/NotFound'
 
 const GuidedTour = lazy(() => import('@/components/tour/GuidedTour').then(m => ({ default: m.GuidedTour })))
 
@@ -95,6 +96,7 @@ function App() {
             <Route path="/streak" element={<Daily />} />
             {/* Keep legacy LearningPath component accessible for reference but redirect main entry */}
             <Route path="/legacy/path" element={<LearningPath />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Shell>
       </ErrorBoundary>

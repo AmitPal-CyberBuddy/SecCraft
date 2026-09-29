@@ -1,3 +1,4 @@
+import { LoadingPanel } from '@/components/common/LoadingPanel'
 import { useState, useMemo, lazy, Suspense } from 'react'
 import { ChallengeCard } from '@/components/challenge/ChallengeCard'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -77,7 +78,7 @@ export function Challenges() {
               <Swords className="w-5 h-5 text-amber-400" />
             </div>
             <div>
-              <h1 className="font-heading font-bold text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none flex items-center gap-2">
+              <h1 className="font-heading font-bold text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none flex items-center gap-2 sc-page-title">
                 Challenges <span className="text-[20px]">{currentPath.icon}</span>
               </h1>
               <p className="text-[13px] text-slate-400 mt-1.5 flex flex-wrap items-center gap-2">
@@ -122,7 +123,7 @@ export function Challenges() {
         </div>
       </motion.div>
 
-      {activeTab === 'badges' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading Badges…</div>}><BadgesShowcase /></Suspense>}
+      {activeTab === 'badges' && <Suspense fallback={<LoadingPanel label="Loading Badges…" />}><BadgesShowcase /></Suspense>}
 
       {activeTab === 'challenges' && (
       <>

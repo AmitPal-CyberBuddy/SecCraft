@@ -154,6 +154,34 @@ def mac(value: str) -> bytes:
     return bytes(int(part, 16) for part in value.split(":"))
 
 
+def tcp(sport: int, dport: int, payload: bytes, seq: int = 1, ack: int = 1) -> bytes:
+    """Minimal TCP PSH/ACK segment with a structurally valid header for lab decoding."""
+    return struct.pack("!HHIIHHHH", sport, dport, seq, ack, (5 << 12) | 0x18, 65535, 0, 0) + payload
+
+
+def arp_ipv4(op: int, sender_mac: bytes, sender_ip: str, target_mac: bytes, target_ip: str) -> bytes:
+    """Build an Ethernet/IPv4 ARP body."""
+    import ipaddress
+    return (struct.pack("!HHBBH", 1, 0x0800, 6, 4, op) + sender_mac + ipaddress.IPv4Address(sender_ip).packed
+            + target_mac + ipaddress.IPv4Address(target_ip).packed)
+
+
+def dhcp_payload(op: int, xid: int, client_mac: bytes, message_type: int,
+                 offered_ip: str = "0.0.0.0", server_ip: str = "0.0.0.0") -> bytes:
+    """Build a minimally valid BOOTP/DHCP packet for offline protocol decoding."""
+    import ipaddress
+    yiaddr = ipaddress.IPv4Address(offered_ip).packed
+    siaddr = ipaddress.IPv4Address(server_ip).packed
+    header = (bytes([op, 1, 6, 0]) + struct.pack("!IHH", xid, 0, 0x8000)
+              + bytes(4) + yiaddr + siaddr + bytes(4)
+              + client_mac[:6].ljust(16, b"\x00") + bytes(64 + 128)
+              + b"\x63\x82\x53\x63")
+    options = b"\x35\x01" + bytes([message_type])
+    if message_type in (2, 5):
+        options += b"\x36\x04" + siaddr
+    return header + options + b"\xff"
+
+
 # ---------------------------------------------------------------------------
 # Reusable BSS definitions
 # ---------------------------------------------------------------------------
@@ -340,15 +368,19 @@ def build_traffic_analysis() -> Lab:
              struct.pack("<HHH", 0x0411, 0, 1 | 0xC000) + ie_supported_rates())
     _four_way(lab, mac(STA_1), mac(AP_ESS_1), SSID_ESS, LAB_PSK)
     # DHCP (client 10.20.30.51) — DORA, then ARP + ICMP + DNS + HTTP.
-    dhcp = b"\x01\x01\x06\x00" + b"\x11" * 4 + b"\x00" * 28 + b"\x00" * 16 + b"\x00" * 64
-    lab.ip_from_sta(mac(STA_1), mac(AP_ESS_1), "0.0.0.0", "255.255.255.255",
-                    udp(68, 67, dhcp))
-    lab.ip_from_ap(mac(STA_1), mac(AP_ESS_1), "10.20.30.1", "10.20.30.51",
-                   udp(67, 68, dhcp))
+    xid = 0x11223344
+    discover = dhcp_payload(1, xid, mac(STA_1), 1)
+    offer = dhcp_payload(2, xid, mac(STA_1), 2, "10.20.30.51", "10.20.30.1")
+    request = dhcp_payload(1, xid, mac(STA_1), 3, "0.0.0.0", "10.20.30.1")
+    ack = dhcp_payload(2, xid, mac(STA_1), 5, "10.20.30.51", "10.20.30.1")
+    lab.ip_from_sta(mac(STA_1), mac(AP_ESS_1), "0.0.0.0", "255.255.255.255", udp(68, 67, discover))
+    lab.ip_from_ap(mac(STA_1), mac(AP_ESS_1), "10.20.30.1", "255.255.255.255", udp(67, 68, offer))
+    lab.ip_from_sta(mac(STA_1), mac(AP_ESS_1), "0.0.0.0", "255.255.255.255", udp(68, 67, request))
+    lab.ip_from_ap(mac(STA_1), mac(AP_ESS_1), "10.20.30.1", "255.255.255.255", udp(67, 68, ack))
     lab.data(mac(AP_ESS_1), mac(STA_1), mac(AP_ESS_1),
-             llc_snap(0x0806, b"\x00\x01\x08\x00\x06\x04\x00\x01"), from_ds=1)  # ARP request
+             llc_snap(0x0806, arp_ipv4(1, mac(STA_1), "10.20.30.51", bytes(6), "10.20.30.10")), to_ds=1)  # ARP request
     lab.data(mac(STA_1), mac(AP_ESS_1), mac(AP_ESS_1),
-             llc_snap(0x0806, b"\x00\x01\x08\x00\x06\x04\x00\x02"), to_ds=1)   # ARP reply
+             llc_snap(0x0806, arp_ipv4(2, mac(AP_ESS_1), "10.20.30.10", mac(STA_1), "10.20.30.51")), from_ds=1)  # ARP reply
     lab.ip_from_sta(mac(STA_1), mac(AP_ESS_1), "10.20.30.51", "10.20.30.10",
                     b"\x08\x00\x00\x00", proto=1)
     lab.ip_from_ap(mac(STA_1), mac(AP_ESS_1), "10.20.30.10", "10.20.30.51",
@@ -358,7 +390,7 @@ def build_traffic_analysis() -> Lab:
                     udp(51423, 53, dns_query))
     http = b"GET / HTTP/1.1\r\nHost: intranet.lab.example\r\nUser-Agent: curl/8.5.0\r\n\r\n"
     lab.data(mac(AP_ESS_1), mac(STA_1), mac(AP_ESS_1),
-             llc_snap(0x0800, ipv4("10.20.30.51", "10.20.30.10", http, 6)), from_ds=1)
+             llc_snap(0x0800, ipv4("10.20.30.51", "10.20.30.10", tcp(49152, 80, http), 6)), to_ds=1)
     return lab
 
 
@@ -435,11 +467,11 @@ def build_wps_beacon() -> Lab:
 
 
 def build_wpa3_transition() -> Lab:
-    """11 — transition mode (PSK+SAE, MFPC only): a PSK client is still accepted."""
+    """11 — transition-mode RSNE and a PSK handshake example; no induced downgrade is demonstrated."""
     lab = Lab("wpa3-transition", "wpa3")
     rsn = ie_rsn(akm=[AKM_PSK, AKM_SAE], caps=RSNCAP_MFPC)
     bss_beacon(lab, SSID_WPA3, AP_WPA3, 36, beacon_ies(rsn=rsn, band_5=True, he=True))
-    # SAE authentication: auth algorithm 3, transaction 1 (commit) / 2 (confirm).
+    # Synthetic SAE-labeled authentication frames (commit/confirm-shaped, not a valid DH exchange).
     sta, ap = mac(STA_2), mac(AP_WPA3)
     sae_commit = bytes([19]) + b"\x01" + b"\x00" * 96   # synthetic scalar/element (documented)
     sae_confirm = bytes([19]) + b"\x02" + b"\x00" * 32
@@ -447,8 +479,8 @@ def build_wpa3_transition() -> Lab:
     lab.mgmt(SUBTYPE_AUTH, sta, ap, ap, struct.pack("<HHH", 3, 1, 0) + sae_commit, channel=36)
     lab.mgmt(SUBTYPE_AUTH, ap, sta, ap, struct.pack("<HHH", 3, 2, 0) + sae_confirm, channel=36)
     lab.mgmt(SUBTYPE_AUTH, sta, ap, ap, struct.pack("<HHH", 3, 2, 0) + sae_confirm, channel=36)
-    # A WPA2-era client does not offer SAE: it runs the PSK 4-way handshake against the
-    # same BSS, which is exactly the downgrade path in transition mode.
+    # The fixture's second station follows a PSK authentication/handshake path against the
+    # same BSS; this records a PSK association, not an attacker-induced downgrade.
     sta2 = mac(STA_1)
     lab.mgmt(SUBTYPE_AUTH, ap, sta2, ap, struct.pack("<HHH", 0, 1, 0), channel=36)
     lab.mgmt(SUBTYPE_AUTH, sta2, ap, ap, struct.pack("<HHH", 0, 2, 0), channel=36)
@@ -458,7 +490,7 @@ def build_wpa3_transition() -> Lab:
 
 
 def build_wpa3_only() -> Lab:
-    """11 — WPA3-only: SAE + MFPR, no PSK handshake possible."""
+    """11 — beacon advertises SAE only/MFPR; capture includes synthetic SAE-shaped frames, no PSK handshake."""
     lab = Lab("wpa3-only", "wpa3")
     rsn = ie_rsn(akm=[AKM_SAE], caps=RSNCAP_MFPC | RSNCAP_MFPR)
     bss_beacon(lab, SSID_WPA3_ONLY, AP_WPA3_ONLY, 36, beacon_ies(rsn=rsn, band_5=True, he=True))
@@ -469,44 +501,44 @@ def build_wpa3_only() -> Lab:
     lab.mgmt(SUBTYPE_AUTH, sta, ap, ap, struct.pack("<HHH", 3, 1, 0) + sae_commit, channel=36)
     lab.mgmt(SUBTYPE_AUTH, ap, sta, ap, struct.pack("<HHH", 3, 2, 0) + sae_confirm, channel=36)
     lab.mgmt(SUBTYPE_AUTH, sta, ap, ap, struct.pack("<HHH", 3, 2, 0) + sae_confirm, channel=36)
-    # A protected deauthentication from the AP (Robust Management Frame). The BIP MIC is
-    # synthetic (IGTK is unknown to a passive listener) — see MANIFEST.md.
-    lab.mgmt(SUBTYPE_DEAUTH, sta, ap, ap, struct.pack("<HH", REASON_GROUP_KEY_UPDATE, 0) + b"\x00" * 16,
+    # A protected-bit/BIP-shaped deauthentication example. The MIC is synthetic (IGTK is unknown
+    # to a passive listener), so it does not prove cryptographic validity or receiver acceptance.
+    lab.mgmt(SUBTYPE_DEAUTH, sta, ap, ap, struct.pack("<H", REASON_GROUP_KEY_UPDATE) + b"\x00" * 16,
              flags=0x40, channel=36)
     return lab
 
 
 def build_deauth() -> Lab:
-    """12 — spoofed deauth against a PMF-capable BSS vs. a PMF-required BSS."""
+    """12 — deauth/disassoc and SA Query-shaped frame examples; no receiver outcome is tested."""
     lab = Lab("deauth", "deauth")
     bss_beacon(lab, SSID_DEAUTH, AP_DEAUTH, 6, beacon_ies(
         rsn=ie_rsn(akm=[AKM_PSK], caps=RSNCAP_MFPC)))              # capable, not required
     bss_beacon(lab, SSID_DEAUTH_PMF, AP_DEAUTH_PMF, 1, beacon_ies(
         rsn=ie_rsn(akm=[AKM_PSK], caps=RSNCAP_MFPC | RSNCAP_MFPR)))  # PMF required
-    # 1) Broadcast deauth flood (reason 1, unspecified) — spoofed SA.
+    # 1) Broadcast deauth examples (reason 1, unspecified), with a spoofed source address.
     for _ in range(12):
         lab.mgmt(SUBTYPE_DEAUTH, b"\xff" * 6, mac(AP_DEAUTH), mac(AP_DEAUTH),
-                 struct.pack("<HH", REASON_UNSPECIFIED, 0), channel=6, dt_us=1500)
-    # 2) Directed deauth (reason 7: class 3 frame from non-associated STA) — the classic
-    #    "kick a client to capture its handshake" pattern.
+                 struct.pack("<H", REASON_UNSPECIFIED), channel=6, dt_us=1500)
+    # 2) Directed deauth examples (reason 7). Their presence does not establish delivery,
+    #    client acceptance, or a successful handshake-capture attack.
     lab.mgmt(SUBTYPE_DEAUTH, mac(STA_1), mac(AP_DEAUTH), mac(AP_DEAUTH),
-             struct.pack("<HH", REASON_CLASS3_FRAME, 0), channel=6)
+             struct.pack("<H", REASON_CLASS3_FRAME), channel=6)
     lab.mgmt(SUBTYPE_DEAUTH, mac(STA_1), mac(AP_DEAUTH), mac(AP_DEAUTH),
-             struct.pack("<HH", REASON_CLASS3_FRAME, 0), channel=6)
+             struct.pack("<H", REASON_CLASS3_FRAME), channel=6)
     # 3) Disassociation (reason 8: STA leaving BSS).
     lab.mgmt(SUBTYPE_DISASSOC, mac(STA_1), mac(AP_DEAUTH), mac(AP_DEAUTH),
-             struct.pack("<HH", 8, 0), channel=6)
-    # 4) Reason 15 (4-way handshake timeout) is what a client that never sees M3 reports.
+             struct.pack("<H", 8), channel=6)
+    # 4) A reason-15 example (4-way handshake timeout); no client log is represented.
     lab.mgmt(SUBTYPE_DEAUTH, mac(AP_DEAUTH), mac(STA_1), mac(AP_DEAUTH),
-             struct.pack("<HH", REASON_4WAY_TIMEOUT, 0), channel=6)
-    # 5) Against the PMF-required BSS the same spoof fails: the deauth is either ignored
-    #    (no PMF-association) or must carry a valid BIP MIC, and the AP probes with SA Query.
+             struct.pack("<H", REASON_4WAY_TIMEOUT), channel=6)
+    # 5) Include unprotected deauth examples for a BSS advertising PMF-required and two
+    #    SA Query-shaped action frames. These bytes do not demonstrate receiver behavior.
     lab.mgmt(SUBTYPE_DEAUTH, mac(STA_1), mac(AP_DEAUTH_PMF), mac(AP_DEAUTH_PMF),
-             struct.pack("<HH", REASON_CLASS3_FRAME, 0), channel=1)
+             struct.pack("<H", REASON_CLASS3_FRAME), channel=1)
     lab.mgmt(SUBTYPE_DEAUTH, mac(STA_1), mac(AP_DEAUTH_PMF), mac(AP_DEAUTH_PMF),
-             struct.pack("<HH", REASON_CLASS3_FRAME, 0), channel=1)
-    # SA Query: action category 8, SA Query Request/Response (802.11w keeps the
-    # association alive while it verifies the peer still holds the PTK).
+             struct.pack("<H", REASON_CLASS3_FRAME), channel=1)
+    # Category-8 SA Query-shaped action request/response examples; they are synthetic and
+    # do not prove a valid protected exchange or continued association.
     lab.mgmt(13, mac(STA_1), mac(AP_DEAUTH_PMF), mac(AP_DEAUTH_PMF),
              bytes([8, 0]) + b"\x01\x02", channel=1)
     lab.mgmt(13, mac(AP_DEAUTH_PMF), mac(STA_1), mac(AP_DEAUTH_PMF),
@@ -515,20 +547,22 @@ def build_deauth() -> Lab:
 
 
 def build_rogue_ap() -> Lab:
-    """13 — evil twin: cloned SSID, different BSSID/IE fingerprint, client joins it."""
+    """13 — same-SSID look-alike and scripted client association sequence; ownership/causality are not established."""
     lab = Lab("rogue-ap", "rogue")
     legit_rsn = ie_rsn(akm=[AKM_8021X], caps=RSNCAP_MFPC | RSNCAP_MFPR)
     rogue_rsn = ie_rsn(akm=[AKM_PSK], caps=RSNCAP_MFPC)
     bss_beacon(lab, SSID_CORP, AP_CORP_1, 36, beacon_ies(rsn=legit_rsn, band_5=True, he=True), signal=-52)
-    # Rogue: same SSID, locally-administered BSSID, PSK instead of 802.1X, no PMF required,
-    # 2.4 GHz only, different vendor IE set and a much louder signal next to the client.
+    # Same-SSID look-alike: locally administered BSSID, PSK instead of 802.1X, PMF optional,
+    # 2.4 GHz, different vendor IE set and stronger simulated signal. These clues do not prove
+    # unauthorized ownership or malicious intent.
     bss_beacon(lab, SSID_ROGUE_CLONE, AP_ROGUE, 6, beacon_ies(rsn=rogue_rsn), signal=-31,
                capability=0x0431, interval=50)
-    # Deauth the client off the legitimate BSS, then let it roam to the clone.
+    # Place deauthentication and later association frames in a scripted sequence; do not
+    # infer that the deauth caused the association or that an RF client received either.
     lab.mgmt(SUBTYPE_DEAUTH, mac(STA_1), mac(AP_CORP_1), mac(AP_CORP_1),
-             struct.pack("<HH", REASON_CLASS3_FRAME, 0), channel=36)
+             struct.pack("<H", REASON_CLASS3_FRAME), channel=36)
     lab.mgmt(SUBTYPE_DEAUTH, mac(STA_1), mac(AP_CORP_1), mac(AP_CORP_1),
-             struct.pack("<HH", REASON_CLASS3_FRAME, 0), channel=36)
+             struct.pack("<H", REASON_CLASS3_FRAME), channel=36)
     lab.mgmt(SUBTYPE_PROBE_REQ, b"\xff" * 6, mac(STA_1), b"\xff" * 6,
              ie_supported_rates() + __import__("wififorge_labkit").ie_ssid(SSID_CORP), channel=6)
     lab.mgmt(SUBTYPE_PROBE_RESP, mac(STA_1), mac(AP_ROGUE), mac(AP_ROGUE),
@@ -543,15 +577,22 @@ def build_rogue_ap() -> Lab:
     if LAB_PSK_WEAK:
         _four_way(lab, mac(STA_1), mac(AP_ROGUE), SSID_ROGUE_CLONE, LAB_PSK_WEAK)
     # DHCP handed out by the rogue AP (192.168.66.0/24) and a captive portal page.
-    dhcp_offer = b"\x02\x01\x06\x00" + b"\x22" * 4 + b"\x00" * 28 + b"\xc0\xa8\x42\x01" + b"\x00" * 16 + b"\x00" * 64
-    lab.ip_from_ap(mac(STA_1), mac(AP_ROGUE), "192.168.66.1", "192.168.66.50", udp(67, 68, dhcp_offer))
+    xid = 0x22222222
+    lab.ip_from_sta(mac(STA_1), mac(AP_ROGUE), "0.0.0.0", "255.255.255.255",
+                    udp(68, 67, dhcp_payload(1, xid, mac(STA_1), 1)))
+    lab.ip_from_ap(mac(STA_1), mac(AP_ROGUE), "192.168.66.1", "255.255.255.255",
+                   udp(67, 68, dhcp_payload(2, xid, mac(STA_1), 2, "192.168.66.50", "192.168.66.1")))
+    lab.ip_from_sta(mac(STA_1), mac(AP_ROGUE), "0.0.0.0", "255.255.255.255",
+                    udp(68, 67, dhcp_payload(1, xid, mac(STA_1), 3, "0.0.0.0", "192.168.66.1")))
+    lab.ip_from_ap(mac(STA_1), mac(AP_ROGUE), "192.168.66.1", "255.255.255.255",
+                   udp(67, 68, dhcp_payload(2, xid, mac(STA_1), 5, "192.168.66.50", "192.168.66.1")))
     http_get = b"GET /portal HTTP/1.1\r\nHost: 192.168.66.1\r\n\r\n"
     lab.data(mac(AP_ROGUE), mac(STA_1), mac(AP_ROGUE),
-             llc_snap(0x0800, ipv4("192.168.66.50", "192.168.66.1", http_get, 6)), from_ds=1)
+             llc_snap(0x0800, ipv4("192.168.66.50", "192.168.66.1", tcp(49152, 80, http_get), 6)), to_ds=1)
     portal = (b"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"
               b"<form action='/login' method='POST'><input name='u'><input name='p' type='password'></form>")
     lab.data(mac(STA_1), mac(AP_ROGUE), mac(AP_ROGUE),
-             llc_snap(0x0800, ipv4("192.168.66.1", "192.168.66.50", portal, 6)), to_ds=1)
+             llc_snap(0x0800, ipv4("192.168.66.1", "192.168.66.50", tcp(80, 49152, portal, seq=1), 6)), from_ds=1)
     return lab
 
 
@@ -567,26 +608,35 @@ def build_captive_portal() -> Lab:
              + ie_supported_rates())
     lab.mgmt(SUBTYPE_ASSOC_RESP, sta, ap, ap,
              struct.pack("<HHH", 0x0411, 0, 1 | 0xC000) + ie_supported_rates())
-    dhcp = b"\x01\x01\x06\x00" + b"\x33" * 4 + b"\x00" * 28
-    lab.ip_from_sta(sta, ap, "0.0.0.0", "255.255.255.255", udp(68, 67, dhcp))
-    offer = b"\x02\x01\x06\x00" + b"\x33" * 4 + b"\x00" * 28 + b"\x0a\x00\x00\x01" + b"\x00" * 16 + b"\x00" * 64
-    lab.ip_from_ap(sta, ap, "10.0.0.1", "10.0.0.87", udp(67, 68, offer))
+    xid = 0x33333333
+    lab.ip_from_sta(sta, ap, "0.0.0.0", "255.255.255.255",
+                    udp(68, 67, dhcp_payload(1, xid, sta, 1)))
+    lab.ip_from_ap(sta, ap, "10.0.0.1", "255.255.255.255",
+                   udp(67, 68, dhcp_payload(2, xid, sta, 2, "10.0.0.87", "10.0.0.1")))
+    lab.ip_from_sta(sta, ap, "0.0.0.0", "255.255.255.255",
+                    udp(68, 67, dhcp_payload(1, xid, sta, 3, "0.0.0.0", "10.0.0.1")))
+    lab.ip_from_ap(sta, ap, "10.0.0.1", "255.255.255.255",
+                   udp(67, 68, dhcp_payload(2, xid, sta, 5, "10.0.0.87", "10.0.0.1")))
     # Portal flow: HTTP GET → 302 redirect to the portal host → POST with cleartext creds.
     lab.data(ap, sta, ap, llc_snap(0x0800, ipv4("10.0.0.87", "1.1.1.1",
-             b"GET / HTTP/1.1\r\nHost: connectivity-check.example\r\n\r\n", 6)), to_ds=1)
+             tcp(49152, 80, b"GET / HTTP/1.1\r\nHost: connectivity-check.example\r\n\r\n"), 6)), to_ds=1)
     redirect = (b"HTTP/1.1 302 Found\r\nLocation: http://portal.guest.example/login?mac=12:34:56:78:9a:bc\r\n"
                 b"Content-Length: 0\r\n\r\n")
-    lab.data(sta, ap, ap, llc_snap(0x0800, ipv4("1.1.1.1", "10.0.0.87", redirect, 6)), from_ds=1)
+    lab.data(sta, ap, ap, llc_snap(0x0800, ipv4("1.1.1.1", "10.0.0.87", tcp(80, 49152, redirect), 6)), from_ds=1)
     post = (b"POST /login HTTP/1.1\r\nHost: portal.guest.example\r\n"
             b"Content-Type: application/x-www-form-urlencoded\r\n\r\n"
             b"username=guest1&password=Welcome2025&mac=12%3A34%3A56%3A78%3A9a%3Abc")
-    lab.data(ap, sta, ap, llc_snap(0x0800, ipv4("10.0.0.87", "10.0.0.10", post, 6)), to_ds=1)
+    lab.data(ap, sta, ap, llc_snap(0x0800, ipv4("10.0.0.87", "10.0.0.10", tcp(49152, 80, post, seq=100), 6)), to_ds=1)
     ok = b"HTTP/1.1 200 OK\r\nSet-Cookie: session=8f14e45fceea167a5a36dedd4bea2543; Path=/\r\n\r\nWelcome"
-    lab.data(sta, ap, ap, llc_snap(0x0800, ipv4("10.0.0.10", "10.0.0.87", ok, 6)), from_ds=1)
-    # Client isolation is *not* enforced: a second guest client is reachable directly.
+    lab.data(sta, ap, ap, llc_snap(0x0800, ipv4("10.0.0.10", "10.0.0.87", tcp(80, 49152, ok, seq=100), 6)), from_ds=1)
+    # A complete ARP request/reply is forwarded between two guest stations by the simulated AP.
     sta2 = mac(STA_5)
-    lab.data(sta2, ap, ap, llc_snap(0x0806, b"\x00\x01\x08\x00\x06\x04\x00\x01"), to_ds=1)
-    lab.data(ap, sta2, ap, llc_snap(0x0806, b"\x00\x01\x08\x00\x06\x04\x00\x02"), to_ds=1)
+    arp_req = llc_snap(0x0806, arp_ipv4(1, sta, "10.0.0.87", bytes(6), "10.0.0.88"))
+    arp_reply = llc_snap(0x0806, arp_ipv4(2, sta2, "10.0.0.88", sta, "10.0.0.87"))
+    lab.data(b"\xff" * 6, sta, ap, arp_req, to_ds=1)
+    lab.data(sta2, ap, sta, arp_req, from_ds=1)
+    lab.data(ap, sta2, sta, arp_reply, to_ds=1)
+    lab.data(sta, ap, sta2, arp_reply, from_ds=1)
     return lab
 
 
@@ -617,7 +667,7 @@ def _eap_expanded(eap_type: int, data: bytes = b"", code: int = EAP_REQUEST, ide
 
 
 def build_radius() -> Lab:
-    """17 — RADIUS exchange over real IP/UDP with verifiable authenticators."""
+    """17 — synthetic IPv4/UDP RADIUS examples with reproducible authenticator fields; not a deployed server or policy test."""
     lab = Lab("radius", "radius")
     bss_beacon(lab, SSID_CORP, AP_CORP_1, 6, beacon_ies(
         rsn=ie_rsn(akm=[AKM_8021X], caps=RSNCAP_MFPC | RSNCAP_MFPR)))
@@ -643,14 +693,14 @@ def build_radius() -> Lab:
              + radius_attr(ATTR_EAP_MESSAGE, eap_identity))
     req1 = radius_request(1, attrs, LAB_RADIUS_SECRET_WEAK)
     to_radius(nas_ip, radius_ip, req1, 49152, 1812)
-    # Access-Challenge — server starts PEAP.
+    # Access-Challenge includes a PEAP method identifier only; no TLS tunnel is constructed.
     challenge_attrs = (radius_attr(ATTR_STATE, b"\x8f\x1c\x22\x0a")
                        + radius_attr(ATTR_EAP_MESSAGE, _eap_expanded(EAP_TYPE_PEAP, b"\x01", EAP_REQUEST, 2)))
     resp1 = radius_response(2, RADIUS_ACCESS_CHALLENGE, challenge_attrs,
                             LAB_RADIUS_SECRET_WEAK, req1[4:20])
     from_radius(radius_ip, nas_ip, resp1, 1812, 49152)
-    # Inner exchange (captured by a rogue AP that terminated TLS — see MANIFEST.md):
-    # MS-CHAPv2 challenge/response is what hashcat -m 5500 attacks.
+    # Direct EAP-MSCHAPv2 attributes are included as an intentionally visible teaching fixture.
+    # They are not an inner exchange carried inside a complete PEAP/TLS tunnel.
     peer_challenge = hashlib.sha256(b"peer:" + sta).digest()[:16]
     auth_challenge = hashlib.sha256(b"auth:" + sta).digest()[:16]
     nt_response, nt_hash, chap_hash = mschapv2_credentials(
@@ -704,7 +754,7 @@ def build_radius() -> Lab:
 
 
 def build_enterprise() -> Lab:
-    """15/16 — 802.1X: identity, PEAP tunnel, MSK → PMK → 4-way handshake."""
+    """15/16 — synthetic EAPOL/EAP framing, abbreviated TLS bytes, inserted lab MSK and a handshake."""
     lab = Lab("enterprise", "enterprise")
     bss_beacon(lab, SSID_CORP, AP_CORP_1, 6, beacon_ies(
         rsn=ie_rsn(akm=[AKM_8021X, AKM_8021X_SHA256], caps=RSNCAP_MFPC | RSNCAP_MFPR)))
@@ -712,7 +762,7 @@ def build_enterprise() -> Lab:
     lab.eapol_over_wifi(sta, ap, bytes([2, 1, 0x00, 0x00]))                    # EAPOL-Start
     lab.eapol_from_ap(sta, ap, eapol_eap(eap(EAP_REQUEST, 1, EAP_TYPE_IDENTITY, b"corp.example")))
     lab.eapol_over_wifi(sta, ap, eapol_eap(eap(EAP_RESPONSE, 1, EAP_TYPE_IDENTITY, b"anonymous@corp.example")))
-    # PEAP: outer identity is anonymous, the real identity travels inside the TLS tunnel.
+    # Illustrative PEAP identifiers and abbreviated TLS-like bytes; no full TLS negotiation or inner identity is present.
     tls_record = b"\x16\x03\x01\x00\x2e" + b"\x01" + b"\x00" * 45      # synthetic TLS ClientHello
     lab.eapol_over_wifi(sta, ap, eapol_eap(eap(EAP_RESPONSE, 2, EAP_TYPE_PEAP, b"\x00" + tls_record)))
     lab.eapol_from_ap(sta, ap, eapol_eap(eap(EAP_REQUEST, 3, EAP_TYPE_PEAP, b"\x02" + tls_record)))
@@ -742,7 +792,7 @@ def build_enterprise() -> Lab:
 
 
 def build_eap_methods() -> Lab:
-    """16 — PEAP vs TTLS vs TLS, plus rogue-AP MS-CHAPv2 capture (real crackable values)."""
+    """16 — EAP outer-method identifiers plus a separate direct MS-CHAPv2 teaching fixture; not a complete PEAP/TLS session."""
     lab = Lab("eap", "eap")
     bss_beacon(lab, SSID_CORP, AP_CORP_1, 6, beacon_ies(
         rsn=ie_rsn(akm=[AKM_8021X], caps=RSNCAP_MFPC | RSNCAP_MFPR)))
@@ -782,7 +832,7 @@ def build_eap_methods() -> Lab:
 
 
 def build_corporate_attacks() -> Lab:
-    """18 — the full chain: recon → evil twin → MS-CHAPv2 capture → segmentation test."""
+    """18 — synthetic wireless frames, look-alike/handshake, direct EAP method packets and ICMP examples; not a demonstrated production attack chain."""
     lab = Lab("corporate-attacks", "corporate")
     iot_wps = ie_wps(setup_locked=False, selected_registrar=True, wps_state=2,
                      device_password_id=0x0004, config_methods=WPS_CONFIG_LABEL | WPS_CONFIG_DISPLAY)
@@ -792,9 +842,9 @@ def build_corporate_attacks() -> Lab:
     bss_beacon(lab, SSID_IOT, AP_IOT, 1, beacon_ies(rsn=ie_rsn(akm=[AKM_PSK], caps=RSNCAP_MFPC),
                                                     wps=iot_wps), signal=-71)
     sta, ap, rogue = mac(STA_1), mac(AP_CORP_1), mac(AP_ROGUE)
-    # 1) Deauth the corporate client (PMF is required on the legitimate BSS, so the
-    #    attacker has to *move* the client by drowning it with a louder twin instead).
-    lab.mgmt(SUBTYPE_DEAUTH, sta, ap, ap, struct.pack("<HH", REASON_CLASS3_FRAME, 0), channel=36)
+    # 1) Include a deauthentication frame as a storyboard element. No receiver/client
+    #    outcome is represented, and this fixture does not establish causality.
+    lab.mgmt(SUBTYPE_DEAUTH, sta, ap, ap, struct.pack("<H", REASON_CLASS3_FRAME), channel=36)
     # 2) Evil twin beacon: same SSID on 2.4 GHz with a much stronger signal.
     bss_beacon(lab, SSID_CORP, AP_ROGUE, 6, beacon_ies(rsn=ie_rsn(akm=[AKM_PSK], caps=RSNCAP_MFPC)),
                signal=-28, interval=50)
@@ -808,8 +858,8 @@ def build_corporate_attacks() -> Lab:
     lab.mgmt(SUBTYPE_ASSOC_RESP, sta, rogue, rogue,
              struct.pack("<HHH", 0x0411, 0, 1 | 0xC000) + ie_supported_rates())
     _four_way(lab, sta, rogue, SSID_CORP, LAB_PSK)
-    # 3) Rogue RADIUS terminations never appear on the air — what appears is the inner
-    #    MS-CHAPv2 exchange, captured because the twin terminated PEAP.
+    # 3) Add direct EAP-MSCHAPv2 sample packets. They are not a PEAP inner method or
+    #    evidence of a rogue RADIUS/TLS termination.
     challenge = hashlib.sha256(b"corp-rogue-challenge").digest()[:16]
     peer = hashlib.sha256(b"corp-rogue-peer").digest()[:16]
     nt_response, nt_hash, chap_hash = mschapv2_credentials(
@@ -822,13 +872,13 @@ def build_corporate_attacks() -> Lab:
     lab.eapol_from_ap(sta, rogue, eapol_eap(eap(EAP_SUCCESS, 7, EAP_TYPE_MSCHAPV2,
                                                 mschapv2_result(3, "S=1E7A2C9F4B6D0E83A1C5F7B9D2E4A6C8B0D3F5A7",
                                                                 identifier=7, utf16_message=True))))
-    # 4) Segmentation test: the guest client (STA_5) reaches a corporate host because the
-    #    ACL between guest and corp VLANs was never applied.
-    guest = mac(STA_5)
-    lab.data(guest, ap, ap, llc_snap(0x0800, ipv4("10.0.0.87", "10.20.30.10", b"\x08\x00\x00\x00", 1)),
+    # 4) Add an ICMP request/reply pair as synthetic packet examples. These do not test
+    #    real VLAN routing, ACLs, guest access, or client isolation.
+    guest, guest_ap = mac(STA_5), mac(AP_CORP_2)
+    lab.data(guest_ap, guest, mac(AP_CORP_1), llc_snap(0x0800, ipv4("10.0.0.87", "10.20.30.10", b"\x08\x00\x00\x00", 1)),
              to_ds=1, channel=6)
-    lab.data(ap, guest, ap, llc_snap(0x0800, ipv4("10.20.30.10", "10.0.0.87", b"\x00\x00\x00\x00", 1)),
-             to_ds=1, channel=6)
+    lab.data(guest, guest_ap, mac(AP_CORP_1), llc_snap(0x0800, ipv4("10.20.30.10", "10.0.0.87", b"\x00\x00\x00\x00", 1)),
+             from_ds=1, channel=6)
     lab.meta = {  # type: ignore[attr-defined]
         "lab_psk": LAB_PSK,
         "mschapv2": {"user": LAB_EAP_USER, "password": LAB_EAP_PASSWORD,
@@ -839,7 +889,7 @@ def build_corporate_attacks() -> Lab:
 
 
 def build_methodology() -> Lab:
-    """19/20 — final engagement artifact: everything an assessment must evidence."""
+    """19/20 — synthetic multi-BSS teaching artifact; it is not a complete client engagement or retest."""
     lab = Lab("methodology", "methodology")
     iot_wps = ie_wps(setup_locked=False, selected_registrar=True, wps_state=2, device_password_id=0x0004)
     bss_beacon(lab, SSID_CORP, AP_CORP_1, 36, beacon_ies(
@@ -873,13 +923,13 @@ def build_methodology() -> Lab:
     lab.mgmt(SUBTYPE_ASSOC_RESP, sta, mac(weak_ap), mac(weak_ap),
              struct.pack("<HHH", 0x0411, 0, 1 | 0xC000) + ie_supported_rates())
     _four_way(lab, sta, mac(weak_ap), "LAB-WEAK-PSK", LAB_PSK_WEAK)
-    # PMF-disabled BSS with an injected deauth (availability finding).
+    # Deauthentication frame example; this capture does not include an observed client effect.
     lab.mgmt(SUBTYPE_DEAUTH, b"\xff" * 6, mac(AP_ESS_1), mac(AP_ESS_1),
-             struct.pack("<HH", REASON_UNSPECIFIED, 0), channel=6)
+             struct.pack("<H", REASON_UNSPECIFIED), channel=6)
     # Rogue twin of the corporate SSID.
     bss_beacon(lab, SSID_CORP, AP_ROGUE, 6, beacon_ies(rsn=ie_rsn(akm=[AKM_PSK], caps=RSNCAP_MFPC)),
                signal=-30, interval=50)
-    # Corporate 802.1X + PEAP flow.
+    # Abbreviated synthetic EAPOL/EAP method identifiers; no complete PEAP/TLS flow.
     corp_sta, corp_ap = mac(STA_4), mac(AP_CORP_1)
     lab.eapol_over_wifi(corp_sta, corp_ap, bytes([2, 1, 0x00, 0x00]))
     lab.eapol_from_ap(corp_sta, corp_ap, eapol_eap(eap(EAP_REQUEST, 1, EAP_TYPE_IDENTITY, b"corp.example")))
@@ -896,11 +946,11 @@ def build_methodology() -> Lab:
                                                          mschapv2_response(peer, nt_response,
                                                                            LAB_EAP_USER.encode("utf-16-le"), 5))))
     # Guest isolation missing + segmentation bypass.
-    guest = mac(STA_5)
-    lab.data(corp_ap, corp_ap, guest, llc_snap(0x0800, ipv4("10.0.0.87", "10.20.30.10",
+    guest, guest_ap = mac(STA_5), mac(AP_CORP_2)
+    lab.data(guest_ap, guest, corp_ap, llc_snap(0x0800, ipv4("10.0.0.87", "10.20.30.10",
              b"\x08\x00\x00\x00", 1)), to_ds=1, channel=6)
-    lab.data(guest, guest, corp_ap, llc_snap(0x0800, ipv4("10.20.30.10", "10.0.0.87",
-             b"\x00\x00\x00\x00", 1)), to_ds=1, channel=6)
+    lab.data(guest, guest_ap, corp_ap, llc_snap(0x0800, ipv4("10.20.30.10", "10.0.0.87",
+             b"\x00\x00\x00\x00", 1)), from_ds=1, channel=6)
     lab.meta = {  # type: ignore[attr-defined]
         "weak_psk": LAB_PSK_WEAK,
         "mschapv2": {"user": LAB_EAP_USER, "password": LAB_EAP_PASSWORD,
@@ -943,26 +993,26 @@ ARTIFACT_NOTES: Dict[str, Dict[str, str]] = {
               "synthetic": "the association exchange around it is minimal"},
     "wps-beacon": {"real": "WPS IE attributes (version, config methods, AP setup locked, selected registrar, device password id) for an unlocked and a locked AP; EAP-WSC identity/M1 framing",
                    "synthetic": "no full M1–M8 WSC exchange (would require a real registrar)"},
-    "wpa3-transition": {"real": "RSNE with AKM PSK+SAE and MFPC-only; a WPA2 PSK 4-way handshake captured against the transition BSS (the downgrade path)",
+    "wpa3-transition": {"real": "RSNE with AKM PSK+SAE and MFPC-only; a PSK 4-way handshake is present against that BSS, but the capture does not show an attacker-induced downgrade",
                         "synthetic": "SAE commit/confirm payloads — real SAE scalars need a live DH exchange; the point of the lab is that they are not crackable offline"},
     "wpa3-only": {"real": "RSNE with AKM SAE and MFPR set; no PSK handshake exists in the capture",
                   "synthetic": "SAE payload and the BIP MIC of the protected deauth (IGTK is not knowable to a passive listener)"},
     "deauth": {"real": "Deauthentication/disassociation frames with reason codes 1/7/8/15, broadcast and directed floods, SA Query action frames",
-               "synthetic": "nothing cryptographic — the deauth flood is unauthenticated by design (that is the finding)"},
-    "rogue-ap": {"real": "Rogue twin with locally-administered BSSID, different AKM, IE fingerprint and a 50 TU beacon interval; client 4-way handshake against the twin with the weak lab PSK",
+               "synthetic": "frames are synthetic teaching examples; no receiver acceptance or availability impact is established"},
+    "rogue-ap": {"real": "Same-SSID look-alike fixture with a locally administered BSSID, different AKM/IE profile and 50 TU beacon interval; scripted client association, lab PSK handshake and synthetic DHCP/HTTP sequence. Capture alone does not establish unauthorized ownership or deauthentication causality.",
                  "synthetic": "captive portal HTML payload is a lab string"},
     "captive-portal": {"real": "Open BSS, DHCP, HTTP 302 redirect to the portal, cleartext POST credentials, session cookie, client-to-client ARP (no isolation)",
                        "synthetic": "portal HTML/HTTP bodies are lab strings"},
     "radius": {"real": "RADIUS over IPv4/UDP 1812-1813 with verifiable Message-Authenticator (Access-Request) and Response Authenticator (Accept/Challenge/Accounting), Tunnel-Private-Group-Id VLAN 100, MS-MPPE keys, a rogue NAS with a wrong Message-Authenticator, and real MS-CHAPv2 challenge/response material",
                "synthetic": "MS-MPPE key material is a lab value (the real keys are encrypted with the shared secret)"},
-    "enterprise": {"real": "802.1X/EAPOL-Start → EAP-Identity → PEAP → MSK → PMK → 4-way handshake, anonymous outer identity, MICs consistent with the documented lab MSK",
-                   "synthetic": "TLS records are structural only; the MSK is a documented lab value instead of one derived from a TLS master secret"},
-    "eap": {"real": "PEAP / EAP-TLS / EAP-TTLS outer exchanges, and MS-CHAPv2 Challenge/Response/Success with values derived from the documented lab password (crackable material)",
-            "synthetic": "TLS record payloads are structural only"},
-    "corporate-attacks": {"real": "Full chain: deauth, evil twin with weak PSK handshake, MS-CHAPv2 capture, guest→corp segmentation success",
-                          "synthetic": "TLS/MSK details as in `enterprise`"},
-    "methodology": {"real": "Multi-BSS engagement capture: ESS, hidden BSS reveal, weak-PSK handshake, PMF-disabled deauth, rogue twin, 802.1X/PEAP, MS-CHAPv2, segmentation and isolation evidence",
-                    "synthetic": "TLS records and SAE payloads (as above)"},
+    "enterprise": {"real": "Synthetic EAPOL/EAP method identifiers and an illustrative handshake with MICs consistent with a documented lab MSK; not evidence of a complete PEAP/TLS negotiation or deployed 802.1X policy",
+                   "synthetic": "TLS records are abbreviated structural bytes; the MSK is an inserted lab value, not derived from a TLS master secret or PEAP exchange"},
+    "eap": {"real": "EAP method identifiers and direct MS-CHAPv2 challenge/response/success fixture values; this is not a complete PEAP inner exchange or EAP-TLS/TTLS session",
+            "synthetic": "TLS payloads are abbreviated structural bytes; the direct MS-CHAPv2 exchange is intentionally visible and must not be described as a passive PEAP capture"},
+    "corporate-attacks": {"real": "Synthetic 19-frame collection with management frames, a look-alike/weak-PSK practice exchange, direct EAP-MSCHAPv2 packets and an ICMP pair; does not demonstrate successful deauth, PEAP, RADIUS or production segmentation",
+                          "synthetic": "EAP/TLS payloads are abbreviated structural fixtures; no complete PEAP tunnel, RADIUS exchange, production configuration or live network path is represented"},
+    "methodology": {"real": "Multi-BSS teaching capture: beacons/probes, weak-PSK exercise handshake, deauthentication frame, look-alike, abbreviated EAP and synthetic ICMP examples; not a real engagement or validated segmentation/isolation test",
+                    "synthetic": "EAP/TLS and SAE payloads are abbreviated structural examples; no complete PEAP negotiation, RADIUS policy, client certificate-validation result, or real segmentation/isolation test"},
 }
 
 
@@ -975,12 +1025,13 @@ def main() -> int:
         "Generated by `scripts/generate-lab-artifacts.py` — **do not hand-edit the captures**.",
         "Re-run the generator (and `scripts/verify-lab-artifacts.py`) after any change.",
         "",
-        "Every capture is a real PCAPNG (radiotap + 802.11) that decodes in Wireshark/tshark.",
-        "Lab credentials are published on purpose so results can be verified end to end:",
+        "Each file is a structurally valid PCAPNG (radiotap + 802.11) that decodes in Wireshark/tshark. These are teaching fixtures, not live network captures.",
+        "Some frame fields and cryptographic derivations are reproducible; other exchanges are intentionally abbreviated or synthetic. The per-capture notes below define what the artifact does and does not establish.",
+        "Published credentials are lab-only values for reproducing the explicitly documented examples, not evidence of any deployed system:",
         "",
         f"* `LAB_PSK = {LAB_PSK}` (SSID `{SSID_ESS}`, `{SSID_WPA3}`, rogue twin)",
         f"* `LAB_PSK_WEAK = {LAB_PSK_WEAK}` (SSID `LAB-WEAK-PSK`, rogue twin in `rogue-ap.pcapng`)",
-        f"* 802.1X user `{LAB_EAP_USER}` / password `{LAB_EAP_PASSWORD}` (PEAP/MS-CHAPv2 labs)",
+        f"* Example identity `{LAB_EAP_USER}` / password `{LAB_EAP_PASSWORD}` (used only in synthetic direct MS-CHAPv2 teaching fields; not evidence of a complete PEAP session)",
         f"* RADIUS shared secret (weak) `{LAB_RADIUS_SECRET_WEAK.decode()}`, strong example "
         f"`{LAB_RADIUS_SECRET_STRONG.decode()}`",
         "",

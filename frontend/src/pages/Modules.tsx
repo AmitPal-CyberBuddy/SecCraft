@@ -67,7 +67,7 @@ export function Modules() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-heading font-bold text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none">Modules</h1>
+                <h1 className="font-heading font-bold text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none sc-page-title">Modules</h1>
                 <span className="text-[18px]">{currentPath.icon}</span>
                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#0f172a] border border-[#1e293b] text-slate-400 font-mono">{currentPath.title}</span>
               </div>

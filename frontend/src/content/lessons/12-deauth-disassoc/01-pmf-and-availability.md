@@ -5,43 +5,36 @@
 ## 1. Why unprotected management frames are spoofable
 
 Deauthentication (subtype 12) and disassociation (subtype 10) frames are management frames. Before
-802.11w they carried no cryptographic protection at all: any transmitter can put an AP's MAC in the
-address fields and the receiving station must process the frame. Two consequences:
+802.11w, they generally lacked cryptographic protection; on a BSS/client association without PMF, a forged frame may be accepted. Acceptance and impact depend on the negotiated policy, frame validity, client/AP behavior and RF delivery. Two possible consequences—not guaranteed outcomes—are:
 
-* **Availability**: a flood of deauth frames removes clients from the BSS; the effect on a production
-  network is a self-inflicted denial of service unless it is explicitly authorised and controlled.
-* **Facilitation**: a targeted deauth forces a client to reconnect, which produces a fresh 4-way handshake
-  to capture (module 09) or drives it toward a rogue twin (module 13).
+* **Availability**: repeated accepted deauth frames can disrupt clients; any live test needs explicit authorization and strict scope because it can interrupt service.
+* **Facilitation**: an accepted targeted deauth may lead a client to reconnect. That could expose a handshake to capture (module 09) or affect client selection (module 13); neither result is guaranteed.
 
 ## 2. Reason codes are evidence
 
 | Code | Meaning | Typical use in a capture |
 | --- | --- | --- |
-| 1 | Unspecified | flood tooling (least useful for attribution) |
+| 1 | Unspecified | non-specific; reason code alone does not identify tooling or intent |
 | 2 | Previous authentication no longer valid | AP-side state reset |
 | 3 | STA is leaving / no longer valid | legitimate disconnection |
-| 7 | Class 3 frame received from nonassociated STA | targeted "kick the client" pattern |
+| 7 | Class 3 frame received from nonassociated STA | state/association context is needed; not proof of a deliberate kick |
 | 8 | Disassociated, STA is leaving BSS | legitimate disassociation |
-| 15 | 4-way handshake timeout | client that never received M3 |
-| 39 | SA Query timeout | PMF-protected client failing SA Query |
+| 15 | 4-way handshake timeout | timeout reported; correlate with the client/AP exchange and logs |
+| 39 | SA Query timeout | the response did not arrive before timeout; correlate with peer/AP logs |
 
-Quote codes with frame numbers and inter-frame timing: a burst of code-1 broadcast frames from one
-transmitter is a strong indicator of tooling, not of normal operation.
+Quote codes with frame numbers and inter-frame timing. A code-1 burst can warrant investigation, but reason codes alone do not establish tooling, sender identity beyond the observed address, authorization, or cause.
 
 ## 3. PMF: what changes with 802.11w
 
 | RSN caps | Behaviour | Test consequence |
 | --- | --- | --- |
-| neither bit | no protection | spoofed deauth works |
-| MFPC only (B5) | protection negotiated if the client asks | mixed ESS: some clients protected, some not |
-| MFPC + MFPR (B4) | protection required for robust management frames | spoofed deauth is rejected; forged frames need the IGTK |
+| neither bit | no PMF advertised | unprotected robust-management frames may be accepted |
+| MFPC only (bit 7 / `0x0080`) | PMF is optional; association negotiation determines whether it is used | clients in the same ESS can have different protection states |
+| MFPC + MFPR (bits 6+7 / `0x00c0`) | PMF required for association; robust management frames are protected | an unprotected forged deauth should be discarded by a PMF-negotiated peer; a valid protected frame needs the IGTK/BIP integrity material |
 
-Protected deauth/disassoc frames are **Robust Management Frames**: they carry a BIP MIC computed with the
-IGTK, so a spoofer without the key cannot produce a frame the client accepts. The AP also uses **SA Query**
-(action category 8) to verify a client still holds the PTK before tearing down state.
+Protected deauth/disassoc frames are **Robust Management Frames** and use BIP integrity protection with IGTK-derived material; a frame with only the Protected bit set is not proof of a valid MIC or of receiver acceptance. Depending on the conditions, SA Query can help a PMF peer verify that a station is still responsive before completing a teardown.
 
-`wpa3-only.pcapng` contains a protected deauth (protected bit set) and `deauth.pcapng` shows both cases
-side by side: a spoofed flood against a PMF-capable BSS and the same attempt against a PMF-required BSS.
+Artifact boundary: `wpa3-only.pcapng` contains a synthetic protected-bit/BIP-shaped deauth with no validated MIC. `deauth.pcapng` contains scripted frame examples for comparison; neither capture establishes RF delivery, receiver acceptance, disconnection, or availability impact.
 
 ## 4. Testing it honestly
 
@@ -67,9 +60,7 @@ exception process for legacy devices.
 
 ## 6. Retest
 
-Repeat the exact test: same tool, same frames, same duration, against a PMF-required BSS. Expect the
-client to remain associated (verify with association timestamps and the AP's logs) — and say explicitly
-that "the attack failed" is *evidence of a control working*, not a missing finding.
+Repeat a narrowly scoped authorized test using an explicitly defined unprotected robust-management frame against a PMF-negotiated client. The expected protocol behavior is rejection of that frame; verify the negotiated PMF state, station/AP logs and association status. Do not equate a frame in the capture with a successful or failed delivery. Report the tested conditions and observed outcome; a bounded negative test can support that control for that client/configuration, not prove universal immunity.
 
 ## 7. Decision practice
 

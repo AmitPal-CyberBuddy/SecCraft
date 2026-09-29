@@ -29,7 +29,7 @@ export function LearningPath() {
           <Target className="w-5 h-5 text-violet-400" />
         </div>
         <div>
-          <h1 className="font-heading font-bold text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none">Learning Path</h1>
+          <h1 className="font-heading font-bold text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none sc-page-title">Learning Path</h1>
           <p className="text-[13px] text-slate-400 mt-1.5">{TOTAL_MODULES} modules • 6 phases • From fundamentals to professional assessment • Zero-cost</p>
         </div>
       </motion.div>

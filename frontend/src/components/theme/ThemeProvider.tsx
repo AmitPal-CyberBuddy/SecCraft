@@ -40,18 +40,39 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [resolved, setResolved] = useState<'dark' | 'light'>('dark')
 
   useEffect(() => {
-    try {
-      const sysDark = typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)').matches : true
-      const res = theme === 'system' ? (sysDark ? 'dark' : 'light') : theme
-      setResolved(res)
+    const media = typeof window !== 'undefined'
+      ? window.matchMedia('(prefers-color-scheme: dark)')
+      : null
+
+    let transitionTimer: ReturnType<typeof setTimeout> | undefined
+    const applyTheme = () => {
+      const res: 'dark' | 'light' = theme === 'system'
+        ? (media?.matches ? 'dark' : 'light')
+        : theme
       if (typeof document !== 'undefined') {
-        document.documentElement.classList.toggle('light', res === 'light')
-        document.documentElement.setAttribute('data-theme', res)
+        const root = document.documentElement
+        const previous = root.getAttribute('data-theme')
+        if (previous && previous !== res) {
+          root.classList.add('theme-changing')
+          clearTimeout(transitionTimer)
+          transitionTimer = setTimeout(() => root.classList.remove('theme-changing'), 280)
+        }
+        root.classList.toggle('light', res === 'light')
+        root.setAttribute('data-theme', res)
+        root.style.colorScheme = res
         const meta = document.querySelector('meta[name="theme-color"]')
-        if (meta) meta.setAttribute('content', res === 'light' ? '#f8fafc' : '#020617')
+        if (meta) meta.setAttribute('content', res === 'light' ? '#f4f7fa' : '#080d17')
       }
-      safeSet('platform-theme', theme)
-    } catch {}
+      setResolved(res)
+    }
+
+    applyTheme()
+    if (theme === 'system' && media) media.addEventListener('change', applyTheme)
+    safeSet('platform-theme', theme)
+    return () => {
+      clearTimeout(transitionTimer)
+      if (theme === 'system' && media) media.removeEventListener('change', applyTheme)
+    }
   }, [theme])
 
   const setTheme = (t: Theme) => setThemeState(t)

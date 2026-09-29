@@ -1,24 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useProgressStore } from '@/store/useProgressStore'
 import { Trophy, X, Sparkles, Zap } from 'lucide-react'
 
 export function PointsToast() {
   const lastEarned = useProgressStore(s => s.lastEarnedPoints)
-  // Use getState for stable clear to avoid function identity causing effect loop
-  const [visible, setVisible] = useState(false)
+  // Derive visibility from the store; only the timer synchronizes with the outside world.
+  const visible = Boolean(lastEarned)
 
   useEffect(() => {
-    if (lastEarned) {
-      setVisible(true)
-      const t = setTimeout(() => {
-        setVisible(false)
-        setTimeout(() => {
-          try { useProgressStore.getState().clearLastEarnedPoints() } catch {}
-        }, 300)
-      }, 4000)
-      return () => clearTimeout(t)
-    }
+    if (!lastEarned) return
+    const t = setTimeout(() => {
+      try { useProgressStore.getState().clearLastEarnedPoints() } catch {}
+    }, 4000)
+    return () => clearTimeout(t)
   }, [lastEarned])
 
   return (
@@ -29,9 +24,12 @@ export function PointsToast() {
           animate={{ opacity: 1, y: 0, scale: 1, x: '-50%' }}
           exit={{ opacity: 0, y: 20, scale: 0.9, x: '-50%' }}
           transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-          className="fixed bottom-6 left-1/2 z-[200] pointer-events-auto"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="fixed bottom-4 sm:bottom-6 left-1/2 z-[200] pointer-events-auto"
         >
-          <div className="relative rounded-2xl bg-[#0f172a] border border-cyan-500/30 shadow-[0_0_0_1px_rgba(34,211,238,0.15),0_0_32px_rgba(34,211,238,0.2),0_8px_32px_rgba(0,0,0,0.5)] px-5 py-4 flex items-center gap-4 min-w-[320px] backdrop-blur-xl overflow-hidden group">
+          <div className="relative rounded-2xl bg-[#0f172a] border border-cyan-500/30 shadow-[0_0_0_1px_rgba(34,211,238,0.15),0_0_32px_rgba(34,211,238,0.2),0_8px_32px_rgba(0,0,0,0.5)] px-4 sm:px-5 py-3.5 sm:py-4 flex items-center gap-3 sm:gap-4 w-[min(420px,calc(100vw-24px))] backdrop-blur-xl overflow-hidden group">
             <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-violet-500/5 to-transparent opacity-80" />
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
             
@@ -56,22 +54,18 @@ export function PointsToast() {
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/20 font-mono">EARNED</span>
               </div>
               <div className="text-[12px] text-slate-300 mt-1 truncate font-medium">{lastEarned.reason}</div>
-              <div className="text-[11px] text-slate-500 font-mono mt-0.5">Keep going — next level awaits!</div>
+              <div className="text-[11px] text-slate-500 font-mono mt-0.5">Added to your learning total</div>
             </div>
 
             <div className="relative flex items-center gap-2">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: [0, 1.2, 1] }}
-                transition={{ delay: 0.3, duration: 0.5 }}
-                className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/10 border border-amber-500/20"
-              >
+              <div className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/10 border border-amber-500/20" aria-hidden="true">
                 <Sparkles className="w-3 h-3 text-amber-400" />
-                <span className="text-[10px] font-bold text-amber-300">BONUS</span>
-              </motion.div>
+                <span className="text-[10px] font-bold text-amber-300">PROGRESS</span>
+              </div>
               <button
-                onClick={() => { setVisible(false); setTimeout(() => { try { useProgressStore.getState().clearLastEarnedPoints() } catch {} }, 300) }}
-                className="w-7 h-7 rounded-lg bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] transition-colors"
+                onClick={() => { setTimeout(() => { try { useProgressStore.getState().clearLastEarnedPoints() } catch {} }, 300) }}
+                aria-label="Dismiss XP earned notification"
+                className="w-8 h-8 rounded-lg bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] transition-colors shrink-0"
               >
                 <X className="w-3.5 h-3.5 text-slate-400" />
               </button>
