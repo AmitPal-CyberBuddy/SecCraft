@@ -6,22 +6,22 @@ function safeSet(key: string, val: string) { try { if (typeof localStorage !== '
 
 export function ReadingExperience({ content, className = '' }: { content: string; className?: string }) {
   const [fontSize, setFontSize] = useState(() => {
-    try { const v = parseInt(safeGet('wififorge-font-size', '14')); return isNaN(v) ? 14 : Math.min(22, Math.max(12, v)) } catch { return 14 }
+    try { const v = parseInt(safeGet('platform-font-size', '14')); return isNaN(v) ? 14 : Math.min(22, Math.max(12, v)) } catch { return 14 }
   })
   const [lineHeight, setLineHeight] = useState(() => {
-    try { const v = parseFloat(safeGet('wififorge-line-height', '1.7')); return isNaN(v) ? 1.7 : Math.min(2.2, Math.max(1.2, v)) } catch { return 1.7 }
+    try { const v = parseFloat(safeGet('platform-line-height', '1.7')); return isNaN(v) ? 1.7 : Math.min(2.2, Math.max(1.2, v)) } catch { return 1.7 }
   })
-  const [dyslexia, setDyslexia] = useState(() => { try { return safeGet('wififorge-dyslexia', 'false') === 'true' } catch { return false } })
-  const [highContrast, setHighContrast] = useState(() => { try { return safeGet('wififorge-high-contrast', 'false') === 'true' } catch { return false } })
+  const [dyslexia, setDyslexia] = useState(() => { try { return safeGet('platform-dyslexia', 'false') === 'true' } catch { return false } })
+  const [highContrast, setHighContrast] = useState(() => { try { return safeGet('platform-high-contrast', 'false') === 'true' } catch { return false } })
 
   const wordCount = content ? content.split(/\s+/).filter(Boolean).length : 0
   const readingTime = Math.max(1, Math.ceil(wordCount / 200))
 
   useEffect(() => {
-    safeSet('wififorge-font-size', fontSize.toString())
-    safeSet('wififorge-line-height', lineHeight.toString())
-    safeSet('wififorge-dyslexia', dyslexia.toString())
-    safeSet('wififorge-high-contrast', highContrast.toString())
+    safeSet('platform-font-size', fontSize.toString())
+    safeSet('platform-line-height', lineHeight.toString())
+    safeSet('platform-dyslexia', dyslexia.toString())
+    safeSet('platform-high-contrast', highContrast.toString())
     try {
       if (typeof document !== 'undefined') {
         document.documentElement.style.setProperty('--reading-font-size', `${fontSize}px`)

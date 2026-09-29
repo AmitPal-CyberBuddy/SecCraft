@@ -99,9 +99,34 @@ for path in (SRC / "index.css",):
         if not match.group(1).startswith(("w3.org", "schema.org")):
             fail(f"{path.relative_to(ROOT)} references {match.group(0)}")
 
-# 4 ── The lab datasets must exist and be non-trivial ------------------------------------------
+# 4 ── The lab datasets must exist and be non-trivial + platform files ----------------------------
 LAB_DATA = PUBLIC / "lab-data"
 PCAPS = PUBLIC / "pcaps"
+
+# Platform files must exist
+for pf in ["platform.json", "learning-paths.json", "skills.json"]:
+    p = SRC / "content" / pf
+    if not p.exists():
+        fail(f"frontend/src/content/{pf} is missing — platform repositioning requires it")
+    else:
+        try:
+            d = json.loads(p.read_text())
+            if pf == "learning-paths.json":
+                if len(d) < 1:
+                    fail("learning-paths.json empty")
+                available = [x for x in d if x.get("status") == "available"]
+                if len(available) < 1:
+                    fail("learning-paths.json must have at least 1 available path")
+                # planned paths must have empty modules, not placeholder lessons
+                for lp in d:
+                    if lp.get("status") != "available" and lp.get("modules"):
+                        if len(lp.get("modules", [])) > 0:
+                            fail(f"{lp['id']} is planned but has modules — should be empty until built")
+            if pf == "platform.json":
+                if "name" not in d or "tagline" not in d:
+                    fail("platform.json missing name/tagline")
+        except json.JSONDecodeError:
+            fail(f"{pf} is not valid JSON")
 
 manifest_path = PUBLIC / "pcaps" / "MANIFEST.md"
 if not LAB_DATA.exists():

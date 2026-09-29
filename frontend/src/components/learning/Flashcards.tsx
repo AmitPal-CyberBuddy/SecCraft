@@ -26,13 +26,13 @@ export const INITIAL_CARD_COUNT = initialCards.length
 
 export function Flashcards({ className = '' }: { className?: string }) {
   const [cards, setCards] = useState<Card[]>(() => {
-    try { const saved = JSON.parse(localStorage.getItem('wififorge-flashcards') || 'null'); return saved || initialCards } catch { return initialCards }
+    try { const saved = JSON.parse((localStorage.getItem('platform-flashcards') || localStorage.getItem('wififorge-flashcards') || 'null')); return saved || initialCards } catch { return initialCards }
   })
   const [current, setCurrent] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const [stats, setStats] = useState({ correct: 0, wrong: 0 })
 
-  useEffect(() => { try { if (typeof localStorage !== 'undefined') localStorage.setItem('wififorge-flashcards', JSON.stringify(cards)) } catch {} }, [cards])
+  useEffect(() => { try { if (typeof localStorage !== 'undefined') { localStorage.setItem('platform-flashcards', JSON.stringify(cards)); localStorage.setItem('wififorge-flashcards', JSON.stringify(cards)) } } catch {} }, [cards])
 
   const card = cards[current]
   if (!card) return null

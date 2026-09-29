@@ -44,8 +44,10 @@ interface Finding {
   retest: string
 }
 
-const EVIDENCE_KEY = 'wififorge-evidence-vault'
-const DRAFT_KEY = 'wififorge-report-draft'
+const EVIDENCE_KEY = 'platform-evidence-vault'
+const LEGACY_EVIDENCE_KEY = 'wififorge-evidence-vault'
+const DRAFT_KEY = 'platform-report-draft'
+const LEGACY_DRAFT_KEY = 'wififorge-report-draft'
 
 async function sha256Hex(buf: ArrayBuffer): Promise<string | null> {
   try {
@@ -71,11 +73,11 @@ export function ReportPdfExport({ className = '' }: { className?: string }) {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(EVIDENCE_KEY)
+      const raw = (localStorage.getItem(EVIDENCE_KEY) || localStorage.getItem(LEGACY_EVIDENCE_KEY))
       if (raw) setRecords(JSON.parse(raw) as EvidenceRecord[])
     } catch { /* storage unavailable */ }
     try {
-      const draft = localStorage.getItem(DRAFT_KEY)
+      const draft = (localStorage.getItem(DRAFT_KEY) || localStorage.getItem(LEGACY_DRAFT_KEY))
       if (draft) {
         const parsed = JSON.parse(draft) as Finding
         if (parsed?.title?.trim()) setFinding(parsed)
@@ -182,7 +184,7 @@ export function ReportPdfExport({ className = '' }: { className?: string }) {
     if (!generated?.blob) return
     const a = document.createElement('a')
     a.href = generated.url
-    a.download = `wififorge-notes-${generated.id}.pdf`
+    a.download = `platform-notes-${generated.id}.pdf`
     a.click()
   }
 
@@ -252,7 +254,7 @@ export function ReportPdfExport({ className = '' }: { className?: string }) {
                 exported file itself — record it next to your evidence if you need a chain of custody.
               </div>
               <button onClick={downloadPdf} className="mt-3 px-4 py-2 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] text-slate-200 hover:border-[#475569] transition-colors">
-                Download {`wififorge-notes-${generated.id}.pdf`}
+                Download {`platform-notes-${generated.id}.pdf`}
               </button>
             </div>
           </div>

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { useState, useEffect, useMemo } from 'react'
 import { NotificationCenter } from '@/components/notifications/NotificationCenter'
 import { TOTAL_PCAPS } from '@/content/stats'
+import platform from '@/content/platform.json'
 
 interface Props {
   onMenuToggle?: () => void
@@ -16,6 +17,10 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
   const currentModule = useProgressStore(s => s.currentModule)
   const totalXp = useProgressStore(s => s.getTotalXp())
   const level = useProgressStore(s => s.getLevel())
+  const completedLessons = useProgressStore(s => s.completedLessons)
+  const completedLabs = useProgressStore(s => s.completedLabs)
+  const quizScores = useProgressStore(s => s.quizScores)
+  const achievements = useProgressStore(s => s.achievements)
   // Fix infinite loop: getXpToNextLevel returns new object every call, causes re-render loop if used as selector
   // Compute stable xpToNext via useMemo from totalXp and level (both primitives/stable)
   const xpToNext = useMemo(() => {
@@ -30,20 +35,40 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
   }, [totalXp, level])
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
   const [notifOpen, setNotifOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
     try {
-      const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('wififorge-theme') as 'dark' | 'light' | null : null
+      const saved = typeof localStorage !== 'undefined' ? (localStorage.getItem('platform-theme') || localStorage.getItem('wififorge-theme')) as 'dark' | 'light' | null : null
       if (saved) setTheme(saved)
     } catch {}
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark'
     setTheme(next)
-    try { if (typeof localStorage !== 'undefined') localStorage.setItem('wififorge-theme', next) } catch {}
+    try { 
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('platform-theme', next)
+        localStorage.setItem('wififorge-theme', next)
+      }
+    } catch {}
     try { document.documentElement.classList.toggle('light', next === 'light') } catch {}
   }
+
+  const notifCount = useMemo(() => {
+    // Real activity count — lessons + labs + quizzes + achievements with timestamps
+    const withTime = [
+      ...completedLessons.filter(l => (l as any).completedAt),
+      ...completedLabs.filter(l => (l as any).completedAt),
+      ...quizScores.filter(q => (q as any).completedAt),
+      ...achievements.filter(a => (a as any).unlockedAt),
+    ]
+    return withTime.length
+  }, [completedLessons, completedLabs, quizScores, achievements])
 
   const openSearch = () => {
     document.dispatchEvent(new CustomEvent('open-search'))
@@ -51,7 +76,7 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
 
   return (
     <>
-    <header className="h-[56px] xs:h-[60px] md:h-[64px] bg-[#020617]/80 backdrop-blur-2xl border-b border-[#1e293b]/60 sticky top-0 z-20 flex items-center justify-between px-3 xs:px-4 md:px-6 relative min-w-0 w-full">
+    <header data-tour="topbar" className={`h-[56px] xs:h-[60px] md:h-[64px] bg-[#020617]/90 backdrop-blur-2xl border-b sticky top-0 z-30 flex items-center justify-between px-3 xs:px-4 md:px-6 relative min-w-0 w-full transition-all duration-200 ${scrolled ? 'border-[#334155]/80 shadow-lg shadow-black/20' : 'border-[#1e293b]/60'}`}>
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-r from-white/[0.01] via-transparent to-violet-500/[0.02] pointer-events-none" />
 
@@ -70,13 +95,21 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
         )}
 
         <div className="flex items-center gap-2 xs:gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1e293b] to-[#0f172a] border border-[#334155]/60 flex items-center justify-center shadow-soft relative overflow-hidden group shrink-0">
+          <motion.div 
+            whileHover={{ scale: 1.05, rotate: 2 }}
+            className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1e293b] to-[#0f172a] border border-[#334155]/60 flex items-center justify-center shadow-soft relative overflow-hidden group shrink-0"
+          >
             <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-violet-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <span className="text-[12px] font-bold text-slate-300 font-mono relative z-10">OP</span>
+            <motion.span 
+              className="text-[12px] font-bold text-slate-300 font-mono relative z-10"
+              animate={{ opacity: [0.8, 1, 0.8] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            >OP</motion.span>
             <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[#1e293b] shadow-sm">
               <div className="w-full h-full bg-emerald-400 rounded-full animate-pulse" />
+              <div className="absolute inset-0 w-full h-full bg-emerald-400 rounded-full animate-ping opacity-30" />
             </div>
-          </div>
+          </motion.div>
           <div className="hidden sm:block min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-[13px] font-semibold text-slate-200 tracking-tight truncate">Operator</span>
@@ -128,7 +161,7 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
       </div>
 
       <div className="flex items-center gap-1.5 xs:gap-2 md:gap-3 relative shrink-0">
-        <motion.button onClick={openSearch} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl bg-[#0f172a]/60 border border-[#1e293b]/60 backdrop-blur-sm hover:bg-[#0f172a]/80 hover:border-[#334155]/60 transition-all duration-200 group cursor-pointer shrink-0 touch-manipulation min-h-[36px]">
+        <motion.button data-tour="search" onClick={openSearch} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl bg-[#0f172a]/60 border border-[#1e293b]/60 backdrop-blur-sm hover:bg-[#0f172a]/80 hover:border-[#334155]/60 transition-all duration-200 group cursor-pointer shrink-0 touch-manipulation min-h-[36px]">
           <Search className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-400 transition-colors shrink-0" />
           <span className="text-[12px] text-slate-500 font-mono group-hover:text-slate-400 transition-colors hidden lg:inline">Search...</span>
           <div className="ml-1 xl:ml-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#1e293b] border border-[#334155]/60 shrink-0">
@@ -153,8 +186,14 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setNotifOpen(!notifOpen)} aria-label="Notifications" className="w-11 h-11 xs:w-9 xs:h-9 rounded-xl bg-[#0f172a] border border-[#1e293b] flex items-center justify-center hover:bg-[#1e293b] hover:border-[#334155] active:bg-[#1e293b] transition-all duration-200 group relative overflow-hidden shrink-0 touch-manipulation">
           <div className="absolute inset-0 bg-gradient-to-br from-violet-500/0 to-violet-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
           <Bell className="w-4 h-4 text-slate-500 group-hover:text-slate-300 relative z-10 group-hover:scale-110 transition-all duration-200" />
-          <div className="absolute top-1 right-1 w-2 h-2 bg-cyan-400 rounded-full border border-[#0f172a] shadow-glow-cyan animate-pulse" />
-          <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 border-2 border-[#0f172a] flex items-center justify-center text-[10px] font-bold text-white">3</div>
+          {notifCount > 0 ? (
+            <>
+              <div className="absolute top-1 right-1 w-2 h-2 bg-cyan-400 rounded-full border border-[#0f172a] shadow-glow-cyan animate-pulse" />
+              <div className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-red-500 border-2 border-[#0f172a] flex items-center justify-center text-[10px] font-bold text-white font-mono">{notifCount > 99 ? '99+' : notifCount}</div>
+            </>
+          ) : (
+            <div className="absolute top-1 right-1 w-2 h-2 bg-slate-600 rounded-full border border-[#0f172a]" />
+          )}
         </motion.button>
 
         <motion.button onClick={openSearch} whileTap={{ scale: 0.95 }} className="hidden sm:flex w-9 h-9 rounded-xl bg-gradient-to-br from-[#1e293b] to-[#0f172a] border border-[#334155]/60 items-center justify-center shadow-soft hover:border-[#475569]/60 hover:from-[#25354f] hover:to-[#1e293b] transition-all duration-200 group cursor-pointer shrink-0 touch-manipulation">

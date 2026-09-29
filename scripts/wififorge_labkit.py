@@ -1449,5 +1449,5 @@ def analyze(frames: Sequence[bytes], pcap_id: str, filter_text: str = "") -> Dic
         "assoc": sum(1 for r in records if r.get("subtype") in (0, 1)),
         "wps": sum(1 for r in records if r.get("wps")),
     }
-    return {"pcap_id": pcap_id, "method": "wififorge-labkit", "filter": filter_text,
+    return {"pcap_id": pcap_id, "method": "platform-labkit", "legacyMethod": "wififorge-labkit", "filter": filter_text,
             "frames": records, "summary": summary}

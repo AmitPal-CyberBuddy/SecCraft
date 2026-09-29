@@ -166,7 +166,12 @@ wlan0: EAPOL: Successfully received EAPOL-Key msg 4/4
     type: 'success'
   },
   'help': {
-    output: `WiFiForge Terminal — simulated Kali-style shell
+    output: `Quench Terminal — Hands-on Cybersecurity Learning Platform — simulated Kali-style shell
+Platform: Quench • Tagline: Forge. Break. Fix. Quench. Retest. • Learn cybersecurity by doing.
+Wireless Pentesting is Learning Path #1 — this terminal simulates wireless tooling for that path, but the terminal engine is generic and will support Web, API, Android, Network, etc.
+Prompt: operator@anvil (quench (quench) retained for backward compat in docs)
+
+WiFiForge Terminal — simulated Kali-style shell
 
 Available commands (counted from the implementation below):
   iw dev                          — List wireless interfaces
@@ -269,7 +274,7 @@ export function TerminalEmulator({ className = '' }: { className?: string }) {
           </div>
           <div className="hidden xs:flex items-center gap-2 min-w-0">
             <Terminal className="w-4 h-4 text-slate-500 shrink-0" />
-            <span className="text-[12px] font-mono text-slate-400 truncate">kali@wififorge: ~/labs • simulated shell</span>
+            <span className="text-[12px] font-mono text-slate-400 truncate">operator@quench: ~/labs • simulated shell</span>
           </div>
           <div className="flex xs:hidden items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -303,7 +308,7 @@ export function TerminalEmulator({ className = '' }: { className?: string }) {
 
       {/* Input */}
       <form onSubmit={handleSubmit} className="flex items-center gap-2 p-3 bg-[#0a1020] border-t border-[#1e293b]/60 shrink-0">
-        <span className="text-emerald-400 font-mono text-[13px] shrink-0 hidden xs:inline">kali@wififorge:~$</span>
+        <span className="text-emerald-400 font-mono text-[13px] shrink-0 hidden xs:inline">operator@quench:~$</span>
         <span className="text-emerald-400 font-mono text-[13px] shrink-0 xs:hidden">$</span>
         <input
           ref={inputRef}

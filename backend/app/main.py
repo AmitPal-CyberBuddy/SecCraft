@@ -1,79 +1,52 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import content, progress, labs, pcaps, enterprise, auth
+from app.routers import content, progress, labs, pcaps, enterprise, auth, learning_paths
 from app.core.database import init_db
 from app.core import config
 
 app = FastAPI(
-    title="WiFiForge API (optional local parser)",
+    title="SecCraft API — Hands-on Cybersecurity Learning Platform (optional local parser)",
     description=(
-        "Local, zero-cost helper API for the WiFiForge academy: content metadata, offline capture "
-        "decoding and optional multi-user progress storage. The hosted build is static and does not "
-        "require this service; nothing here is exposed to the internet by default."
+        "Local, zero-cost helper API for the SecCraft hands-on cybersecurity learning platform (legacy WiFiForge): "
+        "learning paths, content metadata, offline capture decoding and optional multi-user progress storage. "
+        "The hosted build is static and does not require this service; nothing here is exposed to the internet by default. "
+        "SecCrafting hardens metal after forging — maps to Fix→Retest loop. Tagline: Forge. Break. Fix. SecCraft. Retest."
     ),
-    version="0.2.0",
-    docs_url="/docs",
-    redoc_url=None,
-    openapi_url="/openapi.json",
+    version="2.1.0",
 )
 
-# CORS: explicit allowlist from the environment (see app/core/config.py). No wildcard origin, no
-# wildcard methods/headers, and credentials are only allowed for the configured origins.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=config.ALLOWED_METHODS,
-    allow_headers=config.ALLOWED_HEADERS,
-    max_age=600,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-
-@app.middleware("http")
-async def security_headers(request: Request, call_next):
-    """Baseline hardening for the API responses (CSP is set by the static host for the app itself)."""
-    response = await call_next(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Referrer-Policy"] = "no-referrer"
-    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-    response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
-    response.headers["Cache-Control"] = "no-store"
-    return response
-
-
-# Include routers
-app.include_router(content.router, prefix="/api", tags=["content"])
-app.include_router(progress.router, prefix="/api", tags=["progress"])
-app.include_router(labs.router, prefix="/api", tags=["labs"])
-app.include_router(pcaps.router, prefix="/api", tags=["pcaps"])
-app.include_router(enterprise.router, prefix="/api", tags=["enterprise"])
-app.include_router(auth.router, prefix="/api", tags=["auth"])
-
-
 @app.on_event("startup")
-async def startup_event():
+def startup():
     init_db()
+
+app.include_router(content.router)
+app.include_router(progress.router)
+app.include_router(labs.router)
+app.include_router(pcaps.router)
+app.include_router(enterprise.router)
+app.include_router(auth.router)
+app.include_router(learning_paths.router)
 
 
 @app.get("/api/health")
-async def health_check():
+def health():
     return {
         "status": "ok",
-        "service": "WiFiForge API",
-        "version": "0.2.0",
-        "mode": "local",
-        "auth_enabled": bool(config.JWT_SECRET),
-        "demo_users": config.DEMO_USERS_ENABLED,
-        "message": "Forge. Break. Fix. Retest.",
-    }
-
-
-@app.get("/")
-async def root():
-    return {
-        "name": "WiFiForge — Wireless Security Academy",
-        "tagline": "Forge. Break. Fix. Retest.",
-        "scope": "Optional local helper API. The academy itself is a static, offline-capable build.",
-        "docs": "/docs",
+        "service": "SecCraft API — Hands-on Cybersecurity Learning Platform (legacy WiFiForge)",
+        "version": "2.1.0",
+        "platform": "SecCraft",
+        "legacy": "WiFiForge",
+        "learning_paths": 8,
+        "tagline": "Forge. Break. Fix. SecCraft. Retest.",
+        "secondary": "Learn cybersecurity by doing.",
+        "philosophy": "Learn → Understand → Observe → Enumerate → Test → Validate → Collect Evidence → Understand Impact → Remediate → SecCraft (Harden) → Retest → Report",
+        "message": "Forge. Break. Fix. SecCraft. Retest. — Learn cybersecurity by doing. — Wireless Pentesting is Learning Path #1 (legacy WiFiForge).",
     }

@@ -25,7 +25,8 @@ interface EvidenceRecord {
   at?: string
 }
 
-const EVIDENCE_KEY = 'wififorge-evidence-vault'
+const EVIDENCE_KEY = 'platform-evidence-vault'
+const LEGACY_EVIDENCE_KEY = 'wififorge-evidence-vault'
 
 interface TimelineEvent {
   at: string
@@ -41,7 +42,7 @@ export function TimelineViz({ className = '' }: { className?: string }) {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(EVIDENCE_KEY)
+      const raw = (localStorage.getItem(EVIDENCE_KEY) || localStorage.getItem(LEGACY_EVIDENCE_KEY))
       if (raw) setRecords(JSON.parse(raw) as EvidenceRecord[])
     } catch { /* storage unavailable or unreadable */ }
   }, [])

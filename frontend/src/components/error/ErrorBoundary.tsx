@@ -17,10 +17,10 @@ export class ErrorBoundary extends Component<Props, State> {
     // Keep the last 20 failures in this browser only; there is no error-reporting service to send them to.
     try {
       if (typeof localStorage !== 'undefined') {
-        const raw = localStorage.getItem('wififorge-error-logs') || '[]'
+        const raw = (localStorage.getItem('platform-error-logs') || localStorage.getItem('wififorge-error-logs') || '[]')
         const logs = JSON.parse(raw)
         logs.unshift({ error: error.message, stack: error.stack?.slice(0, 500), time: new Date().toISOString(), componentStack: info?.componentStack?.slice(0, 500) })
-        localStorage.setItem('wififorge-error-logs', JSON.stringify(logs.slice(0, 20)))
+        localStorage.setItem('platform-error-logs', JSON.stringify(logs.slice(0, 20))); try { localStorage.setItem('wififorge-error-logs', JSON.stringify(logs.slice(0, 20))) } catch {}
       }
     } catch {}
   }
@@ -40,7 +40,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <div className="text-[10px] font-mono text-slate-600 mt-2 line-clamp-6 whitespace-pre-wrap break-all">{this.state.error?.stack?.slice(0, 800) || ''}</div>
             </div>
             <div className="mt-4 flex gap-2 justify-center">
-              <button onClick={() => { try { localStorage.removeItem('wififorge-progress'); } catch {}; window.location.reload() }} className="px-4 py-2.5 rounded-xl bg-[#1e293b] border border-[#334155] text-[13px] text-slate-300 flex items-center gap-2 hover:bg-[#25354f] transition-colors">
+              <button onClick={() => { try { localStorage.removeItem('platform-progress'); try { localStorage.removeItem('wififorge-progress') } catch {}; } catch {}; window.location.reload() }} className="px-4 py-2.5 rounded-xl bg-[#1e293b] border border-[#334155] text-[13px] text-slate-300 flex items-center gap-2 hover:bg-[#25354f] transition-colors">
                 <RefreshCw className="w-4 h-4" />Clear & Reload
               </button>
               <button onClick={() => this.setState({ hasError: false, error: null })} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-[13px] flex items-center gap-2 shadow-glow-violet">

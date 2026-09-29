@@ -1,0 +1,63 @@
+{
+  "name": "SecCraft",
+  "fullName": "SecCraft — Hands-on Cybersecurity Learning Platform",
+  "shortName": "seccraft",
+  "legacyName": "WiFiForge",
+  "tagline": "Learn. Practice. Investigate. Improve.",
+  "secondaryTagline": "Hands-on cybersecurity by doing.",
+  "description": "A hands-on cybersecurity learning platform where learners don't just consume security content — they investigate systems, perform security testing, collect evidence, understand impact, remediate vulnerabilities, retest fixes, and complete realistic assessments. Learn, practice, investigate, improve — in a safe, legal, zero-hardware environment.",
+  "philosophy": "Learn → Practice → Investigate → Evidence → Impact → Improve → Report",
+  "philosophyShort": "Learn → Practice → Investigate → Improve",
+  "contentVersion": "2.1",
+  "version": "2.1",
+  "palette": {
+    "bg": {
+      "950": "#020617",
+      "900": "#0a0f3d",
+      "800": "#1e293b",
+      "700": "#334155"
+    },
+    "accent": {
+      "cyan": "#22d3ee",
+      "blue": "#33CFFF",
+      "violet": "#a78bfa",
+      "emerald": "#34d399",
+      "amber": "#f59e0b",
+      "orange": "#FF9F1C",
+      "red": "#f87171",
+      "pink": "#f472b6"
+    }
+  },
+  "fonts": {
+    "heading": "Sora, Space Grotesk, sans-serif",
+    "body": "Inter, system-ui, sans-serif",
+    "mono": "JetBrains Mono, monospace"
+  },
+  "logo": {
+    "icon": "shield-magnifying-check",
+    "wordmark": "SecCraft",
+    "concept": "SecCraft — Shield with checkmark + magnifying glass — shield in cyan #33CFFF represents protection and hardening, checkmark represents validation and proof, magnifying glass in orange #FF9F1C represents investigation. Learn. Practice. Investigate. Improve. Dark navy #0a0f3d background. Technical professional, serious, premium, hands-on craft.",
+    "platformIcon": "shield with checkmark + magnifying glass — cyan shield + orange magnifier",
+    "wirelessPathIcon": "shield with checkmark + magnifying glass + subtle Wi-Fi arcs for Wireless path",
+    "colors": {
+      "shield": "#33CFFF",
+      "magnifier": "#FF9F1C",
+      "checkmark": "#22d3ee",
+      "bg": "#0a0f3d"
+    }
+  },
+  "links": {
+    "github": "https://github.com/AmitPal-CyberBuddy/WiFiForge",
+    "docs": "/docs",
+    "liveDemo": "https://amitpal-cyberbuddy.github.io/WiFiForge/"
+  },
+  "principles": {
+    "domainAgnosticCore": "Platform engine should not assume Wi-Fi",
+    "domainSpecificContent": "Wireless terminology and tooling belong inside Wireless path",
+    "reusableLabEngine": "Same lab framework should support PCAP, Web, API, Android, network, containers",
+    "reusableAssessmentEngine": "Assessment workflows should support different security domains",
+    "reusableEvidenceModel": "Evidence should work for PCAP, screenshots, HTTP, terminal, logs, configs, Android artifacts",
+    "reusableSkillModel": "Generic skills + domain-specific extensions",
+    "craftsmanship": "Security is a craft — learn, practice, investigate, improve, with evidence"
+  }
+}

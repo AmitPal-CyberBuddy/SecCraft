@@ -116,7 +116,7 @@ ${finding.references}
 ${finding.retest}
 
 ---
-*Generated via WiFiForge — Forge. Break. Fix. Retest.*
+*Generated via Quench — Forge. Break. Fix. Quench. Retest. — Learn cybersecurity by doing.*
 `
 
   const download = () => {
@@ -129,7 +129,7 @@ ${finding.retest}
   }
 
   const save = () => {
-    try { localStorage.setItem('wififorge-report-draft', JSON.stringify(finding)) } catch { /* storage blocked */ }
+    try { localStorage.setItem('platform-report-draft', JSON.stringify(finding)); localStorage.setItem('wififorge-report-draft', JSON.stringify(finding)) } catch { /* storage blocked */ }
   }
 
   return (

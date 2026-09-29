@@ -1,242 +1,128 @@
-# WiFiForge — Branding & Naming Guide
-> Options for product name, repo name, visual identity
+# Branding — Platform vs Path
 
-## 1. Current State Analysis
+> **Platform Repositioning Notice (2026-09-28):** This document was originally WiFiForge-only. It is now superseded in part by `docs/PLATFORM_REPOSITIONING.md` (full A-H assessment) and `docs/BRANDING_MIGRATION.md` (staged migration). This file now documents both platform brand (Quench — final) and wireless path sub-brand (WiFiForge retained).
 
-**Current Repo:** `AmitPal-CyberBuddy/WiFiForge`
-**Current README Title:** `WiFiForge — Interactive Wi-Fi Penetration Testing Academy & Lab`
-**Requirement doc suggests:** `Wireless PT Academy` / `📡 Wireless PT Academy`
+## Platform Brand — Quench Final
 
-**Verdict on WiFiForge:**
-- ✅ Short, memorable, 2 syllables + 1 syllable
-- ✅ Verb: "Forge" = build, craft, forge skills, forge packets/labs
-- ✅ Feels like a tool (like BloodHound, Hashcat) not just a course
-- ✅ Works for both simulated + hardware future
-- ✅ Good for domain, CLI tool name later (`wififorge-cli`)
-- ⚠️ Slightly generic — there are other WiFiForge repos (but none are academy-style)
-- **Recommendation: KEEP WiFiForge as core, expand with subtitle for clarity**
+**Status:** Final — user chose Quench on 2026-09-28 — see Section D in PLATFORM_REPOSITIONING.md for shortlist evaluation with conflict research, BRANDING_DECISION.md for evolution log.
 
-Full product name: **WiFiForge — Wireless Pentest Academy**
-Short: **WiFiForge**
-CLI / Package: `wififorge`
+**Platform Name:** Quench
+**Full Title:** Quench — Hands-on Cybersecurity Learning Platform
+**Legacy Name:** WiFiForge (retained as Wireless path sub-brand for continuity)
+**Primary Tagline:** Forge. Break. Fix. Quench. Retest. (evolution from Forge. Break. Fix. Retest. — adds quench hardening step, maps to VAPT loop)
+**Secondary Tagline:** Learn cybersecurity by doing.
+**Tertiary:** Investigate systems, perform security testing, collect evidence, understand impact, remediate, quench the attack chain by hardening, retest fixes, and complete realistic assessments.
+**Philosophy:** Learn → Understand → Observe → Enumerate → Test → Validate → Collect Evidence → Understand Impact → Remediate → Quench (Harden) → Retest → Report
+**Detailed Loop:** Observe → Interpret → Hypothesise → Choose the test → Execute → Evidence → Conclude → Impact → Remediate → Quench → Retest → Report
+**Philosophy Short:** Learn → Observe → Test → Quench → Report
 
----
+**Why Quench:**
+- Preserves Forge concept (quenching hardens metal after forging) without using Forge word — avoids BHIS Forge line confusion (WifiForge, SDRForge) and 15+ other Forge conflicts (SecForge, CyberForge, LabForge, BreakForge, etc.)
+- Short, 1 syllable, memorable, verb, distinctive, domain-neutral (not tied to Wi-Fi, Web, Android, API, tool) — not generic buzzword like CyberForge
+- Visual identity retained: anvil silhouette already in logo, add quench droplet/hardening mark for platform, keep Wi-Fi arcs for wireless path (legacy WiFiForge)
+- Low conflict: No major hands-on cybersecurity learning platform named Quench Academy found — much lower than CyberForge (cyberforge-academy.com AI university direct competitor) and Anvil (AnvilSec, Anvil Corp ICS range). Quench used as minor tool name, not training platform.
+- High scalability: Quench: Wireless Pentesting (legacy WiFiForge), Quench: Web Application Security, Quench: API Security, Quench: Android, Network, AD, Cloud, AI/LLM — works as prefix
+- High technical credibility: quenching = hardening, maps to remediation that breaks attack chain, Fix→Retest differentiator, professional, senior pentester mentor
+- Tagline evolution: Forge. Break. Fix. Retest. → Forge. Break. Fix. Quench. Retest. — adds hardening step, still domain-neutral VAPT loop
 
-## 2. Name Options — 7 Candidates Ranked
-
-### Option A: WiFiForge (RECOMMENDED — Keep)
-**Full:** WiFiForge — Wireless PT Academy
-**Tagline:** Forge. Break. Fix. Retest.
-**Pros:** You already have repo, brandable, tool-like, extensible to Enterprise later (WiFiForge Enterprise Labs)
-**Cons:** Minor collision with small GitHub projects, but none in academy space
-**Repo:** `WiFiForge` or `wifi-forge`
-**Domain ideas:** wififorge.dev, wififorge.academy, wififorge.lab
-
-### Option B: AirForge Academy
-**Tagline:** Learn the Air. Own the Air.
-**Rationale:** "Air" = wireless airspace, "Forge" kept. More professional, less "WiFi" consumer feel.
-**Pros:** More corporate VAPT friendly, sounds like Airgap/Airborne
-**Cons:** Loses explicit Wi-Fi SEO
-**Repo:** `airforge` / `airforge-academy`
-
-### Option C: Dot11 Academy (802.11)
-**Full:** Dot11 Academy — The 802.11 Pentest Lab
-**Tagline:** Understand 802.11. Test 802.11.
-**Rationale:** Direct protocol reference, signals depth, pro audience will instantly get it
-**Pros:** Very technical, stands out, great for HTB-like audience
-**Cons:** Beginners may not know Dot11 = Wi-Fi, harder to pronounce
-**Repo:** `dot11-academy`
-
-### Option D: Beacon Academy
-**Tagline:** Every Network Beacons. Learn to Listen.
-**Rationale:** Beacon frames are first thing you see in recon — poetic + technical
-**Pros:** Unique, memorable, story-driven (recon starts with beacons)
-**Cons:** Could be confused with other Beacon LMS products
-**Repo:** `beacon-academy`
-
-### Option E: Spectrum Lab
-**Tagline:** See the Invisible Spectrum.
-**Rationale:** RF spectrum focus, future-proof for BLE/Zigbee/SDR expansion
-**Pros:** Broadens scope naturally beyond Wi-Fi
-**Cons:** More SDR/RF than Wi-Fi PT focused
-**Repo:** `spectrum-lab`
-
-### Option F: AetherSec Academy
-**Full:** AetherSec — Wireless Security Academy
-**Tagline:** Security in the Aether.
-**Rationale:** "Aether" = ancient term for air/sky, used in wireless. Sounds premium/corporate.
-**Pros:** Unique, brandable, professional
-**Cons:** Harder to spell, less intuitive
-**Repo:** `aethersec`
-
-### Option G: WaveLab
-**Tagline:** Learn. Observe. Enumerate. Exploit.
-**Rationale:** Short, friendly
-**Pros:** Easy
-**Cons:** Too generic, many WaveLabs exist
-
-### My Ranked Recommendation:
-1. **WiFiForge** (keep, add subtitle) — Best balance of brand + clarity
-2. **Dot11 Academy** — If you want ultra-technical pro positioning
-3. **AirForge** — If you want corporate VAPT positioning
-
----
-
-## 3. Tagline Options
-
-Current requirement suggests: `Learn. Observe. Enumerate. Test. Exploit. Fix. Retest.`
-
-Refined options:
-
-**For WiFiForge:**
-- **Primary:** `Forge. Break. Fix. Retest.` (short, loop, VAPT mindset)
-- **Alt 1:** `Learn • Observe • Test • Report` (clean, methodology)
-- **Alt 2:** `Understand the Protocol. Test the Implementation.` (professional, my favorite for pro positioning)
-- **Alt 3:** `From Beacons to Reports.` (journey-based)
-- **Alt 4:** `The Wireless Pentest Lab You Control.` (local-first emphasis)
-
-**Recommendation:** Use primary for hero, Alt 2 for docs/footer.
-
----
-
-## 4. Visual Identity — 3 Directions
-
-### Direction 1: Technical Professional (RECOMMENDED)
-**Inspired by:** Linear, Vercel, HTB Academy (clean, not neon hacker)
-**Palette:**
-- Bg: `#020617` slate-950, `#0f172a` slate-900
-- Surface: `#1e293b` slate-800, border `#334155` slate-700
-- Primary: `#22d3ee` cyan-400 (Wi-Fi waves)
-- Secondary: `#a78bfa` violet-400 (enterprise/RADIUS)
-- Success: `#34d399` emerald-400
-- Warning: `#fbbf24` amber-400
-- Danger: `#f87171` red-400
-- Text: `#f1f5f9` slate-100 / `#94a3b8` slate-400
-- Code: `#22d3ee` + `#f472b6` pink for highlights
-
-**Typography:**
-- Headings: `Sora` or `Space Grotesk` — geometric, technical, modern
-- Body: `Inter` — highly readable
-- Mono/Code/Terminal: `JetBrains Mono` — industry standard
-
-**Logo Concept:**
-- Wordmark: `WiFiForge` with `Fi` ligature forming Wi-Fi waves
-- Icon: Minimalist shield + 3 Wi-Fi arcs + anvil/hammer negative space. Or: `WF` monogram where W is formed by 2 beacons
-- No excessive glow, just subtle cyan dot grid
-
-### Direction 2: Terminal / Hacker Minimal
-**Palette:** Black `#000`, green `#00ff88`, amber `#ffb000`
-**Typography:** All mono `JetBrains Mono`
-**Logo:** ASCII-style `[WF]` or `>_` with Wi-Fi
-**Pros:** Authentic hacker feel
-**Cons:** Can feel cliché, less corporate, harder to read long-form
-
-### Direction 3: Corporate VAPT Report Style
-**Palette:** White/light gray bg, navy `#0a192f`, blue `#0070f3`
-**Typography:** `Inter` + `IBM Plex Mono`
-**Logo:** Simple wordmark, no icon
-**Pros:** Looks like professional pentest report
-**Cons:** Loses academy/lab excitement
-
-**My Recommendation:** Direction 1 with subtle terminal elements. Professional enough for corporate report, technical enough for HTB audience.
-
----
-
-## 5. Logo Concepts (Text Description for Generation)
-
-**Concept A — The Forge Mark (Recommended):**
-```
-Icon: 32x32 rounded square (slate-900 bg, slate-700 border)
-Center: Anvil silhouette (slate-100)
-Above anvil: 3 Wi-Fi arcs emanating (cyan-400, decreasing opacity)
-Below: Small hammer striking, creating a spark (amber-400 dot)
-Wordmark to right: WiFiForge (Sora Bold, WiFi in slate-100, Forge in cyan-400)
+**Palette — Platform (domain-neutral, retained):**
+```js
+bg: { 950: "#020617", 900: "#0f172a", 800: "#1e293b", 700: "#334155" }
+accent: { cyan: "#22d3ee" primary, violet: "#a78bfa" secondary, emerald: "#34d399" success, amber: "#fbbf24" warning, red: "#f87171" danger, pink: "#f472b6" highlight }
+fonts: { heading: "Sora, Space Grotesk", body: "Inter", mono: "JetBrains Mono" }
+logo: { platform: "anvil without Wi-Fi arcs + quench droplet", wirelessPath: "anvil with Wi-Fi arcs (legacy WiFiForge mark)" }
 ```
 
-**Concept B — Beacon Shield:**
+**Visual Identity:**
+- Platform logo: anvil silhouette without Wi-Fi arcs + quench hardening droplet — Forge Mark anvil, hammer, spark, quench
+- Wireless path logo: anvil + Wi-Fi arcs (legacy WiFiForge) inside Wireless path
+- Favicon: platform anvil without arcs + quench droplet, wireless path anvil + arcs
+- OG image: dark bg + platform logo + tagline Forge. Break. Fix. Quench. Retest. + secondary Learn cybersecurity by doing.
+
+**Naming Shortlist (from PLATFORM_REPOSITIONING.md Section D):**
+1. Quench — final choice, best balance, preserves Forge Mark visual via quenching, avoids BHIS Forge line, low conflict, hardening differentiator
+2. Anvil — previous recommendation, anvil silhouette already in logo, preserves Forge philosophy (forge on anvil), short, memorable, low-moderate conflict
+3. TemperForge — preserves Forge, adds hardening concept Break→Fix→Retest, low-moderate conflict (Temper And Forge agency, TTPForge framework)
+4. Verifex — evidence-driven verification, domain-neutral, low-moderate conflict
+5. AttestForge, MasonForge, ChainForge — also viable
+**Avoid:** SecForge, CyberForge (cyberforge-academy.com AI university direct competitor + generic buzzword), LabForge, BreakForge, BreachForge, TraceForge, ScopeForge, EvidenceForge, RedForge, PurpleForge, SignalForge, VectorForge, VulnForge, HexForge, ByteForge, RootForge, ForgePath, Foundry, Crucible, Exploit-Forge — all have strong conflicts with existing cybersecurity training/labs/specs
+
+**Critical Conflict Finding:**
+- Black Hills InfoSec WifiForge (github.com/blackhillsinfosec/WifiForge, 1.2k stars, 152 forks, Apache-2.0, 9 labs, mininet-wifi, Docker, zero-hardware, wififorge.github.io) — directly same niche (wireless security training, hands-on labs, zero-hardware). Previous assessment claimed minor collision, none academy-style — inaccurate. BHIS WifiForge IS academy-style and well-known. Platform rename required.
+- CyberForge: cyberforge-academy.com AI-operated cybersecurity university — direct training platform conflict, plus generic Cyber buzzword fails not overly generic + technically credible
+
+## Wireless Path Sub-Brand — WiFiForge Retained
+
+**Path ID:** wireless-pentesting
+**Title:** Wireless Pentesting
+**Short Title:** Wireless
+**Legacy Brand:** WiFiForge — retained inside path for continuity
+**Legacy Flag Prefix:** WIFIFORGE{} — retained for historical continuity
+**Tagline (Path):** Understand the Protocol. Test the Implementation.
+**Description:** Hands-on wireless security assessment — from 802.11 fundamentals to enterprise EAP/RADIUS and professional reporting. 20 modules, 27 lessons, 16 verified captures, 15 challenges, 35 decision scenarios, 42-item checklist, ENG-01 engagement.
+**Icon:** 📡
+**Color:** cyan
+**Lab Kit Method:** wififorge-labkit (historical) + platform-labkit alias generic
+**Logo:** anvil + Wi-Fi arcs (legacy WiFiForge mark)
+
+## Platform Hierarchy
+
 ```
-Shield outline (slate-700) with 3 curved lines inside (beacon)
-Center dot = AP, small dots = clients
-Wordmark: WiFiForge
-```
-
-**Concept C — Dot11 Monogram:**
-```
-Monogram: WF where W is made of 2 overlapping Wi-Fi signal cones
-Background: subtle dot grid
-Wordmark: WiFiForge — WIRELESS PT ACADEMY (small caps)
-```
-
----
-
-## 6. Repo Naming — Best Practice
-
-GitHub best practice: lowercase, hyphenated, no spaces.
-
-**Options:**
-- `WiFiForge` — Current, okay, but capital letters unusual (keeps brand)
-- `wififorge` — Clean, matches npm/pip package name (RECOMMENDED for code)
-- `wifi-forge` — Most readable, SEO friendly
-- `wififorge-academy` — Explicit, good if you plan multiple repos (wififorge-cli, wififorge-labs)
-- `wireless-pt-academy` — Descriptive but long, loses brand
-
-**Recommendation:**
-- **GitHub Repo:** Keep `WiFiForge` for brand consistency OR rename to `wififorge` (lowercase) — GitHub will redirect
-- **NPM Package:** `wififorge`
-- **Python Package:** `wififorge`
-- **Docker Image:** `wififorge/academy`
-- **Local Folder:** `wififorge/`
-
-If you want monorepo clarity later:
-```
-wififorge/
-  apps/web
-  apps/api
-  packages/content
-```
-
-But for now single repo is perfect.
-
----
-
-## 7. App Naming Inside Product
-
-- **Browser Tab:** `WiFiForge — Dashboard` / `WiFiForge — Wi-Fi Fundamentals`
-- **Sidebar Header:** `WiFiForge` + small `WIRELESS PT ACADEMY` subtitle
-- **CLI Banner (future):**
-```
- _    _ _  __ _ _____                     
-| |  | (_)/ _(_)_   _|                    
-| |  | |_| |_  _ | | ___  _ __ __ _  ___ 
-| |/\| | |  _| || |/ _ \| '__/ _` |/ _ \
-\  /\  / | | | || | (_) | | | (_| |  __/
- \/  \/|_|_| |_||_|\___/|_|  \__, |\___|
-                              __/ |     
-                             |___/      
- Forge. Break. Fix. Retest.
+Platform (Quench — domain-neutral, quench hardening after forging)
+├── Learning Paths (path-aware)
+│   ├── wireless-pentesting (available, 20 mods, reference, legacy WiFiForge)
+│   ├── web-application-security (planned)
+│   ├── api-security (planned)
+│   ├── android-pentesting (planned)
+│   ├── network-pentesting (planned)
+│   ├── active-directory (planned)
+│   ├── cloud-security (planned)
+│   └── ai-llm-security (planned)
+├── Labs (reusable: PCAP, HTTP, APK, config, logs, IAM, Terraform)
+├── Challenges (guided → semi-guided → assessment, path-aware)
+├── Assessments / Engagements (scope, RoE, targets, artefacts, tasks, marking guide)
+├── Skills (generic + domain-specific)
+└── Evidence / Reporting (generic)
 ```
 
----
+Do NOT build future paths now — one excellent path preferable to shallow platform with many empty paths.
 
-## 8. Final Recommendation — My Pick
+## Tagline Evaluation
 
-**Product Name:** **WiFiForge**
-**Full Title:** **WiFiForge — Wireless Pentest Academy**
-**Tagline:** **Forge. Break. Fix. Retest.**
-**Secondary Tagline (docs):** Understand the Protocol. Test the Implementation.
-**Repo Name:** Keep `WiFiForge` (or lowercase to `wififorge` — I can rename)
-**Visual:** Direction 1 — Dark slate + cyan + violet, Sora + Inter + JetBrains Mono
-**Logo:** Concept A — Forge Mark (anvil + Wi-Fi arcs)
-**Voice:** Professional, technical, consultant-like — not "hacker l33t", not corporate boring. Like a senior pentester teaching you.
+**Forge. Break. Fix. Quench. Retest.** — Final as primary platform philosophy (evolution from Forge. Break. Fix. Retest.)
+- Domain-neutral? Yes — applies to any security domain, quench = harden, break attack chain
+- Memorable? Yes — 5 verbs, loop, VAPT mindset, quench adds hardening differentiator
+- Technically credible? Yes — senior pentester mentor, metallurgy quenching = hardening
+- Suitable for broader platform? Yes — maps to generic VAPT loop Remediate → Quench → Retest
 
----
+Supporting:
+- Platform secondary: Learn cybersecurity by doing.
+- Platform tertiary: Investigate systems, perform security testing, collect evidence, understand impact, remediate, quench the attack chain by hardening, retest fixes, and complete realistic assessments.
+- Wireless path: Understand the Protocol. Test the Implementation.
+- Legacy philosophy: Forge. Break. Fix. Retest. retained as historical note
 
-## 9. Next Steps After You Choose
+## Product Positioning (Eventual)
 
-1. I generate 2-3 logo variants (SVG + PNG) in chosen direction
-2. I create `frontend/src/styles/theme.ts` with palette + typography tokens
-3. I update `README.md` + `package.json` + `index.html` title
-4. We lock favicon + OG image
-5. Then proceed to Phase A scaffolding
+> A hands-on cybersecurity learning platform where learners don't just consume security content — they investigate systems, perform security testing, collect evidence, understand impact, remediate vulnerabilities, quench the attack chain by hardening, retest fixes, and complete realistic assessments.
 
-What name/direction do you want?
+Differentiator: learning through practical VAPT methodology + quench hardening, not just courses. Evidence standard, severity from impact, remediation that breaks attack chain (quench), retest with same test, reporting client can act on.
+
+## Avoid Copying TryHackMe / Hack The Box
+
+Use as conceptual references for learning paths, labs, challenges, progression, assessments, hands-on learning. Do NOT copy branding, visual identity, terminology unnecessarily, IA unnecessarily, gamification without reason, feature sets simply because they exist elsewhere. Own identity: Technical Professional — dark slate + cyan + violet, Sora + Inter + JetBrains Mono, Forge Mark anvil + quench droplet, senior pentester mentor, professional, evidence-driven, local-first, zero-cost, offline-capable.
+
+## Historical — Original WiFiForge Branding (Preserved for Reference)
+
+**Original Repo:** AmitPal-CyberBuddy/WiFiForge
+**Original Title:** WiFiForge — Wireless Pentest Academy
+**Original Assessment (pre-2026-09-28):**
+- Verdict claimed KEEP WiFiForge as core, minor collision with small GitHub projects, none academy-style — **this assessment was inaccurate after discovery of BHIS WifiForge 1.2k stars**
+- Options considered: WiFiForge (recommended keep), AirForge Academy, Dot11 Academy, Beacon Academy, Spectrum Lab, AetherSec Academy, WaveLab
+- Tagline options: Forge. Break. Fix. Retest. (primary), Learn • Observe • Test • Report, Understand the Protocol. Test the Implementation. (favorite for pro positioning), From Beacons to Reports., The Wireless Pentest Lab You Control.
+- Palette, typography, logo concept Forge Mark anvil + Wi-Fi arcs — retained for wireless path, platform logo anvil + quench droplet (Quench)
+
+**Why it changed:** Domain-specific name fails scalability (WiFiForge — Web Application Security confusing), major conflict with BHIS WifiForge same niche + CyberForge Academy direct competitor, platform needs domain-neutral name. Tagline and visual identity (anvil silhouette, palette, fonts) retained, evolved to Forge. Break. Fix. Quench. Retest.
+
+See docs/PLATFORM_REPOSITIONING.md Section C for full reasoning, Section D for naming options with conflict research, docs/BRANDING_MIGRATION.md for staged migration.
+
+*Forge. Break. Fix. Quench. Retest. — Platform vs Path Branding — Final: Quench*

@@ -36,7 +36,10 @@
     "kind": "concept"
    }
   ],
-  "status": "simulated"
+  "status": "simulated",
+  "learningPathId": "wireless-pentesting",
+  "phaseName": "Foundations",
+  "lab_requirement_generic": "SIMULATION"
  },
  {
   "id": "02-wifi-fundamentals",
@@ -80,7 +83,10 @@
     "kind": "concept"
    }
   ],
-  "status": "simulated"
+  "status": "simulated",
+  "learningPathId": "wireless-pentesting",
+  "phaseName": "Foundations",
+  "lab_requirement_generic": "SIMULATION"
  },
  {
   "id": "03-80211-architecture",
@@ -122,7 +128,10 @@
     "kind": "concept"
    }
   ],
-  "status": "simulated"
+  "status": "simulated",
+  "learningPathId": "wireless-pentesting",
+  "phaseName": "Foundations",
+  "lab_requirement_generic": "SIMULATION"
  },
  {
   "id": "04-kali-wireless-setup",
@@ -164,7 +173,10 @@
     "kind": "concept"
    }
   ],
-  "status": "hardware"
+  "status": "hardware",
+  "learningPathId": "wireless-pentesting",
+  "phaseName": "Foundations",
+  "lab_requirement_generic": "HYBRID"
  },
  {
   "id": "05-wireless-recon",
@@ -206,7 +218,10 @@
     "kind": "lab"
    }
   ],
-  "status": "simulated"
+  "status": "simulated",
+  "learningPathId": "wireless-pentesting",
+  "phaseName": "Reconnaissance",
+  "lab_requirement_generic": "SIMULATION"
  },
  {
   "id": "06-traffic-analysis",
@@ -248,7 +263,10 @@
     "kind": "lab"
    }
   ],
-  "status": "simulated"
+  "status": "simulated",
+  "learningPathId": "wireless-pentesting",
+  "phaseName": "Reconnaissance",
+  "lab_requirement_generic": "SIMULATION"
  },
  {
   "id": "07-wep-legacy",
@@ -289,7 +307,10 @@
     "kind": "concept"
    }
   ],
-  "status": "simulated"
+  "status": "simulated",
+  "learningPathId": "wireless-pentesting",
+  "phaseName": "Wi-Fi Security",
+  "lab_requirement_generic": "SIMULATION"
  },
  {
   "id": "08-wpa-wpa2",
@@ -336,7 +357,10 @@
     "kind": "lab"
    }
   ],
-  "status": "simulated"
+  "status": "simulated",
+  "learningPathId": "wireless-pentesting",
+  "phaseName": "Wi-Fi Security",
+  "lab_requirement_generic": "SIMULATION"
  },
  {
   "id": "09-wpa2-practical",
@@ -383,7 +407,10 @@
     "kind": "lab"
    }
   ],
-  "status": "hardware"
+  "status": "hardware",
+  "learningPathId": "wireless-pentesting",
+  "phaseName": "Wi-Fi Security",
+  "lab_requirement_generic": "HYBRID"
  },
  {
   "id": "10-wps",
@@ -424,7 +451,10 @@
     "kind": "concept"
    }
   ],
-  "status": "hardware"
+  "status": "hardware",
+  "learningPathId": "wireless-pentesting",
+  "phaseName": "Wi-Fi Security",
+  "lab_requirement_generic": "HYBRID"
  },
  {
   "id": "11-wpa3",
@@ -467,7 +497,10 @@
     "kind": "concept"
    }
   ],
-  "status": "simulated"
+  "status": "simulated",
+  "learningPathId": "wireless-pentesting",
+  "phaseName": "Attack Techniques",
+  "lab_requirement_generic": "SIMULATION"
  },
  {
   "id": "12-deauth-disassoc",
@@ -510,7 +543,10 @@
     "kind": "concept"
    }
   ],
-  "status": "hardware"
+  "status": "hardware",
+  "learningPathId": "wireless-pentesting",
+  "phaseName": "Attack Techniques",
+  "lab_requirement_generic": "REAL"
  },
  {
   "id": "13-rogue-ap",
@@ -552,7 +588,10 @@
     "kind": "lab"
    }
   ],
-  "status": "hardware"
+  "status": "hardware",
+  "learningPathId": "wireless-pentesting",
+  "phaseName": "Attack Techniques",
+  "lab_requirement_generic": "REAL"
  },
  {
   "id": "14-captive-portals",
@@ -593,7 +632,10 @@
     "kind": "lab"
    }
   ],
-  "status": "hardware"
+  "status": "hardware",
+  "learningPathId": "wireless-pentesting",
+  "phaseName": "Attack Techniques",
+  "lab_requirement_generic": "HYBRID"
  },
  {
   "id": "15-enterprise-fundamentals",
@@ -640,7 +682,10 @@
     "kind": "lab"
    }
   ],
-  "status": "simulated"
+  "status": "simulated",
+  "learningPathId": "wireless-pentesting",
+  "phaseName": "Enterprise Wi-Fi",
+  "lab_requirement_generic": "SIMULATION"
  },
  {
   "id": "16-eap",
@@ -688,7 +733,10 @@
     "kind": "lab"
    }
   ],
-  "status": "simulated"
+  "status": "simulated",
+  "learningPathId": "wireless-pentesting",
+  "phaseName": "Enterprise Wi-Fi",
+  "lab_requirement_generic": "SIMULATION"
  },
  {
   "id": "17-radius",
@@ -735,7 +783,10 @@
     "kind": "concept"
    }
   ],
-  "status": "simulated"
+  "status": "simulated",
+  "learningPathId": "wireless-pentesting",
+  "phaseName": "Enterprise Wi-Fi",
+  "lab_requirement_generic": "SIMULATION"
  },
  {
   "id": "18-corporate-attacks",
@@ -782,7 +833,10 @@
     "kind": "concept"
    }
   ],
-  "status": "hardware"
+  "status": "hardware",
+  "learningPathId": "wireless-pentesting",
+  "phaseName": "Enterprise Wi-Fi",
+  "lab_requirement_generic": "HYBRID"
  },
  {
   "id": "19-methodology",
@@ -830,7 +884,10 @@
     "kind": "concept"
    }
   ],
-  "status": "simulated"
+  "status": "simulated",
+  "learningPathId": "wireless-pentesting",
+  "phaseName": "Professional",
+  "lab_requirement_generic": "SIMULATION"
  },
  {
   "id": "20-final-assessment",
@@ -872,6 +929,9 @@
     "kind": "professional"
    }
   ],
-  "status": "simulated"
+  "status": "simulated",
+  "learningPathId": "wireless-pentesting",
+  "phaseName": "Professional",
+  "lab_requirement_generic": "SIMULATION"
  }
 ]

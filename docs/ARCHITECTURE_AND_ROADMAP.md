@@ -1,3 +1,98 @@
+# Platform Architecture — Quench (Legacy WiFiForge) — Hands-on Cybersecurity Learning Platform
+
+> **Platform Repositioning (2026-09-28):** This document was originally WiFiForge-only (Wireless PT Academy). It is now updated to reflect platform repositioning to Quench — hands-on cybersecurity learning platform where Wireless Pentesting is Learning Path #1, not entire platform. See `docs/PLATFORM_REPOSITIONING.md` for full A-H assessment, `docs/CONTENT_MODEL.md` for generic content model, `docs/LEARNING_PATHS.md` for how to add new path, `docs/BRANDING_MIGRATION.md` for staged migration, `docs/IMPLEMENTATION_PLAN_STAGE3_6.md` for Stage 3-6 implementation.
+
+## Platform Hierarchy (New)
+
+```
+Platform (Quench — domain-neutral, legacy WiFiForge as Wireless path sub-brand)
+│
+├── Learning Paths (path-aware, 8 total, 1 available, 7 planned)
+│   ├── 📡 Wireless Pentesting (available, 20 modules, 27 lessons, 16 verified PCAPs, 15 challenges, 35 scenarios, 42-item checklist, ENG-01) — legacy WiFiForge
+│   ├── 🌐 Web Application Security (planned, architecture ready, empty modules)
+│   ├── 🔌 API Security (planned)
+│   ├── 📱 Android Pentesting (planned)
+│   ├── 🖥️ Network Pentesting (planned)
+│   ├── 🏢 Active Directory (planned)
+│   ├── ☁️ Cloud Security (planned)
+│   └── 🤖 AI / LLM Security (planned)
+│
+├── Labs (reusable lab engine — artifact analysis, config audit, scenario)
+│   ├── Artifact Types: pcap, config, http, apk, log, iam, terraform
+│   ├── Tiers: SIMULATION (bundled offline dataset) • HYBRID (config audit + offline) • REAL (requires authorized environment, alias RF_REQUIRED for wireless backward compat)
+│   └── Evidence: capture, config, screenshot, http, log, terminal, android-artifact — generic
+│
+├── Challenges (reusable — guided → semi-guided → assessment, path-aware, flag prefix WIFIFORGE{} retained for wireless legacy)
+├── Assessments / Engagements (scope, RoE, targets, artefacts, tasks, marking guide — generic VAPT)
+├── Skills (generic + domain-specific — Reconnaissance, Traffic Analysis, Authentication Testing, etc. + wireless ssid, bssid, etc.)
+├── Evidence / Reporting (generic — hash, filter, frame numbers, chain of custody, CVSS as calculation, remediation, retest)
+├── Progress / Analytics (path-aware — currentLearningPathId, getPathProgress, platform-progress storage with wififorge-progress fallback)
+└── Certificates (path-aware — platform certificate + path certificate, local-first, not accredited, LOCAL- id)
+```
+
+**Core Loop (Generic VAPT, not just wireless):**
+```
+Learn → Understand → Observe → Enumerate → Test → Validate → Collect Evidence → Understand Impact → Remediate → Retest → Report
+Detailed: Observe → Interpret → Hypothesise → Choose the test → Execute → Evidence → Conclude → Impact → Remediate → Retest → Report
+Philosophy retained: Forge. Break. Fix. Retest. (platform) + Understand the Protocol. Test the Implementation. (wireless path) + Learn cybersecurity by doing. (platform secondary)
+```
+
+**Content Model (Generic):**
+- `frontend/src/content/platform.json` — platform metadata Quench, tagline, philosophy, palette, legacyName WiFiForge
+- `frontend/src/content/learning-paths.json` — 8 paths, 1 available wireless-pentesting, 7 planned empty
+- `frontend/src/content/modules.json` — now includes learningPathId, phaseName, lab_requirement_generic
+- `frontend/src/content/labs.ts` — learningPathId, artifactType
+- `frontend/src/content/challenges.json`, `engagements.json`, `scenarios.json` — learningPathId
+- `frontend/src/content/skills.json` — generic + domain-specific
+- `frontend/src/lib/platform.ts` — generic interfaces LearningPath, Module, LabEntry, Challenge, Skill, PlatformConfig, LAB_REQUIREMENT_MAP RF_REQUIRED→REAL
+- `frontend/src/content/stats.ts` — path-aware getModulesForPath, getStatsForPath, PLATFORM_STATS, TOTAL_LEARNING_PATHS
+- `frontend/src/store/useProgressStore.ts` — currentLearningPathId, getPathProgress, storage platform-progress v3 migration
+- Backend `learning_paths.py` — /api/learning-paths, /api/platform, /api/modules?path=
+
+**Frontend Routing (New + Legacy Backward Compat):**
+```
+/ → Dashboard (platform overview, featured path Wireless, all paths grid)
+/paths → LearningPaths (list all paths, 1 available, 7 planned)
+/paths/:pathId → PathDetail (phases within path)
+/paths/:pathId/modules → Modules (path-aware filter)
+/paths/:pathId/modules/:id → ModuleDetail (path-aware breadcrumb Platform > Learning Paths > Wireless > Phase > Module)
+/labs?path=wireless-pentesting → Labs (path-aware, artifact library generic, 16 for wireless, 0 for planned)
+/challenges?path=wireless-pentesting → Challenges (path-aware, 15 for wireless)
+/engagement / assessments → Engagement list + detail path-aware
+/reference?path=... → Reference path-aware filter
+/reports → Reports (platform + path certificates)
+/settings → Settings (platform-theme, platform-profile, platform-a11y-* with legacy fallback)
+
+/path → /paths/wireless-pentesting (redirect, Stage 6 compatibility)
+/modules → Modules (defaults to wireless-pentesting for backward compat)
+/modules/:id → ModuleDetail (effectivePathId from module.learningPathId)
+```
+
+**UI/UX — Platform vs Path:**
+- Platform-level (domain-neutral): Dashboard, Search (generic index of paths, modules, labs, challenges, skills), Progress, Labs (generic engine), Challenges, Assessments, Evidence, Certificates, Analytics, Navigation (Learn/Practice/Assess/Track), Content engine, Routing, Authentication, Learning state, Logo anvil without Wi-Fi arcs, Title Quench, Tagline Forge. Break. Fix. Retest. + Learn cybersecurity by doing.
+- Domain-specific (wireless path): Wi-Fi terminology, wireless icons, BSSID/SSID, Wi-Fi commands, PCAP terminology, modules, attack categories, Logo anvil with Wi-Fi arcs (legacy WiFiForge mark) inside Wireless path, Flag prefix WIFIFORGE{} retained, Skills ssid, bssid, beacon, rsn, pmf, eap, radius
+
+**Backend:**
+- FastAPI + SQLite, generic but lab/pcap mapping previously wireless-specific — now path-aware via learning-paths.json
+- New router learning_paths.py serves platform.json + learning-paths.json
+- Content router supports ?path= filter
+- Config supports PLATFORM_* env vars with WIFIFORGE_* fallback (Stage 5)
+- Health includes platform, legacy, learning_paths counts, message Forge. Break. Fix. Retest. — Learn cybersecurity by doing.
+
+**Deployment:**
+- GitHub Pages SPA with 404.html fallback, .nojekyll, Docker multi-stage, nginx TLS, gzip, cache, rate limit — generic
+- VITE_BASE=/WiFiForge/ kept for now to not break existing deployment (https://amitpal-cyberbuddy.github.io/WiFiForge/), future rename to /Quench/ or /<new-repo>/ with redirect page when repo rename decided
+- Security headers: CSP, X-Frame-Options DENY, etc. — retained
+
+**Why One Excellent Path First:**
+- Wireless Pentesting: 20 modules, 27 lessons, 16 verified PCAPs, 15 challenges, 35 decision scenarios, 42-item checklist, ENG-01 — mature reference implementation
+- Future paths: planned expansion, architecture ready, content after wireless maturity — no placeholder content to make platform appear larger
+
+---
+
+
+---
+
 > **Historical note (superseded).** This file records what an earlier phase did, including the
 > former `mock_frames` fallback and the endpoints that returned placeholder data. Those paths were
 > removed: decoding now uses tshark → scapy → the verified offline datasets in

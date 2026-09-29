@@ -12,13 +12,20 @@ import { useProgressStore } from '@/store/useProgressStore'
  */
 
 const KNOWN_KEYS: { key: string; label: string; description: string }[] = [
-  { key: 'wififorge-progress', label: 'Learning progress', description: 'Completed lessons, labs, quizzes, XP and achievements' },
-  { key: 'wififorge-evidence-vault', label: 'Evidence vault', description: 'Artefact records you added (labels, claims, filters, SHA-256 hashes)' },
-  { key: 'wififorge-checklist-general', label: 'Checklist (Reference)', description: 'Ticked master-checklist items' },
-  { key: 'wififorge-checklist-ENG-01', label: 'Checklist (ENG-01)', description: 'Ticked engagement-checklist items' },
-  { key: 'wififorge-profile', label: 'Local profile', description: 'Display name and self-declared role — no credentials are stored' },
-  { key: 'wififorge-notes', label: 'Notes & bookmarks', description: 'Lesson notes and bookmarks' },
+  { key: 'platform-progress', label: 'Learning progress (platform)', description: 'Completed lessons, labs, quizzes, XP, achievements, current path' },
+  { key: 'wififorge-progress', label: 'Learning progress (legacy)', description: 'Legacy key — migrated to platform-progress, kept for backward compat' },
+  { key: 'platform-evidence-vault', label: 'Evidence vault (platform)', description: 'Artefact records you added (labels, claims, filters, SHA-256 hashes) — generic' },
+  { key: 'wififorge-evidence-vault', label: 'Evidence vault (legacy)', description: 'Legacy evidence vault — migrated to platform-evidence-vault' },
+  { key: 'platform-checklist-general', label: 'Checklist (Reference, platform)', description: 'Ticked master-checklist items — generic VAPT' },
+  { key: 'wififorge-checklist-general', label: 'Checklist (Reference, legacy)', description: 'Legacy master-checklist' },
+  { key: 'platform-checklist-ENG-01', label: 'Checklist (ENG-01, platform)', description: 'Ticked engagement-checklist items' },
+  { key: 'wififorge-checklist-ENG-01', label: 'Checklist (ENG-01, legacy)', description: 'Legacy engagement checklist' },
+  { key: 'platform-profile', label: 'Local profile (platform)', description: 'Display name and self-declared role — no credentials' },
+  { key: 'wififorge-profile', label: 'Local profile (legacy)', description: 'Legacy profile' },
+  { key: 'platform-notes', label: 'Notes & bookmarks (platform)', description: 'Lesson notes and bookmarks — generic' },
+  { key: 'wififorge-notes', label: 'Notes & bookmarks (legacy)', description: 'Legacy notes' },
   { key: 'theme', label: 'Theme preference', description: 'Dark / light / system' },
+  { key: 'platform-theme', label: 'Theme preference (platform)', description: 'Dark / light / system — platform key' },
 ]
 
 function bytesOf(value: string | null): number {
@@ -149,7 +156,7 @@ export function LocalDataPanel({ className = '' }: { className?: string }) {
             </button>
             <button
               onClick={() => {
-                if (!confirm('Erase all local WiFiForge data (progress, vault, checklists, notes, profile)? This cannot be undone.')) return
+                if (!confirm('Erase all local Quench (legacy WiFiForge) data (progress, vault, checklists, notes, profile)? This cannot be undone.')) return
                 for (const { key } of KNOWN_KEYS) { try { localStorage.removeItem(key) } catch { /* ignore */ } }
                 reset()
                 measure()

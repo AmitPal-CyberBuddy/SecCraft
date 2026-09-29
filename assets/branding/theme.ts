@@ -1,14 +1,16 @@
 /**
- * WiFiForge — Design Tokens
- * Locked: 2026-09-28 — Technical Professional Direction
+ * SecCraft — Design Tokens
+ * Final: 2026-09-29 — Technical Professional — Shield + Magnifying Glass + Checkmark
+ * Tagline: Learn. Practice. Investigate. Improve.
+ * Logo: Shield cyan #33CFFF with checkmark + magnifying glass orange #FF9F1C — dark navy #0a0f3d bg
  */
 
 export const theme = {
-  name: "WiFiForge — Technical Professional",
+  name: "SecCraft — Technical Professional",
   colors: {
     background: {
       primary: "#020617", // slate-950 - main app bg
-      secondary: "#0f172a", // slate-900 - card bg
+      secondary: "#0a0f3d", // dark navy - card bg, logo bg
       surface: "#1e293b", // slate-800 - elevated surface
       surfaceHover: "#27354f",
       border: "#334155", // slate-700
@@ -21,28 +23,41 @@ export const theme = {
       inverse: "#020617",
     },
     accent: {
-      cyan: "#22d3ee", // primary - Wi-Fi waves, CTA
-      cyanHover: "#06b6d4",
-      cyanMuted: "rgba(34, 211, 238, 0.1)",
-      violet: "#a78bfa", // secondary - enterprise/RADIUS
+      cyan: "#33CFFF", // shield, primary - protection, investigation
+      cyanHover: "#22d3ee",
+      cyanMuted: "rgba(51, 207, 255, 0.1)",
+      blue: "#33CFFF",
+      violet: "#a78bfa", // secondary - improve
       violetHover: "#8b5cf6",
       violetMuted: "rgba(167, 139, 250, 0.1)",
-      emerald: "#34d399", // success
-      amber: "#fbbf24", // warning
+      emerald: "#34d399", // success - validated
+      amber: "#f59e0b", // evidence, warning
+      orange: "#FF9F1C", // magnifying glass - investigate
       red: "#f87171", // danger
       pink: "#f472b6", // code highlight
+      shield: "#33CFFF",
+      magnifier: "#FF9F1C",
+      checkmark: "#22d3ee",
     },
     status: {
       locked: "#475569",
       notStarted: "#334155",
-      inProgress: "#22d3ee",
+      inProgress: "#33CFFF",
       completed: "#34d399",
+      investigated: "#FF9F1C",
     },
     terminal: {
       bg: "#0a0f1c",
       green: "#00ff88",
       amber: "#ffb000",
-      cyan: "#22d3ee",
+      cyan: "#33CFFF",
+    },
+    logo: {
+      shield: "#33CFFF", // cyan shield
+      magnifier: "#FF9F1C", // orange magnifying glass
+      checkmark: "#22d3ee",
+      bg: "#0a0f3d", // dark navy
+      border: "#334155",
     }
   },
   font: {
@@ -70,22 +85,34 @@ export const theme = {
   shadow: {
     card: "0 4px 6px -1px rgba(0,0,0,0.3), 0 2px 4px -2px rgba(0,0,0,0.3)",
     cardHover: "0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -4px rgba(0,0,0,0.4)",
-    glowCyan: "0 0 20px rgba(34, 211, 238, 0.15)",
+    glowCyan: "0 0 20px rgba(51, 207, 255, 0.15)",
     glowViolet: "0 0 20px rgba(167, 139, 250, 0.15)",
+    glowAmber: "0 0 20px rgba(245, 158, 11, 0.15)",
+    glowOrange: "0 0 20px rgba(255, 159, 28, 0.15)",
   },
   animation: {
     fast: "150ms ease",
     normal: "250ms ease",
     slow: "350ms ease",
+  },
+  logo: {
+    concept: "SecCraft — Shield with checkmark + magnifying glass — cyan shield #33CFFF + orange magnifier #FF9F1C + checkmark — Learn. Practice. Investigate. Improve.",
+    platformIcon: "shield with checkmark + magnifying glass — cyan + orange",
+    wirelessPathIcon: "shield with checkmark + magnifying glass + Wi-Fi arcs for Wireless path",
+    favicon: "shield + magnifier mini",
+    colors: {
+      shield: "#33CFFF",
+      magnifier: "#FF9F1C",
+      checkmark: "#22d3ee",
+    }
   }
 } as const;
 
 export type Theme = typeof theme;
 
-// Tailwind config extension suggestion
 export const tailwindExtension = {
   colors: {
-    wififorge: {
+    seccraft: {
       bg: theme.colors.background.primary,
       card: theme.colors.background.secondary,
       surface: theme.colors.background.surface,
@@ -94,6 +121,8 @@ export const tailwindExtension = {
       violet: theme.colors.accent.violet,
       emerald: theme.colors.accent.emerald,
       amber: theme.colors.accent.amber,
+      shield: theme.colors.logo.shield,
+      magnifier: theme.colors.logo.magnifier,
     }
   },
   fontFamily: {

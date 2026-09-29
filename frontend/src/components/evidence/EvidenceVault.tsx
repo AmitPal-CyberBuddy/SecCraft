@@ -14,7 +14,8 @@ export interface EvidenceRecord {
   createdAt: string
 }
 
-const STORE_KEY = 'wififorge-evidence-vault'
+const STORE_KEY = 'platform-evidence-vault'
+const LEGACY_STORE_KEY = 'wififorge-evidence-vault'
 
 const KIND_COLORS: Record<EvidenceRecord['kind'], string> = {
   capture: 'text-cyan-400 border-cyan-500/25 bg-cyan-500/10',
@@ -51,13 +52,17 @@ export function EvidenceVault({ className = '' }: { className?: string }) {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORE_KEY)
+      const raw = localStorage.getItem(STORE_KEY) || localStorage.getItem(LEGACY_STORE_KEY)
       if (raw) setRecords(JSON.parse(raw))
     } catch { /* ignore malformed storage */ }
   }, [])
 
   useEffect(() => {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(records)) } catch { /* storage full/blocked */ }
+    try { 
+      localStorage.setItem(STORE_KEY, JSON.stringify(records))
+      // keep legacy in sync for backward compat during migration
+      try { localStorage.setItem(LEGACY_STORE_KEY, JSON.stringify(records)) } catch {}
+    } catch { /* storage full/blocked */ }
   }, [records])
 
   const stats = useMemo(() => ({
@@ -123,7 +128,7 @@ export function EvidenceVault({ className = '' }: { className?: string }) {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `wififorge-evidence-${new Date().toISOString().slice(0, 10)}.json`
+    a.download = `platform-evidence-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     URL.revokeObjectURL(url)
   }

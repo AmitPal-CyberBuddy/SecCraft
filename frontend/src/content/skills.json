@@ -1,0 +1,202 @@
+[
+  {
+    "id": "reconnaissance",
+    "name": "Reconnaissance",
+    "category": "generic",
+    "description": "Enumerate targets, map attack surface, gather information without active exploitation.",
+    "icon": "🔍",
+    "level": "Beginner"
+  },
+  {
+    "id": "traffic-analysis",
+    "name": "Traffic Analysis",
+    "category": "generic",
+    "description": "Filter, isolate, and extract evidence from captures (PCAP, HTTP, logs, APK).",
+    "icon": "📡",
+    "level": "Beginner"
+  },
+  {
+    "id": "authentication-testing",
+    "name": "Authentication Testing",
+    "category": "generic",
+    "description": "Test authentication mechanisms, credential handling, session management.",
+    "icon": "🔑",
+    "level": "Intermediate"
+  },
+  {
+    "id": "authorization-testing",
+    "name": "Authorization Testing",
+    "category": "generic",
+    "description": "Test access controls, IDOR, BOLA, BFLA, privilege escalation.",
+    "icon": "🛡️",
+    "level": "Intermediate"
+  },
+  {
+    "id": "input-validation",
+    "name": "Input Validation",
+    "category": "generic",
+    "description": "Test injection, XSS, SQLi, SSRF, deserialization, file upload.",
+    "icon": "🧪",
+    "level": "Intermediate"
+  },
+  {
+    "id": "cryptography",
+    "name": "Cryptography",
+    "category": "generic",
+    "description": "Review crypto usage, key management, TLS, hashing, randomness.",
+    "icon": "🔐",
+    "level": "Intermediate"
+  },
+  {
+    "id": "configuration-review",
+    "name": "Configuration Review",
+    "category": "generic",
+    "description": "Audit configs for misconfigurations, weak defaults, exposure.",
+    "icon": "⚙️",
+    "level": "Beginner"
+  },
+  {
+    "id": "exploitation",
+    "name": "Exploitation",
+    "category": "generic",
+    "description": "Validate vulnerabilities with authorized, evidence-driven testing.",
+    "icon": "⚡",
+    "level": "Advanced"
+  },
+  {
+    "id": "evidence-collection",
+    "name": "Evidence Collection",
+    "category": "generic",
+    "description": "Collect reproducible evidence: artifact hash, filter, frame numbers, chain of custody.",
+    "icon": "📋",
+    "level": "Beginner"
+  },
+  {
+    "id": "risk-analysis",
+    "name": "Risk Analysis",
+    "category": "generic",
+    "description": "Derive severity from impact using CVSS as calculation, not label.",
+    "icon": "📊",
+    "level": "Intermediate"
+  },
+  {
+    "id": "remediation",
+    "name": "Remediation",
+    "category": "generic",
+    "description": "Recommend fixes that break attack chain, not just patch symptoms.",
+    "icon": "🔧",
+    "level": "Intermediate"
+  },
+  {
+    "id": "retesting",
+    "name": "Retesting",
+    "category": "generic",
+    "description": "Verify fix with same test, capture delta as retest evidence.",
+    "icon": "🔄",
+    "level": "Intermediate"
+  },
+  {
+    "id": "reporting",
+    "name": "Reporting",
+    "category": "generic",
+    "description": "Write findings a client can act on: title, impact, evidence, remediation, retest.",
+    "icon": "📝",
+    "level": "Beginner"
+  },
+  {
+    "id": "methodology",
+    "name": "VAPT Methodology",
+    "category": "generic",
+    "description": "Apply engagement lifecycle: authorization → recon → enum → test → evidence → impact → remediation → retest → report.",
+    "icon": "🗺️",
+    "level": "Advanced"
+  },
+  {
+    "id": "wireless-basics",
+    "name": "Wireless Basics",
+    "category": "wireless",
+    "description": "Why radio changes threat model: broadcast medium, no physical boundary, layer-1 evidence.",
+    "icon": "📡",
+    "level": "Beginner"
+  },
+  {
+    "id": "ssid",
+    "name": "SSID/BSSID/ESS",
+    "category": "wireless",
+    "description": "Decode SSID, BSSID, ESS, BSS/DS topology from beacons.",
+    "icon": "📶",
+    "level": "Beginner"
+  },
+  {
+    "id": "bssid",
+    "name": "BSSID Analysis",
+    "category": "wireless",
+    "description": "Analyze BSSID, vendor OUI, channel, beacon interval.",
+    "icon": "🔎",
+    "level": "Beginner"
+  },
+  {
+    "id": "frames",
+    "name": "802.11 Frames",
+    "category": "wireless",
+    "description": "Management/control/data frames, Frame Control type/subtype.",
+    "icon": "📦",
+    "level": "Beginner"
+  },
+  {
+    "id": "rsne",
+    "name": "RSNE Decoding",
+    "category": "wireless",
+    "description": "Read RSNE fields: version, group cipher, pairwise, AKM, RSN capabilities including MFPC/MFPR.",
+    "icon": "🔍",
+    "level": "Intermediate"
+  },
+  {
+    "id": "wpa2",
+    "name": "WPA2/RSN",
+    "category": "wireless",
+    "description": "PMK → PTK → KCK/KEK/TK, M1-M4 exchange, GTK, PMF.",
+    "icon": "🔐",
+    "level": "Intermediate"
+  },
+  {
+    "id": "wpa3",
+    "name": "WPA3/SAE",
+    "category": "wireless",
+    "description": "SAE Dragonfly, forward secrecy, transition mode downgrade, PMF required, OWE.",
+    "icon": "🛡️",
+    "level": "Advanced"
+  },
+  {
+    "id": "eap",
+    "name": "EAP Methods",
+    "category": "wireless",
+    "description": "PEAP, EAP-TLS, EAP-TTLS, MS-CHAPv2, credential exposure, cert validation.",
+    "icon": "🔑",
+    "level": "Advanced"
+  },
+  {
+    "id": "radius",
+    "name": "RADIUS",
+    "category": "wireless",
+    "description": "RADIUS protocol mechanics, Message-Authenticator, shared secret, RadSec.",
+    "icon": "🏢",
+    "level": "Advanced"
+  },
+  {
+    "id": "attack-surface",
+    "name": "Attack Surface",
+    "category": "generic",
+    "description": "Map attack surface across wireless, web, api, mobile, network, cloud, AI.",
+    "icon": "🗺️",
+    "level": "Beginner"
+  },
+  {
+    "id": "ethics",
+    "name": "Ethics & Authorization",
+    "category": "generic",
+    "description": "Legal and ethical limits: own lab hardware or signed authorization, never third-party networks.",
+    "icon": "⚖️",
+    "level": "Beginner"
+  }
+]

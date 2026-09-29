@@ -1,13 +1,23 @@
 import { useState, useMemo } from 'react'
+import { useParams, Link } from 'react-router-dom'
 import { ModuleCard } from '@/components/learning/ModuleCard'
 import { useProgressStore } from '@/store/useProgressStore'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Filter, Layers, Sparkles, BookOpen, Target, TrendingUp } from 'lucide-react'
+import { Search, Filter, Layers, Sparkles, BookOpen, Target, TrendingUp, ArrowLeft, Map } from 'lucide-react'
 import modules from '@/content/modules.json'
-import { TOTAL_CHALLENGES, TOTAL_LESSONS, TOTAL_MODULES, TOTAL_PCAPS, TOTAL_SCENARIOS } from '@/content/stats'
+import learningPaths from '@/content/learning-paths.json'
+import { TOTAL_CHALLENGES, TOTAL_LESSONS, TOTAL_MODULES, TOTAL_PCAPS, TOTAL_SCENARIOS, getModulesForPath } from '@/content/stats'
 import { MAX_XP } from '@/store/useProgressStore'
 
 export function Modules() {
+  const { pathId } = useParams()
+  const effectivePathId = pathId || 'wireless-pentesting'
+  const currentPath = learningPaths.find(p => p.id === effectivePathId) || learningPaths[0]
+  const pathModules = useMemo(() => {
+    const list = getModulesForPath(effectivePathId)
+    return list.length > 0 ? list : (modules as any[]).filter(m => !m.learningPathId || m.learningPathId === effectivePathId)
+  }, [effectivePathId])
+
   const [filterPhase, setFilterPhase] = useState<number | null>(null)
   const [filterStatus, setFilterStatus] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -18,7 +28,7 @@ export function Modules() {
   const completedLessons = useProgressStore(s => s.completedLessons.length)
 
   const filtered = useMemo(() => {
-    return modules.filter(m => {
+    return pathModules.filter(m => {
       if (filterPhase && m.phase !== filterPhase) return false
       if (filterStatus && m.status !== filterStatus) return false
       if (searchQuery) {
@@ -27,17 +37,23 @@ export function Modules() {
       }
       return true
     })
-  }, [filterPhase, filterStatus, searchQuery])
+  }, [pathModules, filterPhase, filterStatus, searchQuery])
 
   const phaseStats = [1,2,3,4,5,6].map(p => ({
     phase: p,
-    count: modules.filter(m => m.phase === p).length,
-    completed: modules.filter(m => m.phase === p && getModuleProgress(m.id) === 100).length,
+    count: pathModules.filter(m => m.phase === p).length,
+    completed: pathModules.filter(m => m.phase === p && getModuleProgress(m.id) === 100).length,
   }))
 
   return (
     <div className="max-w-[1400px] mx-auto min-w-0 w-full space-y-6 md:space-y-8">
-      {/* Header */}
+      {pathId && (
+        <Link to={`/paths/${pathId}`} className="inline-flex items-center gap-2 text-[12px] text-slate-500 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[#0f172a]/60 border border-transparent hover:border-[#1e293b]/60">
+          <ArrowLeft className="w-4 h-4" />
+          {currentPath.title} — Path Detail
+        </Link>
+      )}
+      {/* Header — path-aware */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -50,13 +66,18 @@ export function Modules() {
               <BookOpen className="w-5 h-5 text-cyan-400" />
             </div>
             <div>
-              <h1 className="font-heading font-bold text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none">Modules</h1>
-              <div className="flex items-center gap-2 mt-1.5">
-                <span className="text-[13px] text-slate-400">{TOTAL_MODULES} modules • 6 phases • {TOTAL_LESSONS} lessons • {TOTAL_SCENARIOS} decision scenarios • {TOTAL_PCAPS} verified captures</span>
+              <div className="flex items-center gap-2">
+                <h1 className="font-heading font-bold text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none">Modules</h1>
+                <span className="text-[18px]">{currentPath.icon}</span>
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#0f172a] border border-[#1e293b] text-slate-400 font-mono">{currentPath.title}</span>
+              </div>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <span className="text-[13px] text-slate-400">{pathModules.length} modules • {currentPath.phases.length} phases • {TOTAL_LESSONS} lessons • {TOTAL_SCENARIOS} scenarios • {TOTAL_PCAPS} artifacts</span>
                 <span className="hidden sm:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20 font-mono">
                   <Sparkles className="w-3 h-3" />
-                  COMPLETE
+                  {currentPath.status.toUpperCase()}
                 </span>
+                
               </div>
             </div>
           </div>
@@ -102,12 +123,12 @@ export function Modules() {
         </div>
       </motion.div>
 
-      {/* Search + Filters */}
+      {/* Search + Filters — sticky header + subtle animation */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-        className="space-y-4"
+        className="space-y-4 sticky top-[64px] z-20 bg-[#020617]/90 backdrop-blur-xl p-3 -mx-3 rounded-xl border border-[#1e293b]/50 shadow-lg shadow-black/10"
       >
         {/* Search */}
         <div className="relative group">

@@ -55,8 +55,8 @@ export function SecurityPosture({ className = '' }: { className?: string }) {
 
     let storageOk = false
     try {
-      localStorage.setItem('wififorge-storage-probe', '1')
-      localStorage.removeItem('wififorge-storage-probe')
+      localStorage.setItem('platform-storage-probe', '1')
+      localStorage.removeItem('platform-storage-probe')
       storageOk = true
     } catch {
       storageOk = false
@@ -91,7 +91,7 @@ export function SecurityPosture({ className = '' }: { className?: string }) {
       id: 'backend',
       label: 'Optional backend holds no secrets by default',
       detail:
-        'The FastAPI service is not required by this build. If you run it, CORS is an explicit origin allowlist from WIFIFORGE_ALLOWED_ORIGINS (no wildcard), authentication requires WIFIFORGE_JWT_SECRET and returns 503 without it, and the classroom demo accounts only load with WIFIFORGE_DEMO_USERS=1.',
+        'The FastAPI service is not required by this build. If you run it, CORS is an explicit origin allowlist from PLATFORM_ALLOWED_ORIGINS (legacy WIFIFORGE_ALLOWED_ORIGINS, no wildcard), authentication requires PLATFORM_JWT_SECRET (legacy WIFIFORGE_JWT_SECRET) and returns 503 without it, and the classroom demo accounts only load with PLATFORM_DEMO_USERS=1 (legacy WIFIFORGE_DEMO_USERS=1). Platform supports dual env vars.',
       state: 'pass',
     })
 

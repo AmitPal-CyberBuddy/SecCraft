@@ -213,7 +213,7 @@ export function Settings() {
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex flex-col sm:flex-row gap-3">
-        <button onClick={() => { const data = JSON.stringify({ lessons, labs, achievements, totalXp, level, overall }, null, 2); const blob = new Blob([data], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `wififorge-progress-${Date.now()}.json`; a.click(); URL.revokeObjectURL(url) }} className="flex-1 py-3 rounded-xl bg-[#0f172a] border border-[#1e293b] text-[13px] font-medium text-slate-300 flex items-center justify-center gap-2 hover:bg-[#1e293b] hover:border-[#334155] transition-all touch-manipulation min-h-[44px]">
+        <button onClick={() => { const data = JSON.stringify({ lessons, labs, achievements, totalXp, level, overall }, null, 2); const blob = new Blob([data], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `platform-progress-${Date.now()}.json`; a.click(); URL.revokeObjectURL(url) }} className="flex-1 py-3 rounded-xl bg-[#0f172a] border border-[#1e293b] text-[13px] font-medium text-slate-300 flex items-center justify-center gap-2 hover:bg-[#1e293b] hover:border-[#334155] transition-all touch-manipulation min-h-[44px]">
           <Download className="w-4 h-4" />Export Progress JSON
         </button>
         <button onClick={() => { if (confirm('Reset all progress? This will clear XP, lessons, labs, achievements.')) reset() }} className="flex-1 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-[13px] font-medium text-red-400 flex items-center justify-center gap-2 hover:bg-red-500/15 hover:border-red-500/30 transition-all touch-manipulation min-h-[44px]">
@@ -222,7 +222,7 @@ export function Settings() {
       </motion.div>
 
       <div className="text-[11px] text-slate-600 font-mono text-center pb-4">
-        WiFiForge — zero-cost, local-first, offline-capable • {totalXp} XP • Lv.{level.level} {level.title} • {TOTAL_MODULES} modules • {TOTAL_LESSONS} lessons • {TOTAL_PCAPS} verified captures • {TOTAL_SCENARIOS} decision scenarios • checklist • evidence vault • no accounts, no tracking
+        Quench — zero-cost, local-first, offline-capable — Platform + Wireless path — Forge. Break. Fix. Quench. Retest. • {totalXp} XP • Lv.{level.level} {level.title} • {TOTAL_MODULES} modules • {TOTAL_LESSONS} lessons • {TOTAL_PCAPS} verified captures • {TOTAL_SCENARIOS} decision scenarios • checklist • evidence vault • no accounts, no tracking
       </div>
     </div>
   )

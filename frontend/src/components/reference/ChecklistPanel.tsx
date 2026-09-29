@@ -12,19 +12,21 @@ interface ChecklistGroup { group: string; items: ChecklistItem[] }
  */
 export function ChecklistPanel({ engagementId = 'general', className = '' }: { engagementId?: string; className?: string }) {
   const groups = checklist as ChecklistGroup[]
-  const storeKey = `wififorge-checklist-${engagementId}`
+  const STORE_KEY = `platform-checklist-${engagementId}`
+  const LEGACY_STORE_KEY = `wififorge-checklist-${engagementId}`
+  const storeKey = STORE_KEY
   const [done, setDone] = useState<Record<string, boolean>>({})
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(storeKey)
+      const raw = localStorage.getItem(STORE_KEY) || localStorage.getItem(LEGACY_STORE_KEY)
       if (raw) setDone(JSON.parse(raw))
     } catch { /* ignore */ }
   }, [storeKey])
 
   useEffect(() => {
-    try { localStorage.setItem(storeKey, JSON.stringify(done)) } catch { /* ignore */ }
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(done)); try { localStorage.setItem(LEGACY_STORE_KEY, JSON.stringify(done)) } catch {} } catch { /* ignore */ }
   }, [done, storeKey])
 
   const totals = useMemo(() => {

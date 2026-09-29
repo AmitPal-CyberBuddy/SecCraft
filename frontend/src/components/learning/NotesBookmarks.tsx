@@ -21,17 +21,17 @@ interface BookmarkItem {
 
 export function NotesBookmarks({ moduleId, lessonId, className = '' }: { moduleId: string; lessonId: string; className?: string }) {
   const [notes, setNotes] = useState<Note[]>(() => {
-    try { return JSON.parse(localStorage.getItem('wififorge-notes') || '[]') } catch { return [] }
+    try { return JSON.parse(localStorage.getItem('platform-notes') || localStorage.getItem('wififorge-notes') || '[]') } catch { return [] }
   })
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>(() => {
-    try { return JSON.parse(localStorage.getItem('wififorge-bookmarks') || '[]') } catch { return [] }
+    try { return JSON.parse(localStorage.getItem('platform-bookmarks') || localStorage.getItem('wififorge-bookmarks') || '[]') } catch { return [] }
   })
   const [newNote, setNewNote] = useState('')
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState<'notes' | 'bookmarks'>('notes')
 
-  const saveNotes = (n: Note[]) => { setNotes(n); try { localStorage.setItem('wififorge-notes', JSON.stringify(n)) } catch {} }
-  const saveBookmarks = (b: BookmarkItem[]) => { setBookmarks(b); try { localStorage.setItem('wififorge-bookmarks', JSON.stringify(b)) } catch {} }
+  const saveNotes = (n: Note[]) => { setNotes(n); try { localStorage.setItem('platform-notes', JSON.stringify(n)); localStorage.setItem('wififorge-notes', JSON.stringify(n)) } catch {} }
+  const saveBookmarks = (b: BookmarkItem[]) => { setBookmarks(b); try { localStorage.setItem('platform-bookmarks', JSON.stringify(b)); localStorage.setItem('wififorge-bookmarks', JSON.stringify(b)) } catch {} }
 
   const addNote = () => {
     if (!newNote.trim()) return
@@ -109,7 +109,7 @@ export function NotesBookmarks({ moduleId, lessonId, className = '' }: { moduleI
           </div>
 
           {notes.length > 0 && (
-            <button onClick={() => { const blob = new Blob([JSON.stringify(notes, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `wififorge-notes-${Date.now()}.json`; a.click(); URL.revokeObjectURL(url) }} className="w-full py-2.5 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] text-slate-400 hover:text-slate-200 transition-colors">Export Notes JSON • {notes.length} notes</button>
+            <button onClick={() => { const blob = new Blob([JSON.stringify(notes, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `platform-notes-${Date.now()}.json`; a.click(); URL.revokeObjectURL(url) }} className="w-full py-2.5 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] text-slate-400 hover:text-slate-200 transition-colors">Export Notes JSON • {notes.length} notes</button>
           )}
         </div>
       )}

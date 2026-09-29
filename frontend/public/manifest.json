@@ -1,7 +1,7 @@
 {
-  "name": "WiFiForge — Wireless Penetration Testing Academy",
-  "short_name": "WiFiForge",
-  "description": "Zero-cost, offline-capable wireless security academy: 20 modules, 27 authored lessons, 16 verified 802.11 captures, 15 challenges, 35 decision scenarios. No account, no tracking.",
+  "name": "SecCraft \u2014 Hands-on Cybersecurity Learning Platform",
+  "short_name": "SecCraft",
+  "description": "SecCraft \u2014 Hands-on Cybersecurity Learning Platform \u2014 Forge. Break. Fix. SecCraft. Retest. \u2014 Learn cybersecurity by doing. Wireless Pentesting is Path #1 (legacy WiFiForge).",
   "id": "./",
   "start_url": "./",
   "scope": "./",
@@ -66,9 +66,20 @@
       ]
     },
     {
+      "name": "Learning Paths",
+      "url": "./paths",
+      "description": "8 paths \u2022 1 available \u2022 Wireless Pentesting mature",
+      "icons": [
+        {
+          "src": "favicon.svg",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
       "name": "Modules",
       "url": "./modules",
-      "description": "20 modules across 6 phases",
+      "description": "20 modules across 6 phases (Wireless path)",
       "icons": [
         {
           "src": "favicon.svg",
