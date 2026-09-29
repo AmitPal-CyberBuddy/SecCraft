@@ -46,7 +46,7 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(
       fetch(req).catch(() => new Response(
         JSON.stringify({ error: 'Offline — local-first mode', offline: true }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
+        { status: 503, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } },
       )),
     )
     return

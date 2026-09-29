@@ -5,7 +5,7 @@
   "legacyName": "WiFiForge",
   "tagline": "Learn. Practice. Investigate. Improve.",
   "secondaryTagline": "Learn cybersecurity by doing.",
-  "description": "A local-first, hands-on cybersecurity learning platform. Learners investigate systems, perform authorized security tests, collect evidence, assess impact, remediate findings, retest, and report. The static app works with bundled learning and lab content; the optional FastAPI service is for local use. Simulation labs need no wireless hardware, while hybrid and RF-required labs state their limits.",
+  "description": "A guest-first, hands-on cybersecurity learning platform. Learners investigate systems, perform authorized security tests, collect evidence, assess impact, remediate findings, retest, and report. Bundled learning and lab content remain usable offline with browser-local progress; optional Supabase Auth and FastAPI services support account-scoped synchronization when separately configured. Simulation labs need no wireless hardware, while hybrid and RF-required labs state their limits.",
   "philosophy": "Learn → Practice → Investigate → Evidence → Impact → Improve → Report",
   "philosophyShort": "Learn → Practice → Investigate → Improve",
   "contentVersion": "2.1",

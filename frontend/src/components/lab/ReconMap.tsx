@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { LoadingPanel } from '@/components/common/LoadingPanel'
 import { motion } from 'framer-motion'
 import { Wifi, Radio, Users, AlertTriangle, EyeOff, Shield, Hash, Activity, Target } from 'lucide-react'
+import { apiFetch, discardResponseBody } from '@/lib/api'
 
 interface Frame {
   number: number
@@ -109,8 +110,11 @@ export function ReconMap({ pcapId }: Props) {
       // Local parser API first, then the offline dataset that ships with the build. No invented
       // frames: if neither is available the panel reports that instead of drawing a fictional BSS.
       try {
-        const res = await fetch(`/api/pcaps/${pcapId}/analyze`)
-        if (!res.ok) throw new Error(`parser API responded ${res.status}`)
+        const res = await apiFetch(`/api/pcaps/${encodeURIComponent(pcapId)}/analyze`)
+        if (!res.ok) {
+          await discardResponseBody(res)
+          throw new Error(`parser API responded ${res.status}`)
+        }
         setData(await res.json())
       } catch (apiError: any) {
         try {

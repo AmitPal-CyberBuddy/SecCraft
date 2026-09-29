@@ -25,8 +25,7 @@ export function Certificate({ className = '' }: { className?: string }) {
   const pathStats = useMemo(() => getStatsForPath(currentPathId), [currentPathId])
 
   const isCertified = overall >= CERT_PROGRESS_THRESHOLD && pathProgress >= CERT_PROGRESS_THRESHOLD
-    // A local record number for your own tracking — it is not registered anywhere, because this build
-  // has no server and no issuer. Platform-level + path-level.
+  // A local record number for personal reference. It is not registered, signed, or issued by the account API.
   const certId = `LOCAL-RECORD-${platform.name.toUpperCase()}-${currentPath.shortTitle.toUpperCase()}-${overall}-${totalXp}-${new Date().toISOString().slice(0, 10)}`
   const issueDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 
@@ -72,7 +71,7 @@ export function Certificate({ className = '' }: { className?: string }) {
         <div className="text-center mb-6">
           <div className="text-[11px] font-mono text-slate-500 uppercase tracking-widest">Local activity record for</div>
           <div className="mt-2 text-[22px] xs:text-[28px] font-heading font-bold text-slate-100 tracking-tight">{profile?.displayName || 'Learner'}</div>
-          <div className="text-[12px] xs:text-[13px] text-slate-400 mt-1">Local practice • offline-capable static build • {platform.name} • {currentPath.title}{profile ? ' • self-declared local profile' : ''}</div>
+          <div className="text-[12px] xs:text-[13px] text-slate-400 mt-1">Local practice • offline-capable static build • {platform.name} • {currentPath.title}{profile ? ' • browser-local display name' : ''}</div>
         </div>
 
         {/* Achievement — path-aware */}

@@ -36,7 +36,7 @@ export function KeyboardShortcuts() {
       if (e.key.toLowerCase() === 'g' && !e.metaKey && !e.ctrlKey) {
         const nextHandler = (ev: KeyboardEvent) => {
           const k = ev.key.toLowerCase()
-          if (k === 'd') navigate('/')
+          if (k === 'd') navigate('/app')
           if (k === 'm') navigate('/modules')
           if (k === 'l') navigate('/labs')
           if (k === 'c') navigate('/challenges')

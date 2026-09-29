@@ -188,15 +188,15 @@ export function AnalyticsDashboard({ className = '' }: { className?: string }) {
         {nothingRecorded ? (
           <p className="text-[12px] text-slate-400 flex items-start gap-2 leading-relaxed">
             <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-slate-400" />
-            Nothing recorded on this device yet, so there is nothing to compare. Progress, XP and achievements are
-            stored only in this browser — clearing site data or using another device starts from zero.
+            Nothing recorded on this device yet, so there is nothing to compare. This analytics view reads local progress,
+            XP and achievements only; account-synced records are separate. Clearing site data removes this local history.
           </p>
         ) : (
           <p className="text-[12px] text-slate-400 leading-relaxed">
             {completedLessons.length} lessons, {completedLabs.length} labs and {quizScores.length} quizzes recorded
             locally, {achievements.length} achievements unlocked. Overall completion ({overall}%) is derived from those
-            records plus XP against the level table — it is not a comparison with other learners, because this build
-            has no accounts and no server-side roster.
+            records plus XP against the level table. This local view does not include account-synced records and is not a
+            comparison with other learners.
           </p>
         )}
       </div>

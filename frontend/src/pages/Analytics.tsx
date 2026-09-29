@@ -100,7 +100,7 @@ export function Analytics() {
 
         <FadeIn delay={0.3}>
           <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 font-mono py-2">
-            <Clock className="w-3 h-3" /> Local-first • Offline-capable • No tracking • Your data stays in browser
+            <Clock className="w-3 h-3" /> Local analytics • Offline-capable • No tracking • Account sync is separate
           </div>
         </FadeIn>
       </div>

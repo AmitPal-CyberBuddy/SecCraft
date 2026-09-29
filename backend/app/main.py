@@ -1,57 +1,71 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import content, progress, labs, pcaps, enterprise, auth, learning_paths
-from app.core.database import init_db
+
+from app.api.v1.dependencies import auth_is_configured
+from app.api.v1.router import router as v1_router
 from app.core import config
+from app.core.database import init_db
+from app.routers import content, learning_paths, pcaps
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    # Local SQLite may create its schema for development/tests. Deployed PostgreSQL uses Alembic.
     init_db()
     yield
 
 
 app = FastAPI(
-    title="SecCraft API — Hands-on Cybersecurity Learning Platform",
+    title="SecCraft API",
     description=(
-        "Optional local API for SecCraft: learning-path and content metadata, offline capture decoding, "
-        "and optional progress storage. The GitHub Pages frontend is static and uses bundled learning "
-        "and lab data; it does not require this service. This API is intended for local development "
-        "and should only be exposed with an explicitly configured origin allowlist and secrets."
+        "Versioned account and synchronization API plus read-only access to version-controlled learning "
+        "content and supplied lab artifacts. Guest learning remains static and available without this service."
     ),
-    version="2.1.0",
+    version="3.0.0",
     lifespan=lifespan,
+    docs_url="/api/docs" if config.ENABLE_API_DOCS else None,
+    redoc_url="/api/redoc" if config.ENABLE_API_DOCS else None,
+    openapi_url="/api/openapi.json" if config.ENABLE_API_DOCS else None,
 )
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=False,
+    allow_methods=config.ALLOWED_METHODS,
+    allow_headers=config.ALLOWED_HEADERS,
+    max_age=600,
 )
 
 
-# Keep every API surface under the same prefix used by the frontend and reverse-proxy config.
-for router in (content.router, progress.router, labs.router, pcaps.router, enterprise.router, auth.router, learning_paths.router):
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(), usb=()")
+    response.headers.setdefault("Cache-Control", "no-store" if request.url.path.startswith("/api/v1/") else "public, max-age=60")
+    return response
+
+
+# Only read-only public static/catalogue routes are retained under the legacy /api prefix. The former
+# shared-local progress, demo login, answer-revealing lab validator, analytics, and upload routes are
+# deliberately no longer mounted.
+for router in (content.router, learning_paths.router, pcaps.router):
     app.include_router(router, prefix="/api")
+app.include_router(v1_router, prefix="/api/v1")
 
 
-@app.get("/api/health")
+@app.get("/api/health", include_in_schema=False)
 def health():
     return {
         "status": "ok",
-        "service": "SecCraft API — Hands-on Cybersecurity Learning Platform",
-        "version": "2.1.0",
+        "service": "SecCraft API",
+        "version": "3.0.0",
         "platform": "SecCraft",
-        # Retained for clients that identify the former product name.
-        "legacy": "WiFiForge",
-        "learning_paths": 8,
-        "available_learning_paths": 1,
-        "tagline": "Learn. Practice. Investigate. Improve.",
-        "secondary": "Learn cybersecurity by doing.",
-        "philosophy": "Investigate → Test → Collect evidence → Assess impact → Remediate → Retest → Report",
-        "message": "SecCraft — Learn. Practice. Investigate. Improve. Wireless Pentesting is the first available learning path.",
+        "guest_learning_available": True,
+        "account_services_configured": auth_is_configured(),
     }

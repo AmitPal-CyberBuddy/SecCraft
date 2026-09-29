@@ -1,36 +1,10 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float
-from sqlalchemy.sql import func
-from app.core.database import Base
+"""Compatibility import for the generic account-owned progress schema.
 
-class LessonProgress(Base):
-    __tablename__ = "lesson_progress"
+The former lesson/lab/quiz tables used a shared ``user_id='local'`` identity and are intentionally
+not part of the deployed schema or mounted API. New records use ``ProgressRecord`` with a
+server-derived Supabase user ID.
+"""
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, default="local", index=True)
-    module_id = Column(String, index=True)
-    lesson_id = Column(String, index=True)
-    completed = Column(Boolean, default=True)
-    completed_at = Column(DateTime(timezone=True), server_default=func.now())
+from app.models.platform import AssessmentAttempt, ProgressRecord, XpEvent
 
-class LabProgress(Base):
-    __tablename__ = "lab_progress"
-
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, default="local", index=True)
-    module_id = Column(String, index=True)
-    lab_id = Column(String, index=True)
-    completed = Column(Boolean, default=True)
-    score = Column(Float, nullable=True)
-    completed_at = Column(DateTime(timezone=True), server_default=func.now())
-
-class QuizProgress(Base):
-    __tablename__ = "quiz_progress"
-
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, default="local", index=True)
-    module_id = Column(String, index=True)
-    quiz_id = Column(String, index=True)
-    score = Column(Integer)
-    total = Column(Integer)
-    completed = Column(Boolean, default=True)
-    completed_at = Column(DateTime(timezone=True), server_default=func.now())
+__all__ = ["AssessmentAttempt", "ProgressRecord", "XpEvent"]

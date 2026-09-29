@@ -7,7 +7,7 @@ import learningPaths from '@/content/learning-paths.json'
 import platform from '@/content/platform.json'
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard', badge: null, desc: 'Platform overview • compact', section: 'platform' },
+  { to: '/app', icon: LayoutDashboard, label: 'Dashboard', badge: null, desc: 'Guest learning workspace • local progress', section: 'platform' },
   { to: '/paths', icon: Map, label: 'Learning Paths', badge: `${TOTAL_LEARNING_PATHS}`, desc: `${AVAILABLE_LEARNING_PATHS} available • ${TOTAL_LEARNING_PATHS} total`, section: 'learn' },
   { to: '/modules', icon: BookOpen, label: 'Modules', badge: `${TOTAL_MODULES}`, desc: `Path-aware • ${TOTAL_MODULES} total`, section: 'learn' },
   { to: '/labs', icon: FlaskConical, label: 'Labs', badge: `${TOTAL_PCAPS}`, desc: `Artifacts • ${TOTAL_PCAPS} verified`, section: 'practice' },
@@ -261,7 +261,7 @@ export function Sidebar({ onClose, isMobile, isOpen }: Props) {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">Artifacts</span>
-                  <span className="text-cyan-400 font-mono text-[10px]">{TOTAL_PCAPS} verified • local-first</span>
+                  <span className="text-cyan-400 font-mono text-[10px]">{TOTAL_PCAPS} bundled captures</span>
                 </div>
               </div>
             </div>

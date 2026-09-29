@@ -151,7 +151,7 @@ function buildIndex(): SearchItem[] {
     { id: 'page-engagement', title: 'Engagements / Assessments', description: 'ENG-01 Northwind Retail • Authorized assessment mode • Platform', type: 'tool', path: '/engagement', keywords: ['engagement', 'assessment', 'northwind', 'ENG-01'], badge: 'assess' },
     { id: 'page-reference', title: 'Reference — Commands, Filters, Checklist, Methodology', description: 'VAPT methodology • Evidence standard • Reporting • Platform generic', type: 'tool', path: '/reference', keywords: ['reference', 'commands', 'filters', 'checklist', 'methodology', 'evidence'], badge: 'reference' },
     { id: 'page-reports', title: 'Reports — Findings & Evidence Vault', description: 'Report editor • Timeline • Evidence vault • Platform generic', type: 'tool', path: '/reports', keywords: ['reports', 'evidence', 'vault', 'findings'], badge: 'track' },
-    { id: 'page-settings', title: 'Settings — Profile, Theme, Privacy, Local Data', description: 'Local-first • No account • Theme • Accessibility • Offline', type: 'tool', path: '/settings', keywords: ['settings', 'profile', 'theme', 'privacy', 'accessibility'], badge: 'settings' },
+    { id: 'page-settings', title: 'Settings — Profile, Theme, Privacy, Local Data', description: 'Guest-first • Optional account sync • Theme • Accessibility • Offline learning', type: 'tool', path: '/settings', keywords: ['settings', 'profile', 'theme', 'privacy', 'accessibility'], badge: 'settings' },
   )
 
   return items

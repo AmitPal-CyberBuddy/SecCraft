@@ -60,7 +60,7 @@ jobs:
 
       - uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
@@ -68,7 +68,11 @@ jobs:
         run: npm ci
         working-directory: frontend
 
-      # Nothing fabricated and nothing fetched from a third party may reach the live site, and the
+      - name: Test guest API outage and timeout fallback
+        run: npm test
+        working-directory: frontend
+
+      # No fabricated/unapproved data or unapproved third-party requests reach the live site; the
       # capture datasets must still decode to the values the lessons assert.
       - name: Gate — no dummy data, no external requests, no unearned claims
         run: python3 scripts/verify-no-dummy-data.py
@@ -86,6 +90,10 @@ jobs:
         env:
           # Project sites are served from /<repo>/ — the Vite build has to match.
           VITE_BASE: /${{ github.event.repository.name }}/
+          # Optional public values; leave unset for guest-only Pages builds.
+          VITE_API_BASE: ${{ vars.VITE_API_BASE }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
 
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:

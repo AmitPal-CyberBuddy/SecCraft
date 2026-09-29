@@ -458,7 +458,8 @@ def parse_pcap(pcap_path: Path, display_filter: Optional[str] = None, pcap_id: s
     return {
         "method": method,
         "pcap_id": pcap_id,
-        "pcap_path": str(pcap_path),
+        # Expose a basename only; never disclose the server's repository or filesystem path.
+        "pcap_path": pcap_path.name,
         "filter": display_filter,
         "note": note,
         "frames": frames,

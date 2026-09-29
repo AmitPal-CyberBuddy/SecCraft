@@ -11,6 +11,7 @@ import { TERMINAL_COMMAND_COUNT } from '@/components/terminal/commandCount'
 import { TierBadge } from '@/components/common/TierBadge'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useProgressStore } from '@/store/useProgressStore'
+import { apiFetch, discardResponseBody } from '@/lib/api'
 
 const TerminalEmulator = lazy(() => import('@/components/terminal/TerminalEmulator').then(m => ({ default: m.TerminalEmulator })))
 const PcapUploader = lazy(() => import('@/components/lab/PcapUploader').then(m => ({ default: m.PcapUploader })))
@@ -52,8 +53,14 @@ export function Labs() {
   }, [pcapQuery])
 
   useEffect(() => {
-    fetch('/api/pcaps')
-      .then(r => r.json())
+    apiFetch('/api/pcaps')
+      .then(async response => {
+        if (!response.ok) {
+          await discardResponseBody(response)
+          throw new Error(`PCAP catalogue API responded ${response.status}`)
+        }
+        return response.json()
+      })
       .then(data => {
         setPcaps(data.pcaps || [])
         setParserInfo(data.parser)

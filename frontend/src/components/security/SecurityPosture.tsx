@@ -1,18 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { ShieldCheck, Lock, Globe, KeyRound, Package, Server, Info, AlertTriangle, CheckCircle, ExternalLink } from 'lucide-react'
 import { TERMINAL_COMMAND_COUNT } from '@/components/terminal/commandCount'
 
-/**
- * Security posture — the statements here are checked against what the shipped code actually does.
- *
- * Every claim below is either (a) read from the running page (origin, protocol, storage access,
- * online state), or (b) a property of the build that is enforced by a script you can re-run
- * (`npm run build` fails on third-party URLs; `scripts/verify-lab-artifacts.py` validates the capture
- * datasets; the CI workflow audits dependencies). Nothing here is a marketing claim about a feature
- * that does not exist, and there is no "verified" badge pretending a third party audited the app.
- */
-
+/** Claims here describe the guest-first app and optional account services shipped in this build. */
 interface Check {
   id: string
   label: string
@@ -20,37 +11,45 @@ interface Check {
   state: 'pass' | 'info' | 'warn'
 }
 
+function configuredServiceOrigins(): string[] {
+  return [...new Set([import.meta.env.VITE_API_BASE, import.meta.env.VITE_SUPABASE_URL]
+    .map(value => value?.trim())
+    .filter((value): value is string => Boolean(value))
+    .map(value => {
+      try { return new URL(value).origin } catch { return 'invalid configured URL' }
+    }))]
+}
+
 export function SecurityPosture({ className = '' }: { className?: string }) {
-  const [checks, setChecks] = useState<Check[]>([])
-
-  useEffect(() => {
+  const checks = useMemo(() => {
     const found: Check[] = []
-
     const origin = typeof location !== 'undefined' ? location.origin : 'unknown'
     const https = typeof location !== 'undefined' && (location.protocol === 'https:' || location.hostname === 'localhost')
+    const serviceOrigins = configuredServiceOrigins()
 
     found.push({
       id: 'origin',
-      label: 'Same-origin only',
-      detail: `This page runs on ${origin}. The app makes relative requests only — no CDN, no third-party fonts, no analytics. Build-time check: a third-party URL fails the build.`,
-      state: 'pass',
+      label: 'Explicit service connections',
+      detail: serviceOrigins.length
+        ? `This page runs on ${origin}. Static learning content stays with the app; configured account/API requests may go to ${serviceOrigins.join(', ')}. No analytics, telemetry, CDN fonts, or automatic progress upload.`
+        : `This page runs on ${origin}. Guest learning and local progress stay in this browser. No external auth/API origin, analytics, telemetry, or CDN fonts is configured in this build.`,
+      state: serviceOrigins.length ? 'info' : 'pass',
     })
 
     found.push({
       id: 'transport',
       label: https ? 'Encrypted transport' : 'Unencrypted transport',
       detail: https
-        ? 'Served over HTTPS (or localhost), so the page and its assets cannot be modified in transit.'
-        : 'This page was loaded over plain HTTP. Serve it over HTTPS before using it on an untrusted network.',
+        ? 'This page is served over HTTPS (or localhost). Configure deployed API and Supabase URLs to use HTTPS as well.'
+        : 'This page was loaded over plain HTTP. Use HTTPS before signing in or using it on an untrusted network.',
       state: https ? 'pass' : 'warn',
     })
 
     found.push({
       id: 'csp',
       label: 'Content-Security-Policy',
-      detail:
-        "The built index.html carries a CSP meta tag (default-src 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self'), and dist/_headers repeats it plus nosniff / Referrer-Policy / Permissions-Policy for hosts that read headers.",
-      state: 'pass',
+      detail: "The built page includes a restrictive CSP meta policy for scripts, connections and resources. Hosts that read dist/_headers also enforce response headers such as X-Frame-Options; GitHub Pages does not provide configurable response headers, so its meta policy cannot enforce frame-ancestors.",
+      state: 'info',
     })
 
     let storageOk = false
@@ -63,51 +62,55 @@ export function SecurityPosture({ className = '' }: { className?: string }) {
     }
     found.push({
       id: 'storage',
-      label: 'No account, no server-side profile',
+      label: 'Guest data stays local unless you choose to sync',
       detail: storageOk
-        ? 'Progress, notes, evidence records and settings live in this browser\'s localStorage. Clearing site data removes them; nothing is uploaded, and there is no login to steal.'
-        : 'This browser blocks local storage (private mode?), so progress cannot be saved. The app still works for the current visit.',
+        ? 'Guest progress, notes, local profile, checklists, and evidence metadata live in this browser. Account sync is a separate, authenticated action; importing local records does not make them verified or award server XP.'
+        : 'This browser blocks local storage, so progress may not persist after this visit. The app remains available for guest learning during this visit.',
       state: storageOk ? 'pass' : 'warn',
     })
 
     const controlled = typeof navigator !== 'undefined' ? (navigator.serviceWorker?.controller ? 'a service worker' : null) : null
     found.push({
       id: 'sw',
-      label: controlled ? 'Offline cache active' : 'No service worker controlling this tab',
+      label: controlled ? 'Offline app shell active' : 'Offline shell not controlling this tab yet',
       detail: controlled
-        ? 'A service worker is serving this tab, which is what makes the app work offline. It caches only same-origin files; update it by reloading after a new deploy.'
-        : 'The app works offline once the PWA shell is installed; if you see this in a normal tab it simply means the service worker is not active yet (hard reload to register it).',
+        ? 'The service worker caches same-origin static files and passes API requests through without caching them. Auth and synchronization still require their configured services.'
+        : 'The static learning shell can work offline after it has been cached. Reconnect once to install or update the service worker.',
       state: 'info',
     })
 
     found.push({
       id: 'deps',
       label: 'Dependency and supply-chain checks',
-      detail: `Frontend dependencies are installed from the lockfile (npm ci) and audited in CI; capture datasets are regenerated and verified by scripts/verify-lab-artifacts.py (8 suites) before deploy. The simulated terminal ships ${TERMINAL_COMMAND_COUNT} commands implemented in this repository — it never executes shell commands or reaches the network.`,
+      detail: `Dependencies are installed from the lockfile and audited in CI; shipped lab artifacts are checked by scripts/verify-lab-artifacts.py. The simulated terminal ships ${TERMINAL_COMMAND_COUNT} in-app commands and never executes shell commands or reaches the network.`,
       state: 'pass',
     })
 
+    const authConfigured = Boolean(import.meta.env.VITE_SUPABASE_URL?.trim() && import.meta.env.VITE_SUPABASE_ANON_KEY?.trim())
     found.push({
       id: 'backend',
-      label: 'Optional backend holds no secrets by default',
-      detail:
-        'The FastAPI service is not required by this build. If you run it, CORS is an explicit origin allowlist from PLATFORM_ALLOWED_ORIGINS (legacy WIFIFORGE_ALLOWED_ORIGINS, no wildcard), authentication requires PLATFORM_JWT_SECRET (legacy WIFIFORGE_JWT_SECRET) and returns 503 without it, and the classroom demo accounts only load with PLATFORM_DEMO_USERS=1 (legacy WIFIFORGE_DEMO_USERS=1). Platform supports dual env vars.',
-      state: 'pass',
+      label: authConfigured ? 'Optional account services configured' : 'Guest learning does not need account services',
+      detail: authConfigured
+        ? 'Supabase Auth owns credentials; the API verifies provider tokens and applies email-verification, pending-approval, and owner-allowlist checks. Only the public Supabase anon key belongs in the frontend; service-role and database credentials stay server-side.'
+        : 'No Supabase credentials are bundled in this build. Sign-up and account sync are unavailable, but the authored lessons, labs, and browser-local progress remain usable.',
+      state: authConfigured ? 'info' : 'pass',
     })
 
     found.push({
       id: 'authorisation',
       label: 'Authorised use only',
-      detail:
-        'The techniques in this academy are for systems you own or have written permission to test. Labs use synthetic captures and bundled hostapd configurations; the RF_REQUIRED labs are documented, not performed, because transmitting them needs hardware, licensing and a signed scope.',
+      detail: 'Use the techniques only on systems you own or have explicit permission to test. Bundled artifacts and simulated results do not grant permission to test real networks or prove radio-frequency behavior.',
       state: 'info',
     })
 
-    setChecks(found)
+    return found
   }, [])
 
   const iconFor = (state: Check['state']) =>
     state === 'pass' ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : state === 'warn' ? <AlertTriangle className="w-4 h-4 text-amber-400" /> : <Info className="w-4 h-4 text-cyan-400" />
+
+  const authConfigured = Boolean(import.meta.env.VITE_SUPABASE_URL?.trim() && import.meta.env.VITE_SUPABASE_ANON_KEY?.trim())
+  const serviceOrigins = configuredServiceOrigins()
 
   return (
     <div className={`rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 sm:p-6 min-w-0 w-full ${className}`}>
@@ -141,11 +144,11 @@ export function SecurityPosture({ className = '' }: { className?: string }) {
 
       <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
         {[
-          { icon: Globe, label: 'Third-party requests', value: '0' },
-          { icon: KeyRound, label: 'Accounts required', value: '0' },
-          { icon: Lock, label: 'Secrets in client', value: '0' },
-          { icon: Server, label: 'Backend required', value: 'No' },
-          { icon: Package, label: 'Shells executed', value: '0' },
+          { icon: Globe, label: 'Analytics / telemetry', value: 'None' },
+          { icon: KeyRound, label: 'Accounts required', value: 'No' },
+          { icon: Lock, label: 'Client service secrets', value: '0' },
+          { icon: Server, label: 'Account sync', value: authConfigured ? 'Optional' : 'Not configured' },
+          { icon: Package, label: 'Configured service origins', value: String(serviceOrigins.length) },
         ].map(item => (
           <div key={item.label} className="p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
             <div className="flex items-center gap-1.5 text-[10px] text-slate-500 uppercase tracking-wide font-semibold">

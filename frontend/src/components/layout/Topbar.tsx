@@ -106,7 +106,7 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
               <span className="hidden md:inline-flex text-[9px] px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono font-medium shrink-0">ACTIVE</span>
             </div>
             <div className="hidden md:flex items-center gap-2 mt-0.5 min-w-0">
-              <span className="text-[11px] text-slate-400 font-mono truncate">local-first • no account</span>
+              <span className="text-[11px] text-slate-400 font-mono truncate">guest-first • sync optional</span>
               <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0" />
               <span className="text-[10px] text-slate-400 font-mono truncate">{TOTAL_PCAPS} captures • offline dataset</span>
             </div>

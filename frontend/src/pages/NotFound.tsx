@@ -14,7 +14,7 @@ export function NotFound() {
       <p className="not-found-copy">The address may be out of date, or the destination may have moved. Your learning data is unchanged.</p>
       <code className="not-found-route">{route}</code>
       <div className="not-found-actions">
-        <Link to="/" className="not-found-primary"><ArrowLeft className="w-4 h-4" /> Back to dashboard</Link>
+        <Link to="/app" className="not-found-primary"><ArrowLeft className="w-4 h-4" /> Back to workspace</Link>
         <button type="button" className="not-found-secondary" onClick={() => document.dispatchEvent(new CustomEvent('open-search'))}><Search className="w-4 h-4" /> Search SecCraft</button>
       </div>
     </section>

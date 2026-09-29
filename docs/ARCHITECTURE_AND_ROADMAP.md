@@ -1,6 +1,6 @@
 # SecCraft Platform Architecture and Roadmap
 
-> **Current product:** SecCraft, repository `AmitPal-CyberBuddy/SecCraft`, Pages target `https://amitpal-cyberbuddy.github.io/SecCraft/`. This document contains earlier architecture planning below; naming and deployment sections that mention Quench, Anvil, or `/WiFiForge/` are historical and superseded by `docs/BRANDING.md`, `docs/BRANDING_MIGRATION.md`, and `docs/GITHUB_PAGES.md`.
+> **Current product:** SecCraft, repository `AmitPal-CyberBuddy/SecCraft`, Pages target `https://amitpal-cyberbuddy.github.io/SecCraft/`. Guest learning remains static and offline-capable; optional accounts use Supabase Auth, FastAPI `/api/v1`, and PostgreSQL as documented in [`ACCOUNT_SYNC_PLATFORM.md`](ACCOUNT_SYNC_PLATFORM.md). Historical sections below describe superseded designs and must not be treated as current implementation. Naming and deployment references to Quench, Anvil, or `/WiFiForge/` are historical and superseded by `docs/BRANDING.md`, `docs/BRANDING_MIGRATION.md`, and `docs/GITHUB_PAGES.md`.
 
 ## Platform Hierarchy (New)
 
@@ -26,8 +26,8 @@ Platform (SecCraft — domain-neutral)
 ├── Assessments / Engagements (scope, RoE, targets, artefacts, tasks, marking guide — generic VAPT)
 ├── Skills (generic + domain-specific — Reconnaissance, Traffic Analysis, Authentication Testing, etc. + wireless ssid, bssid, etc.)
 ├── Evidence / Reporting (generic — hash, filter, frame numbers, chain of custody, CVSS as calculation, remediation, retest)
-├── Progress / Analytics (path-aware — currentLearningPathId, getPathProgress, platform-progress storage with wififorge-progress fallback)
-└── Certificates (path-aware — platform certificate + path certificate, local-first, not accredited, LOCAL- id)
+├── Progress / Analytics (path-aware — local `platform-progress` with `wififorge-progress` fallback; optional account-owned records are imported separately and remain unverified)
+└── Local practice record (browser-only; not an accredited or server-issued certificate; imports cannot grant one)
 ```
 
 **Core Loop (Generic VAPT, not just wireless):**
@@ -51,7 +51,10 @@ Philosophy retained: Forge. Break. Fix. Retest. (platform) + Understand the Prot
 
 **Frontend Routing (New + Legacy Backward Compat):**
 ```
-/ → Dashboard (platform overview, featured path Wireless, all paths grid)
+/ → PublicHome (public SecCraft homepage and guest-first navigation)
+/app → Dashboard (the existing local workspace; no account required)
+/account, /login, /signup, /reset-password → optional Supabase Auth flows and server account status
+/admin → owner-only panel; authorization is enforced by the API, not the route
 /paths → LearningPaths (list all paths, 1 available, 7 planned)
 /paths/:pathId → PathDetail (phases within path)
 /paths/:pathId/modules → Modules (path-aware filter)
@@ -72,12 +75,12 @@ Philosophy retained: Forge. Break. Fix. Retest. (platform) + Understand the Prot
 - Platform-level (domain-neutral): Dashboard, Search (generic index of paths, modules, labs, challenges, skills), Progress, Labs (generic engine), Challenges, Assessments, Evidence, Certificates, Analytics, Navigation (Learn/Practice/Assess/Track), Content engine, Routing, Authentication, Learning state, Current shield/check/magnifier mark, title SecCraft, tagline Learn. Practice. Investigate. Improve. + Learn cybersecurity by doing.
 - Domain-specific (wireless path): Wi-Fi terminology, wireless icons, BSSID/SSID, Wi-Fi commands, PCAP terminology, modules, attack categories, Logo anvil with Wi-Fi arcs (legacy WiFiForge mark) inside Wireless path, Flag prefix WIFIFORGE{} retained, Skills ssid, bssid, beacon, rsn, pmf, eap, radius
 
-**Backend:**
-- FastAPI + SQLite, generic but lab/pcap mapping previously wireless-specific — now path-aware via learning-paths.json
-- New router learning_paths.py serves platform.json + learning-paths.json
-- Content router supports ?path= filter
-- Config supports PLATFORM_* env vars with WIFIFORGE_* fallback (Stage 5)
-- Health includes platform, legacy, learning_paths counts, message Learn. Practice. Investigate. Improve. — Learn cybersecurity by doing.
+**Backend (current):**
+- FastAPI `/api/v1`, Supabase Auth token/email-verification checks, SQLAlchemy models, and Alembic migrations for PostgreSQL; SQLite is for local tests/development.
+- Owner-controlled signup toggle, pending/active/rejected/suspended account states, owner UUID allowlist, and approval capacity serialized on the settings row.
+- Generic per-user progress and unverified attempt records; local imports cannot award server XP or overwrite verified server rows.
+- Static content and PCAP routes remain read-only. Legacy demo login, shared-local progress, answer-key validation, upload, and cross-user analytics APIs are not mounted.
+- Exact environment variables, owner bootstrap, provider limitations, and acceptance checks: `docs/ACCOUNT_SYNC_PLATFORM.md`.
 
 **Deployment:**
 - GitHub Pages SPA with 404.html fallback, .nojekyll, Docker multi-stage, nginx TLS, gzip, cache, rate limit — generic
