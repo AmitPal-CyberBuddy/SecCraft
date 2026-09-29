@@ -1,0 +1,1660 @@
+SECraft — Master Implementation Prompt
+Product Repositioning, UX, Learning Architecture, Accounts, Backend, Security & Platform Integration
+
+IMPORTANT: This is an implementation task against an existing repository.
+
+Do not start by rebuilding, replacing, or restructuring the application.
+
+First inspect the complete existing repository, understand how the current application works, compare it against this specification, identify conflicts/gaps, and then implement the changes incrementally.
+
+The existing working application, learning content, visual identity, animations, local-first behavior, GitHub Pages deployment, and useful functionality are valuable assets and must be preserved unless this specification explicitly requires a change.
+
+1. PRIMARY OBJECTIVE
+
+Evolve the existing WiFiForge/SecCraft application into a broader cybersecurity learning platform called SecCraft.
+
+SecCraft should become a platform for practical, evidence-led cybersecurity learning.
+
+The current Wireless Pentesting content becomes:
+
+Learning Path #1 — Wireless Pentesting
+
+The architecture must be generic enough to support future learning paths such as Web, API, Android, Network, Active Directory, Cloud, AI/LLM Security, Blue Team/SOC, etc., without implementing those future paths now.
+
+Do not make the backend, routing, database, or UI fundamentally Wireless-specific.
+
+The target product is:
+
+SecCraft
+│
+├── Public Website
+│
+├── Guest / Local Learning
+│
+├── Approved User Accounts
+│
+│   ├── Dashboard
+│   ├── Learning Paths
+│   ├── Progress
+│   ├── Attempts
+│   ├── XP
+│   ├── Achievements
+│   └── Completion Records
+│
+└── Owner/Admin Panel
+    ├── User Approval
+    ├── User Management
+    ├── Activity
+    ├── Platform Settings
+    ├── System Health
+    └── Audit Events
+2. NON-NEGOTIABLE FIRST STEP — INSPECT BEFORE MODIFYING
+
+Before changing code:
+
+Inspect the entire repository
+
+Understand at minimum:
+
+frontend structure
+React entry points
+routing
+Zustand/state management
+localStorage/sessionStorage usage
+content architecture
+learning-path structure
+module/lesson structure
+quiz implementation
+challenge implementation
+lab implementation
+PCAP handling
+decision scenarios
+XP/progress/completion logic
+dashboard
+navigation
+authentication-related code, if any
+current backend
+API routes
+database models
+migrations
+Docker
+Docker Compose
+Nginx
+CI/CD
+GitHub Pages workflow
+PWA/service worker
+CSP/security headers
+settings/data-erasure functionality
+existing tests
+environment configuration
+
+Also inspect the actual running application/routes where possible.
+
+Create an internal implementation map
+
+Before making substantial changes, determine:
+
+CURRENT
+├── What works
+├── What partially works
+├── What is obsolete
+├── What is unsafe
+├── What is duplicated
+└── What conflicts with target architecture
+
+TARGET
+├── What must remain
+├── What must change
+├── What must be added
+├── What must be removed
+└── What should be deferred
+
+Do not blindly follow this prompt if the repository contains an existing implementation that already satisfies a requirement.
+
+Prefer adapting existing systems over creating parallel systems.
+
+3. EXISTING SYSTEM — PRESERVE THESE ASSETS
+
+The repository currently contains a functioning React/Vite learning application with:
+
+static/version-controlled learning content
+Wireless Pentesting learning path
+approximately 20 modules
+approximately 27 authored lessons
+PCAP training material
+decoded lab data
+challenges/tasks
+decision scenarios
+quizzes/knowledge checks
+local progress
+XP/completion functionality
+browser-based evidence/report functionality
+simulated terminal/learning environments
+PWA/offline-related functionality
+existing visual design and animations
+GitHub Pages deployment
+
+The existing repository audit established that the deployed frontend is a static/local-first React/Vite application and that GitHub Pages deployment is currently working.
+
+Preserve:
+existing learning content
+Markdown/YAML/JSON content
+PCAP datasets
+lab artifacts
+challenge definitions
+existing useful routes
+working state management
+local learning
+existing evidence/report workflows
+useful animations
+existing visual effects
+existing responsive behavior
+GitHub Actions deployment
+GitHub Pages compatibility
+
+Do not delete working functionality simply because the architecture is changing.
+
+4. BRAND / PRODUCT POSITIONING
+
+The product is SecCraft.
+
+It should no longer visually or architecturally feel like a single-purpose Wi-Fi training application.
+
+Wireless Pentesting is the first learning path.
+
+Use generic platform terminology:
+
+Learning Path
+Module
+Lesson
+Knowledge Check
+Lab
+Challenge
+Assessment
+Attempt
+Progress
+Evidence
+Achievement
+Completion Record
+Certificate
+
+Avoid creating permanent domain-specific backend abstractions such as:
+
+WirelessProgress
+WiFiModule
+WirelessChallenge
+WiFiUser
+
+Prefer:
+
+LearningPath
+Module
+Activity
+Progress
+Attempt
+Achievement
+
+with stable identifiers.
+
+5. PUBLIC HOMEPAGE
+
+The current root route must become the public SecCraft product homepage.
+
+Do not make the dashboard the homepage.
+
+Use:
+
+/
+
+for the public product website.
+
+Use an appropriate authenticated route such as:
+
+/app
+
+or:
+
+/dashboard
+
+for the learning dashboard.
+
+Homepage should communicate:
+SecCraft purpose
+Hands-on cybersecurity learning
+Who it is for
+How learning works
+Available learning paths
+Current Wireless Pentesting path
+Planned paths
+Labs/challenges
+Guest/local learning
+Account-based synchronization
+Practical/evidence-led learning
+Authorized-use boundaries
+FAQ/help
+Privacy/terms
+Contact/security reporting
+Primary CTAs
+
+Use meaningful actions such as:
+
+Explore Learning Paths
+Try as Guest
+Request Access
+Log In
+
+Do not imply that planned paths are already available.
+
+Do not imply that simulated labs are real hardware environments.
+
+Clearly distinguish:
+
+Simulation
+Hybrid
+Hardware Required
+
+where applicable.
+
+6. PUBLIC / GUEST / ACCOUNT MODEL
+
+SecCraft has three product states.
+
+Public Visitor
+
+Can:
+
+view homepage
+explore learning paths
+view module outlines
+preview lessons
+see sample challenges
+understand the learning methodology
+read About/FAQ/help
+request access
+log in
+enter guest mode
+Guest / Local Learner
+
+Can continue using the existing local learning experience.
+
+Progress remains browser-local.
+
+Guest mode must not require an account.
+
+Approved Account
+
+Can access:
+
+personalized dashboard
+synchronized progress
+attempts
+account-backed achievements
+verified/server-backed completion functionality when implemented
+cross-device learning history
+
+This separation is explicitly defined in the product blueprint.
+
+7. AUTHENTICATION AND APPROVAL
+
+Use:
+
+Supabase Auth + email/password + FastAPI + PostgreSQL
+
+Do not implement custom password storage.
+
+The account lifecycle is:
+
+Sign Up
+   ↓
+Email Verification
+   ↓
+Pending Approval
+   ├── Approve → Active
+   ├── Reject  → Rejected
+   └── Suspend → Suspended
+
+Email verification does not equal account approval.
+
+The blueprint explicitly requires these states.
+
+Signup fields
+
+Initially collect only:
+
+email
+password
+password confirmation
+privacy/terms acceptance
+authorized-use acknowledgement
+
+Display name may be optional.
+
+Do not provide:
+
+student role
+instructor role
+admin role selector
+privilege request field
+
+Normal users have no selectable role.
+
+8. ACCOUNT STATE ENFORCEMENT
+
+Use:
+
+pending
+active
+rejected
+suspended
+Pending
+
+Can:
+
+log in sufficiently to see account state
+view approval status
+refresh status
+use guest/local learning
+log out
+access help
+
+Cannot:
+
+access synchronized dashboard
+read/write progress APIs
+access attempts
+access achievements
+access admin functionality
+Rejected
+
+Only public/guest functionality remains available.
+
+Suspended
+
+Only public/guest functionality remains available.
+
+Active
+
+Full authenticated learner functionality.
+
+Do not rely on frontend route guards for authorization.
+
+FastAPI must enforce the account state server-side.
+
+9. APPROVED USER LIMIT
+
+Implement:
+
+approved_user_limit
+
+in platform settings.
+
+Also support:
+
+signup_enabled
+
+The limit applies to:
+
+active, approved, non-admin accounts.
+
+Suspended users do not consume an active slot.
+
+Approval must be atomic.
+
+Example:
+
+Current active users = 49
+Limit = 50
+
+Approval A → succeeds
+Approval B → must not also succeed if capacity is already full
+
+If capacity is full:
+
+Remain Pending
+
+and show the admin an appropriate message.
+
+Do not hard-code a user limit unless explicitly configured.
+
+10. NAVIGATION
+Public
+SecCraft
+Learning Paths
+How It Works
+About
+Try as Guest
+Log In
+Request Access
+Active User
+SecCraft
+Dashboard
+Learning Paths
+Progress
+Account
+Log Out
+Pending
+SecCraft
+Explore as Guest
+Account Status
+Log Out
+Admin
+
+Keep admin under a separate shell:
+
+/admin/*
+
+Show the Admin link only when the backend confirms admin ownership.
+
+Hiding the link is UX only.
+
+Authorization must happen server-side.
+
+11. USER DASHBOARD
+
+The dashboard should not become an analytics wall.
+
+Prioritize:
+
+Continue Learning
+
+The most useful next action.
+
+Current Path
+
+Example:
+
+Wireless Pentesting
+████████░░ 72%
+Recent Activity
+lesson completed
+quiz attempt
+challenge
+lab
+assessment
+XP / Achievements
+
+Compact summary.
+
+Recommended Next Activity
+
+Provide a useful next step.
+
+Completion Records
+
+Only display when actually available.
+
+Avoid:
+
+global leaderboards
+social feeds
+unnecessary analytics
+vanity metrics
+12. GENERIC LEARNING ARCHITECTURE
+
+Keep content in the repository as the authoring source.
+
+Do not create database records for every static lesson, quiz, lab, or challenge.
+
+Use stable IDs:
+
+path_id
+module_id
+activity_type
+activity_id
+content_version
+
+Activity types may include:
+
+lesson
+quiz
+challenge
+lab
+assessment
+
+Wireless is simply:
+
+Learning Path
+└── Wireless Pentesting
+
+Future paths should fit the same model.
+
+13. LEARNING EXPERIENCE
+
+Preserve and improve the existing learning flow:
+
+Learning Path
+    ↓
+Module
+    ↓
+Lesson
+    ↓
+Knowledge Check
+    ↓
+Lab / Challenge
+    ↓
+Completion
+    ↓
+Progress
+    ↓
+Assessment
+    ↓
+Completion Record
+
+Where applicable, learning should include:
+
+conceptual explanation
+practical task
+knowledge check
+reasoning/decision-making
+evidence
+challenge
+assessment
+retesting/review
+
+Do not force every lesson to contain every activity type.
+
+Activities should appear only when they actually exist.
+
+14. BUTTON / UI STATE CONSISTENCY
+
+Audit every CTA.
+
+Examples:
+
+If there is no lab:
+
+Do not show "View Lab"
+
+If an activity is unavailable:
+
+Do not present it as executable
+
+If an assessment is locked:
+
+Explain why it is locked
+
+If completed:
+
+Show the correct completed state
+
+Avoid dead buttons and misleading links.
+
+Every CTA must correspond to a real state/action.
+
+15. LOCAL PROGRESS
+
+Preserve local-first learning.
+
+Current local progress must continue working.
+
+However, clearly distinguish:
+
+Local / Guest Progress
+
+from:
+
+Verified Account Progress
+
+Do not pretend local data is server-verified.
+
+16. LOCAL → ACCOUNT IMPORT
+
+For approved users, eventually provide:
+
+Import Local Progress
+
+Flow:
+
+Detect local progress
+        ↓
+Preview
+        ↓
+User confirms
+        ↓
+Merge
+        ↓
+Imported records marked locally recorded/unverified
+
+Never silently overwrite account progress.
+
+Do not award verified XP/certificates from unverified local claims.
+
+This import/merge behavior is explicitly part of the product blueprint.
+
+17. BACKEND ARCHITECTURE
+
+Target:
+
+React/Vite
+   │
+   ├── Supabase Auth
+   │
+   └── FastAPI /api/v1
+           │
+           └── PostgreSQL
+
+Use Supabase Auth for:
+
+signup
+login
+sessions
+email verification
+recovery
+
+Use FastAPI for:
+
+account status
+user profile
+progress
+attempts
+XP
+achievements
+certificates later
+admin operations
+authorization/business rules
+
+This follows the established backend architecture.
+
+18. DATABASE MODEL
+
+Implement only the required generic entities.
+
+Recommended:
+
+user_profiles
+
+platform_admins
+
+platform_settings
+
+user_progress
+
+attempts
+
+xp_events
+
+user_achievements
+
+certificates
+
+admin_audit_events
+
+Relationships:
+
+Supabase Auth User
+        │
+        ↓
+user_profiles
+        │
+        ├── user_progress
+        ├── attempts
+        ├── xp_events
+        └── user_achievements
+
+Admin ownership:
+
+platform_admins
+
+not a mutable user role.
+
+Use PostgreSQL for hosted multi-user state.
+
+Use versioned migrations such as Alembic.
+
+Do not rely on:
+
+Base.metadata.create_all()
+
+as the production migration mechanism.
+
+19. API CONTRACT
+
+Use:
+
+/api/v1
+
+Learner APIs:
+
+GET    /api/v1/access
+GET    /api/v1/me
+
+GET    /api/v1/me/progress?path_id=...
+PUT    /api/v1/me/progress/{type}/{activity_id}
+
+GET    /api/v1/me/attempts
+POST   /api/v1/me/attempts
+
+GET    /api/v1/me/achievements
+
+GET    /api/v1/me/certificates
+
+Certificates may remain deferred until their criteria are defined.
+
+Admin APIs:
+
+GET    /api/v1/admin/overview
+GET    /api/v1/admin/users?status=pending
+GET    /api/v1/admin/users/{id}/activity
+
+POST   /api/v1/admin/users/{id}/approve
+POST   /api/v1/admin/users/{id}/reject
+POST   /api/v1/admin/users/{id}/suspend
+POST   /api/v1/admin/users/{id}/reactivate
+
+PATCH  /api/v1/admin/settings
+
+GET    /api/v1/admin/events
+GET    /api/v1/admin/health
+
+The API structure is based on the existing consolidated blueprint.
+
+20. AUTHORIZATION / IDOR / BOLA
+
+This is critical.
+
+For every /me endpoint:
+
+user_id = verified token subject
+
+Never accept:
+
+user_id
+
+from the request body/query as an authorization mechanism.
+
+Test:
+
+User A → User B progress
+User A → User B attempts
+User A → User B achievements
+User A → User B account
+
+All must be denied.
+
+Admin authorization must be verified server-side against the admin allowlist.
+
+Never trust:
+
+is_admin
+role
+account_status
+
+from the frontend.
+
+21. EXISTING BACKEND SECURITY ISSUES — DO NOT CARRY THEM FORWARD
+
+The current repository audit found that the existing optional API is not safe to expose as a multi-user service.
+
+Known issues include:
+
+shared "local" user ID
+unauthenticated progress endpoints
+unauthenticated PCAP upload
+upload body read before size validation
+no explicit parser timeout
+demo JWT rather than real account ownership
+wildcard CORS methods/headers
+rate limiting dependent on Nginx
+exposed FastAPI documentation
+current API not connected to the published account model
+
+Therefore:
+
+Do not simply expose the existing API. Replace/adapt its authentication and ownership model as part of the migration.
+
+The repository audit explicitly identifies this as a deployment blocker for a multi-user API.
+
+22. UPLOADS / PCAPS / EVIDENCE
+
+For MVP:
+
+Do not introduce persistent server-side PCAP/evidence storage.
+
+Keep existing browser-local processing where practical.
+
+If an upload endpoint is retained for an existing local feature:
+
+authenticate where necessary
+validate size before reading
+limit CPU
+limit memory
+limit parsing time
+rate-limit
+isolate parsing
+delete temporary files
+
+Do not introduce R2 or another object store merely because it exists.
+
+Storage is a later requirement.
+
+23. XP / ACHIEVEMENTS
+
+XP must eventually become server-controlled for authenticated users.
+
+Do not blindly trust:
+
+client XP = authoritative XP
+
+Use an idempotent event model:
+
+xp_events
+
+Example:
+
+lesson_completed
+quiz_completed
+challenge_completed
+assessment_completed
+
+Ensure duplicate submissions cannot repeatedly award XP.
+
+Guest/local XP may remain locally recorded and explicitly unverified.
+
+24. CERTIFICATES
+
+Do not turn the existing local completion record into a fake server certificate.
+
+Certificates should only be introduced when:
+
+completion criteria are defined
+relevant attempts can be verified
+completion is server-backed
+issuance is deterministic
+certificate identity/verification is defined
+
+Public verification is a later feature.
+
+Do not claim accreditation.
+
+25. ADMIN PANEL
+
+Admin is owner-only.
+
+No:
+
+Instructor
+Student
+Moderator
+Manager
+
+roles.
+
+Admin areas:
+
+Overview
+pending accounts
+active accounts
+capacity usage
+path completion summary
+system health
+Users
+pending users
+approve
+reject
+suspend
+reactivate
+view appropriate activity/progress
+Settings
+registration enabled/disabled
+approved-user limit
+Events
+approvals
+rejections
+suspensions
+reactivations
+settings changes
+System
+API health
+database health
+deployed version
+
+Do not expose:
+
+passwords
+tokens
+unnecessary private learner data
+raw evidence
+private files
+
+The blueprint explicitly keeps content authoring in Git rather than introducing a CMS.
+
+26. SECURITY REQUIREMENTS
+
+Implement:
+
+Authentication
+Supabase Auth
+email verification
+password recovery
+rate limiting
+generic recovery responses
+Authorization
+verified token identity
+server-side account-state enforcement
+server-side admin verification
+ownership checks
+Secrets
+
+Never expose:
+
+database credentials
+Supabase service-role key
+private signing secrets
+API secrets
+
+through Vite/public environment variables.
+
+CORS
+
+If API is cross-origin:
+
+exact allowed origin
+
+Do not use:
+
+*
+
+for authenticated API access.
+
+CSP
+
+Update the frontend CSP to support the actual API origin.
+
+Do not assume GitHub Pages honors _headers.
+
+Admin
+
+Consider MFA for the owner account.
+
+Abuse controls
+
+Rate-limit:
+
+signup
+login
+recovery
+progress writes
+attempt submission
+admin-sensitive operations
+Logging
+
+Record administrative security events.
+
+Never log:
+
+passwords
+access tokens
+secrets
+27. GITHUB PAGES / API INTEGRATION
+
+The existing frontend uses relative /api calls.
+
+A separate FastAPI host will require a deliberate integration strategy.
+
+Do not accidentally create:
+
+Frontend expects /api
+Backend lives elsewhere
+Requests silently fail
+
+Choose and implement one coherent approach:
+
+Option A
+
+Configurable API base URL.
+
+Option B
+
+Same-origin proxy.
+
+Whichever is selected, update:
+
+frontend API client
+CSP
+CORS
+environment configuration
+deployment configuration
+tests
+
+Do not create multiple competing API clients.
+
+28. DOCKER / DEPLOYMENT CLEANUP
+
+The existing audit identified inconsistencies in the optional Docker/Compose/Nginx setup.
+
+Inspect and repair where relevant:
+
+missing data/ copy
+static build path
+Nginx/frontend mismatch
+/SecCraft/ vs /
+backend content paths
+missing certificate assumptions
+upload-size mismatch
+hardcoded port
+container runtime configuration
+
+Do not spend implementation effort making an unused deployment stack elaborate.
+
+Make it internally consistent and documented.
+
+29. SETTINGS / LOCAL DATA
+
+Audit the existing:
+
+Erase Local Data
+
+function.
+
+It must either:
+
+genuinely clear all supported local SecCraft state, or
+clearly explain exactly what it clears.
+
+Do not claim:
+
+Erase all local data
+
+while leaving bookmarks, flashcards, reports, challenge drafts, accessibility state, checklist state, etc.
+
+The existing audit specifically identified this mismatch.
+
+Also correct misleading setting names/keys.
+
+30. VISUAL / UX DIRECTION
+
+Do not redesign SecCraft into a bland generic SaaS dashboard.
+
+Preserve good existing:
+
+animation
+transitions
+effects
+visual identity
+interactive elements
+technical atmosphere
+
+Improve them where necessary.
+
+Desired visual character:
+
+Premium
+Technical
+Modern
+Slightly futuristic
+Visually rich
+Controlled
+Interactive
+Professional
+
+Avoid:
+
+Generic SaaS
+Matrix-rain cliché
+Hooded hacker imagery
+Random neon everywhere
+Excessive glassmorphism
+Purple blob templates
+Visual noise
+Animation everywhere
+
+But also:
+
+Do not remove good animation/effects merely to make the interface “minimal.”
+
+Use a visual hierarchy:
+
+Primary
+↓
+Secondary
+↓
+Supporting
+↓
+Metadata
+↓
+Decorative
+
+Animation should reinforce:
+
+navigation
+state transitions
+learning progression
+completion
+feedback
+
+rather than compete with content.
+
+31. CURRICULUM / CONTENT UX
+
+Do not rewrite the entire curriculum unnecessarily.
+
+Audit the existing Wireless path for:
+
+progression
+prerequisites
+module consistency
+lesson density
+quiz placement
+labs
+challenges
+decision scenarios
+assessment flow
+evidence
+retesting
+completion
+technical accuracy
+simulation vs hardware clarity
+
+Improve obvious inconsistencies.
+
+Do not fabricate missing technical content.
+
+Do not replace useful technical material simply for stylistic consistency.
+
+32. SIMULATION / HARDWARE CLARITY
+
+The platform must accurately communicate the distinction between:
+
+Simulated
+Hybrid
+Hardware Required
+
+The current platform does not operate a wireless adapter or transmit RF; the terminal is a learning emulator. Preserve that honesty in the UX and documentation.
+
+Do not present simulated commands as if they are executing against a real wireless environment.
+
+33. WHAT NOT TO BUILD
+
+Do not introduce these in this implementation unless a later explicit requirement changes the scope:
+
+instructor/student roles
+complex RBAC
+classroom management
+social networking
+messaging
+global leaderboard
+mobile app
+enterprise SSO
+CMS
+AI tutor
+microservices
+queue infrastructure
+full cyber-range
+wireless hardware orchestration
+persistent PCAP storage
+cloud-side PCAP processing
+accredited certification
+APIs duplicating static content
+unnecessary content database tables
+
+These exclusions are part of the consolidated architecture.
+
+34. PHASED IMPLEMENTATION ORDER
+
+Do not implement everything simultaneously.
+
+Phase 0 — Baseline / Preservation
+
+Before changing architecture:
+
+inspect repository
+record current routes
+record current content structure
+record current local state keys
+record current API calls
+verify build
+verify tests
+verify GitHub Pages workflow
+identify working functionality
+
+Create a baseline.
+
+Do not break the current learning experience.
+
+Phase 1 — Product Shell + Public Experience
+
+Implement:
+
+SecCraft public homepage
+public navigation
+About
+How It Works
+Learning Paths
+guest entry
+login entry
+signup/request access
+appropriate route separation
+public/guest/account boundaries
+
+Keep existing learning functionality working.
+
+Phase 2 — Authentication + Backend Foundation
+
+Implement:
+
+Supabase Auth
+email/password
+verification
+password recovery
+FastAPI /api/v1
+PostgreSQL
+migrations
+user profile
+account status
+verified token handling
+API client integration
+
+Do not yet migrate every learning feature.
+
+Phase 3 — Approval System
+
+Implement:
+
+Pending
+Approved
+Rejected
+Suspended
+
+and:
+
+admin allowlist
+approval UI
+capacity limit
+signup toggle
+atomic approval
+server-side status enforcement
+pending page
+rejected/suspended page
+Phase 4 — Account Progress Synchronization
+
+Implement:
+
+/me
+progress synchronization
+attempts
+cross-device progress
+account dashboard
+local-progress import
+merge behavior
+verified/unverified distinction
+
+Keep guest mode functional.
+
+Phase 5 — XP / Achievements / Assessment
+
+Implement:
+
+server-side XP events
+idempotency
+achievements
+attempt records
+assessment records
+server-verifiable completion
+
+Certificates only if criteria are ready.
+
+Phase 6 — Admin Panel
+
+Implement:
+
+overview
+user management
+approvals
+suspension/reactivation
+activity
+settings
+audit events
+health checks
+Phase 7 — Full UX / Curriculum Consistency Pass
+
+Audit every:
+
+route
+module
+lesson
+button
+CTA
+quiz
+lab
+challenge
+assessment
+completion state
+XP state
+navigation state
+empty state
+loading state
+error state
+mobile layout
+
+Fix inconsistencies.
+
+Phase 8 — Final Security / Regression / Deployment Audit
+
+Run the complete acceptance test suite below.
+
+Only then consider the migration complete.
+
+35. ACCEPTANCE TESTS
+
+Builder AI must verify these rather than simply saying the implementation is complete.
+
+Public Experience
+/ is a public SecCraft landing page.
+Dashboard is not the homepage.
+Learning Paths are discoverable.
+Wireless is clearly available.
+Planned paths are clearly marked planned.
+Guest learning works without authentication.
+Public pages do not expose private user information.
+Authentication
+User can register.
+Email verification works.
+Verified user enters pending state.
+Pending user cannot access authenticated learning APIs.
+Pending user can continue guest learning.
+Approved user can log in.
+Rejected user cannot access authenticated learning APIs.
+Suspended user cannot access authenticated learning APIs.
+Password recovery works.
+No role selector exists.
+Approval
+Admin sees pending users.
+Admin can approve.
+Admin can reject.
+Admin can suspend.
+Admin can reactivate.
+Approval respects capacity.
+Concurrent approvals cannot exceed capacity.
+Registration can be disabled.
+Normal users cannot modify their own status.
+Authorization
+
+Test with two accounts:
+
+User A
+User B
+
+Verify:
+
+A cannot read B's progress.
+A cannot modify B's progress.
+A cannot read B's attempts.
+A cannot modify B's achievements.
+A cannot invoke admin endpoints.
+Client-side manipulation of is_admin does nothing.
+Client-side manipulation of account status does nothing.
+Progress
+Guest progress remains local.
+Active account progress synchronizes.
+Progress survives logout/login.
+Progress appears on another device/session.
+Local import previews before merging.
+Existing account progress is not silently overwritten.
+Imported local progress remains unverified.
+Duplicate submissions do not duplicate XP.
+Learning
+Every displayed CTA has a valid destination/action.
+No nonexistent lab/challenge buttons are shown.
+Locked activities explain why.
+Completed activities display correct state.
+Module progress is consistent.
+Path progress is consistent.
+Assessment state is consistent.
+XP
+Valid activity produces the intended XP event.
+Repeating the same event cannot duplicate XP unless explicitly intended.
+Local/unverified progress cannot silently become verified XP.
+Admin
+Non-admin cannot access admin API.
+Non-admin cannot access admin UI meaningfully.
+Admin can view required user status.
+Admin actions generate audit events.
+Secrets/tokens/passwords never appear in admin UI or logs.
+Security
+
+Test:
+
+IDOR/BOLA
+unauthorized progress mutation
+unauthorized attempt mutation
+account-state bypass
+admin authorization bypass
+CORS configuration
+rate limits
+recovery behavior
+oversized upload handling where applicable
+parser timeout/resource controls
+secret exposure
+CSP/API connectivity
+XSS-sensitive surfaces
+Deployment
+Frontend builds successfully.
+GitHub Pages deployment remains functional.
+Guest learning works after deployment.
+Static content loads.
+API integration works when configured.
+API failure does not destroy guest/local learning.
+No required feature silently depends on unavailable FastAPI for guest mode.
+Production build does not contain server secrets.
+36. REGRESSION REQUIREMENT
+
+Before declaring completion, compare:
+
+BEFORE
+vs
+AFTER
+
+for:
+
+routes
+learning content
+modules
+lessons
+quizzes
+labs
+challenges
+local progress
+evidence
+reports
+PWA behavior
+responsive UI
+animations
+deployment
+
+Any intentionally changed behavior must be documented.
+
+37. IMPLEMENTATION RULES
+Rule 1 — Inspect first
+
+Never modify unfamiliar architecture blindly.
+
+Rule 2 — Reuse before rebuilding
+
+If an existing component solves the problem, extend it.
+
+Rule 3 — One source of truth
+
+Do not create competing:
+
+progress stores
+API clients
+routing systems
+auth systems
+XP engines
+content registries
+Rule 4 — No fake functionality
+
+Do not create buttons, dashboards, analytics or settings that do not have real underlying behavior.
+
+Rule 5 — No premature abstraction
+
+Do not build infrastructure for future paths that does not currently have a concrete requirement.
+
+Rule 6 — Preserve guest mode
+
+Account infrastructure must not unnecessarily destroy local learning.
+
+Rule 7 — Security server-side
+
+Frontend guards are UX.
+
+Backend authorization is security.
+
+Rule 8 — Do not expose secrets
+
+Never put privileged credentials into frontend code.
+
+Rule 9 — Do not silently change product behavior
+
+If a change affects existing learning behavior, assess regression impact first.
+
+Rule 10 — Do not create conflicting architecture
+
+The target architecture is:
+
+React/Vite
++
+Supabase Auth
++
+FastAPI
++
+PostgreSQL
+
+Do not introduce another authentication provider, another backend framework, another database strategy, or another competing persistence architecture without a concrete repository-derived reason.
+
+38. HANDLING CONFLICTS
+
+If the repository and this specification appear to conflict:
+
+Priority order
+1. Security
+2. Existing working functionality
+3. Explicit product requirements in this specification
+4. Existing architecture
+5. Cosmetic/refactoring preferences
+
+Do not silently choose an architecture that contradicts this specification.
+
+If a conflict cannot be safely resolved automatically:
+
+identify it
+explain the conflict
+choose the least-destructive implementation if possible
+document the decision
+continue with the rest of the implementation
+
+Do not stop simply because a cosmetic or architectural detail is ambiguous.
+
+39. FINAL DELIVERABLE
+
+At the end, provide an implementation report containing:
+
+1. Repository inspection summary
+
+2. What was preserved
+
+3. What was changed
+
+4. What was added
+
+5. What was removed
+
+6. What remains intentionally deferred
+
+7. Final architecture
+
+8. Database schema
+
+9. API endpoints
+
+10. Authentication/approval flow
+
+11. Admin functionality
+
+12. Security controls
+
+13. Migration notes
+
+14. Tests executed
+
+15. Acceptance-test results
+
+16. Known limitations
+
+17. Deployment instructions
+
+18. Environment variables required
+
+19. Any decisions made where repository behavior differed from the specification
+
+Clearly distinguish:
+
+IMPLEMENTED
+PARTIALLY IMPLEMENTED
+DEFERRED
+KNOWN LIMITATION
+
+Do not claim something is implemented merely because a UI placeholder exists.
+
+40. FINAL ARCHITECTURE TARGET
+
+The completed platform should converge toward:
+
+                              SEC CRAFT
+                                  │
+                 ┌────────────────┴────────────────┐
+                 │                                 │
+          PUBLIC / GUEST                        ACCOUNT
+          GitHub Pages                       Supabase Auth
+                 │                                 │
+        Static Content                         Email/Password
+        Local Progress                              │
+                 │                            Email Verification
+                 │                                 │
+                 │                           Pending Approval
+                 │                           /              \
+                 │                      Approved        Rejected/
+                 │                         │             Suspended
+                 │                         ↓
+                 │                    User Dashboard
+                 │                         │
+                 │                   Learning Paths
+                 │                         │
+                 │          ┌──────────────┴──────────────┐
+                 │          │                             │
+                 │       Content                      User Data
+                 │       Git/Static                    PostgreSQL
+                 │          │                             │
+                 │    Lessons/Labs                  Progress
+                 │    Challenges                    Attempts
+                 │    Assessments                    XP Events
+                 │                                  Achievements
+                 │                                      │
+                 └───────────────┐                      │
+                                 │                      │
+                                 ↓                      ↓
+                              FastAPI /api/v1
+                                 │
+                       ┌─────────┴─────────┐
+                       │                   │
+                  User APIs            Admin APIs
+                       │                   │
+                       │              Owner Allowlist
+                       │                   │
+                       └────────┬──────────┘
+                                ↓
+                           PostgreSQL
+
+                    R2/Object Storage
+                         ONLY LATER
+                    IF RETENTION IS REQUIRED
+
+The core principle is:
+
+SecCraft remains a useful cybersecurity learning platform even without an account. Accounts add synchronization, verified learning records, and controlled platform services—they do not replace the existing local-first learning experience.
+
+And the implementation must proceed incrementally from the existing repository, not by replacing it with a new application.
+
+Builder AI execution instruction
+
+Start now by inspecting the repository and producing the internal implementation map described in Section 2. Do not begin a wholesale rewrite. Identify the existing architecture, preserve working systems, reconcile differences with this specification, and then implement the phases in order. After each major phase, run the relevant build/tests/regression checks before proceeding.
