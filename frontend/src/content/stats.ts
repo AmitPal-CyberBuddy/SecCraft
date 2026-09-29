@@ -5,7 +5,7 @@ import artifacts from '@/content/lab-artifacts.json'
 import commands from '@/content/reference/commands.json'
 import filters from '@/content/reference/filters.json'
 import learningPaths from '@/content/learning-paths.json'
-import { LABS } from '@/content/labs'
+import { AVAILABLE_LABS } from '@/content/labs'
 
 /**
  * Content totals, derived from the shipped content files — never typed by hand.
@@ -26,6 +26,7 @@ const pathList = learningPaths as Array<{ id: string; modules: string[]; status:
 export const TOTAL_MODULES = moduleList.length
 export const TOTAL_LESSONS = moduleList.reduce((n, m) => n + (Array.isArray(m.lessons) ? m.lessons.length : 0), 0)
 export const TOTAL_CHALLENGES = challengeList.length
+export const TOTAL_CHALLENGE_POINTS = challengeList.reduce((sum, challenge) => sum + Number((challenge as any).points || 0), 0)
 export const TOTAL_SCENARIOS = scenarioList.length
 export const TOTAL_PCAPS = Object.keys(artifactMap).length
 export const TOTAL_COMMANDS = (commands as unknown[]).length
@@ -34,10 +35,10 @@ export const TOTAL_LEARNING_PATHS = pathList.length
 export const AVAILABLE_LEARNING_PATHS = pathList.filter(p => p.status === 'available').length
 
 /** Labs shipped in content/labs.ts (capture-based and config-based). */
-export const TOTAL_LABS = LABS.length
+export const TOTAL_LABS = AVAILABLE_LABS.length
 
 /** Labs that are driven by a capture in frontend/public/pcaps. */
-export const TOTAL_CAPTURE_LABS = LABS.filter(l => l.pcap).length
+export const TOTAL_CAPTURE_LABS = AVAILABLE_LABS.filter(l => l.pcap).length
 
 /** Modules that have at least one lesson file registered in modules.json. */
 export const MODULES_WITH_CONTENT = moduleList.filter(m => Array.isArray(m.lessons) && m.lessons.length > 0).length
@@ -48,7 +49,7 @@ export function getModulesForPath(pathId: string) {
 }
 
 export function getLabsForPath(pathId: string) {
-  return LABS.filter(l => (l as any).learningPathId === pathId)
+  return AVAILABLE_LABS.filter(l => (l as any).learningPathId === pathId)
 }
 
 export function getChallengesForPath(pathId: string) {

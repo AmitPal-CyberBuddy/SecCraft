@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { useId } from 'react'
 
 interface Props {
   value: number
@@ -9,12 +10,13 @@ interface Props {
 export function ProgressRing({ value, size = 88, strokeWidth = 6 }: Props) {
   const radius = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * radius
+  const gradientId = `progress-gradient-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
   const offset = circumference - (value / 100) * circumference
 
   return (
-    <div className="relative group" style={{ width: size, height: size }}>
-      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-500/10 to-violet-500/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-      <svg width={size} height={size} className="transform -rotate-90 relative">
+    <div className="progress-ring relative group" role="progressbar" aria-label="Overall learning progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(value)} style={{ width: size, height: size }}>
+      <div className="progress-ring-halo absolute inset-0 rounded-full bg-gradient-to-br from-cyan-500/15 to-violet-500/15 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <svg aria-hidden="true" width={size} height={size} className="transform -rotate-90 relative z-[1]">
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -37,7 +39,7 @@ export function ProgressRing({ value, size = 88, strokeWidth = 6 }: Props) {
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="url(#progress-gradient)"
+          stroke={`url(#${gradientId})`}
           strokeWidth={strokeWidth}
           fill="none"
           strokeDasharray={circumference}
@@ -48,7 +50,7 @@ export function ProgressRing({ value, size = 88, strokeWidth = 6 }: Props) {
           style={{ filter: 'drop-shadow(0 0 8px rgba(34,211,238,0.3))' }}
         />
         <defs>
-          <linearGradient id="progress-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#22d3ee" />
             <stop offset="50%" stopColor="#a78bfa" />
             <stop offset="100%" stopColor="#22d3ee" />
@@ -57,6 +59,7 @@ export function ProgressRing({ value, size = 88, strokeWidth = 6 }: Props) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <motion.span
+          key={Math.round(value)}
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}

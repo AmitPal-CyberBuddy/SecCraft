@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, X, CheckCircle, Award, Zap, Shield, Info, Trash2 } from 'lucide-react'
 import { useProgressStore } from '@/store/useProgressStore'
@@ -86,24 +86,53 @@ export function NotificationCenter({ open, onClose }: { open: boolean; onClose: 
   }, [completedLessons, completedLabs, quizScores, achievements, readIds])
 
   const unread = events.filter(e => !e.read).length
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const previousFocusRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const frame = requestAnimationFrame(() => closeButtonRef.current?.focus())
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); onClose() }
+      if (event.key === 'Tab') {
+        const panel = document.getElementById('activity-panel')
+        const items = panel?.querySelectorAll<HTMLElement>('button:not([disabled])')
+        if (!items?.length) return
+        const first = items[0]
+        const last = items[items.length - 1]
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      cancelAnimationFrame(frame)
+      document.body.style.overflow = overflow
+      window.removeEventListener('keydown', onKeyDown)
+      previousFocusRef.current?.focus()
+    }
+  }, [open, onClose])
 
   return (
     <AnimatePresence>
       {open && (
         <>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[90] bg-[#020617]/60 backdrop-blur-sm" onClick={onClose} />
-          <motion.div initial={{ opacity: 0, x: 20, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 20, scale: 0.98 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }} className="fixed top-0 right-0 h-[100dvh] w-[min(400px,92vw)] z-[100] bg-[#0f172a] border-l border-[#1e293b] shadow-2xl flex flex-col">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-hidden="true" className="fixed inset-0 z-[90] bg-[#020617]/65 backdrop-blur-md" onClick={onClose} />
+          <motion.div id="activity-panel" role="dialog" aria-modal="true" aria-labelledby="activity-dialog-title" initial={{ opacity: 0, x: 20, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 20, scale: 0.98 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }} className="activity-drawer fixed top-0 right-0 h-[100dvh] w-[min(420px,94vw)] z-[100] bg-[#0f172a] border-l border-[#1e293b] shadow-2xl flex flex-col">
             <div className="p-5 border-b border-[#1e293b] flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
                   <Bell className="w-5 h-5 text-violet-400" />
                 </div>
                 <div>
-                  <h3 className="font-heading font-bold text-[15px] text-slate-100">Activity — {unread} new</h3>
+                  <h3 id="activity-dialog-title" className="font-heading font-bold text-[15px] text-slate-100">Activity — {unread} new</h3>
                   <p className="text-[11px] text-slate-500 font-mono">recorded in this browser • no server push</p>
                 </div>
               </div>
-              <button onClick={onClose} className="w-8 h-8 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] transition-colors touch-manipulation">
+              <button ref={closeButtonRef} onClick={onClose} aria-label="Close activity" className="w-9 h-9 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] transition-colors touch-manipulation">
                 <X className="w-4 h-4 text-slate-400" />
               </button>
             </div>
@@ -131,13 +160,16 @@ export function NotificationCenter({ open, onClose }: { open: boolean; onClose: 
                 </div>
               ) : (
                 events.map((n, idx) => (
-                  <motion.div
+                  <motion.button
+                    type="button"
                     key={n.id}
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: Math.min(idx, 8) * 0.03 }}
-                    onClick={() => setReadIds(prev => new Set(prev).add(n.id))}
-                    className={`p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-colors ${n.read ? 'bg-[#020617]/40 border-[#1e293b]/40 opacity-70' : 'bg-[#020617]/80 border-[#334155]/60 hover:bg-[#020617]/90'}`}
+                    aria-label={n.read ? `Mark ${n.title} unread` : `Mark ${n.title} read`}
+                    aria-pressed={n.read}
+                    onClick={() => setReadIds(prev => { const next = new Set(prev); if (n.read) next.delete(n.id); else next.add(n.id); return next })}
+                    className={`w-full text-left p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-colors ${n.read ? 'bg-[#020617]/40 border-[#1e293b]/40 opacity-70' : 'bg-[#020617]/80 border-[#334155]/60 hover:bg-[#020617]/90'}`}
                   >
                     <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${n.color === 'amber' ? 'bg-amber-500/10 border-amber-500/20' : n.color === 'violet' ? 'bg-violet-500/10 border-violet-500/20' : n.color === 'emerald' ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-cyan-500/10 border-cyan-500/20'}`}>
                       <n.icon className={`w-4 h-4 ${n.color === 'amber' ? 'text-amber-400' : n.color === 'violet' ? 'text-violet-400' : n.color === 'emerald' ? 'text-emerald-400' : 'text-cyan-400'}`} />
@@ -150,7 +182,7 @@ export function NotificationCenter({ open, onClose }: { open: boolean; onClose: 
                       <div className="text-[11px] text-slate-500 mt-1 leading-relaxed break-words">{n.desc}</div>
                       <div className="text-[10px] font-mono text-slate-400 mt-1.5">{relative(n.at)} • {new Date(n.at).toLocaleString()}</div>
                     </div>
-                  </motion.div>
+                  </motion.button>
                 ))
               )}
             </div>

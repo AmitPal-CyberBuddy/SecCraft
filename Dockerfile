@@ -1,4 +1,4 @@
-# WiFiForge — Enterprise Production Dockerfile • Multi-stage • Zero-cost local-first
+# SecCraft — multi-stage Docker build for the optional local deployment
 FROM node:20-alpine AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./

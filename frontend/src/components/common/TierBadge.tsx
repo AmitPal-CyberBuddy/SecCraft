@@ -18,8 +18,8 @@ const TIERS: Record<LabTier, {
     border: 'border-emerald-500/25',
     bg: 'bg-emerald-500/10',
     icon: FlaskConical,
-    title: 'SIMULATION — provable entirely from artefacts',
-    oneLiner: 'Real captures, configs and logs. No radio hardware needed.',
+    title: 'SIMULATION — activity uses bundled teaching artefacts',
+    oneLiner: 'Offline artifact review; lab grading is labeled separately as Answer-Checked or Self-Review. A capture never proves live RF behavior.',
   },
   HYBRID: {
     dot: '🟡',
@@ -45,7 +45,7 @@ export function normaliseTier(value: string | undefined | null): LabTier {
   if (!value) return 'SIMULATION'
   const v = value.toUpperCase().replace(/[\s-]/g, '_')
   if (v === 'HYBRID') return 'HYBRID'
-  if (v === 'RF_REQUIRED' || v === 'HARDWARE') return 'RF_REQUIRED'
+  if (v === 'RF_REQUIRED' || v === 'HARDWARE' || v === 'REAL') return 'RF_REQUIRED'
   return 'SIMULATION'
 }
 

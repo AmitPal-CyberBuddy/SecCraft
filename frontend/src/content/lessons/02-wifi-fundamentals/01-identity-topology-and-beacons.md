@@ -13,13 +13,14 @@ frame number that supports each field.
 | SSID | the network *name* (0–32 bytes, UTF-8 in practice) | SSID IE (ID 0) in beacon/probe response |
 | BSSID | one radio interface (MAC of the AP's radio) | address 3 of the beacon; address 1/2 of data frames |
 | BSS | one AP's coverage cell, identified by its BSSID | beacon + its clients |
-| ESS | a set of BSSs sharing one SSID for roaming | several BSSIDs with the same SSID |
+| ESS | one extended service set comprising coordinated BSSs, commonly sharing an SSID | confirm with authorized inventory/configuration and network context; SSID equality alone does not establish ESS membership |
 | Hidden SSID | a BSS whose beacons carry a zero-length SSID IE | SSID IE length 0 |
 
 Two facts worth internalising:
 
-* **A hidden SSID is not a security control.** The probe *response* and the client's association request
-  contain the SSID in clear. Hiding it only raises the recon cost slightly.
+* **A hidden SSID is not a security control.** A directed probe or association request can expose the SSID
+  in clear when a client attempts to use it; a zero-length beacon/probe response does not hide it reliably.
+  Hiding it can also encourage client-side directed probes and privacy leakage.
 * **Same SSID ≠ same network.** An ESS and an evil twin look identical at the SSID level. Separate them
   with BSSID/OUI, channel, RSNE, IE fingerprint and RF behaviour — never with the name alone.
 
@@ -39,9 +40,10 @@ Practical decoding notes:
   and radiotap/PHY information.
 * **RSN (48)** is the security policy. Fields in order: version, group cipher, pairwise cipher list,
   AKM list, RSN capabilities, optional PMKID list.
-* **RSN capabilities B4 = MFPR (required), B5 = MFPC (capable).** If B4 is clear, management frames are
-  not protected and deauthentication can be spoofed. (Many secondary sources get these bit numbers
-  wrong — verify in the capture, where Wireshark shows `wlan.rsn.capabilities.mfpr`/`.mfpc`.)
+* **RSN capabilities bit 6 (`0x0040`) = MFPR; bit 7 (`0x0080`) = MFPC.** MFPC means PMF is supported;
+  MFPR+MFPC means it is required; neither bit means it is not advertised for that profile. These
+  advertisement bits alone do not prove the PMF state of a particular association or that a forged frame
+  was delivered/accepted. Verify the fields with Wireshark `wlan.rsn.capabilities.mfpr`/`.mfpc`.
 * **AKM suite numbers** (OUI 00-0F-AC): 1 = 802.1X, 2 = PSK, 3 = FT-802.1X, 4 = FT-PSK,
   5 = 802.1X-SHA256, 6 = PSK-SHA256, 8 = SAE, 9 = FT-SAE, 18 = OWE, 24 = SAE-EXT-KEY.
   WEP is **not** an RSN AKM — a WEP network has no RSNE at all.
@@ -50,12 +52,10 @@ Practical decoding notes:
 
 ## 3. Bands, channels, width
 
-* **2.4 GHz**: channels 1–13 (14 in Japan); non-overlapping 1/6/11 (1/6/11/14 in Japan); 20 MHz channels,
-  5 MHz apart, so 40 MHz in this band is almost always harmful.
+* **2.4 GHz**: channels 1–13 in most regions; channel 14 is a special Japan-only legacy channel and is not part of a general 1/6/11/14 plan. Common non-overlapping 20 MHz planning uses 1/6/11 (local rules and deployment density still matter); 40 MHz operation is usually harmful in this crowded band.
 * **5 GHz**: UNII-1/2/2A/2C/3; channel numbers 36–177; DFS channels require radar detection and can cause
   data-carrying APs to move channel unexpectedly mid-test.
-* **6 GHz (Wi-Fi 6E)**: channels 1–233, 20 MHz each; high efficiency (HE/OFDMA) mandatory; WPA3 only
-  (no PSK, no WPA2, PMF required).
+* **6 GHz (Wi-Fi 6E)**: channel numbers are defined within the 1–233 range with channelization/regulatory availability depending on region; HE operation and WPA3-family security with PMF are required. Do not assume every channel is available in every country or device.
 * Channel width is in **HT/VHT/HE** elements, not in the DS parameter.
 
 ## 4. Clients: what they leak

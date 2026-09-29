@@ -1,7 +1,6 @@
 # Final Engagement (Professional Assessment)
 
-> **Engagement `ENG-01` — Northwind Retail.** You are the wireless penetration tester. Everything you need
-> is provided; nothing about the vulnerabilities is. This is a graded, open-book, independent assessment.
+> **Scenario brief `ENG-01` — Northwind Retail.** This is a self-directed capstone prompt, not a graded assessment. The repository does not bundle the Northwind topology, per-SSID captures, RADIUS logs, configuration excerpts, portal rules, or remediated retest artifacts named below. Learners can practice scoping and report structure, but cannot complete or independently verify the scenario from this brief alone. The separate `methodology.pcapng` is a synthetic 29-frame fixture and is not Northwind evidence.
 
 ## 1. Client brief
 
@@ -38,9 +37,7 @@ wired segment; the wireless estate is managed centrally.
 | `NW-Ops` | 2.4 GHz | WPA2-PSK | handheld scanners |
 | `NW-Legacy` | 2.4 GHz | WEP (documented as "deprecated") | legacy printers |
 
-Provided artefacts: topology diagram, AP inventory (BSSID, site, channel plan), a 20-minute capture of
-each SSID, RADIUS auth/accounting logs for a business day, hostapd/wpa_supplicant configuration excerpts,
-the guest portal's redirect rules, and two test accounts (`nw-test-01/02`) on the corporate SSID.
+Scenario-only artifact list (not present in this repository): topology diagram, AP inventory (BSSID/site/channel plan), per-SSID captures, RADIUS logs, hostapd/wpa_supplicant excerpts, guest-portal redirect rules, test accounts and remediated retest artifacts. Do not fabricate their contents or present findings without them.
 
 ## 4. What you deliver
 
@@ -68,8 +65,7 @@ the guest portal's redirect rules, and two test accounts (`nw-test-01/02`) on th
 
 ## 6. How to work
 
-* Do not look for a "walkthrough": the artefacts contain several weaknesses and at least one **red herring**
-  (a finding that looks severe but is not reachable in this environment).
+* The scenario brief describes expected weaknesses and a possible **red herring**, but the referenced artefacts are not bundled. Treat these as scenario prompts, not verified findings; do not assert which are reachable without the missing evidence.
 * Expect to say "no finding" where a control holds — and to justify it with the artefact that shows it.
 * Timebox: spend no more than 40% of your time on any single SSID.
 * If a test is not authorised or not safe, write *why* you did not perform it, and what you did instead.

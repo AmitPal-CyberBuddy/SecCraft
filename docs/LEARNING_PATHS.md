@@ -191,13 +191,13 @@ Same workflow for any domain:
 
 Platform-level (domain-neutral):
 - Dashboard, Search, Progress, User/profile, Labs, Challenges, Assessments, Evidence, Certificates, Analytics, Navigation, Content engine, Routing, Authentication, Learning state
-- Logo: Anvil without Wi-Fi arcs (platform)
-- Title: Anvil — Hands-on Cybersecurity Learning Platform
-- Tagline: Forge. Break. Fix. Retest. + Learn cybersecurity by doing.
+- Logo: SecCraft shield/check/magnifier mark (platform)
+- Title: SecCraft — Hands-on Cybersecurity Learning Platform
+- Tagline: Learn. Practice. Investigate. Improve. + Learn cybersecurity by doing.
 
 Domain-specific (wireless path):
 - Wi-Fi terminology, wireless icons, BSSID/SSID concepts, Wi-Fi-specific commands, PCAP terminology, wireless modules, Wi-Fi attack categories
-- Logo: Anvil with Wi-Fi arcs (legacy WiFiForge mark) inside Wireless path
+- Path icon: Wireless radio mark; `WiFiForge` retained only in legacy compatibility data
 - Title: Wireless Pentesting — Understand the Protocol. Test the Implementation.
 - Flag prefix: WIFIFORGE{} kept for historical continuity
 - Skills: ssid, bssid, beacon, rsn, pmf, eap, radius, etc.

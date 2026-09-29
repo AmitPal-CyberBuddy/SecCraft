@@ -1,3 +1,4 @@
+import { LoadingPanel } from '@/components/common/LoadingPanel'
 import { motion } from 'framer-motion'
 import { Award, Trophy, Zap, Target, Crown, Star, Flame } from 'lucide-react'
 import { lazy, Suspense } from 'react'
@@ -19,7 +20,7 @@ export function Achievements() {
         <FadeIn>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="font-heading font-bold text-[26px] md:text-[30px] text-slate-100 tracking-tight flex items-center gap-3">
+              <h1 className="font-heading font-bold text-[26px] md:text-[30px] text-slate-100 tracking-tight flex items-center gap-3 sc-page-title">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 border border-amber-500/20 flex items-center justify-center">
                   <Trophy className="w-5 h-5 text-amber-400" />
                 </div>
@@ -71,7 +72,7 @@ export function Achievements() {
                 <h3 className="font-heading font-bold text-[15px] text-slate-100">Badges & milestones</h3>
                 <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono">{achievements.length} unlocked</span>
               </div>
-              <Suspense fallback={<div className="p-8 text-center text-[13px] text-slate-400 font-mono">Loading badges…</div>}>
+              <Suspense fallback={<LoadingPanel label="Loading badges…" />}>
                 <BadgesShowcase />
               </Suspense>
             </div>

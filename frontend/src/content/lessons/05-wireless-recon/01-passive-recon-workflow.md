@@ -38,10 +38,10 @@ tshark -r recon-lab.pcapng -Y 'wlan.fc.type_subtype == 5' \
 
 ## 3. Questions (answer with frame numbers)
 
-1. How many **BSSIDs** are present, and how many distinct **SSIDs**? Which ones form an ESS?
+1. How many **BSSIDs** and distinct **SSIDs** are present? Which BSSs share an SSID, and can this capture alone establish that they belong to the same ESS?
 2. Which BSS hides its SSID, and which frame reveals it? What does that tell you about "hidden network" claims?
 3. Which BSS has **PMF required**? Which has only **PMF capable**? Quote the RSNE bytes.
-4. Which BSS is open with **no RSNE at all**, and which offers **OWE** instead? Why does that distinction matter?
+4. Which BSS has no RSNE, and which advertises OWE? Inspect the privacy capability and all security IEs before classifying an absent-RSNE BSS as open rather than legacy WEP; why does the distinction matter?
 5. Which client is using a **randomised MAC**? How did you decide?
 6. What has a *look-alike* SSID in this capture, if anything — and what evidence would you need to prove it
    was a rogue twin rather than a legitimate ESS member? (Hint: it is not in the capture. Say so.)

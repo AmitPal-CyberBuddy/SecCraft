@@ -100,10 +100,10 @@
   "module": "03-80211-architecture",
   "type": "free",
   "title": "Classify this deployment from raw RSNE bytes",
-  "situation": "RSNE (element 48), hex: 30 14 01 00 00 0f ac 04 01 00 00 0f ac 04 01 00 00 0f ac 02 00 00 0f ac 08 20 00",
-  "question": "Decode it: version, group cipher, pairwise, AKM list, RSN capabilities. What kind of deployment is this, and which clients does it protect?",
-  "model_answer": "Version 1. Group cipher: OUI 00-0F-AC type 4 = CCMP-128. Pairwise list: CCMP-128 (count 1). AKM list (count 2): type 2 = PSK, type 8 = SAE \u2192 WPA2/WPA3 transition mode. RSN capabilities = 0x0020 \u2192 MFPC set, MFPR clear: PMF is supported but not required. So it is a transition deployment: WPA2-era clients associate with PSK and get no management-frame protection, WPA3 clients get SAE + PMF. A weak passphrase would still be crackable from a PSK handshake.",
-  "rationale": "Reading the AKM list and the MFPC/MFPR bits from the bytes \u2014 not from the product name \u2014 is the skill. Transition mode is a downgrade surface, not automatically a finding: it depends on the client mix and the contract's requirements.",
+  "situation": "RSNE (element 48), hex: 30 18 01 00 00 0f ac 04 01 00 00 0f ac 04 02 00 00 0f ac 02 00 0f ac 08 80 00",
+  "question": "Decode it: version, group cipher, pairwise, AKM list, and RSN capabilities. What policy does it advertise, and what must be checked per client?",
+  "model_answer": "Version 1. Group cipher: OUI 00-0F-AC type 4 = CCMP-128. Pairwise list: CCMP-128 (count 1). AKM list (count 2): type 2 = PSK and type 8 = SAE, indicating a transition-mode advertisement. RSN capabilities = 0x0080: MFPC (bit 7) set, MFPR (bit 6) clear, so PMF is capable/optional at the BSS level, not required for every association. Inspect each association\u2019s negotiated AKM and PMF state; do not assume every PSK client lacks PMF or that every client negotiated SAE. If credentials are reused, a weak PSK passphrase can be tested offline from a suitable PSK handshake.",
+  "rationale": "Read the AKM list and RSN capability bits from the bytes, not the product name. Transition mode is an advertised compatibility surface, not automatically a downgrade finding; verify actual client negotiation, credentials/configuration, and scope.",
   "evidence_note": "Cite the frames where this RSNE appears (beacon and association request) and quote the capability byte.",
   "learningPathId": "wireless-pentesting"
  },
@@ -118,7 +118,7 @@
    {
     "id": "a",
     "text": "PMF is enforced for all clients.",
-    "analysis": "MFPR (bit 4) is what requires protection. Without it, the AP does not require PMF for robust management frames.",
+    "analysis": "MFPR is RSN capabilities bit 6 (0x0040); MFPC is bit 7 (0x0080). Without MFPR, the BSS does not require PMF for every association; clients may still negotiate it individually.",
     "correct": false
    },
    {

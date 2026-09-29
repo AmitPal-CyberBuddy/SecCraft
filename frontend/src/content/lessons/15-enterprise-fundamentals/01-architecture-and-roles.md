@@ -32,7 +32,7 @@
 ## 2. Why the 4-way handshake still happens
 
 EAP authenticates the *client to the network* and produces the **MSK**; both the supplicant and the
-authenticator derive it. The PMK is the first 256 bits of the MSK, and the 4-way handshake then derives the
+authenticator derive it. For common WPA2-Enterprise profiles, the PMK is derived from the MSK (commonly its first 256 bits), and the 4-way handshake then derives the
 PTK and installs keys — the same mechanics as PSK mode, but the PMK is per-session and per-user rather than
 shared. This is why you see both EAP frames *and* EAPOL-Key M1–M4 after a successful 802.1X login.
 
@@ -58,12 +58,11 @@ shared. This is why you see both EAP frames *and* EAPOL-Key M1–M4 after a succ
 
 ## 5. Lab
 
-`enterprise.pcapng` contains the EAPOL-Start → EAP-Identity → PEAP → 4-way handshake sequence;
-`radius.pcapng` contains RADIUS Access-Request → Access-Challenge → Access-Accept with a VLAN attribute.
+**Artifact boundary:** `enterprise.pcapng` is an abbreviated synthetic EAPOL/EAP fixture with structural TLS-like bytes and an inserted lab MSK; it is not a complete PEAP/TLS authentication. `radius.pcapng` is a separate synthetic RADIUS exchange with example attributes/authenticators; it is not linked to the enterprise capture and does not prove deployed policy or VLAN enforcement.
 
 1. Draw the message flow for the capture (roles, frames, protocols).
 2. Identify the outer identity and explain why `anonymous@corp.example` is used.
-3. Point to the frame where the policy is *applied*: the RADIUS reply and the following 4-way handshake.
+3. Identify the example RADIUS VLAN attribute, and explain why an Access-Accept/handshake in synthetic captures does not prove an AP or switch enforced the policy.
 4. List three questions you would ask the client about their 802.1X deployment before testing further.
 
 ## 6. Decision practice

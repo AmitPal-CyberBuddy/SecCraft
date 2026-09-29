@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, BookOpen, FlaskConical, Swords, Terminal, FileText, Command, ArrowRight, Clock, Zap, Map, Layers, Shield, Target } from 'lucide-react'
+import { Search, BookOpen, FlaskConical, Swords, Terminal, FileText, Command, ArrowRight, Zap, Map, Layers, Target } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import modules from '@/content/modules.json'
 import learningPaths from '@/content/learning-paths.json'
@@ -90,7 +90,7 @@ function buildIndex(): SearchItem[] {
       title: c.title,
       description: `${c.description} • ${c.level} • ${c.difficulty} • ${c.learningPathId}`,
       type: 'challenge',
-      path: `/challenges?path=${c.learningPathId || 'wireless-pentesting'}`,
+      path: `/challenges/${c.id}?path=${c.learningPathId || 'wireless-pentesting'}`,
       keywords: [c.id, c.title, c.description, c.module, c.level, c.difficulty, ...(c.skills || []), c.learningPathId || '', pathInfo?.title || ''],
       xp: c.points,
       badge: `${c.level} • ${pathInfo?.shortTitle || c.learningPathId}`,
@@ -161,7 +161,15 @@ const searchData: SearchItem[] = buildIndex()
 
 export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [query, setQuery] = useState('')
+  const [activeIndex, setActiveIndex] = useState(0)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const previousFocusRef = useRef<HTMLElement | null>(null)
   const navigate = useNavigate()
+  const closeSearch = useCallback(() => {
+    setQuery('')
+    setActiveIndex(0)
+    onClose()
+  }, [onClose])
 
   const results = useMemo(() => {
     if (!query.trim()) return searchData.slice(0, 10)
@@ -182,26 +190,59 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
   }, [query])
 
   useEffect(() => {
-    if (open) {
-      setQuery('')
-      setTimeout(() => document.getElementById('global-search-input')?.focus(), 100)
+    if (!open) return
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const focusFrame = requestAnimationFrame(() => inputRef.current?.focus())
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      cancelAnimationFrame(focusFrame)
+      document.body.style.overflow = previousOverflow
+      previousFocusRef.current?.focus()
     }
   }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    document.getElementById(`search-result-${activeIndex}`)?.scrollIntoView({ block: 'nearest' })
+  }, [activeIndex, open])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
-        if (open) onClose()
-        else {
-          document.dispatchEvent(new CustomEvent('open-search'))
-        }
+        if (open) closeSearch()
+        else document.dispatchEvent(new CustomEvent('open-search'))
+        return
       }
-      if (e.key === 'Escape' && open) onClose()
+      if (!open) return
+      if (e.key === 'Tab') {
+        const dialog = document.querySelector<HTMLElement>('.search-dialog')
+        const focusables = dialog?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])')
+        if (focusables?.length) {
+          const first = focusables[0]
+          const last = focusables[focusables.length - 1]
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        closeSearch()
+      } else if (e.key === 'ArrowDown' && results.length) {
+        e.preventDefault()
+        setActiveIndex(i => (i + 1) % results.length)
+      } else if (e.key === 'ArrowUp' && results.length) {
+        e.preventDefault()
+        setActiveIndex(i => (i - 1 + results.length) % results.length)
+      } else if (e.key === 'Enter' && results[activeIndex]) {
+        e.preventDefault()
+        navigate(results[activeIndex].path)
+        closeSearch()
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [open])
+  }, [open, closeSearch, navigate, results, activeIndex])
 
   const getIcon = (type: string) => {
     switch(type) {
@@ -242,31 +283,41 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-[#020617]/80 backdrop-blur-md"
-          onClick={onClose}
+          className="search-backdrop absolute inset-0 bg-[#020617]/74 backdrop-blur-lg"
+          onClick={closeSearch}
         />
         <motion.div
-          initial={{ opacity: 0, y: -20, scale: 0.95 }}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${platform.name} search`}
+          initial={{ opacity: 0, y: -20, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -10, scale: 0.95 }}
+          exit={{ opacity: 0, y: -10, scale: 0.98 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className="relative w-full max-w-[640px] rounded-2xl bg-[#0f172a] border border-[#1e293b] shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden max-h-[80vh] flex flex-col"
+          className="search-dialog relative w-full max-w-[680px] rounded-[22px] bg-[#0f172a] border border-[#334155]/80 shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_28px_90px_rgba(0,0,0,0.72),0_0_48px_rgba(34,211,238,0.08)] overflow-hidden max-h-[min(80vh,760px)] flex flex-col"
         >
           {/* Search Input — platform-level */}
           <div className="relative flex items-center gap-3 p-4 border-b border-[#1e293b]/60">
             <Search className="w-5 h-5 text-slate-500 shrink-0" />
             <input
+              ref={inputRef}
               id="global-search-input"
+              aria-label="Search paths, learning content, labs, and references"
+              role="combobox"
+              aria-expanded="true"
+              aria-controls="global-search-results"
+              aria-activedescendant={results.length ? `search-result-${activeIndex}` : undefined}
+              autoComplete="off"
               value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder={`Search ${platform.name} — paths, modules, labs, challenges, skills, commands, filters... (e.g., WPA3, deauth, hashcat, ${platform.name})`}
+              onChange={e => { setQuery(e.target.value); setActiveIndex(0) }}
+              placeholder="Search paths, modules, labs, commands…"
               className="flex-1 bg-transparent text-[14px] text-slate-200 placeholder:text-slate-500 focus:outline-none min-w-0"
             />
             <div className="flex items-center gap-1.5 shrink-0">
               <kbd className="hidden xs:flex items-center gap-1 px-2 py-1 rounded-md bg-[#1e293b] border border-[#334155] text-[10px] font-mono text-slate-400">
                 <Command className="w-3 h-3" />K
               </kbd>
-              <button onClick={onClose} className="w-7 h-7 rounded-lg bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] transition-colors">
+              <button onClick={closeSearch} aria-label="Close search" className="w-9 h-9 rounded-lg bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] transition-colors">
                 <span className="text-[12px] text-slate-400">✕</span>
               </button>
             </div>
@@ -283,20 +334,26 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
                 <div className="text-[11px] text-slate-400 mt-1">Try: wireless, web, api, WPA3, handshake, deauth, hashcat, reconnaissance, evidence</div>
               </div>
             ) : (
-              <div className="space-y-1">
+              <div id="global-search-results" role="listbox" aria-label="Search results" className="space-y-1">
                 {results.map((item, idx) => {
                   const Icon = getIcon(item.type)
                   return (
-                    <motion.button
+                    <motion.div
+                      id={`search-result-${idx}`}
+                      role="option"
+                      tabIndex={-1}
+                      aria-selected={activeIndex === idx}
                       key={`${item.type}-${item.id}-${idx}`}
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.02 }}
+                      onMouseDown={e => e.preventDefault()}
+                      onMouseEnter={() => setActiveIndex(idx)}
                       onClick={() => {
                         navigate(item.path)
                         onClose()
                       }}
-                      className="w-full text-left p-3 rounded-xl flex items-center gap-3 hover:bg-[#1e293b] border border-transparent hover:border-[#334155]/60 transition-all duration-200 group min-w-0"
+                      className={`w-full text-left p-3 rounded-xl flex items-center gap-3 border transition-all duration-200 group min-w-0 ${activeIndex === idx ? 'bg-[#1e293b]/90 border-cyan-400/25 shadow-[inset_2px_0_0_rgba(83,215,209,.8)]' : 'hover:bg-[#1e293b]/65 border-transparent hover:border-[#334155]/60'}`}
                     >
                       <div className="w-9 h-9 rounded-xl bg-[#020617] border border-[#1e293b] flex items-center justify-center group-hover:border-[#334155] transition-colors shrink-0">
                         <Icon className="w-4 h-4 text-slate-400 group-hover:text-slate-200" />
@@ -311,7 +368,7 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
                         <div className="text-[11px] text-slate-500 truncate mt-0.5">{item.description}</div>
                       </div>
                       <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all duration-200 shrink-0 hidden xs:block" />
-                    </motion.button>
+                    </motion.div>
                   )
                 })}
               </div>

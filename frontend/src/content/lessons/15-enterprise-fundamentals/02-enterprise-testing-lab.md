@@ -1,7 +1,6 @@
 # Testing the Enterprise Path (Lab)
 
-> Artifacts: `enterprise.pcapng` (PEAP flow, MSK→PMK→4-way), `radius.pcapng` (verifiable RADIUS
-> authenticators, dynamic VLAN 100, rogue NAS with a wrong Message-Authenticator).
+> Artifact boundary: `enterprise.pcapng` and `radius.pcapng` are separate synthetic protocol fixtures. The former uses abbreviated EAP/TLS-like bytes and an inserted lab MSK; the latter contains example authenticators/attributes. Neither proves a complete PEAP session, a deployed RADIUS policy, rogue NAS activity, or VLAN enforcement.
 
 ## 1. A test plan for 802.1X
 
@@ -32,26 +31,14 @@ tshark -r radius.pcapng -Y 'radius.code == 1' \
   -T fields -e frame.number -e radius.message_authenticator
 ```
 
-1. Name the EAP method and explain what is inside the TLS tunnel versus what is visible on the air.
-2. Re-derive one MS-CHAPv2 NT-Response from the documented lab password
-   (`scripts/verify-lab-artifacts.py`, step 6). Explain why this material is only obtainable when the
-   attacker terminates the tunnel (a rogue authenticator), never from a passive capture of a correctly
-   configured client.
-3. Verify one Message-Authenticator with the lab shared secret, then show that the "rogue NAS" request in
-   the capture does not verify. What does that tell you about guessing the secret offline?
-4. The Access-Accept assigns VLAN 100. Design the test that proves the client actually lands in VLAN 100
-   and cannot reach a different VLAN — and say what would falsify your conclusion.
+1. Identify the EAP method labels and visible identities in the fixtures; explain why abbreviated TLS-like bytes do not reveal a complete tunnel or inner identity.
+2. Re-derive the direct MS-CHAPv2 fixture response from the documented lab password (`scripts/verify-lab-artifacts.py`, step 6). Do not claim it was captured inside PEAP or caused by a rogue authenticator.
+3. Verify the constructed Message-Authenticator with the disclosed lab shared secret and compare the intentionally invalid example. Explain what this proves about those sample bytes—not about a deployed NAS or production secret.
+4. The RADIUS example includes a VLAN attribute. Design the authorized client/AP/switch/log tests needed to prove the client actually lands in that VLAN and cannot reach a disallowed destination; the PCAP does not prove enforcement.
 
 ## 3. Reporting the enterprise findings
 
-Enterprise findings are architectural, so write them at the level of the control:
-
-* *"The client profile does not validate the RADIUS server certificate, allowing an on-path attacker with a
-  rogue authenticator to obtain MS-CHAPv2 challenge/response material, which is offline-crackable."*
-* Impact: credential capture → lateral movement where those credentials are reused → recommend EAP-TLS or
-  enforced certificate validation plus credential rotation.
-* Evidence: the rogue-authenticator capture, the client profile (redacted), the cracked password (lab),
-  and the timeline.
+A hypothetical report finding must be based on a separate authorized test, not inferred from these fixtures. For example, only if a controlled test demonstrates it and profile/log evidence corroborates it, report that a specific client profile failed to validate the expected server identity and that the test authenticator obtained specified inner-method material. Scope the impact to demonstrated test accounts and systems; credential reuse/lateral movement needs separate evidence. Retest the corrected managed profile with a controlled untrusted certificate and correlate supplicant logs, configuration, and packet evidence. The supplied captures alone do not support this finding.
 
 ## 4. Decision practice
 

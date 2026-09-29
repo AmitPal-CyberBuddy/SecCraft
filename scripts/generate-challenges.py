@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Generate frontend/src/content/challenges.json from the verified lab captures.
 
-Every answer is *computed from the artefact* (`wififorge_labkit.decode`), never hand-written, so a challenge
-answer cannot drift away from the capture a learner opens. Run after `generate-lab-artifacts.py`:
+Frame-specific facts (addresses, frame numbers, decoded fields, challenge responses) are derived from the
+artifacts where practical. Explanatory answer keys and interpretation prompts are authored guidance, not
+machine-graded output; the verifier spot-checks selected claims. Run after `generate-lab-artifacts.py`:
 
     python3 scripts/generate-lab-artifacts.py
     python3 scripts/generate-challenges.py
@@ -114,14 +115,15 @@ def build() -> List[Dict[str, object]]:
                      for b in bss for r0 in [next(x for x in rec if x.get('bssid') == b and x.get('subtype_name') == 'Beacon')])),
                  hint="tshark -r beacon-only.pcapng -Y 'wlan.fc.type_subtype == 8' -T fields -e frame.number -e wlan.bssid -e wlan.ssid -e wlan.ds.current_channel"),
             dict(id="t2", question="Which BSSs advertise no RSNE at all, and what does that mean?",
-                 answer=(f"{', '.join(no_rsn) if no_rsn else 'none'} — no RSN information element, i.e. no WPA2/WPA3 "
-                         "policy: the link is unprotected (or legacy WEP). Policy must be read from the RSNE, never "
-                         "inferred from the name."),
+                 answer=(f"{', '.join(no_rsn) if no_rsn else 'none'} — no RSN information element is advertised, so the "
+                         "beacon does not show a WPA2/WPA3 RSN policy. Check the Privacy capability and any other "
+                         "security IEs before distinguishing an open BSS from legacy WEP; absence alone does not "
+                         "establish which one it is."),
                  hint="Filter wlan.tag.number == 48 and compare which BSSIDs appear."),
             dict(id="t3", question="Which BSS requires management frame protection, and which frames prove it?",
                  answer=(f"{', '.join(req) if req else 'none'} — RSN capabilities show MFPR=1 in the beacon "
-                         f"({fmt([n for n, r in enumerate(rec, 1) if r.get('mfpr')])}). MFPR is bit 4 of the RSN "
-                         "capabilities field; MFPC (bit 5) alone is not enforcement."),
+                         f"({fmt([n for n, r in enumerate(rec, 1) if r.get('mfpr')])}). MFPR is RSN capabilities bit 6 "
+                         "(0x0040); MFPC is bit 7 (0x0080). Advertisement is not proof of a station's negotiated PMF state."),
                  hint="tshark -r beacon-only.pcapng -Y 'wlan.rsn.capabilities.mfpr == 1' -T fields -e frame.number -e wlan.bssid"),
         ],
         flag="WIFIFORGE{BEACON_TRIAGE_RSNE_BITS}", skills=["recon", "rsne", "pmf"],
@@ -133,7 +135,10 @@ def build() -> List[Dict[str, object]]:
     rec = frames("recon-lab")
     bss = bssids(rec)
     hidden = [b for b in bss if ssid_for(rec, b) == "(hidden)"]
-    reveal = numbers(rec, subtype_name="Probe Response")
+    reveal = [n for n, r in enumerate(rec, 1)
+              if r.get("subtype_name") == "Probe Response" and r.get("bssid") in hidden]
+    hidden_reveal = next((r for r in rec if r.get("subtype_name") == "Probe Response"
+                          and r.get("bssid") in hidden), {})
     pnl = [str(r.get("ssid")) for r in rec if r.get("subtype_name") == "Probe Request" and r.get("ssid_len")]
     random_client = [str(r.get("sa")) for r in rec if r.get("subtype_name") == "Probe Request"]
     randomised = sorted({m for m in random_client if int(m.split(":")[0], 16) & 0x02})
@@ -152,12 +157,12 @@ def build() -> List[Dict[str, object]]:
             dict(id="t1", question="How many BSSs and how many distinct SSIDs are present?",
                  answer=(f"{len(bss)} BSSs, {len(set(ssid_for(rec, b) for b in bss))} advertised SSIDs "
                          f"(one BSS hides its name). The two LAB-WIFI BSSIDs ({', '.join(ess)}) share an SSID — "
-                         "consistent with one ESS; proving it needs the same-layer 2 topology or the client's "
-                         "association behaviour, not just the name."),
+                         "consistent with one ESS, but an SSID match alone does not establish membership. Correlate with an "
+                         "authorized inventory/controller configuration and deployment context."),
                  hint="Count unique wlan.bssid across beacons, then unique wlan.ssid."),
             dict(id="t2", question="Which BSS hides its SSID, and which frame discloses it?",
                  answer=(f"{', '.join(hidden) if hidden else 'none'} hides its SSID (SSID IE length 0 in its beacon). "
-                         f"The probe response in {fmt(reveal)} carries the SSID '{ssid_for(rec, hidden[0]) if hidden else ''}' "
+                         f"The probe response in {fmt(reveal)} carries the SSID '{hidden_reveal.get('ssid', '')}' "
                          "in clear — which is exactly why hiding an SSID is not a security control."),
                  hint="Filter wlan.fc.type_subtype == 5 (probe responses) and read wlan.ssid."),
             dict(id="t3", question="What does the client disclose, and is it trackable by MAC?",
@@ -180,7 +185,7 @@ def build() -> List[Dict[str, object]]:
         id="chal-03-traffic", title="From Capture to Evidence — One Association, Frame by Frame",
         module="06-traffic-analysis", difficulty="Intermediate", type="pcap_analysis", level="guided",
         estimated_time="25m", points=100, status="simulated",
-        description=("traffic-analysis.pcapng contains one client's full lifecycle. Reconstruct it as a timeline "
+        description=("traffic-analysis.pcapng is a deterministic one-client lifecycle fixture. Reconstruct the recorded sequence as a timeline "
                      "and turn one claim into a reproducible evidence record."),
         objectives=["Reconstruct the association state machine in order",
                     "Identify EAPOL-Key messages and their key-information flags",
@@ -196,12 +201,9 @@ def build() -> List[Dict[str, object]]:
                                    for n, r in enumerate(rec, 1) if r.get("eapol_key"))
                          + ". Use the flags — ACK/MIC/Install/Secure — never the order alone."),
                  hint="tshark -Y 'eapol.type == 3' -T fields -e frame.number -e eapol.keydes.key_info -e eapol.keydes.replay_counter"),
-            dict(id="t3", question="State the evidence record for the claim 'the client completed a WPA2 handshake with this BSS'.",
+            dict(id="t3", question="What EAPOL-Key sequence is recorded, and what additional evidence would be needed to claim a real client completed a WPA2 handshake with a production BSS?",
                  answer=("Artefact: traffic-analysis.pcapng (SHA-256 in MANIFEST.md); filter: eapol.type == 3; frames: "
-                         f"{join([n for n, r in enumerate(rec, 1) if r.get('eapol_key')])}; interpretation: M1→M4 with "
-                         "increasing replay counters and MICs derived from the PMK. Limit: the capture shows metadata and "
-                         "the handshake only — payload confidentiality is not demonstrated, and no user is identified "
-                         "(shared PMK)."),
+                         f"{join([n for n, r in enumerate(rec, 1) if r.get('eapol_key')])}; interpretation: the fixture contains an M1→M4 sequence with replay counters and MICs that verify against its documented lab PMK. Limit: this synthetic capture does not establish RF delivery, AP acceptance, or a production client/session. A live claim needs authorized capture plus client/AP logs and association context; user identity is not established by the shared PSK."),
                  hint="Hash + filter + frame numbers + interpretation + limit. A claim without all five is an opinion."),
         ],
         flag="WIFIFORGE{EVIDENCE_RECORD_HANDSHAKE}", skills=["wireshark", "evidence", "eapol"],
@@ -232,13 +234,13 @@ def build() -> List[Dict[str, object]]:
             dict(id="t1", question="Which frames are M1–M4, and for which client?",
                  answer=("; ".join(f"{k}: {fmt(v)}" for k, v in m.items())
                          + f". The complete exchange belongs to {clients[0] if clients else '?'}; the second client "
-                         "has only M1/M2 and never received M3."),
+                         "has M1/M2 recorded but no M3/M4 in this capture; that absence does not establish what the station actually received."),
                  hint="tshark -Y 'eapol.type == 3' -T fields -e frame.number -e wlan.sa -e eapol.keydes.key_info"),
             dict(id="t2", question="Why is the truncated exchange still usable for an offline audit?",
                  answer=("M2 carries the MIC computed with the KCK, and the KCK is derived from the PMK — so a candidate "
                          "passphrase can be tested entirely offline. M3/M4 add GTK delivery and confirmation, not "
-                         "crackability. The incomplete handshake's security relevance is limited to an availability/"
-                         "interoperability observation, not a separate finding."),
+                         "crackability. The missing M3/M4 in this capture may reflect capture loss or a partial exchange; it "
+                         "does not by itself prove an availability/interoperability failure. The M1/M2 material remains auditable."),
                  hint="Ask which message lets an attacker verify a candidate key."),
             dict(id="t3", question="Reproduce the audit end to end (documented lab PSK).",
                  answer=(f"PMK = PBKDF2-HMAC-SHA1('{LAB_PSK}', 'LAB-WIFI', 4096, 256) = {pmk.hex()[:32]}…; the MICs in "
@@ -257,14 +259,14 @@ def build() -> List[Dict[str, object]]:
     m1 = [n for n, r in enumerate(rec, 1) if r.get("pmkid")]
     pmkid_value = str(rec[m1[0] - 1]["pmkid"]) if m1 else ""
     challenges.append(dict(
-        id="chal-05-pmkid", title="Clientless Collection — The PMKID in M1",
+        id="chal-05-pmkid", title="PMKID Without a Full Handshake — The KDE in M1",
         module="09-wpa2-practical", difficulty="Intermediate", type="pcap_analysis", level="semi-guided",
         estimated_time="20m", points=100, status="simulated",
         description=("pmkid.pcapng holds a single EAPOL-Key M1 with a PMKID key data encapsulation. Decide why this "
                      "matters operationally and what it does not prove."),
         objectives=["Locate the PMKID KDE inside M1 key data",
                     "Reproduce the PMKID from the PSK",
-                    "Compare clientless collection with a handshake capture"],
+                    "Compare PMKID collection without a full handshake with a 4-way capture"],
         artifacts=["pmkid.pcapng"],
         tasks=[
             dict(id="t1", question="Where is the PMKID, and what is its value?",
@@ -277,13 +279,10 @@ def build() -> List[Dict[str, object]]:
                          "'LAB-WIFI', 4096, 256). That is why a PMKID is crackable material: it is a keyed hash of the PMK."),
                  hint="python3 -c \"import sys;sys.path.insert(0,'scripts');from wififorge_labkit import *\" — or read scripts/verify-lab-artifacts.py."),
             dict(id="t3", question="What is the operational difference from a 4-way handshake capture?",
-                 answer=("No client needs to connect: a single M1 is enough, so collection can be entirely passive with "
-                         "no deauthentication. The security consequence is identical (offline PSK guessing); what changes "
-                         "is the noise and the impact on the network. Limits: the AP must support PMK caching, and a "
-                         "missing PMKID proves nothing about passphrase strength."),
+                 answer=("A PMKID-bearing M1 can provide offline-verification material without capturing all four EAPOL-Key messages, and may be collected passively without deauthentication when an AP emits it for an associated client. It is not necessarily clientless: an association/exchange must occur and AP behavior varies. The material permits offline PSK guesses; a missing PMKID proves nothing about passphrase strength."),
                  hint="Think about what you would otherwise have to do to a live client."),
         ],
-        flag="WIFIFORGE{PMKID_KDE_CLIENTLESS}", skills=["pmkid", "hashcat", "offline-audit"],
+        flag="WIFIFORGE{PMKID_KDE_NO_FULL_HANDSHAKE}", skills=["pmkid", "hashcat", "offline-audit"],
         answer_basis="PMKID read from the capture and recomputed with wififorge_labkit.pmkid",
         deliverable="PMKID value + derivation + a note on collection trade-offs.",
     ))
@@ -293,7 +292,12 @@ def build() -> List[Dict[str, object]]:
     wps = [(n, r) for n, r in enumerate(rec, 1) if r.get("wps_attrs")]
     unlocked = [str(r.get("bssid")) for _, r in wps if not r["wps_attrs"].get("setup_locked")]
     locked = [str(r.get("bssid")) for _, r in wps if r["wps_attrs"].get("setup_locked")]
-    methods = [r["wps_attrs"].get("config_methods") for _, r in wps]
+    method_labels = []
+    for n, r in wps:
+        attrs = r["wps_attrs"]
+        config = attrs.get("config_methods") or {}
+        offered = [name for key, name in (("label", "PIN/label"), ("display", "display"), ("push_button", "push-button")) if config.get(key)]
+        method_labels.append(f"{r.get('bssid')}: {', '.join(offered) or 'none decoded'}; setup_locked={bool(attrs.get('setup_locked'))}; selected_registrar={bool(attrs.get('selected_registrar'))}")
     challenges.append(dict(
         id="chal-06-wps", title="WPS State — Configuration Exposure vs Exploitability",
         module="10-wps", difficulty="Intermediate", type="pcap_analysis", level="semi-guided",
@@ -305,10 +309,10 @@ def build() -> List[Dict[str, object]]:
                     "Write remediation and retest criteria"],
         artifacts=["wps-beacon.pcapng"],
         tasks=[
-            dict(id="t1", question="Which BSS is in setup-locked state, and which is open to enrolment?",
-                 answer=(f"unlocked: {', '.join(unlocked) if unlocked else 'none'}; setup-locked: "
+            dict(id="t1", question="Which BSS advertises Setup Locked, and what WPS methods/registrar state are visible on each?",
+                 answer=(f"Setup Locked not advertised: {', '.join(unlocked) if unlocked else 'none'}; Setup Locked set: "
                          f"{', '.join(locked) if locked else 'none'} ({fmt([n for n, _ in wps])} carry the WPS IE). "
-                         f"Config methods decoded: {methods} — label (PIN) and push-button where present."),
+                         f"Decoded WPS state: {'; '.join(method_labels)}. These beacon fields do not prove live reachability, successful enrollment, or lockout behavior."),
                  hint="tshark -Y 'wlan.tag.number == 221' -T fields -e frame.number -e wlan.bssid -e wps.ap_setup_locked -e wps.config_methods"),
             dict(id="t2", question="Is 'WPS enabled with the PIN method' exploitable on its own?",
                  answer=("No — it is a configuration exposure. Exploitability also requires: the PIN registrar to be "
@@ -337,8 +341,8 @@ def build() -> List[Dict[str, object]]:
         id="chal-07-wpa3-only", title="WPA3-Only — Proving a Control Holds",
         module="11-wpa3", difficulty="Advanced", type="pcap_analysis", level="semi-guided",
         estimated_time="20m", points=100, status="simulated",
-        description=("wpa3-only.pcapng is a modern deployment. Your job is to document why the usual attacks do not "
-                     "apply — including what you did not manage to get out of the capture."),
+        description=("wpa3-only.pcapng is a synthetic teaching fixture advertising SAE-only policy. State what its frames "
+                     "show, what they do not validate, and how to write a bounded no-finding conclusion."),
         objectives=["Read AKM and PMF from the RSNE",
                     "Explain why SAE resists offline guessing",
                     "Write a 'no finding' section that a reviewer can trust"],
@@ -351,14 +355,10 @@ def build() -> List[Dict[str, object]]:
             dict(id="t2", question="Why can't the SAE exchange be turned into an offline audit?",
                  answer=("SAE (Dragonfly) derives the session key from a password-authenticated key exchange: neither "
                          "commit nor confirm exposes a keyed verification value that lets a candidate password be tested "
-                         "offline. A guess would have to be used in a live exchange (online, rate-limited by "
-                         "anti-clogging/commit retries). There is also forward secrecy: recording the exchange now does "
-                         "not help later. That is a design property, not a lab artefact."),
+                         "offline from a passive transcript alone when correctly implemented; implementation flaws and side channels remain possible. A guess generally requires a live exchange, but rate limiting is implementation-dependent. SAE is designed to provide forward secrecy when ephemeral values are generated and handled correctly. The abbreviated synthetic frames in this fixture do not validate a real SAE exchange."),
                  hint="Contrast with the MIC in M2 of a PSK handshake."),
             dict(id="t3", question="What does the protected deauthentication frame prove?",
-                 answer=(f"{fmt(protected)}: the deauthentication frame has the Protected bit set and carries a BIP MIC, "
-                         "i.e. it is a Robust Management Frame under PMF — a spoofer without the IGTK cannot produce one "
-                         "the client accepts. Evidence for a control working."),
+                 answer=(f"{fmt(protected)}: the fixture marks this deauthentication frame protected and includes a BIP MIC-like field. The capture's IGTK is synthetic/unknown, so it does not prove the MIC is cryptographically valid or that a receiver accepted the frame. The beacon's MFPR advertisement is direct policy evidence; validate PMF behavior using an authorized client/AP test."),
                  hint="tshark -Y 'wlan.fc.type_subtype == 12' -T fields -e frame.number -e wlan.fc.protected"),
         ],
         flag="WIFIFORGE{WPA3_SAE_NO_OFFLINE}", skills=["wpa3", "sae", "pmf", "reporting"],
@@ -372,42 +372,37 @@ def build() -> List[Dict[str, object]]:
     sae_auth = numbers(rec, subtype_name="Authentication", auth_algorithm=3)
     psk_auth = numbers(rec, subtype_name="Authentication", auth_algorithm=0)
     handshake = [n for n, r in enumerate(rec, 1) if r.get("eapol_key")]
+    psk_station = next((str(r.get("sa")) for r in rec if r.get("eapol_key") and r.get("sa") != b), "unknown")
+    sae_station = next((str(r.get("sa")) for r in rec if r.get("auth_algorithm") == 3 and r.get("sa") != b), "unknown")
     challenges.append(dict(
-        id="chal-08-transition", title="Transition Mode — Demonstrating the Downgrade Path",
+        id="chal-08-transition", title="Transition Mode — Evidence of a PSK Association",
         module="11-wpa3", difficulty="Advanced", type="pcap_analysis", level="semi-guided",
         estimated_time="25m", points=100, status="simulated",
-        description=("wpa3-transition.pcapng shows a BSS that offers both PSK and SAE. Prove how a client can end up on "
-                     "the weaker path, and state the finding precisely."),
+        description=("wpa3-transition.pcapng shows a BSS advertising both PSK and SAE, plus a captured PSK handshake. "
+                     "Document which path the fixture shows; it does not prove that an attacker induced a downgrade."),
         objectives=["Identify a mixed AKM list",
-                    "Distinguish SAE clients from PSK clients in the capture",
+                    "Identify the captured PSK association without claiming it was attacker-induced",
                     "Word the finding without claiming 'WPA3 is broken'"],
         artifacts=["wpa3-transition.pcapng"],
         tasks=[
             dict(id="t1", question="What policy does the BSS advertise?",
-                 answer=(f"{b}: {ssid_for(rec, b)} — AKM {akm_for(rec, b)}; {pmf_for(rec, b)}. Two AKMs (PSK + SAE) with "
-                         "MFPC-only is the textbook transition-mode profile: PMF is available but not required."),
+                 answer=(f"{b}: {ssid_for(rec, b)} — advertised AKMs {akm_for(rec, b)}; {pmf_for(rec, b)}. In this fixture PSK and SAE are both advertised, with PMF capable (MFPC=1) but not required (MFPR=0). This does not establish what a deployed client negotiated."),
                  hint="Read wlan.rsn.akms.type — a list with two entries means transition mode."),
-            dict(id="t2", question="Which client used the weaker path, and what artefact proves it?",
-                 answer=(f"SAE authentication (algorithm 3): {fmt(sae_auth)}; open/PSK authentication (algorithm 0): "
-                         f"{fmt(psk_auth)} followed by EAPOL-Key frames {fmt(handshake)} — a WPA2 PSK handshake against a "
-                         "WPA3-capable BSS. That is the downgrade path, demonstrated rather than asserted."),
+            dict(id="t2", question="Which station's recorded association trace uses PSK rather than SAE, and what evidence supports that reading?",
+                 answer=(f"SAE-shaped authentication frames (algorithm 3) involve station {sae_station}: {fmt(sae_auth)}. The station {psk_station} has open-system authentication (algorithm 0) at {fmt(psk_auth)} followed by EAPOL-Key frames {fmt(handshake)} — evidence of a PSK handshake against a BSS that also advertises SAE. The synthetic SAE payloads do not prove a valid SAE exchange, and the PSK path does not prove an attacker induced a downgrade."),
                  hint="Client MACs differ between the two flows; correlate the authentication algorithm with the following handshake."),
             dict(id="t3", question="Write the finding: one sentence of claim plus remediation.",
-                 answer=("Claim: the BSS permits a PSK association, so WPA3's offline-guessing resistance and mandatory "
-                         "PMF do not apply to clients that choose the PSK AKM — a weak passphrase remains crackable from "
-                         "a captured PSK handshake. Remediation: move to SAE-only (wpa_key_mgmt=SAE, ieee80211w=2) where "
-                         "the client population allows it; if transition mode must stay, treat it as a documented "
-                         "exception with PMF required, monitoring for PSK associations and a retirement date."),
-                 hint="Scope the claim to the clients that actually downgrade."),
+                 answer=("Claim: the beacon advertises PSK as well as SAE and the fixture contains a PSK handshake; it does not show an induced downgrade or establish a weak production passphrase. If PSK compatibility is unnecessary, consider SAE-only with PMF required; otherwise assess passphrase strength and client negotiation in an authorized deployment test."),
+                 hint="Scope the claim to the captured PSK association; do not assert that an attacker induced a downgrade."),
         ],
-        flag="WIFIFORGE{TRANSITION_DOWNGRADE_PROVEN}", skills=["wpa3", "transition", "reporting"],
+        flag="WIFIFORGE{TRANSITION_PSK_PATH_RECORDED}", skills=["wpa3", "transition", "reporting"],
         answer_basis="authentication algorithms and EAPOL-Key frames decoded from the capture",
         deliverable="A scoped finding plus remediation/exception plan.",
     ))
 
     # ---------------------------------------------------------------- 9. deauth
     rec = frames("deauth")
-    reasons = sorted({int(r.get("reason_code") or 0) for r in rec if r.get("subtype_name") in ("Deauthentication", "Disassociation")})
+    reasons = sorted({int(r.get("reason") or 0) for r in rec if r.get("subtype_name") in ("Deauthentication", "Disassociation")})
     floods = [n for n, r in enumerate(rec, 1) if r.get("subtype_name") == "Deauthentication" and r.get("da") == "ff:ff:ff:ff:ff:ff"]
     directed = [n for n, r in enumerate(rec, 1) if r.get("subtype_name") == "Deauthentication" and r.get("da") != "ff:ff:ff:ff:ff:ff"]
     pmf_bss = [b for b in bssids(rec) if "MFPR=1" in pmf_for(rec, b)]
@@ -416,28 +411,26 @@ def build() -> List[Dict[str, object]]:
         id="chal-09-deauth", title="Availability Testing — Frames, Effect and Reason Codes",
         module="12-deauth-disassoc", difficulty="Advanced", type="pcap_analysis", level="semi-guided",
         estimated_time="25m", points=100, status="simulated",
-        description=("deauth.pcapng contains a spoofed flood against a PMF-capable BSS and the same attempt against a "
-                     "PMF-required BSS, plus SA Query traffic. Decide what is demonstrable and what needs a live test."),
+        description=("deauth.pcapng is a synthetic frame sequence with broadcast/directed deauthentication and disassociation, "
+                     "two SA Query-shaped action frames, and BSSs advertising different PMF capabilities. Frames alone do not prove delivery, acceptance, or service impact."),
         objectives=["Interpret reason codes as evidence",
                     "Explain why PMF changes the outcome",
                     "State the evidence an availability finding requires"],
         artifacts=["deauth.pcapng"],
         tasks=[
             dict(id="t1", question="Summarise the deauthentication traffic: how many frames, which reasons, broadcast or directed?",
-                 answer=(f"reason codes present: {reasons}; broadcast flood: {len(floods)} frames ({fmt(floods[:4])}…); "
-                         f"directed frames: {len(directed)} ({fmt(directed)}). Reason 1 = unspecified (typical of tooling), "
+                 answer=(f"reason codes present: {reasons}; broadcast deauthentication set: {len(floods)} frames ({fmt(floods[:4])}…); "
+                         f"directed frames: {len(directed)} ({fmt(directed)}). Reason 1 = unspecified (not attribution or proof of tooling), "
                          "7 = class-3 frame from a nonassociated station, 8 = STA leaving, 15 = 4-way handshake timeout."),
                  hint="tshark -Y 'wlan.fc.type_subtype == 12' -T fields -e frame.number -e wlan.fixed.reason_code -e wlan.da"),
-            dict(id="t2", question="Which BSS requires PMF, and what extra traffic shows the client defending itself?",
-                 answer=(f"{', '.join(pmf_bss) if pmf_bss else 'none'} requires PMF (MFPR=1). Action frames {fmt(actions)} "
-                         "are SA Query (category 8): the AP asks the client to prove it still holds the PTK before tearing "
-                         "down state. An unprotected deauth is simply not accepted by a PMF client."),
+            dict(id="t2", question="Which BSS advertises PMF required, and what SA Query-shaped traffic is present in the fixture?",
+                 answer=(f"{', '.join(pmf_bss) if pmf_bss else 'none'} advertises MFPR=1. Frames {fmt(actions)} carry category-8 SA Query-shaped request/response bytes in this synthetic fixture. They do not prove a valid protected exchange, PTK possession, or that a real client rejected a deauthentication."),
                  hint="Filter wlan.fc.type_subtype == 13 and look at the action category."),
             dict(id="t3", question="What evidence would you need before reporting an availability finding?",
                  answer=("Transmission plus effect plus timing: the deauth frames, a client-side disconnection record "
                          "(supplicant log or AP logs) and the re-association timeline, all on one clock reference — and an "
-                         "impact statement naming the population and duration. Frames alone prove only that something was "
-                         "transmitted; a single capture cannot show that clients were removed."),
+                         "impact statement naming the population and duration. A packet record alone does not prove that a real frame "
+                         "was transmitted/delivered or that clients were removed."),
                  hint="Caution: 'we sent 200 deauths' is not an impact statement."),
         ],
         flag="WIFIFORGE{DEAUTH_REASONS_EFFECT}", skills=["pmf", "availability", "evidence"],
@@ -448,45 +441,34 @@ def build() -> List[Dict[str, object]]:
     # ---------------------------------------------------------------- 10. rogue
     rec = frames("rogue-ap")
     bss = bssids(rec)
-    legit, twin = bss[0], bss[1] if len(bss) > 1 else bss[0]
+    reference, twin = bss[0], bss[1] if len(bss) > 1 else bss[0]
     local = int(twin.split(":")[0], 16) & 0x02
     challenges.append(dict(
         id="chal-10-rogue", title="Rogue Infrastructure — Build the Case From Signals",
         module="13-rogue-ap", difficulty="Advanced", type="pcap_analysis", level="assessment",
         estimated_time="30m", points=150, status="simulated",
-        description=("rogue-ap.pcapng contains legitimate enterprise infrastructure and an impersonating BSS. You are "
-                     "given no baseline document: decide which signals make the case, and what would falsify it."),
+        description=("rogue-ap.pcapng contains an enterprise-style BSS and a same-SSID look-alike with differing advertised settings. No authorized BSSID inventory is supplied; decide what the capture supports and what remains unproven."),
         objectives=["Compare BSSID administration bits, RSNE and beacon parameters",
-                    "Trace client behaviour from deauth to association to handshake",
+                    "Reconstruct the frame order and distinguish sequence from causation",
                     "Separate rogue-AP risk from client-impersonation risk"],
         artifacts=["rogue-ap.pcapng"],
         tasks=[
-            dict(id="t1", question="Which BSS is the impersonator, and which signals support that?",
+            dict(id="t1", question="Which BSS is the look-alike? What additional evidence is needed before calling it unauthorized?",
                  answer=(f"{twin}: locally administered MAC (bit 1 of the first octet set: {local == 2}), different AKM "
-                         f"({akm_for(rec, twin)}) from the legitimate {legit} ({akm_for(rec, legit)}), different IE "
+                         f"({akm_for(rec, twin)}) from the other captured BSS {reference} ({akm_for(rec, reference)}), different IE "
                          "fingerprint and channel plan. No single signal is proof — the case is the combination, ideally "
                          "corroborated by the authorised inventory."),
                  hint="Compare wlan.bssid, wlan.rsn.akms.type and wlan.fixed.beacon for both BSSIDs."),
             dict(id="t2", question="Reconstruct what happened to the client, with frames.",
-                 answer=(f"Deauthentication {fmt(numbers(rec, subtype_name='Deauthentication'))} from the legitimate BSS; "
-                         f"probe request {fmt(numbers(rec, subtype_name='Probe Request'))}; probe response and association "
-                         f"to the twin ({fmt(numbers(rec, subtype_name='Probe Response') + numbers(rec, subtype_name='Association Request'))}); "
-                         f"then a 4-way handshake with the twin ({fmt([n for n, r in enumerate(rec, 1) if r.get('eapol_key')])}). "
-                         f"The handshake completes with the weak lab passphrase ({LAB_PSK_WEAK}) — so the attacker can "
-                         "decrypt that client's traffic, and only that."),
+                 answer=(f"The fixture records deauthentication frame(s) {fmt(numbers(rec, subtype_name='Deauthentication'))}, a probe request {fmt(numbers(rec, subtype_name='Probe Request'))}, then a probe response/association with the look-alike ({fmt(numbers(rec, subtype_name='Probe Response') + numbers(rec, subtype_name='Association Request'))}) and a 4-way handshake ({fmt([n for n, r in enumerate(rec, 1) if r.get('eapol_key')])}). The documented weak lab PSK ({LAB_PSK_WEAK}) reproduces the handshake MIC; the sequence does not prove the deauth reached the client or caused association. No encrypted client payload traffic is included; the handshake could support offline audit/decryption of separately captured traffic."),
                  hint="Order the frames you already have; the sequence is the evidence."),
-            dict(id="t3", question="Write both findings (client impersonation and network-side rogue) and one control per finding.",
-                 answer=("Client impersonation: clients auto-connect to a stored SSID and, in PSK mode, cannot verify the "
-                         "network's identity → control: PMF required, WPA3-only where possible, and enterprise clients "
-                         "with ca_cert + domain_suffix_match so a rogue authenticator cannot complete TLS. Network-side "
-                         "rogue: unauthorised infrastructure that looks like an ESS member → control: WIDS/WIPS with an "
-                         "authorised BSSID/IE baseline, wired-side correlation and a documented response that disables "
-                         "the port and rotates captured credentials."),
+            dict(id="t3", question="Write a bounded finding or no-finding conclusion for the look-alike and client association. What evidence would establish unauthorized ownership and real client impact?",
+                 answer=("The capture shows a same-SSID look-alike with different advertised security/IEs and a client association/handshake sequence, but it does not establish unauthorized ownership, a real client profile, or that an attack caused the association. Compare against an authorized BSSID/IE inventory and correlate wired-side ownership/logs before calling it a rogue. In a controlled client test, verify profile/AKM behavior and impact. Controls may include managed enterprise certificate validation, appropriate WPA3/PMF policy, WIDS with an authorized baseline, and a documented response; do not infer credential capture or rotate credentials without evidence."),
                  hint="Different impacts, different owners, different controls."),
         ],
         flag="WIFIFORGE{ROGUE_TWIN_SIGNALS}", skills=["rogue-ap", "evil-twin", "detection"],
         answer_basis="beacon/EAPOL frames decoded from the capture",
-        deliverable="Two findings with distinct impacts, controls and owners.",
+        deliverable="A bounded finding or no-finding conclusion, with additional evidence and safe tests needed to establish ownership/impact.",
     ))
 
     # ---------------------------------------------------------------- 11. portal
@@ -496,37 +478,26 @@ def build() -> List[Dict[str, object]]:
         id="chal-11-portal", title="Guest Portal and Client Isolation",
         module="14-captive-portals", difficulty="Advanced", type="pcap_analysis", level="assessment",
         estimated_time="30m", points=150, status="simulated",
-        description=("captive-portal.pcapng is an open guest network with a portal and a client-to-client exchange. "
-                     "Only scope and artefacts are provided: decide what the findings are and what proves them."),
-        objectives=["Trace the portal flow and find credential exposure",
+        description=("captive-portal.pcapng is a packet-level open-network simulation with an HTTP portal flow and a two-station ARP exchange. "
+                     "Distinguish fixture evidence from claims that would require a real service or network test."),
+        objectives=["Trace the HTTP flow and identify bytes visible in the fixture",
                     "Test isolation and segmentation claims separately",
                     "Write findings at the level the evidence supports"],
         artifacts=["captive-portal.pcapng"],
         tasks=[
-            dict(id="t1", question="Reconstruct the portal flow and identify the credential exposure.",
-                 answer=("Open association → DHCP → HTTP redirect to the portal (302) → cleartext POST carrying the "
-                         "credentials → Set-Cookie session token, all unencrypted on an open BSS. The exposure is not "
-                         "'the portal is exploitable' but 'anyone in range receives the credentials and the token in "
-                         "cleartext' — and a MAC-bound session can be hijacked by spoofing an authenticated client's MAC."),
+            dict(id="t1", question="Reconstruct the portal flow and identify which values are visible in plaintext in this fixture.",
+                 answer=("Open association → DHCP DORA → HTTP connectivity-check GET → 302 redirect → cleartext POST with lab-only values → HTTP response with Set-Cookie. The fixture exposes those bytes on an open BSS, but it does not implement a real portal, prove that a server trusts the MAC in the URL, or demonstrate session hijacking; those require controlled service-side tests and logs."),
                  hint="tshark -Y 'http.request' -T fields -e frame.number -e http.request.method -e http.host -e http.request.uri"),
             dict(id="t2", question="Does the capture show client isolation? Which frames decide it?",
-                 answer=("No. Client-to-client ARP frames appear between two client MACs through the AP (55:66:77:88:99:aa "
-                         "and the portal client), so clients can reach each other: ap_isolate=1 is not in force. Isolation "
-                         "and segmentation are different controls — this capture says nothing about whether the guest VLAN "
-                         "can reach corporate networks; that needs its own protocol-level test."),
+                 answer=("The synthetic packet sequence shows an ARP request from 12:34:56:78:9a:bc forwarded by the AP to 55:66:77:88:99:aa, followed by the peer reply forwarded back. That demonstrates the fixture models station-to-station forwarding; it does not establish a real AP setting or production isolation failure. The capture says nothing about guest-to-corporate segmentation, which needs a separate scoped test."),
                  hint="Look for ARP between two non-AP MACs."),
             dict(id="t3", question="Prioritise the remediation and justify the order.",
-                 answer=("1) Encrypt the guest link (OWE, ieee80211w=2) — removes passive capture of every credential "
-                         "carried on it. 2) Serve the portal over HTTPS with HSTS and bind sessions server-side rather "
-                         "than to a spoofable MAC. 3) Enforce client isolation (ap_isolate=1). 4) Verify the guest VLAN's "
-                         "inter-VLAN policy with an ACL test rather than assuming the portal's redirect rules are "
-                         "segmentation. Order reflects blast radius: credentials first, then lateral movement, then "
-                         "peer-to-peer exposure."),
+                 answer=("Prioritize TLS/HTTPS for the portal and server-side session controls, then validate guest client isolation and inter-VLAN policy independently. The fixture demonstrates cleartext HTTP bytes and simulated peer ARP forwarding only; it does not establish a MAC-based authorization flaw or prove an actual production control is absent."),
                  hint="Rank by what an attacker gains and how easily."),
         ],
         flag="WIFIFORGE{PORTAL_ISOLATION_SPLIT}", skills=["captive-portal", "isolation", "reporting"],
         answer_basis="HTTP/ARP frames decoded from the capture",
-        deliverable="Two prioritised findings (credential exposure, missing isolation) plus a segmentation test plan.",
+        deliverable="Two bounded fixture observations (visible HTTP values and modeled station-to-station forwarding) plus separate authorized portal/isolation/segmentation test plans.",
     ))
 
     # ---------------------------------------------------------------- 12. enterprise
@@ -536,29 +507,25 @@ def build() -> List[Dict[str, object]]:
         id="chal-12-enterprise", title="802.1X Path — From EAPOL-Start to Keys",
         module="15-enterprise-fundamentals", difficulty="Advanced", type="pcap_analysis", level="assessment",
         estimated_time="35m", points=150, status="simulated",
-        description=("enterprise.pcapng follows one client through the enterprise path. Reconstruct the flow, name each "
-                     "component and say where the trust decisions are made."),
+        description=("enterprise.pcapng is an abbreviated synthetic EAPOL/EAP teaching fixture. Reconstruct the visible "
+                     "frames, then distinguish protocol concepts from what this capture cannot prove: no complete TLS/PEAP session, RADIUS exchange or deployed policy is bundled."),
         objectives=["Map supplicant → authenticator → RADIUS → identity store",
                     "Explain the MSK→PMK→PTK relationship",
                     "Decide what a passive capture can and cannot show"],
         artifacts=["enterprise.pcapng", "radius.pcapng"],
         tasks=[
             dict(id="t1", question="List the EAP methods and the order of the exchange.",
-                 answer=(f"EAP types seen: {', '.join(eap_types)}. Order: EAPOL-Start/EAP-Request Identity → PEAP outer "
-                         f"exchange → inner method → EAP-Success → 4-way handshake ({fmt([n for n, r in enumerate(rec, 1) if r.get('eapol_key')])}). "
-                         "The outer identity is anonymous by design; the real identity is inside the TLS tunnel."),
+                 answer=(f"EAP type labels present in the fixture: {', '.join(eap_types)}. Visible frame order includes EAPOL/EAP identifiers and EAPOL-Key frames ({fmt([n for n, r in enumerate(rec, 1) if r.get('eapol_key')])}). "
+                         "TLS bytes are abbreviated structural data and the MSK is inserted lab data; this does not prove a complete PEAP tunnel, real inner identity, or successful production authentication."),
                  hint="tshark -Y 'eap' -T fields -e frame.number -e eap.code -e eap.type"),
             dict(id="t2", question="Why is there still a 4-way handshake after successful EAP authentication?",
                  answer=("EAP produces the MSK; the PMK is the first 256 bits of it (per user, per session). The 4-way "
                          "handshake then proves both sides hold the PMK, derives the PTK (KCK/KEK/TK) bound to the MAC "
-                         "addresses and nonces, and installs keys including the GTK. If it is missing: the EAP exchange did "
-                         "not actually succeed, the client aborted, or the capture is incomplete."),
+                         "addresses and nonces, and installs keys including the GTK. If no handshake appears in a capture, the "
+                         "capture alone cannot distinguish an incomplete recording from a failed/aborted exchange; consult client/AP logs and session context."),
                  hint="The two exchanges derive different keys for different purposes."),
             dict(id="t3", question="What can a passive capture of this flow prove about credential exposure?",
-                 answer=("Nothing directly — the inner MS-CHAPv2 exchange is inside the TLS tunnel. Credential exposure "
-                         "requires the client to accept a rogue authenticator (no ca_cert / domain_suffix_match), which "
-                         "needs an active, authorised test. From this capture you can only establish the method, the "
-                         "identities and the fact that the client reached an authenticated state."),
+                 answer=("This fixture cannot establish credential exposure or the client's certificate-validation behavior. Its TLS bytes are structural and the MSK is inserted; it does not contain a complete TLS tunnel or a validated client authentication. In a real PEAP test, a client profile that fails to validate both a trusted CA and expected server identity can be vulnerable to a rogue authenticator; that requires an authorized, scoped test."),
                  hint="State the precondition for the attack rather than assuming the capture demonstrates it."),
         ],
         flag="WIFIFORGE{ENTERPRISE_MSK_TO_PMK}", skills=["802.1x", "eap", "peap"],
@@ -574,33 +541,21 @@ def build() -> List[Dict[str, object]]:
         id="chal-13-eap", title="EAP Methods and MS-CHAPv2 Material",
         module="16-eap", difficulty="Advanced", type="pcap_analysis", level="assessment",
         estimated_time="35m", points=150, status="simulated",
-        description=("eap.pcapng mixes PEAP, EAP-TLS and EAP-TTLS exchanges and includes real MS-CHAPv2 material. Work "
-                     "out which exchanges can leak credentials and under which precondition."),
+        description=("eap.pcapng contains abbreviated EAP method identifiers and an intentionally direct MS-CHAPv2 teaching exchange. It is not a set of complete PEAP, EAP-TLS or EAP-TTLS sessions; analyse the visible fields and state what the fixture cannot prove."),
         objectives=["Identify methods from outer exchanges",
                     "Extract and verify MS-CHAPv2 material",
                     "Explain the certificate-validation precondition"],
         artifacts=["eap.pcapng"],
         tasks=[
             dict(id="t1", question="Which EAP methods appear, and what does each protect?",
-                 answer=("PEAP (type 25) and EAP-TTLS (type 21) tunnel an inner method behind TLS; EAP-TLS (type 13) uses "
-                         "client certificates on both sides; MS-CHAPv2 (type 26) appears as the inner method. PEAP/TTLS "
-                         "protect the inner exchange only if the client validates the server's certificate — EAP-TLS does "
-                         "not depend on a password at all."),
+                 answer=("The fixture contains EAP type identifiers for PEAP (25), EAP-TLS (13), EAP-TTLS (21) and direct EAP-MSCHAPv2 (26) packets. These are abbreviated method examples, not complete TLS sessions or proof that MS-CHAPv2 occurred inside PEAP/TTLS. In general, PEAP/TTLS rely on client validation of the server certificate; EAP-TLS uses client certificates and does not authenticate with a password."),
                  hint="tshark -Y 'eap.type == 25 || eap.type == 13 || eap.type == 21 || eap.type == 26'"),
             dict(id="t2", question="Extract the MS-CHAPv2 challenge/response pair and say what makes it crackable.",
-                 answer=(f"Challenge frames {fmt(chal)} and Response frames {fmt(peers)}: the response contains the "
-                         "16-byte peer challenge, the 24-byte NT-Response and the username. The NT-Response is derived "
-                         "from MD4(password) with the challenge hash SHA1(PeerChallenge | AuthenticatorChallenge | "
-                         "UserName)[0:8] — a fast, unsalted construction that makes `hashcat -m 5500` effective against "
-                         "human-chosen passwords. scripts/verify-lab-artifacts.py re-derives it from the documented lab "
-                         "password and checks the RFC 2759 test vector."),
-                 hint="The material is only present because the tunnel was terminated — say by whom."),
+                 answer=(f"Challenge frames {fmt(chal)} and Response frames {fmt(peers)}: the fixture's response contains the "
+                         "peer challenge, NT-Response and username. This is deliberately direct, visible EAP-MSCHAPv2 material—not evidence that a PEAP tunnel was terminated. The NT-Response construction permits offline password guesses; scripts/verify-lab-artifacts.py verifies the fixture against the documented lab password and RFC 2759 vector."),
+                 hint="In this fixture the direct MS-CHAPv2 packets are intentionally exposed; do not infer a tunnel from an EAP type label."),
             dict(id="t3", question="State the precondition and the controls that remove it.",
-                 answer=("Precondition: the client did not validate the server certificate, so a rogue authenticator "
-                         "completed the TLS handshake and ran the inner method. Controls, strongest first: EAP-TLS with "
-                         "client certificates; enforce ca_cert plus domain_suffix_match in every managed profile; disable "
-                         "PEAP-MSCHAPv2 server-side where possible; require PMF so clients cannot be pushed off the "
-                         "legitimate BSS; monitor for rogue BSSIDs and duplicate SSIDs."),
+                 answer=("Precondition: a compatible client accepts an untrusted/wrong-identity server and an authorized rogue authenticator successfully negotiates the tunneled method; missing validation alone does not prove credential capture. Controls include EAP-TLS with managed client certificates; enforce the intended CA and expected server name in every profile; disable PEAP-MSCHAPv2 server-side where possible; use PMF to reduce spoofed deauth/disassoc paths (not as AP authentication); monitor look-alike BSSIDs against an authorized baseline."),
                  hint="Controls belong at the client profile, the RADIUS policy and the radio."),
         ],
         flag="WIFIFORGE{EAP_MSCHAPV2_PRECONDITION}", skills=["eap", "mschapv2", "certificates"],
@@ -632,18 +587,14 @@ def build() -> List[Dict[str, object]]:
                  hint="tshark -Y radius -T fields -e frame.number -e radius.code -e radius.eap_message"),
             dict(id="t2", question="Verify integrity: what does the Message-Authenticator prove, and why does one request fail?",
                  answer=("Message-Authenticator = HMAC-MD5 over the packet with the attribute value zeroed, keyed with the "
-                         "shared secret — it proves the sender knows the secret and the packet is unmodified. Recomputing "
+                         "shared secret — a valid value supports integrity under that shared secret, but does not uniquely identify which holder sent the packet. Recomputing "
                          "it for each request with the documented lab secret verifies the exchange; the rogue-NAS request "
                          "in the capture was built with a different secret and fails verification, which is exactly what "
                          "you should reproduce by hand. Responses additionally carry the Response Authenticator "
                          "(MD5 over code|id|length|request authenticator|attributes|secret)."),
                  hint="Zero the 16-byte attribute value before hashing, then compare with the captured value."),
             dict(id="t3", question="What is the impact of a leaked shared secret, and what limits it?",
-                 answer=("With the secret an attacker can verify and forge RADIUS packets, decrypt User-Password "
-                         "attributes in captured requests and, if the server accepts requests from anywhere, answer as a "
-                         "NAS. Impact is bounded by: require_message_authenticator (unsigned requests rejected), source-IP "
-                         "restriction and per-device secrets, RadSec (TLS) for transport, and secret rotation. Evidence for "
-                         "this finding is the recomputation, not the secrecy assumption."),
+                 answer=("A party holding the secret can validate/construct packets for that shared-secret relationship and recover User-Password attributes from captured requests; impersonation also depends on network reachability and server/NAS policy. Source-IP allowlists, unique per-device secrets, protected RadSec peers and prompt rotation reduce exposure, but none makes a leaked secret harmless. The fixture demonstrates verification under its lab secret, not production compromise."),
                  hint="Environmental preconditions decide severity — test them, do not assume them."),
         ],
         flag="WIFIFORGE{RADIUS_VERIFY_MA_ROGUE_NAS}", skills=["radius", "integrity", "shared-secret"],
@@ -660,7 +611,7 @@ def build() -> List[Dict[str, object]]:
         id="chal-15-engagement", title="Multi-BSS Engagement — Test Plan and Findings",
         module="20-final-assessment", difficulty="Professional", type="pcap_analysis", level="assessment",
         estimated_time="45m", points=200, status="simulated",
-        description=("methodology.pcapng is a multi-BSS capture of a four-SSID estate. You get the capture and nothing "
+        description=("methodology.pcapng is a synthetic multi-BSS capture with several SSIDs and a look-alike example; it is not evidence from a real estate. You get the capture and nothing "
                      "else: prioritise the estate, select the tests, and write findings that survive review."),
         objectives=["Triage an estate from a single capture",
                     "Choose tests by expected impact, not by tool availability",
@@ -673,25 +624,14 @@ def build() -> List[Dict[str, object]]:
                            f"{', '.join(weak) if weak else 'not present'}."),
                  hint="Beacon fields give you the policy; the rest of the capture gives you behaviour."),
             dict(id="t2", question="Prioritise the test sequence and justify it.",
-                 answer=("1) Passive inventory and policy review (no impact). 2) Offline audit of any PSK material — "
-                         "passive collection, no disruption. 3) Portal/cleartext exposure review on the open or OWE BSS. "
-                         "4) Enterprise path analysis; the rogue-authenticator test needs authorisation and a window. "
-                         "5) Availability testing last, timeboxed, on named test clients. Order = increasing impact and "
-                         "increasing disruption; each stage informs whether the next is worth its risk."),
+                 answer=("Start with passive inventory and decode beacon/RSNE/WPS fields. Next, audit only the supplied weak-PSK practice handshake offline. Treat the open Guest beacon as a policy observation—not proof of portal behavior or exposed user traffic. The look-alike and EAP/MS-CHAPv2 frames are synthetic examples; ownership, a complete PEAP flow, certificate validation, or credential capture require authorized inventory/profile review and controlled tests. Test availability and segmentation only with explicit scope, named clients, controls and impact monitoring."),
                  hint="Cheapest, least disruptive, highest information first."),
             dict(id="t3", question="Write the finding list with severity reasoning and retest criteria.",
-                 answer=("Expected findings: (a) guessable shared PSK on the PSK BSS — offline audit evidence, impact "
-                         "bounded by what that L2 reaches, retest = same audit after rotation (the recovered line must "
-                         "disappear); (b) cleartext portal credentials — impact = credential theft for every guest, "
-                         "retest = repeat capture, expect HTTPS; (c) PMF absent on some BSSs — availability finding scoped "
-                         "to the clients that do not negotiate PMF, retest = deauth test with identical parameters, expect "
-                         "no disconnection; (d) enterprise credential exposure only if the rogue-authenticator test is "
-                         "authorised and succeeds — retest = rogue authenticator with validation enforced, expect a TLS "
-                         "alert. Each severity must name the environment assumption that produced it."),
+                 answer=("Evidence-bounded report: (a) the supplied LAB-WEAK-PSK fixture contains a handshake for the documented weak training passphrase—this is not a production credential; retest a real scoped SSID after rotation. (b) Guest-WLAN advertises no RSNE in its beacon—this does not prove portal behavior, client-to-client access or cleartext credentials; inspect the actual portal and controlled traffic. (c) WPS information elements appear in beacons—this does not prove a PIN attack is possible; inspect setup lock/rate limiting and test only with authorization. (d) a look-alike BSSID, abbreviated EAP/MS-CHAPv2 fields, one deauth and an ICMP pair are present, but these do not establish a rogue owner, completed PEAP credential capture, client disconnection or production segmentation. For each, state the evidence, limitation, impact assumption, and a concrete authorized retest; assign severity only after scope and likelihood/impact are known."),
                  hint="Four findings, four retests, each stating what would falsify it."),
         ],
         flag="WIFIFORGE{ENGAGEMENT_TRIAGE_RETEST}", skills=["methodology", "assessment", "reporting", "retest"],
-        answer_basis="computed from the multi-BSS capture; findings verified in scripts/verify-lab-artifacts.py",
+        answer_basis="frame-derived observations from a synthetic teaching capture; no production findings or retests are verified",
         deliverable="An inventory, a sequenced test plan, findings with severity reasoning and retest criteria.",
     ))
 
@@ -700,6 +640,9 @@ def build() -> List[Dict[str, object]]:
 
 def main() -> int:
     challenges = build()
+    # Path ownership is catalog metadata shared with the UI's path-aware totals and filters.
+    for challenge in challenges:
+        challenge.setdefault("learningPathId", "wireless-pentesting")
     with open(OUT, "w") as fh:
         json.dump(challenges, fh, indent=1)
     levels = {}
@@ -707,7 +650,7 @@ def main() -> int:
         levels[c["level"]] = levels.get(c["level"], 0) + 1
     print(f"wrote {len(challenges)} challenges to {OUT}")
     print(f"  levels: {levels}")
-    print(f"  tasks:  {sum(len(c['tasks']) for c in challenges)} (answers computed from the captures)")
+    print(f"  tasks:  {sum(len(c['tasks']) for c in challenges)} (frame-derived fields plus authored, self-review answer keys)")
     return 0
 
 

@@ -2,8 +2,11 @@
   "name": "seccraft",
   "private": true,
   "version": "2.1.0",
-  "description": "SecCraft \u2014 Hands-on Cybersecurity Learning Platform \u2014 Learn. Practice. Investigate. Improve.",
+  "description": "SecCraft — Hands-on Cybersecurity Learning Platform. Learn. Practice. Investigate. Improve.",
   "type": "module",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { Clock, BookOpen, FlaskConical, Lock, CheckCircle, Circle, Loader2, ArrowRight, Sparkles, Target } from 'lucide-react'
 import { motion } from 'framer-motion'
 import modules from '@/content/modules.json'
-import { LABS } from '@/content/labs'
+import { AVAILABLE_LABS } from '@/content/labs'
 import { POINTS } from '@/store/useProgressStore'
 
 interface Props {
@@ -38,7 +38,7 @@ export function ModuleCard({ id, title, phase, difficulty, estimated_hours, stat
   // that the module does not ship.
   const moduleDef = (modules as any[]).find(m => m.id === id)
   const lessonCount = moduleDef?.lessons?.length ?? 0
-  const labCount = LABS.filter(lab => lab.module === id).length
+  const labCount = AVAILABLE_LABS.filter(lab => lab.module === id).length
   const moduleXp = lessonCount * POINTS.LESSON + labCount * POINTS.LAB
 
   const phaseStyle = phaseConfig[phase] || phaseConfig[1]

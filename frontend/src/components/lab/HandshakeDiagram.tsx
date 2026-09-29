@@ -207,23 +207,23 @@ export function HandshakeDiagram({ pcapId = 'wpa2-handshake', bssid = 'AA:BB:CC:
                   <span className={`text-[11px] px-2.5 py-1 rounded-full border font-mono ${rsnInfo.mfpr ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>MFPR {rsnInfo.mfpr ? '1 required' : '0 not required'}</span>
                 </div>
                 <div className="text-[10px] text-slate-500 mt-2 leading-relaxed">
-                  {rsnInfo.mfpc && rsnInfo.mfpr ? 'PMF required MFPC=1 MFPR=1 — good — prevents deauth — WPA3 mandates required' : rsnInfo.mfpc && !rsnInfo.mfpr ? 'PMF capable optional MFPC=1 MFPR=0 — better than disabled but downgrade possible — should be required if all clients support PMF — Medium' : 'PMF disabled MFPC=0 MFPR=0 — bad — Medium — deauth possible, handshake capture via deauth, DoS, Evil Twin'}
+                  {rsnInfo.mfpc && rsnInfo.mfpr ? 'MFPC=1/MFPR=1 advertises PMF required; this reduces acceptance of spoofed robust management frames by negotiated peers. It does not prevent every deauth technique' : rsnInfo.mfpc && !rsnInfo.mfpr ? 'MFPC=1/MFPR=0 advertises PMF capable but not required. Assess client negotiation and transition policy; do not infer a downgrade from this bit alone' : 'MFPC=0/MFPR=0 advertises no PMF. Susceptible peers may accept spoofed robust management frames; this does not prove a disconnect, handshake capture or impact'}
                 </div>
                 <div className="text-[10px] text-cyan-400/80 mt-1">Filter: wlan.rsn.capabilities.mfpc==1 && mfpr==1 required, ==0 && ==0 disabled</div>
               </div>
               <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
                 <div className="text-[11px] text-slate-500 uppercase tracking-widest">PMKID & Group Management</div>
-                <div className="text-[12px] font-mono text-slate-200 mt-1">PMKID Count 0 or 1 — PMKID = HMAC-SHA1-128(PMK, "PMK Name" | BSSID | STA MAC) 16 bytes — clientless capture via hcxdumptool — single frame — no deauth</div>
+                <div className="text-[12px] font-mono text-slate-200 mt-1">PMKID is a 16-byte HMAC-SHA1-derived value in some EAPOL-Key M1s — no need for all four handshake messages; an associated-client exchange/AP support may be needed, no deauth is inherently required</div>
                 <div className="text-[10px] text-slate-400 mt-1">Filter: wlan.rsn.pmkid or wlan_rsna_eapol.pmkid</div>
                 <div className="text-[12px] font-mono text-slate-200 mt-2">Group Mgmt Cipher BIP (00-0F-AC-06) — for PMF — BIP-GMAC-128/256 for WPA3</div>
                 <div className="text-[10px] text-slate-400 mt-1">Filter: wlan.rsn.gmcs.type==6 BIP good</div>
               </div>
               <div className={`p-3 rounded-xl border ${rsnInfo.wps ? 'bg-red-500/10 border-red-500/20' : 'bg-emerald-500/10 border-emerald-500/20'}`}>
                 <div className="text-[11px] uppercase tracking-widest flex items-center gap-1" style={{ color: rsnInfo.wps ? '#f87171' : '#34d399' }}>
-                  {rsnInfo.wps ? <><AlertTriangle className="w-3 h-3" /> WPS Enabled IE 00:50:F2:04 High 11k PIN flaw</> : <><CheckCircle className="w-3 h-3" /> WPS Disabled — good</>}
+                  {rsnInfo.wps ? <><AlertTriangle className="w-3 h-3" /> WPS information element present — investigate configuration and lock state</> : <><CheckCircle className="w-3 h-3" /> No WPS information element in this selected frame</>}
                 </div>
-                <div className="text-[10px] text-slate-500 mt-1">Filter: wps or wlan.tag.oui==00:50:f2:04 — beacon WPS IE present = WPS enabled = High/Medium</div>
-                <div className="text-[11px] font-mono mt-1" style={{ color: rsnInfo.wps ? '#f87171' : '#34d399' }}>{rsnInfo.wps ? 'wps_state=2 enabled — bad — 11k PIN brute-force' : 'wps_state=0 disabled — good'}</div>
+                <div className="text-[10px] text-slate-500 mt-1">Filter: wps or wlan.tag.oui==00:50:f2:04 — WPS IE presence is an observation, not proof of an exploitable PIN or enrollment policy</div>
+                <div className="text-[11px] font-mono mt-1" style={{ color: rsnInfo.wps ? '#f87171' : '#34d399' }}>{rsnInfo.wps ? 'WPS IE observed; check setup lock, methods, implementation, rate limits and authorized config' : 'No WPS IE observed in this frame; absence alone does not validate the running configuration'}</div>
               </div>
             </div>
           </div>
@@ -232,7 +232,7 @@ export function HandshakeDiagram({ pcapId = 'wpa2-handshake', bssid = 'AA:BB:CC:
             <div className="text-slate-300 mb-1">Example RSN IE Good WPA3-only:</div>
             Tag 48 Length 20 Version 1 Group CCMP (00-0F-AC-04) Pairwise Count 1 CCMP AKM Count 1 SAE (00-0F-AC-08) RSN Caps 0x00C0 MFPC=1 MFPR=1 PMF required PMKID Count 0 Group Mgmt BIP (00-0F-AC-06) — good — no WPS — no TKIP
             <div className="text-slate-300 mt-2 mb-1">Example Bad Transition PSK+SAE PMF optional WPS:</div>
-            Tag 48 Length 24 Version 1 Group CCMP Pairwise CCMP AKM Count 2 PSK (02) + SAE (08) same WeakPass123 RSN Caps 0x0040 MFPC=1 MFPR=0 PMF optional Group Mgmt BIP + Tag 221 OUI 00:50:F2:04 WPS IE — bad — transition downgrade risk, PMF optional allows deauth, WPS High, weak PSK High
+            Illustrative only: an RSNE with PSK+SAE and MFPC=1/MFPR=0 permits transition-compatible policy; this alone does not prove a downgrade. Weak passphrases remain a PSK concern. Review WPS state and actual client negotiation; rate risks in context.
           </div>
         </div>
       </div>
@@ -246,8 +246,8 @@ export function HandshakeDiagram({ pcapId = 'wpa2-handshake', bssid = 'AA:BB:CC:
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center"><Eye className="w-4 h-4 text-violet-400" /></div>
                 <div>
-                  <div className="text-[13px] font-bold text-slate-100">PMKID — Clientless Single Frame</div>
-                  <div className="text-[11px] text-slate-500 font-mono">PMKID = HMAC-SHA1-128(PMK, "PMK Name" | BSSID | STA MAC) 16 bytes — HMAC-SHA1 20 bytes first 16 — clientless via hcxdumptool</div>
+                  <div className="text-[13px] font-bold text-slate-100">PMKID — Reduced Handshake Capture</div>
+                  <div className="text-[11px] text-slate-500 font-mono">PMKID = HMAC-SHA1-128(PMK, "PMK Name" | BSSID | STA MAC) 16 bytes — HMAC-SHA1 20 bytes first 16 — may be collected without a full 4-way exchange; collection methods/AP behavior vary</div>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -267,9 +267,9 @@ export function HandshakeDiagram({ pcapId = 'wpa2-handshake', bssid = 'AA:BB:CC:
               <div className="mt-3 p-3 rounded-xl bg-[#020617] border border-[#1e293b] font-mono text-[11px] text-slate-400">
                 <div>BSSID {bssid} STA MAC {client} SSID {ssid} PMKID {pmkid || 'aabb...'} in EAPOL M1 key data RSN IE PMKID Count 1</div>
                 <div className="mt-1">Filter: wlan_rsna_eapol.pmkid or eapol && wlan.rsn.pmkid</div>
-                <div className="mt-1">Capture clientless: hcxdumptool -i wlan0mon -o pmkid.pcapng --enable_status=1 — associates as client, gets M1 with PMKID, single frame, no client needed, no deauth, less detection than handshake</div>
+                <div className="mt-1">Some collection methods actively associate as a test station and request an exchange; an AP may emit PMKID in M1. No victim deauthentication or complete four-way handshake is necessarily required, but this is not literally clientless. Use only in an authorized lab.</div>
                 <div className="mt-1">Convert: hcxpcapngtool -o pmkid.22000 pmkid.pcapng && hashcat -m 22000 pmkid.22000 wordlist.txt --force — offline audit if weak PSK</div>
-                <div className="mt-1">Defense: Strong PSK 20+ random not in wordlists, PMF required, WPA3 SAE resists offline audit forward secrecy, no WPS</div>
+                <div className="mt-1">Defense: Use a unique high-entropy PSK; consider WPA3-SAE-only where compatible. PMF/WPS controls address separate risks; no fixed password length guarantees strength.</div>
               </div>
             </div>
           </motion.div>

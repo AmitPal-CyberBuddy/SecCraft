@@ -1,8 +1,12 @@
 # Branding Decision — Evolution Log
 
 **Date:** 2026-09-28
-**Status:** Platform repositioning — Stage 1-6 implemented, final name Quench chosen
-**Branch:** arena/01a0e917-wififorge
+**Current status (2026-09-29):** The actual selected product/repository name is SecCraft; repository `AmitPal-CyberBuddy/SecCraft`. Earlier Quench/Anvil entries below are historical proposals, superseded by the rename.
+**Current branch:** `arena/01a0ebce-seccraft`
+
+## Current Decision — SecCraft
+
+SecCraft is the current platform and repository name. Canonical links are the GitHub repository and Pages URL in [`BRANDING.md`](BRANDING.md). Current taglines and design details are maintained in that guide and `frontend/src/content/platform.json`.
 
 ## Decision History
 
@@ -40,13 +44,13 @@ logo: { concept: "Forge Mark — anvil + Wi-Fi arcs" }
 - CyberForge: cyberforge-academy.com (AI cybersecurity university) — user asked about this, rejected due to direct training platform conflict + generic "Cyber" buzzword
 - LabForge: 12+ vulnerable labs dashboard
 - BreakForge: breakforge.io "Break to learn, Forge to grow" — similar to our tagline
-- BreachForge, TraceForge, ScopeForge (evidence-driven workflow very close to our methodology), Foundry/ForgePath, Crucible (CMU), EvidenceForge (Cisco Talos), RedForge, PurpleForge, SignalForge, VectorForge, VulnForge, HexForge, ByteForge, RootForge, ForgeCore, Exploit-Forge — all have moderate-strong conflicts (see PLATFORM_REPOSITIONING.md Section D)
+- BreachForge, TraceForge, ScopeForge (evidence-driven workflow very close to our methodology), Foundry/ForgePath, Crucible (CMU), EvidenceForge (Cisco Talos), RedForge, PurpleForge, SignalForge, VectorForge, VulnForge, HexForge, ByteForge, RootForge, ForgeCore, Exploit-Forge — all had moderate-to-strong naming conflicts in the historical shortlist.
 
 **Decision:** Platform brand must change to domain-neutral. WiFiForge becomes Wireless path sub-brand.
 
-### 2026-09-28 (Final) — Quench Chosen
+### 2026-09-28 — Quench Proposal (Superseded)
 
-**User decision:** Go with **Quench**
+This earlier draft recorded **Quench** as a proposed name. The subsequent repository rename and current product metadata establish **SecCraft** as the actual name; retain this section only as planning history.
 
 **Why Quench — evaluation against criteria:**
 
@@ -112,8 +116,8 @@ logo: { concept: "Forge Mark — anvil + Wi-Fi arcs" }
 
 **Rejected Alternative — CyberForge:**
 
-- User asked about CyberForge — evaluated: cyberforge-academy.com AI-operated cybersecurity university direct competitor, plus generic "Cyber" buzzword fails "not overly generic" and "technically credible", plus Forge word saturation. Recommend avoid. See Section D in PLATFORM_REPOSITIONING.md.
+- CyberForge was rejected in that historical proposal because the category term was generic and the name conflicted with an existing training product.
 
-See docs/PLATFORM_REPOSITIONING.md for full A-H assessment, docs/BRANDING_MIGRATION.md for staged migration, docs/IMPLEMENTATION_PLAN_STAGE3_6.md for remaining tasks.
+For the current identity and migration record, see [`BRANDING.md`](BRANDING.md) and [`BRANDING_MIGRATION.md`](BRANDING_MIGRATION.md). The old stage plan and candidate-name research were retired after completion; this file keeps only the decision rationale.
 
-*Forge. Break. Fix. Quench. Retest. — Branding Decision Evolution — Final: Quench*
+*Branding decision evolution — current product: SecCraft*

@@ -38,4 +38,4 @@
 {{RETEST}} <!-- After fix, repeat test, confirm resolved -->
 
 ---
-*Generated via WiFiForge — Forge. Break. Fix. Retest.*
+*Generated via SecCraft — Learn. Practice. Investigate. Improve.*

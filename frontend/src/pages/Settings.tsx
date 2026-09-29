@@ -1,3 +1,4 @@
+import { LoadingPanel } from '@/components/common/LoadingPanel'
 import { useProgressStore, LEVELS } from '@/store/useProgressStore'
 import { TOTAL_LABS, TOTAL_LESSONS, TOTAL_MODULES, TOTAL_PCAPS, TOTAL_SCENARIOS } from '@/content/stats'
 import { motion } from 'framer-motion'
@@ -33,7 +34,7 @@ export function Settings() {
           <SettingsIcon className="w-5 h-5 text-slate-400" />
         </div>
         <div className="min-w-0">
-          <h1 className="font-heading font-bold text-[22px] xs:text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none truncate">Settings</h1>
+          <h1 className="font-heading font-bold text-[22px] xs:text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none truncate sc-page-title">Settings</h1>
           <p className="text-[12px] xs:text-[13px] text-slate-400 mt-1.5 leading-relaxed">Local-first • No account required • Theme • Accessibility • Offline (PWA) • Your data stays in this browser</p>
         </div>
       </motion.div>
@@ -124,7 +125,7 @@ export function Settings() {
 
       <LocalDataPanel />
 
-      <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading Accessibility…</div>}>
+      <Suspense fallback={<LoadingPanel label="Loading Accessibility…" />}>
         <AccessibilityPanel />
       </Suspense>
 
@@ -216,13 +217,13 @@ export function Settings() {
         <button onClick={() => { const data = JSON.stringify({ lessons, labs, achievements, totalXp, level, overall }, null, 2); const blob = new Blob([data], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `platform-progress-${Date.now()}.json`; a.click(); URL.revokeObjectURL(url) }} className="flex-1 py-3 rounded-xl bg-[#0f172a] border border-[#1e293b] text-[13px] font-medium text-slate-300 flex items-center justify-center gap-2 hover:bg-[#1e293b] hover:border-[#334155] transition-all touch-manipulation min-h-[44px]">
           <Download className="w-4 h-4" />Export Progress JSON
         </button>
-        <button onClick={() => { if (confirm('Reset all progress? This will clear XP, lessons, labs, achievements.')) reset() }} className="flex-1 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-[13px] font-medium text-red-400 flex items-center justify-center gap-2 hover:bg-red-500/15 hover:border-red-500/30 transition-all touch-manipulation min-h-[44px]">
+        <button onClick={() => { if (confirm('Reset learning progress? This clears lesson completions, lab reviews, knowledge-check passes, challenge checkpoints, streaks, achievements, and XP. Notes, drafts, profile, theme, and reports are kept.')) reset() }} className="flex-1 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-[13px] font-medium text-red-400 flex items-center justify-center gap-2 hover:bg-red-500/15 hover:border-red-500/30 transition-all touch-manipulation min-h-[44px]">
           <Trash2 className="w-4 h-4" />Reset All Progress
         </button>
       </motion.div>
 
       <div className="text-[11px] text-slate-400 font-mono text-center pb-4">
-        Quench — zero-cost, local-first, offline-capable — Platform + Wireless path — Forge. Break. Fix. Quench. Retest. • {totalXp} XP • Lv.{level.level} {level.title} • {TOTAL_MODULES} modules • {TOTAL_LESSONS} lessons • {TOTAL_PCAPS} verified captures • {TOTAL_SCENARIOS} decision scenarios • checklist • evidence vault • no accounts, no tracking
+        SecCraft — local-first, offline-capable — Platform + Wireless path — Learn. Practice. Investigate. Improve. • {totalXp} XP • Lv.{level.level} {level.title} • {TOTAL_MODULES} modules • {TOTAL_LESSONS} lessons • {TOTAL_PCAPS} verified captures • {TOTAL_SCENARIOS} decision scenarios • checklist • evidence vault • no accounts, no tracking
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { CERT_PROGRESS_THRESHOLD, CERT_XP_THRESHOLD, MAX_XP, useProgressStore } from '@/store/useProgressStore'
+import { CERT_PROGRESS_THRESHOLD, MAX_XP, useProgressStore } from '@/store/useProgressStore'
 import { TOTAL_LESSONS, TOTAL_MODULES, TOTAL_PCAPS, getStatsForPath } from '@/content/stats'
 import { ACHIEVEMENTS_DEF } from '@/content/achievements'
 import { Award, Trophy, Shield, Zap, CheckCircle, Crown, Star, Download, Share2, QrCode, Map as MapIcon } from 'lucide-react'
@@ -7,8 +7,10 @@ import { useState, useMemo } from 'react'
 import learningPaths from '@/content/learning-paths.json'
 import platform from '@/content/platform.json'
 import { Link } from 'react-router-dom'
+import { useLocalProfile } from '@/components/profile/LocalProfile'
 
 export function Certificate({ className = '' }: { className?: string }) {
+  const { profile } = useLocalProfile()
   const totalXp = useProgressStore(s => s.getTotalXp())
   const level = useProgressStore(s => s.getLevel())
   const overall = useProgressStore(s => s.getOverallProgress())
@@ -22,11 +24,10 @@ export function Certificate({ className = '' }: { className?: string }) {
   const pathProgress = getPathProgress(currentPathId)
   const pathStats = useMemo(() => getStatsForPath(currentPathId), [currentPathId])
 
-  const isCertified = totalXp >= CERT_XP_THRESHOLD && overall >= CERT_PROGRESS_THRESHOLD
-  const isPathCertified = pathProgress >= CERT_PROGRESS_THRESHOLD
-  // A local record number for your own tracking — it is not registered anywhere, because this build
+  const isCertified = overall >= CERT_PROGRESS_THRESHOLD && pathProgress >= CERT_PROGRESS_THRESHOLD
+    // A local record number for your own tracking — it is not registered anywhere, because this build
   // has no server and no issuer. Platform-level + path-level.
-  const certId = `LOCAL-${platform.name.toUpperCase()}-${currentPath.shortTitle.toUpperCase()}-${overall}-${totalXp}-${new Date().toISOString().slice(0, 10)}`
+  const certId = `LOCAL-RECORD-${platform.name.toUpperCase()}-${currentPath.shortTitle.toUpperCase()}-${overall}-${totalXp}-${new Date().toISOString().slice(0, 10)}`
   const issueDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 
   return (
@@ -50,7 +51,7 @@ export function Certificate({ className = '' }: { className?: string }) {
           </motion.div>
           <h1 className="font-heading font-black text-[20px] xs:text-[26px] sm:text-[32px] tracking-tight leading-none">
             <span className="bg-gradient-to-r from-violet-300 via-cyan-300 to-amber-300 bg-clip-text text-transparent">{platform.name}</span>
-            <span className="text-slate-100"> Certified</span>
+            <span className="text-slate-100"> Learning Record</span>
           </h1>
           <p className="text-[11px] xs:text-[12px] tracking-[0.2em] text-slate-500 font-semibold uppercase mt-2 flex items-center justify-center gap-2 flex-wrap">
             <span>{platform.fullName} • {platform.tagline}</span>
@@ -63,21 +64,21 @@ export function Certificate({ className = '' }: { className?: string }) {
             <div className="h-px w-12 bg-gradient-to-l from-transparent to-violet-500/50" />
           </div>
           <div className="mt-3 text-[11px] font-mono text-slate-500">
-            Platform Certificate + Path Certificate • {currentPath.title} • {pathStats.modules} modules • {pathStats.lessons} lessons • {pathStats.labs} labs • {pathProgress}% path progress
+            Local practice record • {currentPath.title} • {pathStats.modules} modules • {pathStats.lessons} lessons • {pathStats.labs} labs • {pathProgress}% path progress
           </div>
         </div>
 
         {/* Recipient */}
         <div className="text-center mb-6">
-          <div className="text-[11px] font-mono text-slate-500 uppercase tracking-widest">This certifies that</div>
-          <div className="mt-2 text-[22px] xs:text-[28px] font-heading font-bold text-slate-100 tracking-tight">Operator</div>
-          <div className="text-[12px] xs:text-[13px] text-slate-400 mt-1">Kali Linux • Local Lab • Zero-cost • Offline • {platform.name} • {currentPath.title}</div>
+          <div className="text-[11px] font-mono text-slate-500 uppercase tracking-widest">Local activity record for</div>
+          <div className="mt-2 text-[22px] xs:text-[28px] font-heading font-bold text-slate-100 tracking-tight">{profile?.displayName || 'Learner'}</div>
+          <div className="text-[12px] xs:text-[13px] text-slate-400 mt-1">Local practice • offline-capable static build • {platform.name} • {currentPath.title}{profile ? ' • self-declared local profile' : ''}</div>
         </div>
 
         {/* Achievement — path-aware */}
         <div className="text-center mb-6">
           <div className="text-[13px] xs:text-[14px] text-slate-300 leading-relaxed max-w-[600px] mx-auto">
-            Has successfully completed the <span className="font-bold text-violet-300">{currentPath.title}</span> learning path within <span className="font-bold text-cyan-300">{platform.name} — {platform.secondaryTagline}</span> with mastery in {currentPath.skills.slice(0, 6).join(', ')} and full VAPT methodology: <span className="font-mono text-[11px]">{platform.philosophy}</span>.
+            This record summarizes activities marked complete in this browser: lessons, lab reviews (only three are answer-validated), knowledge checks and local challenge checkpoints. It does not attest mastery, independently verify skill, or certify professional competence.
           </div>
         </div>
 
@@ -111,7 +112,7 @@ export function Certificate({ className = '' }: { className?: string }) {
               <div className="text-[11px] font-mono text-slate-500 uppercase tracking-wide">Local record • self-issued • {issueDate} • {platform.name} • {currentPath.title}</div>
               <div className="text-[12px] font-mono font-bold text-slate-200 truncate">{certId}</div>
               <div className="text-[11px] text-slate-500 font-mono truncate">
-                Not accredited — a printable record of the work you completed on this device • Platform {platform.name} • Path {currentPath.id} • {platform.tagline}
+                Not accredited — a printable local progress record • Platform {platform.name} • Path {currentPath.id} • {platform.tagline}
               </div>
             </div>
           </div>
@@ -143,8 +144,8 @@ export function Certificate({ className = '' }: { className?: string }) {
             <div className="text-[11px] font-mono text-slate-400 leading-relaxed">
               Record details (all values stored in this browser — platform-progress + wififorge-progress fallback):<br/>
               {certId}<br/>
-              {totalXp} XP of a {MAX_XP} XP ceiling ({TOTAL_LESSONS} lessons, {TOTAL_PCAPS} verified captures, {TOTAL_MODULES} modules)<br/>
-              Platform overall {overall}% • Path {currentPath.title} {pathProgress}% • {completedLessons} lessons • {achievements} achievements • issued {issueDate}<br/>
+              {totalXp} XP of a {MAX_XP} XP ceiling ({TOTAL_LESSONS} lessons, {TOTAL_PCAPS} bundled captures, {TOTAL_MODULES} modules)<br/>
+              Platform overall {overall}% • Path {currentPath.title} {pathProgress}% • {completedLessons} lessons • {achievements} achievements • generated locally {issueDate}<br/>
               Platform: {platform.name} • {platform.tagline} • {platform.secondaryTagline}<br/>
               Philosophy: {platform.philosophy}
             </div>
@@ -154,14 +155,13 @@ export function Certificate({ className = '' }: { className?: string }) {
         {!isCertified && (
           <div className="mt-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center">
             <div className="text-[13px] font-bold text-amber-300 flex items-center justify-center gap-2">
-              <Trophy className="w-4 h-4" /> {Math.max(0, CERT_XP_THRESHOLD - totalXp)} XP to unlock the platform record • Path {currentPath.title} {pathProgress}% • {isPathCertified ? 'Path certified' : `${CERT_PROGRESS_THRESHOLD - pathProgress}% to path cert`}
+              <Trophy className="w-4 h-4" /> {Math.max(0, CERT_PROGRESS_THRESHOLD - overall)}% platform activity completion • Path {currentPath.title} {pathProgress}% • {Math.max(0, CERT_PROGRESS_THRESHOLD - pathProgress)}% to path completion
             </div>
             <div className="text-[11px] text-amber-400/80 mt-1">
-              Unlocks at {CERT_XP_THRESHOLD} XP ({Math.round((CERT_XP_THRESHOLD / MAX_XP) * 100)}% of the {MAX_XP} XP ceiling)
-              and {CERT_PROGRESS_THRESHOLD}% overall • Current: {totalXp} XP, {overall}% platform, {pathProgress}% path {currentPath.shortTitle}
+              Unlocks when all shipped platform activities and all activities in this path are recorded ({CERT_PROGRESS_THRESHOLD}% each). XP is a separate local reward counter, not a mastery threshold. Current: {overall}% platform, {pathProgress}% path {currentPath.shortTitle}
             </div>
             <div className="mt-3 w-full h-2 bg-[#020617] rounded-full overflow-hidden border border-amber-500/20">
-              <div className="h-full bg-gradient-to-r from-amber-400 to-violet-400 rounded-full" style={{ width: `${Math.min((totalXp / CERT_XP_THRESHOLD) * 100, 100)}%` }} />
+              <div className="h-full bg-gradient-to-r from-amber-400 to-violet-400 rounded-full" style={{ width: `${Math.min(overall, 100)}%` }} />
             </div>
             <div className="mt-2 text-[10px] font-mono text-slate-500">
               Platform: {platform.name} • Path: {currentPath.title} • <Link to={`/paths/${currentPathId}`} className="text-cyan-400 hover:text-cyan-300">View path</Link> • <Link to="/paths" className="text-cyan-400 hover:text-cyan-300">All paths</Link>
@@ -173,11 +173,9 @@ export function Certificate({ className = '' }: { className?: string }) {
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mt-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3">
             <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0" />
             <div>
-              <div className="text-[14px] font-bold text-emerald-300">Coursework complete — {platform.name} record unlocked • {currentPath.title} {pathProgress}%</div>
+              <div className="text-[14px] font-bold text-emerald-300">All activity records are marked complete • {platform.name} local record • {currentPath.title} {pathProgress}%</div>
               <div className="text-[12px] text-emerald-400/80 mt-1">
-                You have worked through the {TOTAL_LESSONS} authored lessons, {TOTAL_PCAPS} verified captures and the
-                {TOTAL_MODULES}-module platform (Wireless path {pathStats.modules} modules as reference) on this device. Keep the printout as your own evidence of practice — it is
-                not an accredited certification and no third party validates it. Platform philosophy {platform.tagline} remains.
+                This browser has a record for {TOTAL_LESSONS} authored lessons, {TOTAL_PCAPS} bundled captures, and {TOTAL_MODULES} modules (path: {pathStats.modules}). Lab reviews and challenge flags are local self-report; only three lab activities have answer validation. This printable record is not accredited, proctored, or independently verified.
               </div>
             </div>
           </motion.div>

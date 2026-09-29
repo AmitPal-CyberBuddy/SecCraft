@@ -169,7 +169,7 @@ CIPHER_NAMES = {
 
 # RSN Capabilities — IEEE 802.11-2020 Figure 9-289.
 # B0 Preauth, B1 No-Pairwise, B2 PTKSA-Replay-Counter, B3 GTKSA-Replay-Counter,
-# B4 MFPR (management frame protection *required*), B5 MFPC (*capable*),
+# RSN capabilities bit 6 (0x0040) MFPR (required), bit 7 (0x0080) MFPC (capable),
 # B6 Joint Multi-band RSNA, B7 PeerKey.
 RSNCAP_PREAUTH = 1 << 0
 RSNCAP_NO_PAIRWISE = 1 << 1
@@ -691,7 +691,7 @@ def ie_rsn(group_cipher: int = CIPHER_CCMP_128,
            akm: Sequence[int] = (AKM_PSK,),
            caps: int = 0,
            pmkids: Sequence[bytes] = ()) -> bytes:
-    """Build an RSNE. `caps` uses RSNCAP_* bits (B4 = MFPR, B5 = MFPC)."""
+    """Build an RSNE. `caps` uses RSNCAP_* bits (bit 6 = MFPR, bit 7 = MFPC)."""
     body = struct.pack("<H", 1)                       # RSN version
     body += b"\x00\x0f\xac" + bytes([group_cipher])   # group cipher suite
     body += struct.pack("<H", len(pairwise))          # pairwise count
@@ -907,6 +907,9 @@ def key_data_gtk(gtk: bytes, key_id: int = 1) -> bytes:
 def ipv4(src: str, dst: str, payload: bytes, protocol: int = 17, ttl: int = 64,
          identification: int = 0x1234, tos: int = 0) -> bytes:
     total_length = 20 + len(payload)
+    if protocol == 6 and len(payload) >= 20:
+        pseudo = _ip_bytes(src) + _ip_bytes(dst) + b"\x00\x06" + struct.pack("!H", len(payload))
+        payload = payload[:16] + struct.pack("!H", _checksum(pseudo + payload)) + payload[18:]
     header = struct.pack("!BBHHHBBH", 0x45, tos, total_length, identification, 0x4000, ttl, protocol, 0)
     header += _ip_bytes(src) + _ip_bytes(dst)
     checksum = _checksum(header)
@@ -980,7 +983,8 @@ def write_pcapng(path: str, frames: Iterable[LabFrame], snaplen: int = 65535,
     out += _block(SECTION_HEADER_BLOCK, shb_body)
     # IDB: linktype + snaplen + if_tsresol (10^-6 = microseconds)
     idb_body = struct.pack("<HHI", LINKTYPE_IEEE802_11_RADIOTAP, 0, snaplen)
-    idb_body += struct.pack("<HH", 9, 1) + bytes([tsresol])   # option: if_tsresol
+    # PCAPNG option values are padded to a 32-bit boundary (if_tsresol is 1 byte).
+    idb_body += struct.pack("<HH", 9, 1) + bytes([tsresol]) + b"\x00" * 3
     idb_body += struct.pack("<HH", 0, 0)                      # opt_endofopt
     out += _block(INTERFACE_DESCRIPTION_BLOCK, idb_body)
 
@@ -1334,7 +1338,7 @@ def _decode_eapol(upper: bytes) -> Dict[str, object]:
         elif pairwise and ack and mic and install:
             out["key_message"] = "M3 (AP → STA, GTK delivery + MIC)"
         elif pairwise and not ack and mic and secure:
-            out["key_message"] = "M4 (STA → AP, ACK + MIC)"
+            out["key_message"] = "M4 (STA → AP, MIC + Secure; final message)"
         key_data = upper[99:99 + out["key_data_len"]]
         if key_data:
             out["key_data_hex"] = key_data.hex()
@@ -1358,11 +1362,53 @@ def _decode_ip(upper: bytes) -> Dict[str, object]:
     payload = upper[ihl:]
     if proto == 17 and len(payload) >= 8:
         sport, dport, length = struct.unpack("!HHH", payload[0:6])
+        body = payload[8:]
         out.update(udp_src=sport, udp_dst=dport)
-        radius = payload[8:]
-        if dport in (1812, 1813, 1645, 1646) or sport in (1812, 1813, 1645, 1646):
+        if {sport, dport} == {67, 68} and len(body) >= 240:
+            out["protocol"] = "DHCP"
+            out["dhcp_op"] = body[0]
+            out["dhcp_xid"] = struct.unpack("!I", body[4:8])[0]
+            out["dhcp_yiaddr"] = ".".join(str(b) for b in body[16:20])
+            out["dhcp_client_mac"] = ":".join(f"{b:02x}" for b in body[28:34])
+            if body[236:240] == b"\x63\x82\x53\x63":
+                i = 240
+                while i < len(body) and body[i] != 255:
+                    code = body[i]
+                    if code == 0:
+                        i += 1
+                        continue
+                    if i + 1 >= len(body):
+                        break
+                    size = body[i + 1]
+                    value = body[i + 2:i + 2 + size]
+                    if code == 53 and value:
+                        out["dhcp_message_type"] = {1: "Discover", 2: "Offer", 3: "Request", 5: "ACK"}.get(value[0], str(value[0]))
+                    i += 2 + size
+        elif dport in (1812, 1813, 1645, 1646) or sport in (1812, 1813, 1645, 1646):
             out["protocol"] = "RADIUS"
-            out.update(_decode_radius(radius))
+            out.update(_decode_radius(body))
+        elif sport == 53 or dport == 53:
+            out["protocol"] = "DNS"
+    elif proto == 6 and len(payload) >= 20:
+        sport, dport = struct.unpack("!HH", payload[:4])
+        header_len = ((payload[12] >> 4) & 0x0f) * 4
+        tcp_payload = payload[header_len:]
+        out.update(tcp_src=sport, tcp_dst=dport, protocol="TCP")
+        if tcp_payload.startswith((b"GET ", b"POST ", b"HEAD ", b"PUT ", b"DELETE ", b"HTTP/")):
+            out["protocol"] = "HTTP"
+            text = tcp_payload.decode("latin-1", "replace")
+            lines = text.split("\r\n")
+            first = lines[0].split(" ", 2) if lines else []
+            if first and first[0].startswith("HTTP/"):
+                out["http_status"] = first[1] if len(first) > 1 else ""
+            elif len(first) >= 2:
+                out["http_method"], out["http_uri"] = first[0], first[1]
+            for line in lines[1:]:
+                if ":" in line:
+                    key, value = line.split(":", 1)
+                    out["http_" + key.strip().lower().replace("-", "_")] = value.strip()
+            if "\r\n\r\n" in text:
+                out["http_body"] = text.split("\r\n\r\n", 1)[1]
     elif proto == 1:
         out["protocol"] = "ICMP"
         if len(payload) >= 1:
@@ -1433,7 +1479,7 @@ def analyze(frames: Sequence[bytes], pcap_id: str, filter_text: str = "") -> Dic
         record["number"] = number
     ssids = sorted({r["ssid"] for r in records if r.get("ssid")})
     bssids = sorted({r["bssid"] for r in records if r.get("bssid") and r["frame_type"] == "mgmt" and r.get("subtype") in (8, 5)})
-    clients = sorted({r["sa"] for r in records if r.get("subtype") in (4, 0, 11) and r.get("sa")})
+    clients = sorted({r["sa"] for r in records if r.get("frame_type") == "mgmt" and r.get("subtype") in (SUBTYPE_PROBE_REQ, SUBTYPE_ASSOC_REQ, SUBTYPE_REASSOC_REQ) and r.get("sa")})
     channel_list = sorted({r["channel"] for r in records if r.get("channel")})
     summary = {
         "total_frames": len(records),
@@ -1441,12 +1487,12 @@ def analyze(frames: Sequence[bytes], pcap_id: str, filter_text: str = "") -> Dic
         "bssids": bssids,
         "clients": clients,
         "channels": channel_list,
-        "beacons": sum(1 for r in records if r.get("subtype") == 8),
-        "probes": sum(1 for r in records if r.get("subtype") == 4),
+        "beacons": sum(1 for r in records if r.get("frame_type") == "mgmt" and r.get("subtype") == SUBTYPE_BEACON),
+        "probes": sum(1 for r in records if r.get("frame_type") == "mgmt" and r.get("subtype") in (SUBTYPE_PROBE_REQ, SUBTYPE_PROBE_RESP)),
         "eapol": sum(1 for r in records if r.get("eapol")),
-        "deauth": sum(1 for r in records if r.get("subtype") == 12),
-        "disassoc": sum(1 for r in records if r.get("subtype") == 10),
-        "assoc": sum(1 for r in records if r.get("subtype") in (0, 1)),
+        "deauth": sum(1 for r in records if r.get("frame_type") == "mgmt" and r.get("subtype") == SUBTYPE_DEAUTH),
+        "disassoc": sum(1 for r in records if r.get("frame_type") == "mgmt" and r.get("subtype") == SUBTYPE_DISASSOC),
+        "assoc": sum(1 for r in records if r.get("frame_type") == "mgmt" and r.get("subtype") in (SUBTYPE_ASSOC_REQ, SUBTYPE_ASSOC_RESP)),
         "wps": sum(1 for r in records if r.get("wps")),
     }
     return {"pcap_id": pcap_id, "method": "platform-labkit", "legacyMethod": "wififorge-labkit", "filter": filter_text,

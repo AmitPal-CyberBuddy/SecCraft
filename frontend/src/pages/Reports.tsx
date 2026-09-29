@@ -1,3 +1,4 @@
+import { LoadingPanel } from '@/components/common/LoadingPanel'
 import { ReportEditor } from '@/components/report/ReportEditor'
 import { FileText, Shield, Target, Sparkles, Trophy, Download, Users, MessageSquare, BarChart3, Layout, Clock } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -26,7 +27,7 @@ export function Reports() {
             <FileText className="w-5 h-5 text-violet-400" />
           </div>
           <div className="min-w-0">
-            <h1 className="font-heading font-bold text-[22px] xs:text-[26px] sm:text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none truncate">Reports & Certification</h1>
+            <h1 className="font-heading font-bold text-[22px] xs:text-[26px] sm:text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none truncate sc-page-title">Reports & Certification</h1>
             <p className="text-[12px] xs:text-[13px] text-slate-400 mt-1.5 leading-relaxed">VAPT findings from your own evidence • evidence vault • PDF export • local completion record</p>
           </div>
         </div>
@@ -59,12 +60,12 @@ export function Reports() {
         </div>
       </motion.div>
 
-      {activeTab === 'certificate' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading Certificate QR…</div>}><Certificate /></Suspense>}
-      {activeTab === 'vault' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading Vault…</div>}><EvidenceVault /></Suspense>}
-      {activeTab === 'pdf' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading PDF/A Export…</div>}><ReportPdfExport /></Suspense>}
-      {activeTab === 'cvss' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading CVSS…</div>}><CvssCalculator /></Suspense>}
-      {activeTab === 'templates' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading Templates…</div>}><ReportTemplates /></Suspense>}
-      {activeTab === 'timeline' && <Suspense fallback={<div className="p-8 rounded-2xl bg-[#0f172a] border border-[#1e293b] text-center text-[13px] text-slate-400 font-mono">Loading Timeline…</div>}><TimelineViz /></Suspense>}
+      {activeTab === 'certificate' && <Suspense fallback={<LoadingPanel label="Loading Certificate QR…" />}><Certificate /></Suspense>}
+      {activeTab === 'vault' && <Suspense fallback={<LoadingPanel label="Loading Vault…" />}><EvidenceVault /></Suspense>}
+      {activeTab === 'pdf' && <Suspense fallback={<LoadingPanel label="Loading PDF/A Export…" />}><ReportPdfExport /></Suspense>}
+      {activeTab === 'cvss' && <Suspense fallback={<LoadingPanel label="Loading CVSS…" />}><CvssCalculator /></Suspense>}
+      {activeTab === 'templates' && <Suspense fallback={<LoadingPanel label="Loading Templates…" />}><ReportTemplates /></Suspense>}
+      {activeTab === 'timeline' && <Suspense fallback={<LoadingPanel label="Loading Timeline…" />}><TimelineViz /></Suspense>}
             
       {activeTab === 'editor' && (
         <>

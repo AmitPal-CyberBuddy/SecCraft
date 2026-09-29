@@ -156,7 +156,7 @@ export function LocalDataPanel({ className = '' }: { className?: string }) {
             </button>
             <button
               onClick={() => {
-                if (!confirm('Erase all local Quench (legacy WiFiForge) data (progress, vault, checklists, notes, profile)? This cannot be undone.')) return
+                if (!confirm('Erase all local SecCraft data (progress, vault, checklists, notes, profile)? This cannot be undone.')) return
                 for (const { key } of KNOWN_KEYS) { try { localStorage.removeItem(key) } catch { /* ignore */ } }
                 reset()
                 measure()

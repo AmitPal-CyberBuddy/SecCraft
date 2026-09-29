@@ -18,9 +18,10 @@ ciphertext = RC4(K ‖ IV) ⊕ (plaintext ‖ CRC32(plaintext))
 
 Three independent design failures:
 
-1. **IV reuse.** 2^24 IVs, sent in the clear, per *packet*, shared by all clients. In a busy network IVs
-   repeat within hours; a repeated IV keystream is enough to recover plaintext (the classic
-   two-ciphertexts-XOR attack).
+1. **IV reuse.** The 24-bit IV is sent in the clear per packet and the same WEP key is shared by stations.
+   Collisions become increasingly likely as traffic accumulates; their timing depends on packet rate and
+   IV selection, so there is no universal “within hours” threshold. Reused keystreams can expose plaintext
+   relationships (the classic two-ciphertexts-XOR weakness).
 2. **Weak key scheduling.** RC4's KSA/PRGA with related keys leaks key material; FMS, KoreK and PTW turn
    "many packets" into "the key", needing on the order of tens of thousands to a few hundred thousand
    frames depending on the attack and traffic pattern.
@@ -56,7 +57,7 @@ compensating control (isolated VLAN, no access to sensitive data) and a dated re
 ## 4. Retest
 
 * Post-migration beacon shows **RSNE with AKM 2 (PSK) or 8 (SAE)** and cipher CCMP/GCMP — no WEP BSS.
-* A monitor-mode capture of an association attempt using WEP fails (status code "unsupported security").
+* An authorized legacy-client test no longer completes a WEP association. Capture the client/AP result and relevant logs; response codes and failure behavior vary, so do not rely on one status code alone.
 * The old WEP key must not work; record the attempt and the failure.
 
 ## 5. Decision practice

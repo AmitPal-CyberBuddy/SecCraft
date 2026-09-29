@@ -5,11 +5,11 @@
 | Method | Server proves identity? | Client proves identity with | On-the-air exposure | Notes |
 | --- | --- | --- | --- | --- |
 | EAP-MD5 | no | MD5 of password + challenge | password crackable offline | should not be used |
-| LEAP | **no** (or trivially) | MS-CHAPv1 | MS-CHAPv1 crackable | Cisco-proprietary, should not be used |
+| LEAP | weak challenge-response (not certificate-based server authentication) | MS-CHAPv1-style challenge/response | vulnerable to offline dictionary attacks | Cisco-proprietary and deprecated; do not use |
 | PEAPv0 + MS-CHAPv2 | **only if the client validates** | username + MS-CHAPv2 response | after a rogue authenticator: challenge/response → offline crack | the classic enterprise exposure |
 | EAP-TTLS + MS-CHAPv2 | only if validated | same as PEAP | same as PEAP | inner method can also be PAP/CHAP |
-| EAP-TLS | yes | X.509 client certificate | nothing crackable | requires a PKI |
-| TEAP | yes (TLS + inner methods) | varies | depends on the inner method | modern replacement for PEAP/TTLS mixes |
+| EAP-TLS | the client should validate the server certificate | X.509 client certificate | no password challenge/response to crack; certificate/private-key handling still matters | requires a PKI and managed trust |
+| TEAP | TLS server authentication when the client validates the certificate | varies | depends on the inner method and tunnel validation | flexible tunneled method; deployment and client support vary |
 
 **The rule:** the outer TLS tunnel only protects what is inside *if the client verifies the server's
 certificate*. Without validation, the tunnel is with whoever answered — an attacker can present their own
@@ -36,10 +36,7 @@ The NT-Response is built in three DES operations (RFC 2759 §4.2):
 ```
 
 The step most implementations get wrong is the **challenge hash**: it concatenates the server
-(Authenticator) challenge, the **peer challenge** and the username, and only then takes 8 bytes. A tool
-that omits the peer challenge or the username derives different DES keys and its NT-Response will not match
-the captured value — `hashcat -m 5500` (the MS-CHAPv2/NetNTLMv1 mode, which consumes
-`username::::response:challenge` style material) will then fail to crack a genuinely guessable password.
+(Authenticator) challenge, the **peer challenge** and the username, and only then takes 8 bytes. A tool that omits the peer challenge or the username derives different DES keys and its NT-Response will not match the captured value. Hashcat mode 5500 expects correctly formatted MS-CHAPv2/NetNTLMv1 material; derive the eight-byte challenge hash and use the tool's documented input format rather than pasting the two 16-byte challenges into an assumed format.
 The labkit implements the full derivation, and `verify-lab-artifacts.py` re-derives the captured
 challenge/response pair from the documented lab password (see module 18 lab for the crack itself).
 
@@ -76,7 +73,7 @@ network={
 }
 ```
 
-* Without `ca_cert`, the supplicant trusts *any* certificate → rogue authenticator works.
+* Configure an explicit trust anchor and expected server name. Without those settings, do not assume the supplicant validates the intended server certificate; exact defaults vary by supplicant and profile.
 * `domain_suffix_match` (or `subject_match`) binds the certificate to the expected server name; a valid
   certificate for another name is not enough.
 * On the server side, disabling PEAP-MSCHAPv2 in favour of EAP-TLS removes the crackable material entirely;
@@ -84,16 +81,14 @@ network={
 
 ## 5. Lab tasks
 
-`eap.pcapng` contains the full PEAP identity → TLS handshake → MS-CHAPv2 challenge/response → success
-exchange.
+**Artifact boundary:** `eap.pcapng` contains abbreviated EAP method identifiers and a deliberately direct, visible EAP-MSCHAPv2 challenge/response fixture. Its TLS-like payloads are structural bytes; it does **not** contain a complete PEAP TLS handshake, a proven inner MS-CHAPv2 exchange inside PEAP, or client certificate-validation evidence. The challenge/response values are included for offline-derivation practice only. `radius.pcapng` is a separate synthetic protocol example, not the same coherent session.
 
-1. Identify the outer identity and the method from the outer exchange only (frames).
-2. Point to where the TLS records begin and end. Why can the inner identity not be read from those frames?
-3. Extract the MS-CHAPv2 challenge, peer challenge, NT-Response and username using labkit:
-   `python3 -c "…"` or tshark fields — then re-derive the response from the lab password and confirm the
-   maths (the same check `verify-lab-artifacts.py` performs).
-4. Build a hashcat `-m 5500` line from the capture and crack it with the lab wordlist.
-5. State the *precondition* that made this possible: the client did not validate the server certificate.
+1. Identify the EAP method identifiers and any identity fields actually visible; cite frames.
+2. Point out the abbreviated TLS-like bytes. Explain why this fixture cannot establish a complete TLS exchange or hide/reveal an inner identity.
+3. Extract the direct MS-CHAPv2 challenge, peer challenge, NT-Response and username using labkit:
+   `python3 -c "…"` or tshark fields — then re-derive the response from the documented lab password and confirm the maths (the same check `verify-lab-artifacts.py` performs).
+4. Verify the known lab response against the documented password and RFC 2759 derivation. Treat any offline wordlist exercise as a lab-only demonstration; the fixture does not show a rogue authenticator or client profile.
+5. Separately describe the real-world precondition for PEAP credential exposure: failure to validate both trusted CA and expected server identity. Do not claim this artifact proves that precondition.
 
 ## 6. Decision practice
 

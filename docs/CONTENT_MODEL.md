@@ -324,7 +324,7 @@ File: `frontend/src/content/stats.ts`
 ## Verification
 
 - `verify-no-dummy-data.py` now checks platform.json, learning-paths.json, skills.json exist, at least 1 available path, planned paths have empty modules (no placeholder content to make platform appear larger)
-- `verify-lab-artifacts.py` still verifies 16 PCAPNG artefacts, 142 checks
+- `verify-lab-artifacts.py` still verifies 16 PCAPNG artefacts, 206 checks
 
 ## Future Paths
 

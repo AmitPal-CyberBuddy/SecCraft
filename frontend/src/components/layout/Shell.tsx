@@ -4,7 +4,6 @@ import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowUp } from 'lucide-react'
-import { useReducedMotion } from '@/hooks/useReducedMotion'
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -12,7 +11,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [scrollProgress, setScrollProgress] = useState(0)
   const location = useLocation()
-  const prefersReducedMotion = useReducedMotion()
 
   useEffect(() => {
     const checkMobile = () => {
@@ -33,6 +31,24 @@ export function Shell({ children }: { children: React.ReactNode }) {
       setSidebarOpen(false)
     }
   }, [location.pathname, isMobile])
+
+  // Mobile navigation behaves like a modal drawer: Escape closes it and focus returns to its trigger.
+  useEffect(() => {
+    if (!isMobile || !sidebarOpen) return
+    const focusFrame = requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('#primary-navigation button[aria-label="Close menu"]')?.focus())
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setSidebarOpen(false)
+        requestAnimationFrame(() => document.getElementById('mobile-navigation-toggle')?.focus())
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      cancelAnimationFrame(focusFrame)
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [isMobile, sidebarOpen])
 
   // Prevent body scroll when mobile sidebar open
   useEffect(() => {
@@ -63,57 +79,21 @@ export function Shell({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-[#020617] text-slate-100 overflow-x-hidden antialiased">
+    <div className="min-h-screen min-h-[100dvh] bg-[#0b111b] text-slate-100 overflow-x-hidden antialiased">
       {/* Skip to content for accessibility */}
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-xl focus:bg-[#0f172a] focus:border focus:border-[#334155] focus:text-slate-100">Skip to content</a>
       
       {/* Scroll progress bar — subtle animated gradient */}
       <div className="fixed top-0 left-0 right-0 h-[2px] z-[60] pointer-events-none">
         <motion.div 
-          className="h-full bg-gradient-to-r from-cyan-400 via-violet-400 to-amber-400"
+          className="h-full bg-cyan-400"
           style={{ width: `${scrollProgress}%` }}
           transition={{ duration: 0.15, ease: 'easeOut' }}
         />
-        <motion.div
-          className="absolute top-0 h-full w-20 bg-gradient-to-r from-transparent via-white/20 to-transparent blur-[2px]"
-          style={{ left: `${scrollProgress}%` }}
-          animate={{ x: [-20, 20] }}
-          transition={{ duration: 1.5, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
-        />
       </div>
 
-      {/* Background effects — subtle animated orbs + grid */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute inset-0 bg-[#020617]" />
-        {/* Animated glow orbs — subtle breathing */}
-        <motion.div 
-          className="absolute top-0 left-0 w-[min(800px,100vw)] h-[min(600px,80vh)] bg-cyan-500/[0.04] rounded-full blur-[100px] md:blur-[120px] -translate-x-1/2 -translate-y-1/2"
-          animate={prefersReducedMotion ? undefined : { scale: [1, 1.08, 1], opacity: [0.6, 1, 0.6] }}
-          transition={prefersReducedMotion ? undefined : { duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div 
-          className="absolute top-0 right-0 w-[min(600px,80vw)] h-[min(500px,60vh)] bg-violet-500/[0.04] rounded-full blur-[80px] md:blur-[120px] translate-x-1/3 -translate-y-1/2"
-          animate={prefersReducedMotion ? undefined : { scale: [1, 1.12, 1], opacity: [0.5, 0.9, 0.5] }}
-          transition={prefersReducedMotion ? undefined : { duration: 14, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-        />
-        <motion.div 
-          className="absolute bottom-0 right-0 w-[min(500px,70vw)] h-[min(400px,50vh)] bg-emerald-500/[0.02] rounded-full blur-[80px] md:blur-[100px] translate-x-1/4 translate-y-1/4"
-          animate={prefersReducedMotion ? undefined : { scale: [1, 1.1, 1], opacity: [0.4, 0.8, 0.4] }}
-          transition={prefersReducedMotion ? undefined : { duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
-        />
-        <motion.div 
-          className="absolute bottom-0 left-1/3 w-[min(400px,60vw)] h-[min(300px,40vh)] bg-amber-500/[0.02] rounded-full blur-[60px] md:blur-[80px]"
-          animate={prefersReducedMotion ? undefined : { scale: [1, 1.15, 1], opacity: [0.3, 0.6, 0.3] }}
-          transition={prefersReducedMotion ? undefined : { duration: 16, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-        />
-        {/* Subtle grid pattern with shimmer */}
-        <div className="absolute inset-0 grid-pattern opacity-[0.012] md:opacity-[0.015]" />
-        <motion.div 
-          className="absolute inset-0 bg-gradient-to-br from-cyan-500/[0.01] via-transparent to-violet-500/[0.01]"
-          animate={prefersReducedMotion ? undefined : { opacity: [0.5, 1, 0.5] }}
-          transition={prefersReducedMotion ? undefined : { duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      </div>
+      {/* Quiet telemetry-inspired canvas: one restrained instrument-grid, no ambient motion. */}
+      <div className="app-canvas fixed inset-0 pointer-events-none" aria-hidden="true" />
 
       {/* Sidebar */}
       <div className="relative z-30">
@@ -126,7 +106,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
               className="fixed inset-0 bg-[#020617]/80 z-40 lg:hidden touch-manipulation"
-              onClick={() => setSidebarOpen(false)}
+              onClick={() => { setSidebarOpen(false); requestAnimationFrame(() => document.getElementById('mobile-navigation-toggle')?.focus()) }}
               aria-hidden="true"
             />
           )}
@@ -140,7 +120,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             : 'w-[280px] translate-x-0'
           }
         `}>
-          <Sidebar onClose={() => setSidebarOpen(false)} isMobile={isMobile} />
+          <Sidebar onClose={() => { setSidebarOpen(false); requestAnimationFrame(() => document.getElementById('mobile-navigation-toggle')?.focus()) }} isMobile={isMobile} isOpen={sidebarOpen} />
         </div>
       </div>
 

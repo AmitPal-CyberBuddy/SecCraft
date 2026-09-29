@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { CERT_PROGRESS_THRESHOLD, CERT_XP_THRESHOLD, LEVELS, MAX_XP, useProgressStore } from '@/store/useProgressStore'
+import { CERT_PROGRESS_THRESHOLD, LEVELS, MAX_XP, useProgressStore } from '@/store/useProgressStore'
 import { TOTAL_LABS, TOTAL_LESSONS, TOTAL_MODULES } from '@/content/stats'
 import { ACHIEVEMENTS_DEF } from '@/content/achievements'
 import { Trophy, Zap, Target, Award, Crown, Star } from 'lucide-react'
@@ -146,8 +146,8 @@ export function CertificationPayoff() {
   const level = useProgressStore(s => s.getLevel())
 
   const maxXp = MAX_XP
-  const percentToCert = Math.min((totalXp / CERT_XP_THRESHOLD) * 100, 100)
-  const isCertified = totalXp >= CERT_XP_THRESHOLD && overall >= CERT_PROGRESS_THRESHOLD
+  const percentToCert = Math.min(overall, 100)
+  const isCertified = overall >= CERT_PROGRESS_THRESHOLD
 
   return (
     <motion.div
@@ -174,7 +174,7 @@ export function CertificationPayoff() {
           </div>
           <div className="text-right">
             <div className="text-[20px] font-bold text-slate-100 font-mono">{Math.round(percentToCert)}%</div>
-            <div className="text-[10px] text-slate-500 font-mono uppercase tracking-wide">To Certified</div>
+            <div className="text-[10px] text-slate-500 font-mono uppercase tracking-wide">To record unlock</div>
           </div>
         </div>
 
@@ -204,8 +204,8 @@ export function CertificationPayoff() {
 
         <div className="space-y-3">
           <div className="flex items-center justify-between text-[11px] font-mono">
-            <span className="text-slate-500 flex items-center gap-1.5"><Target className="w-3 h-3" /> Progress to the completion record</span>
-            <span className="text-slate-300">{totalXp} / {maxXp} XP</span>
+            <span className="text-slate-500 flex items-center gap-1.5"><Target className="w-3 h-3" /> Platform activity progress</span>
+            <span className="text-slate-300">{overall}% recorded · {totalXp} XP</span>
           </div>
           <div className="relative h-2.5 bg-[#020617] rounded-full overflow-hidden border border-[#1e293b]/50">
             <motion.div
@@ -234,7 +234,7 @@ export function CertificationPayoff() {
               <Trophy className="w-5 h-5 text-emerald-400" />
             </div>
             <div className="flex-1">
-              <div className="text-[13px] font-bold text-emerald-300">Record unlocked — coursework complete</div>
+              <div className="text-[13px] font-bold text-emerald-300">Local progress record unlocked — activities recorded</div>
               <div className="text-[11px] text-emerald-400/80 mt-1">Print or save it from Reports → Certificate. It documents your own practice; no third party issues or validates it.</div>
             </div>
           </motion.div>
@@ -242,7 +242,7 @@ export function CertificationPayoff() {
           <div className="mt-5 p-3 rounded-xl bg-amber-500/[0.04] border border-amber-500/10 flex items-start gap-2.5">
             <Star className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
             <div className="text-[11px] text-slate-400 leading-relaxed">
-              <span className="font-semibold text-amber-300">Unlock condition:</span> {CERT_XP_THRESHOLD} XP (of the {maxXp} XP achievable here) and {CERT_PROGRESS_THRESHOLD}% overall, from {TOTAL_LESSONS} lessons, {TOTAL_LABS} labs and {TOTAL_MODULES} modules stored in this browser. Current: {level.title} • {totalXp} XP • {overall}% overall.
+              <span className="font-semibold text-amber-300">Unlock condition:</span> {CERT_PROGRESS_THRESHOLD}% of the platform activities and current path activities recorded. Activities include {TOTAL_LESSONS} lessons, {TOTAL_LABS} available labs, knowledge checks and local challenge checkpoints across {TOTAL_MODULES} modules. XP ({totalXp}/{maxXp}) is a separate local reward counter; it is not a skill or certification threshold.
             </div>
           </div>
         )}

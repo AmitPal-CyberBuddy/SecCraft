@@ -1,3 +1,4 @@
+import { LoadingPanel } from '@/components/common/LoadingPanel'
 import { motion } from 'framer-motion'
 import { BarChart3, TrendingUp, Activity, Target, BookOpen, FlaskConical, Swords, Zap, Clock } from 'lucide-react'
 import { lazy, Suspense } from 'react'
@@ -22,7 +23,7 @@ export function Analytics() {
         <FadeIn>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="font-heading font-bold text-[26px] md:text-[30px] text-slate-100 tracking-tight flex items-center gap-3">
+              <h1 className="font-heading font-bold text-[26px] md:text-[30px] text-slate-100 tracking-tight flex items-center gap-3 sc-page-title">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500/20 to-cyan-500/10 border border-violet-500/20 flex items-center justify-center">
                   <BarChart3 className="w-5 h-5 text-violet-400" />
                 </div>
@@ -90,7 +91,7 @@ export function Analytics() {
                 <h3 className="font-heading font-bold text-[15px] text-slate-100">Detailed analytics</h3>
                 <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 font-mono">Platform • Path-aware</span>
               </div>
-              <Suspense fallback={<div className="p-8 text-center text-[13px] text-slate-400 font-mono">Loading analytics…</div>}>
+              <Suspense fallback={<LoadingPanel label="Loading analytics…" />}>
                 <AnalyticsDashboard />
               </Suspense>
             </div>

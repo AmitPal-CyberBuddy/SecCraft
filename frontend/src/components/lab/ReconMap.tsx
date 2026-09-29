@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
+import { LoadingPanel } from '@/components/common/LoadingPanel'
 import { motion } from 'framer-motion'
-import { Wifi, Radio, Users, AlertTriangle, Eye, EyeOff, Shield, Hash, Activity, Target, Zap, Search } from 'lucide-react'
+import { Wifi, Radio, Users, AlertTriangle, EyeOff, Shield, Hash, Activity, Target } from 'lucide-react'
 
 interface Frame {
   number: number
@@ -131,14 +132,7 @@ export function ReconMap({ pcapId }: Props) {
   }, [pcapId])
 
   if (loading) {
-    return (
-      <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-8 text-center">
-        <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mx-auto mb-3">
-          <div className="w-5 h-5 border-2 border-slate-600 border-t-cyan-400 rounded-full animate-spin" />
-        </div>
-        <div className="text-[13px] text-slate-400">Building recon map from {pcapId}.pcapng…</div>
-      </div>
-    )
+    return <LoadingPanel label="Mapping observed network signals" detail={`Building a recon view from ${pcapId}.pcapng`} />
   }
 
   if (!data) {

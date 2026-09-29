@@ -13,7 +13,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: any) {
-    console.error('WiFiForge ErrorBoundary:', error, info)
+    console.error('SecCraft ErrorBoundary:', error, info)
     // Keep the last 20 failures in this browser only; there is no error-reporting service to send them to.
     try {
       if (typeof localStorage !== 'undefined') {
@@ -29,7 +29,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="min-h-[400px] flex items-center justify-center p-6">
-          <div className="w-full max-w-[560px] rounded-2xl bg-[#0f172a] border border-red-500/20 p-6 text-center">
+          <div role="alert" className="error-recovery-card w-full max-w-[560px] rounded-2xl bg-[#0f172a] border border-red-500/20 p-6 text-center">
             <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-6 h-6 text-red-400" />
             </div>
@@ -41,7 +41,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
             <div className="mt-4 flex gap-2 justify-center">
               <button onClick={() => { try { localStorage.removeItem('platform-progress'); try { localStorage.removeItem('wififorge-progress') } catch {}; } catch {}; window.location.reload() }} className="px-4 py-2.5 rounded-xl bg-[#1e293b] border border-[#334155] text-[13px] text-slate-300 flex items-center gap-2 hover:bg-[#25354f] transition-colors">
-                <RefreshCw className="w-4 h-4" />Clear & Reload
+                <RefreshCw className="w-4 h-4" />Clear progress & reload
               </button>
               <button onClick={() => this.setState({ hasError: false, error: null })} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-[13px] flex items-center gap-2 shadow-glow-violet">
                 <Bug className="w-4 h-4" />Try Again

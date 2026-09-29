@@ -120,7 +120,7 @@ export function Engagement() {
                 <Target className="w-5 h-5 text-cyan-400" />
               </div>
               <div>
-                <h1 className="font-heading font-bold text-[24px] md:text-[28px] text-slate-100 tracking-tight leading-none flex items-center gap-2">
+                <h1 className="font-heading font-bold text-[24px] md:text-[28px] text-slate-100 tracking-tight leading-none flex items-center gap-2 sc-page-title">
                   Assessments / Engagements <span className="text-[18px]">{currentPath.icon}</span>
                 </h1>
                 <p className="text-[13px] text-slate-400 mt-1.5">
@@ -209,7 +209,7 @@ export function Engagement() {
       </div>
 
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="relative rounded-2xl bg-[#0f172a] border border-[#1e293b] p-5 sm:p-6 overflow-hidden">
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="assessment-dossier-header relative rounded-2xl bg-[#0f172a] border border-[#1e293b] p-5 sm:p-6 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-violet-500/5 opacity-70" />
         <div className="relative">
           <div className="flex flex-wrap items-center gap-2">
@@ -218,21 +218,25 @@ export function Engagement() {
             <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-[#020617]/70 border border-[#1e293b] text-slate-400">{engagement.time_estimate}</span>
             <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">{currentPath.icon} {currentPath.title} • {currentPath.id}</span>
           </div>
-          <h1 className="mt-3 text-[24px] sm:text-[28px] font-heading font-bold text-slate-100 leading-tight">{engagement.name}</h1>
+          <h1 className="mt-3 text-[24px] sm:text-[28px] font-heading font-bold text-slate-100 leading-tight sc-page-title">{engagement.name}</h1>
           <p className="mt-1 text-[13px] text-slate-400">{engagement.subtitle} • Platform-level assessment engine • {platform.tagline}</p>
           <p className="mt-3 max-w-[820px] text-[12.5px] text-slate-400 leading-relaxed">{engagement.summary}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {SECTIONS.map(s => (
-              <button
-                key={s.id}
-                onClick={() => setSection(s.id)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11.5px] border transition-colors ${
-                  section === s.id ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300' : 'bg-[#020617]/50 border-[#1e293b] text-slate-400 hover:border-[#334155]'
-                }`}
-              >
-                <s.icon className="w-3.5 h-3.5" /> {s.label}
-              </button>
-            ))}
+          <div className="assessment-section-nav mt-5" aria-label="Assessment workpapers">
+            <div className="assessment-section-meta"><span>ENGAGEMENT WORKPAPERS</span><span>{String(SECTIONS.findIndex(s => s.id === section) + 1).padStart(2, '0')} <i>/</i> {String(SECTIONS.length).padStart(2, '0')}</span></div>
+            <div className="assessment-section-tabs">
+              {SECTIONS.map((s, idx) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  aria-pressed={section === s.id}
+                  onClick={() => setSection(s.id)}
+                  className={`assessment-section-tab ${section === s.id ? 'is-active' : ''}`}
+                >
+                  <span className="assessment-section-index">{String(idx + 1).padStart(2, '0')}</span>
+                  <s.icon className="w-3.5 h-3.5" /> <span>{s.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </motion.div>

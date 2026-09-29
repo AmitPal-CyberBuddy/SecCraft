@@ -1,3 +1,4 @@
 #!/bin/bash
-cd /home/user/WiFiForge/frontend
+set -e
+cd "$(dirname "$(dirname "$(realpath "$0")")")/frontend"
 npm run dev

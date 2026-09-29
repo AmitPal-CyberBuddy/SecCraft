@@ -1,7 +1,7 @@
 # Offline Audit Workflow (Lab)
 
-> Artifacts: `wpa2-handshake.pcapng`, `pmkid.pcapng`. Wordlist: `wordlists/wififorge-lab-psk.txt`.
-> Authorised-lab material only: the PSKs are published lab values.
+> Artifacts: `wpa2-handshake.pcapng`, `pmkid.pcapng`. Candidate list: `frontend/public/wordlists/wififorge-lab-psk.txt`.
+> The PSKs are intentionally published lab values. Do not use these procedures outside captures/networks you own or are authorized to assess.
 
 ## 1. The workflow
 
@@ -11,11 +11,15 @@ capture (.pcapng) ──hcxpcapngtool──► hashcat 22000 file ──hashcat�
         └── SHA-256, frame numbers, filter ──────────────────┘──► evidence record
 ```
 
+Run from `frontend/public/pcaps/wpa2/` in a local checkout (the required tools are not bundled):
+
 ```bash
-sha256sum wpa2-handshake.pcapng                     # integrity first
+sha256sum wpa2-handshake.pcapng
+# Expected SHA-256 for the checked-in fixture:
+# 74d4519e42c7a9602751cd2548d392dbca9e23a3c2c93db1ffaa13c7fa228a2b
 hcxpcapngtool -o audit.hc22000 wpa2-handshake.pcapng
-hashcat -m 22000 audit.hc22000 wordlists/wififorge-lab-psk.txt --show
-hashcat -m 22000 audit.hc22000 wordlists/wififorge-lab-psk.txt -d 1 --status
+hashcat -m 22000 audit.hc22000 ../../wordlists/wififorge-lab-psk.txt
+hashcat -m 22000 audit.hc22000 --show
 ```
 
 Why **22000** and not a legacy mode: hashcat 22000 is the unified WPA-PBKDF2-PMKID+EAPOL format that
@@ -25,13 +29,10 @@ workflows; new work should use 22000.
 ## 2. Questions
 
 1. How many hashes did `hcxpcapngtool` extract from each capture, and why?
-2. Which capture gives you a crackable line with **no client present**, and what does that say about the
-   "you need a handshake" claim?
+2. Which capture contains a PMKID usable without the complete four-message handshake? What station/AP exchange is still represented, and why is “no client present” misleading?
 3. Time the audit: record the hash rate, wall time, and whether the passphrase was found. Convert that into
    a statement about passphrase strength (this is the number a client cares about).
-4. The lab passphrase is 13 characters from a 4-symbol alphabet of patterns taught in the module notes.
-   Estimate the search space of a **random 13-character** password over 94 printable ASCII characters and
-   compare it with `rockyou.txt`-style dictionaries. What does that say about why the audit succeeded?
+4. The published fixture PSK is `ForgeLab2026!` and is intentionally present in the bundled candidate list; recovering it verifies the toolchain, not password strength or a live-network weakness. Separately estimate the search space of a **uniformly random 13-character** password over 94 printable ASCII characters and compare it with common human-chosen patterns and dictionary coverage. What can—and cannot—you conclude from this fixture?
 
 ## 3. Interpretation — the part most testers get wrong
 
@@ -45,14 +46,14 @@ A recovered passphrase is **not** automatically a critical finding. Ask:
 
 ## 4. Evidence record
 
+```text
+Input: wpa2-handshake.pcapng — SHA-256 74d4519e42c7a9602751cd2548d392dbca9e23a3c2c93db1ffaa13c7fa228a2b
+Expected fixture: two client exchanges (one complete M1–M4, one partial M1–M2)
+Result: record your own tool versions, extracted line count, recovered/not recovered result and elapsed time
+Limit: no measured hash rate or run time is asserted here; dictionary non-recovery does not prove strength
 ```
-Tool      : hcxpcapngtool 7.x, hashcat 7.x
-Input     : wpa2-handshake.pcapng — SHA-256 1efab7c5…
-Command   : hcxpcapngtool -o audit.hc22000 wpa2-handshake.pcapng
-Hash file : audit.hc22000 — SHA-256 …, 2 hashes (1 complete, 1 truncated)
-Result    : passphrase recovered in 4.2 s at 1.9 MH/s (lab wordlist)
-Limit     : dictionary-based audit; absence of recovery does not prove strength
-```
+
+The repository's verifier checks the PCAP structure and cryptographic material, not the performance result of your local `hashcat` run.
 
 ## 5. Decision practice
 

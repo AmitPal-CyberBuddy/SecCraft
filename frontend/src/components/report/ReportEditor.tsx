@@ -116,7 +116,7 @@ ${finding.references}
 ${finding.retest}
 
 ---
-*Generated via Quench — Forge. Break. Fix. Quench. Retest. — Learn cybersecurity by doing.*
+*Generated via SecCraft — Learn. Practice. Investigate. Improve.*
 `
 
   const download = () => {

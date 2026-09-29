@@ -122,7 +122,7 @@
  {
   "category": "Key material",
   "command": "hcxpcapngtool --pmkid-only -o pmkid.hc22000 cap.pcapng",
-  "proves": "whether a clientless PMKID line exists in the capture",
+  "proves": "whether the capture contains a PMKID value; its presence alone does not establish a clientless collection path or production exposure",
   "notes": "no output can mean the AP does not cache PMKs"
  },
  {

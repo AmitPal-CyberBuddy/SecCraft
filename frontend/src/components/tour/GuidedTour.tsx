@@ -87,7 +87,7 @@ export function GuidedTour() {
           element: '[data-tour="labs"]',
           popover: {
             title: 'Labs — Reusable Lab Engine (PCAP, Config, HTTP, APK, Logs)',
-            description: `Lab engine is generic, not Wi-Fi-only: artifact analysis (PCAP ${TOTAL_PCAPS} for Wireless), config audit, scenario, terminal (operator@quench simulated Kali shell, ${platform.name} generic), evidence vault (hash+claim+filter+frames), scoring. Tiers: SIMULATION (bundled offline dataset) • HYBRID • REAL (requires authorized env). For Wireless: beacon-only, WPA2 handshake, PMKID, WPS, EAP/RADIUS, etc.`,
+            description: `Lab engine is generic, not Wi-Fi-only: artifact analysis (PCAP ${TOTAL_PCAPS} for Wireless), config audit, scenario, terminal (operator@seccraft simulated shell, ${platform.name} generic), evidence vault (hash+claim+filter+frames), scoring. Tiers: SIMULATION (bundled offline dataset) • HYBRID • REAL (requires authorized env). For Wireless: beacon-only, WPA2 handshake, PMKID, WPS, EAP/RADIUS, etc.`,
             side: 'top',
             align: 'start'
           }
@@ -174,9 +174,9 @@ export function GuidedTour() {
 
       <style>{`
         .platform-tour-popover { background: #0f172a !important; border: 1px solid #334155 !important; border-radius: 16px !important; color: #f1f5f9 !important; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5) !important; max-width: 380px !important; }
-        .platform-tour-popover .driver-popover-title { color: #f1f5f9 !important; font-family: Sora, sans-serif !important; font-weight: 700 !important; font-size: 14px !important; line-height: 1.3 !important; }
+        .platform-tour-popover .driver-popover-title { color: #f1f5f9 !important; font-family: Inter, ui-sans-serif, system-ui, sans-serif !important; font-weight: 700 !important; font-size: 14px !important; line-height: 1.3 !important; }
         .platform-tour-popover .driver-popover-description { color: #94a3b8 !important; font-size: 12px !important; line-height: 1.6 !important; }
-        .platform-tour-popover .driver-popover-progress-text { color: #64748b !important; font-family: JetBrains Mono, monospace !important; font-size: 11px !important; }
+        .platform-tour-popover .driver-popover-progress-text { color: #64748b !important; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important; font-size: 11px !important; }
         .platform-tour-popover .driver-popover-next-btn, .platform-tour-popover .driver-popover-prev-btn, .platform-tour-popover .driver-popover-close-btn { background: #1e293b !important; border: 1px solid #334155 !important; color: #e2e8f0 !important; border-radius: 8px !important; font-size: 12px !important; padding: 6px 12px !important; }
         .platform-tour-popover .driver-popover-next-btn { background: linear-gradient(to right, #8b5cf6, #06b6d4) !important; border: none !important; color: white !important; }
         .platform-tour-popover .driver-popover-footer { gap: 8px !important; }

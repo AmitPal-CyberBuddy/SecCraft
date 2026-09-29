@@ -3,7 +3,7 @@ import { useProgressStore } from '@/store/useProgressStore'
 import { motion } from 'framer-motion'
 import modules from '@/content/modules.json'
 import learningPaths from '@/content/learning-paths.json'
-import { CheckCircle, Circle, Loader2, Lock, BookOpen, Award, Zap, ChevronRight, ArrowLeft, FlaskConical, Swords, Clock, Target, Shield } from 'lucide-react'
+import { CheckCircle, Circle, BookOpen, ChevronRight, ArrowLeft, FlaskConical, Swords, Clock, Target, Shield } from 'lucide-react'
 import { getStatsForPath } from '@/content/stats'
 
 export function PathDetail() {
@@ -47,7 +47,7 @@ export function PathDetail() {
           <div className="mt-4 flex items-start gap-4">
             <div className="text-[32px]">{path.icon}</div>
             <div>
-              <h1 className="text-[28px] md:text-[32px] font-heading font-bold text-slate-100 leading-tight">{path.title}</h1>
+              <h1 className="text-[28px] md:text-[32px] font-heading font-bold text-slate-100 leading-tight sc-page-title">{path.title}</h1>
               {path.tagline && <p className="mt-1 text-[13px] text-slate-400 italic">“{path.tagline}”</p>}
               <p className="mt-3 max-w-[800px] text-[13px] text-slate-400 leading-relaxed">{path.longDescription}</p>
             </div>
@@ -164,7 +164,7 @@ export function PathDetail() {
                           >
                             <div className="flex-shrink-0">
                               {prog === 100 ? <div className="w-6 h-6 rounded-full bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center"><CheckCircle className="w-4 h-4 text-emerald-400" /></div> :
-                               prog > 0 ? <div className="w-6 h-6 rounded-full bg-cyan-500/15 border border-cyan-500/20 flex items-center justify-center"><Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin" /></div> :
+                               prog > 0 ? <div className="w-6 h-6 rounded-full bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center" title={`${prog}% complete`}><svg className="w-4 h-4 -rotate-90" viewBox="0 0 24 24" role="img" aria-label={`${prog}% complete`}><circle cx="12" cy="12" r="10" fill="none" stroke="rgba(83,215,209,.2)" strokeWidth="2.5" /><circle cx="12" cy="12" r="10" fill="none" stroke="#53d7d1" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="62.83" strokeDashoffset={62.83 * (1 - prog / 100)} /></svg></div> :
                                <div className="w-6 h-6 rounded-full bg-[#1e293b] border border-[#334155] flex items-center justify-center"><Circle className="w-3.5 h-3.5 text-slate-400" /></div>}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -203,7 +203,7 @@ export function PathDetail() {
         </div>
         <div className="mt-3 text-[11px] text-slate-400 leading-relaxed">
           This path preserves the existing Wireless Pentesting depth: 20 modules, 27 lessons, 16 verified captures, 15 challenges, 35 decision scenarios, 42-item checklist, ENG-01 engagement.
-          Platform philosophy <span className="text-slate-300 font-medium">Forge. Break. Fix. Retest.</span> remains.
+          Platform philosophy <span className="text-slate-300 font-medium">Learn. Practice. Investigate. Improve.</span> guides the path.
         </div>
       </div>
     </div>

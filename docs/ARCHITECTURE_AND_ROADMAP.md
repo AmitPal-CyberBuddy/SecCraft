@@ -1,11 +1,11 @@
-# Platform Architecture — Quench (Legacy WiFiForge) — Hands-on Cybersecurity Learning Platform
+# SecCraft Platform Architecture and Roadmap
 
-> **Platform Repositioning (2026-09-28):** This document was originally WiFiForge-only (Wireless PT Academy). It is now updated to reflect platform repositioning to Quench — hands-on cybersecurity learning platform where Wireless Pentesting is Learning Path #1, not entire platform. See `docs/PLATFORM_REPOSITIONING.md` for full A-H assessment, `docs/CONTENT_MODEL.md` for generic content model, `docs/LEARNING_PATHS.md` for how to add new path, `docs/BRANDING_MIGRATION.md` for staged migration, `docs/IMPLEMENTATION_PLAN_STAGE3_6.md` for Stage 3-6 implementation.
+> **Current product:** SecCraft, repository `AmitPal-CyberBuddy/SecCraft`, Pages target `https://amitpal-cyberbuddy.github.io/SecCraft/`. This document contains earlier architecture planning below; naming and deployment sections that mention Quench, Anvil, or `/WiFiForge/` are historical and superseded by `docs/BRANDING.md`, `docs/BRANDING_MIGRATION.md`, and `docs/GITHUB_PAGES.md`.
 
 ## Platform Hierarchy (New)
 
 ```
-Platform (Quench — domain-neutral, legacy WiFiForge as Wireless path sub-brand)
+Platform (SecCraft — domain-neutral)
 │
 ├── Learning Paths (path-aware, 8 total, 1 available, 7 planned)
 │   ├── 📡 Wireless Pentesting (available, 20 modules, 27 lessons, 16 verified PCAPs, 15 challenges, 35 scenarios, 42-item checklist, ENG-01) — legacy WiFiForge
@@ -38,7 +38,7 @@ Philosophy retained: Forge. Break. Fix. Retest. (platform) + Understand the Prot
 ```
 
 **Content Model (Generic):**
-- `frontend/src/content/platform.json` — platform metadata Quench, tagline, philosophy, palette, legacyName WiFiForge
+- `frontend/src/content/platform.json` — current SecCraft metadata, tagline, philosophy, palette, and compatibility legacyName WiFiForge
 - `frontend/src/content/learning-paths.json` — 8 paths, 1 available wireless-pentesting, 7 planned empty
 - `frontend/src/content/modules.json` — now includes learningPathId, phaseName, lab_requirement_generic
 - `frontend/src/content/labs.ts` — learningPathId, artifactType
@@ -69,7 +69,7 @@ Philosophy retained: Forge. Break. Fix. Retest. (platform) + Understand the Prot
 ```
 
 **UI/UX — Platform vs Path:**
-- Platform-level (domain-neutral): Dashboard, Search (generic index of paths, modules, labs, challenges, skills), Progress, Labs (generic engine), Challenges, Assessments, Evidence, Certificates, Analytics, Navigation (Learn/Practice/Assess/Track), Content engine, Routing, Authentication, Learning state, Logo anvil without Wi-Fi arcs, Title Quench, Tagline Forge. Break. Fix. Retest. + Learn cybersecurity by doing.
+- Platform-level (domain-neutral): Dashboard, Search (generic index of paths, modules, labs, challenges, skills), Progress, Labs (generic engine), Challenges, Assessments, Evidence, Certificates, Analytics, Navigation (Learn/Practice/Assess/Track), Content engine, Routing, Authentication, Learning state, Current shield/check/magnifier mark, title SecCraft, tagline Learn. Practice. Investigate. Improve. + Learn cybersecurity by doing.
 - Domain-specific (wireless path): Wi-Fi terminology, wireless icons, BSSID/SSID, Wi-Fi commands, PCAP terminology, modules, attack categories, Logo anvil with Wi-Fi arcs (legacy WiFiForge mark) inside Wireless path, Flag prefix WIFIFORGE{} retained, Skills ssid, bssid, beacon, rsn, pmf, eap, radius
 
 **Backend:**
@@ -77,11 +77,11 @@ Philosophy retained: Forge. Break. Fix. Retest. (platform) + Understand the Prot
 - New router learning_paths.py serves platform.json + learning-paths.json
 - Content router supports ?path= filter
 - Config supports PLATFORM_* env vars with WIFIFORGE_* fallback (Stage 5)
-- Health includes platform, legacy, learning_paths counts, message Forge. Break. Fix. Retest. — Learn cybersecurity by doing.
+- Health includes platform, legacy, learning_paths counts, message Learn. Practice. Investigate. Improve. — Learn cybersecurity by doing.
 
 **Deployment:**
 - GitHub Pages SPA with 404.html fallback, .nojekyll, Docker multi-stage, nginx TLS, gzip, cache, rate limit — generic
-- VITE_BASE=/WiFiForge/ kept for now to not break existing deployment (https://amitpal-cyberbuddy.github.io/WiFiForge/), future rename to /Quench/ or /<new-repo>/ with redirect page when repo rename decided
+- Current Pages base is `/SecCraft/`; the workflow derives it from the renamed repository. GitHub Pages does not automatically redirect the former `/WiFiForge/` address.
 - Security headers: CSP, X-Frame-Options DENY, etc. — retained
 
 **Why One Excellent Path First:**
@@ -174,7 +174,7 @@ The end state is a polished dark-themed web app where you can track progress, fo
 - **Markdown + Frontmatter** for lessons
 - **YAML** for labs: objective, artifacts, tasks, validation, hints, mitigation, retest
 - **JSON** for quizzes, progress definitions, skill tree
-- **Scripts**: `scripts/generate_pcap.py`, `scripts/validate_lab.py`, `scripts/seed_db.py`
+- **Current artifact tooling**: `scripts/generate-lab-artifacts.py`, `scripts/generate-challenges.py`, and `scripts/verify-lab-artifacts.py`. Historical one-off Scapy generators and duplicate lab-kit copies were removed; generated captures and decoded datasets are kept in sync by the canonical pair.
 
 ---
 

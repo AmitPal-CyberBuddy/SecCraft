@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useProgressStore } from '@/store/useProgressStore'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Clock, Trophy, FileText, Flag, Lightbulb, CheckCircle, XCircle, Target, Sparkles, Award, Zap, Shield, BookOpen, FlaskConical } from 'lucide-react'
+import { ArrowLeft, Clock, Trophy, FileText, Flag, Lightbulb, CheckCircle, XCircle, Target, Sparkles, Award, BookOpen, FlaskConical } from 'lucide-react'
 import { PcapInspector } from '@/components/lab/PcapInspector'
 import { ConfigViewer } from '@/components/lab/ConfigViewer'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -9,11 +10,26 @@ import challenges from '@/content/challenges.json'
 export function ChallengeDetail() {
   const { id } = useParams<{ id: string }>()
   const challenge = challenges.find(c => c.id === id)
-  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [answers, setAnswers] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem(`challenge-draft:${id}`) || '{}') } catch { return {} }
+  })
   const [showHints, setShowHints] = useState<Record<string, boolean>>({})
   const [submitted, setSubmitted] = useState(false)
+  const [pointsAwarded, setPointsAwarded] = useState(0)
   const [flagInput, setFlagInput] = useState('')
   const [flagCorrect, setFlagCorrect] = useState<boolean | null>(null)
+  const completeChallenge = useProgressStore(s => s.completeChallenge)
+  const completedChallenges = useProgressStore(s => s.completedChallenges)
+  const checkpointSaved = completedChallenges.some(item => item.challengeId === id)
+
+  useEffect(() => {
+    try { setAnswers(JSON.parse(localStorage.getItem(`challenge-draft:${id}`) || '{}')) } catch { setAnswers({}) }
+    setSubmitted(false); setFlagInput(''); setFlagCorrect(null); setPointsAwarded(0)
+  }, [id])
+
+  useEffect(() => {
+    try { localStorage.setItem(`challenge-draft:${id}`, JSON.stringify(answers)) } catch {}
+  }, [id, answers])
 
   if (!challenge) {
     return (
@@ -31,11 +47,13 @@ export function ChallengeDetail() {
   }
 
   const handleFlagSubmit = () => {
+    if (!submitted) { alert('Complete your written task responses, then reveal the answer key for self-review before submitting the local checkpoint.'); return }
+    if (challenge.tasks.some((task: any) => !answers[task.id]?.trim())) { alert('Add a response to every task before submitting the checkpoint.'); return }
     if (flagInput.trim() === challenge.flag) {
+      const result = completeChallenge(challenge.id)
+      setPointsAwarded(result.points)
       setFlagCorrect(true)
-    } else {
-      setFlagCorrect(false)
-    }
+    } else setFlagCorrect(false)
   }
 
   const levelColors: Record<string, { bg: string, text: string, border: string }> = {
@@ -44,6 +62,10 @@ export function ChallengeDetail() {
     assessment: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/20' },
   }
   const lc = levelColors[challenge.level] || levelColors.guided
+  // Free-response tasks are not machine-graded. The progress indicator reflects drafts entered,
+  // not correctness; learners compare their reasoning with the authored answer key themselves.
+  const answeredTasks = challenge.tasks.filter((task: any) => Boolean(answers[task.id]?.trim())).length
+  const taskProgress = challenge.tasks.length ? Math.round((answeredTasks / challenge.tasks.length) * 100) : 0
 
   return (
     <div className="max-w-[1200px] mx-auto space-y-6">
@@ -68,10 +90,10 @@ export function ChallengeDetail() {
               </span>
               <span className="text-[10px] px-2.5 py-1 rounded-full bg-[#1e293b]/60 border border-[#334155]/60 text-slate-400 font-mono backdrop-blur-sm">{challenge.difficulty.toUpperCase()}</span>
               <span className={`text-[10px] px-2.5 py-1 rounded-full border font-mono backdrop-blur-sm ${challenge.status === 'simulated' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
-                {challenge.status === 'simulated' ? '● SIMULATED' : '◐ HARDWARE'}
+                {challenge.status === 'simulated' ? '● LOCAL SIMULATION' : '◐ HARDWARE'}
               </span>
             </div>
-            <h1 className="font-heading font-bold text-[22px] md:text-[26px] text-slate-100 leading-tight tracking-tight">{challenge.title}</h1>
+            <h1 className="font-heading font-bold text-[22px] md:text-[26px] text-slate-100 leading-tight tracking-tight sc-page-title">{challenge.title}</h1>
             <p className="text-[13px] text-slate-400 mt-2 max-w-[700px] leading-relaxed">{challenge.description}</p>
             <div className="mt-4 flex flex-wrap items-center gap-2">
               {challenge.skills.slice(0, 4).map((skill: string) => (
@@ -85,7 +107,7 @@ export function ChallengeDetail() {
               <div className="text-[13px] font-semibold text-slate-200 mt-1">{challenge.estimated_time}</div>
             </div>
             <div className="text-center px-4 py-3 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20 backdrop-blur-sm">
-              <div className="flex items-center gap-1 text-[11px] text-amber-400 justify-center"><Trophy className="w-3 h-3" />Points</div>
+              <div className="flex items-center gap-1 text-[11px] text-amber-400 justify-center"><Trophy className="w-3 h-3" />Challenge XP</div>
               <div className="text-[20px] font-bold text-amber-400 font-mono mt-1">{challenge.points}</div>
             </div>
           </div>
@@ -190,6 +212,10 @@ export function ChallengeDetail() {
               <p className="text-[11px] text-slate-500 font-mono mb-5 px-11">
                 {challenge.level === 'guided' ? 'Guided (steps provided)' : challenge.level === 'semi-guided' ? 'Semi-guided (objective + tools, no exact command)' : 'Assessment (only scope + artifacts)'}
               </p>
+              {submitted && <div className="challenge-review-summary mb-5" aria-live="polite">
+                <div className="flex items-center justify-between gap-3"><span className="text-[11px] font-semibold text-slate-200">Answer key revealed · self-review</span><span className="text-[10px] font-mono text-slate-400">{answeredTasks} / {challenge.tasks.length} responses entered · not graded</span></div>
+                <div className="challenge-review-track" role="progressbar" aria-label="Task responses entered" aria-valuemin={0} aria-valuemax={challenge.tasks.length} aria-valuenow={answeredTasks}><span style={{ width: `${taskProgress}%` }} /></div>
+              </div>}
               <div className="space-y-4">
                 {challenge.tasks.map((task: any) => (
                   <motion.div
@@ -202,7 +228,7 @@ export function ChallengeDetail() {
                     <div className="text-[13px] font-medium text-slate-200 mb-3 leading-relaxed">{task.question}</div>
                     <input
                       value={answers[task.id] || ''}
-                      onChange={e => setAnswers({...answers, [task.id]: e.target.value})}
+                      onChange={e => { setAnswers({...answers, [task.id]: e.target.value}); setFlagCorrect(null) }}
                       placeholder="Your answer..."
                       className="w-full px-4 py-3 rounded-xl bg-[#0f172a] border border-[#1e293b] text-[13px] font-mono text-slate-200 placeholder:text-slate-400 focus:border-cyan-500/30 focus:bg-[#111d33]/80 focus:outline-none hover:border-[#334155]/60 transition-all duration-200"
                     />
@@ -211,8 +237,8 @@ export function ChallengeDetail() {
                         <Lightbulb className="w-3 h-3" /> {showHints[task.id] ? 'Hide hint' : 'Show hint'}
                       </button>
                       {submitted && (
-                        <div className={`text-[11px] px-2.5 py-1 rounded-full border font-mono ${answers[task.id]?.toLowerCase().includes(task.answer.toLowerCase().split(' ')[0]) ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
-                          Expected: {task.answer}
+                        <div className="text-[11px] px-2.5 py-1 rounded-full border font-mono bg-amber-500/10 text-amber-300 border-amber-500/20" aria-live="polite">
+                          Compare with answer key (not machine-graded): {task.answer}
                         </div>
                       )}
                     </div>
@@ -261,13 +287,13 @@ export function ChallengeDetail() {
                 <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
                   <Flag className="w-4 h-4 text-violet-400" />
                 </div>
-                Flag — Evidence of Completion
+                Local Practice Checkpoint
                 <span className="ml-auto text-[10px] px-2 py-1 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20 font-mono">WIFIFORGE{`{...}`}</span>
               </h3>
               <div className="flex gap-3">
                 <input
                   value={flagInput}
-                  onChange={e => setFlagInput(e.target.value)}
+                  onChange={e => { setFlagInput(e.target.value); setFlagCorrect(null) }}
                   placeholder="WIFIFORGE{...}"
                   className="flex-1 px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] font-mono text-slate-200 placeholder:text-slate-400 focus:border-violet-500/30 focus:bg-[#0a1020] focus:outline-none hover:border-[#334155]/60 transition-all duration-200"
                 />
@@ -282,7 +308,7 @@ export function ChallengeDetail() {
                 </motion.button>
               </div>
               <AnimatePresence>
-                {flagCorrect === true && (
+                {(flagCorrect === true || (checkpointSaved && flagCorrect !== false)) && (
                   <motion.div
                     initial={{ opacity: 0, y: 8, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -293,8 +319,8 @@ export function ChallengeDetail() {
                       <CheckCircle className="w-5 h-5" />
                     </div>
                     <div>
-                      <div className="font-bold">Correct! Flag accepted.</div>
-                      <div className="text-[11px] opacity-80 mt-0.5">+{challenge.points} points • Skill unlocked</div>
+                      <div className="font-bold">{flagCorrect === true && pointsAwarded > 0 ? 'Local practice checkpoint recorded.' : 'Checkpoint was already recorded on this device.'}</div>
+                      <div className="text-[11px] opacity-80 mt-0.5">{pointsAwarded > 0 ? `+${pointsAwarded} XP (first completion only)` : 'No additional XP for a repeat submission'} • Not graded, proctored or a verified skill credential.</div>
                     </div>
                   </motion.div>
                 )}
@@ -316,7 +342,7 @@ export function ChallengeDetail() {
                 )}
               </AnimatePresence>
               <div className="mt-4 text-[11px] text-slate-500 leading-relaxed p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40">
-                Flag format: WIFIFORGE{"{...}"} — found after completing tasks and analyzing evidence. For lab, flag is in challenge definition (in real assessment, you'd derive from evidence).
+                Local-first practice only: task responses are self-reviewed against the answer key, and flags/checkpoint rules are shipped in this browser app. This is not a secure/proctored assessment or independent proof of skill.
               </div>
             </div>
           </motion.div>
@@ -340,7 +366,7 @@ export function ChallengeDetail() {
               <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40"><span className="text-slate-500">Level</span><span className="text-slate-300 font-medium capitalize">{challenge.level}</span></div>
               <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40"><span className="text-slate-500">Difficulty</span><span className="text-slate-300 font-medium">{challenge.difficulty}</span></div>
               <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40"><span className="text-slate-500">Time</span><span className="text-slate-300 font-medium font-mono">{challenge.estimated_time}</span></div>
-              <div className="flex justify-between items-center p-2.5 rounded-xl bg-amber-500/5 border border-amber-500/15"><span className="text-slate-500">Points</span><span className="text-amber-400 font-bold font-mono flex items-center gap-1"><Trophy className="w-3 h-3" />{challenge.points}</span></div>
+              <div className="flex justify-between items-center p-2.5 rounded-xl bg-amber-500/5 border border-amber-500/15"><span className="text-slate-500">Challenge XP</span><span className="text-amber-400 font-bold font-mono flex items-center gap-1"><Trophy className="w-3 h-3" />{challenge.points}</span></div>
             </div>
           </motion.div>
 
