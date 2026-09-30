@@ -7,11 +7,11 @@
 ```
 Platform (SecCraft — domain-neutral)
 │
-├── Learning Paths (path-aware, 8 total, 1 available, 7 planned)
-│   ├── 📡 Wireless Pentesting (available, 20 modules, 27 lessons, 16 verified PCAPs, 15 challenges, 35 scenarios, 42-item checklist, ENG-01) — legacy WiFiForge
+├── Learning Paths (path-aware, 8 total, 2 available, 6 planned)
+│   ├── 📡 Wireless Pentesting (available, 15 modules, 32 lessons, 18 integrity-checked synthetic PCAPs, 22 self-review challenges, 35 scenarios, 42-item checklist, ENG-01) — legacy WiFiForge
 │   ├── 🌐 Web Application Security (planned, architecture ready, empty modules)
 │   ├── 🔌 API Security (planned)
-│   ├── 📱 Android Pentesting (planned)
+│   ├── 📱 Android Application Security (available source-first: 12 modules, 25 lessons, nine source cases; no APK/runtime result)
 │   ├── 🖥️ Network Pentesting (planned)
 │   ├── 🏢 Active Directory (planned)
 │   ├── ☁️ Cloud Security (planned)
@@ -39,7 +39,7 @@ Philosophy retained: Forge. Break. Fix. Retest. (platform) + Understand the Prot
 
 **Content Model (Generic):**
 - `frontend/src/content/platform.json` — current SecCraft metadata, tagline, philosophy, palette, and compatibility legacyName WiFiForge
-- `frontend/src/content/learning-paths.json` — 8 paths, 1 available wireless-pentesting, 7 planned empty
+- `frontend/src/content/learning-paths.json` — 8 paths, 2 available (wireless-pentesting and android-pentesting), 6 planned empty
 - `frontend/src/content/modules.json` — now includes learningPathId, phaseName, lab_requirement_generic
 - `frontend/src/content/labs.ts` — learningPathId, artifactType
 - `frontend/src/content/challenges.json`, `engagements.json`, `scenarios.json` — learningPathId
@@ -55,7 +55,7 @@ Philosophy retained: Forge. Break. Fix. Retest. (platform) + Understand the Prot
 /app → Dashboard (the existing local workspace; no account required)
 /account, /login, /signup, /reset-password → optional Supabase Auth flows and server account status
 /admin → owner-only panel; authorization is enforced by the API, not the route
-/paths → LearningPaths (list all paths, 1 available, 7 planned)
+/paths → LearningPaths (list all paths, 2 available, 6 planned)
 /paths/:pathId → PathDetail (phases within path)
 /paths/:pathId/modules → Modules (path-aware filter)
 /paths/:pathId/modules/:id → ModuleDetail (path-aware breadcrumb Platform > Learning Paths > Wireless > Phase > Module)
@@ -88,7 +88,7 @@ Philosophy retained: Forge. Break. Fix. Retest. (platform) + Understand the Prot
 - Security headers: CSP, X-Frame-Options DENY, etc. — retained
 
 **Why One Excellent Path First:**
-- Wireless Pentesting: 20 modules, 27 lessons, 16 verified PCAPs, 15 challenges, 35 decision scenarios, 42-item checklist, ENG-01 — mature reference implementation
+- Wireless Pentesting: 15 modules, 32 lessons, 18 integrity-checked synthetic PCAPs, 22 self-review challenges, 35 decision scenarios, 42-item checklist, ENG-01 — mature reference implementation
 - Future paths: planned expansion, architecture ready, content after wireless maturity — no placeholder content to make platform appear larger
 
 ---

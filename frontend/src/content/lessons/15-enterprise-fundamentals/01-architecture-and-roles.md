@@ -31,8 +31,7 @@
 
 ## 2. Why the 4-way handshake still happens
 
-EAP authenticates the *client to the network* and produces the **MSK**; both the supplicant and the
-authenticator derive it. For common WPA2-Enterprise profiles, the PMK is derived from the MSK (commonly its first 256 bits), and the 4-way handshake then derives the
+EAP authenticates the *client to the network* and produces the **MSK**; the supplicant derives it, while the authentication server supplies the relevant key material to the authenticator over the AAA path. For common WPA2-Enterprise profiles, the PMK is derived from the MSK (commonly its first 256 bits), and the 4-way handshake then derives the
 PTK and installs keys — the same mechanics as PSK mode, but the PMK is per-session and per-user rather than
 shared. This is why you see both EAP frames *and* EAPOL-Key M1–M4 after a successful 802.1X login.
 
@@ -40,8 +39,8 @@ shared. This is why you see both EAP frames *and* EAPOL-Key M1–M4 after a succ
 
 | Boundary | Question | Failure mode |
 | --- | --- | --- |
-| client ↔ AP (EAP outer) | does the client verify the server's certificate? | rogue authenticator terminates PEAP, captures MS-CHAPv2 |
-| AP ↔ RADIUS | how strong and how scoped is the shared secret? | offline guessing of the secret from captures; any host can act as a NAS |
+| client ↔ AP (EAP outer) | does the client verify the server's certificate? | a rogue authenticator may terminate PEAP and obtain inner material if the client accepts the wrong server identity |
+| AP ↔ RADIUS | how strong and how scoped is the shared secret? | offline guessing of a weak secret from suitable captures; a reachable host with the secret may impersonate a configured NAS |
 | RADIUS ↔ identity store | are credentials checked per user, with lockout? | shared accounts, no lockout → online brute force |
 | RADIUS reply → network | is the assigned VLAN/ACL actually enforced? | dynamic VLAN assignment trusted but not enforced; ACL missing |
 | Client profile | are legacy/insecure methods offered? | EAP-MD5/LEAP negotiated, password exposure |

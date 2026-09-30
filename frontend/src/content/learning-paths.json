@@ -3,8 +3,8 @@
     "id": "wireless-pentesting",
     "title": "Wireless Pentesting",
     "shortTitle": "Wireless",
-    "description": "Hands-on wireless security assessment — from 802.11 fundamentals to enterprise EAP/RADIUS and professional reporting.",
-    "longDescription": "Master wireless VAPT: 802.11 architecture, recon, traffic analysis, WEP/WPA2/WPA3, WPS, deauth, rogue AP, captive portals, Enterprise 802.1X/EAP/RADIUS, corporate kill chains, methodology, evidence, reporting, retest. 20 modules, 27 lessons, 16 verified captures, 15 challenges, ENG-01 engagement.",
+    "description": "Offline-first Wi-Fi testing practice, from 802.11 fundamentals to Enterprise EAP/RADIUS and independent capture decisions; owned RF labs are optional.",
+    "longDescription": "Study wireless VAPT methodology: 802.11, recon, WPA/WPS/WPA3, management frames, guest and Enterprise EAP/RADIUS, evidence interpretation and safe verification. 15 modules, 32 lessons, 18 integrity-checked synthetic captures and 22 self-review challenges. ENG-01 is a scenario brief without its named Northwind evidence; field proficiency requires supervised RF/client practice and review.",
     "category": "network-security",
     "icon": "📡",
     "color": "cyan",
@@ -12,7 +12,7 @@
     "border": "border-cyan-500/20",
     "text": "text-cyan-400",
     "difficulty": "Beginner → Professional",
-    "estimatedHours": 52,
+    "estimatedHours": 53.0,
     "prerequisites": [],
     "status": "available",
     "featured": true,
@@ -25,26 +25,78 @@
       "06-traffic-analysis",
       "07-wep-legacy",
       "08-wpa-wpa2",
-      "09-wpa2-practical",
       "10-wps",
       "11-wpa3",
       "12-deauth-disassoc",
-      "13-rogue-ap",
       "14-captive-portals",
       "15-enterprise-fundamentals",
-      "16-eap",
-      "17-radius",
       "18-corporate-attacks",
-      "19-methodology",
       "20-final-assessment"
     ],
     "phases": [
-      { "id": 1, "name": "Foundations", "desc": "Wireless fundamentals & 802.11 architecture", "color": "cyan", "modules": ["01-intro-wireless", "02-wifi-fundamentals", "03-80211-architecture", "04-kali-wireless-setup"] },
-      { "id": 2, "name": "Reconnaissance", "desc": "Wireless recon & traffic analysis", "color": "violet", "modules": ["05-wireless-recon", "06-traffic-analysis"] },
-      { "id": 3, "name": "Wi-Fi Security", "desc": "WEP, WPA/WPA2, WPS, WPA3 deep dive", "color": "amber", "modules": ["07-wep-legacy", "08-wpa-wpa2", "09-wpa2-practical", "10-wps", "11-wpa3"] },
-      { "id": 4, "name": "Attack Techniques", "desc": "Deauth, Rogue AP, Captive Portals", "color": "emerald", "modules": ["12-deauth-disassoc", "13-rogue-ap", "14-captive-portals"] },
-      { "id": 5, "name": "Enterprise Wi-Fi", "desc": "Enterprise, EAP, RADIUS, Corporate", "color": "pink", "modules": ["15-enterprise-fundamentals", "16-eap", "17-radius", "18-corporate-attacks"] },
-      { "id": 6, "name": "Professional", "desc": "Methodology & Final Assessment", "color": "slate", "modules": ["19-methodology", "20-final-assessment"] }
+      {
+        "id": 1,
+        "name": "Foundations",
+        "desc": "Wireless fundamentals & 802.11 architecture",
+        "color": "cyan",
+        "modules": [
+          "01-intro-wireless",
+          "02-wifi-fundamentals",
+          "03-80211-architecture",
+          "04-kali-wireless-setup"
+        ]
+      },
+      {
+        "id": 2,
+        "name": "Reconnaissance",
+        "desc": "Wireless recon & traffic analysis",
+        "color": "violet",
+        "modules": [
+          "05-wireless-recon",
+          "06-traffic-analysis"
+        ]
+      },
+      {
+        "id": 3,
+        "name": "Wi-Fi Security",
+        "desc": "WEP, WPA/WPA2, WPS, WPA3 deep dive",
+        "color": "amber",
+        "modules": [
+          "07-wep-legacy",
+          "08-wpa-wpa2",
+          "10-wps",
+          "11-wpa3"
+        ]
+      },
+      {
+        "id": 4,
+        "name": "Attack Techniques",
+        "desc": "Deauth, Rogue AP, Captive Portals",
+        "color": "emerald",
+        "modules": [
+          "12-deauth-disassoc",
+          "14-captive-portals"
+        ]
+      },
+      {
+        "id": 5,
+        "name": "Enterprise Wi-Fi",
+        "desc": "Enterprise, EAP, RADIUS, Corporate",
+        "color": "pink",
+        "modules": [
+          "15-enterprise-fundamentals",
+          "18-corporate-attacks"
+        ]
+      },
+      {
+        "id": 6,
+        "name": "Applied Assessment",
+        "desc": "Scope & independent capture case",
+        "color": "slate",
+        "modules": [
+          "20-final-assessment"
+        ]
+      }
     ],
     "skills": [
       "reconnaissance",
@@ -52,8 +104,6 @@
       "evidence-collection",
       "risk-analysis",
       "remediation",
-      "retesting",
-      "reporting",
       "wireless-basics",
       "ssid",
       "bssid",
@@ -64,11 +114,11 @@
       "radius",
       "methodology"
     ],
-    "labs": 16,
-    "challenges": 15,
+    "labs": 19,
+    "challenges": 22,
     "scenarios": 35,
-    "pcaps": 16,
-    "certificate": true,
+    "pcaps": 18,
+    "certificate": false,
     "tagline": "Understand the Protocol. Test the Implementation.",
     "legacyBrand": "WiFiForge",
     "legacyFlagPrefix": "WIFIFORGE"
@@ -92,7 +142,13 @@
     "featured": false,
     "modules": [],
     "phases": [],
-    "skills": ["reconnaissance", "input-validation", "authentication-testing", "authorization-testing", "evidence-collection"],
+    "skills": [
+      "reconnaissance",
+      "input-validation",
+      "authentication-testing",
+      "authorization-testing",
+      "evidence-collection"
+    ],
     "labs": 0,
     "challenges": 0,
     "certificate": false
@@ -111,37 +167,130 @@
     "text": "text-amber-400",
     "difficulty": "Intermediate → Advanced",
     "estimatedHours": 30,
-    "prerequisites": ["web-application-security"],
+    "prerequisites": [
+      "web-application-security"
+    ],
     "status": "planned",
     "featured": false,
     "modules": [],
     "phases": [],
-    "skills": ["reconnaissance", "authentication-testing", "authorization-testing", "input-validation"],
+    "skills": [
+      "reconnaissance",
+      "authentication-testing",
+      "authorization-testing",
+      "input-validation"
+    ],
     "labs": 0,
     "challenges": 0,
     "certificate": false
   },
   {
     "id": "android-pentesting",
-    "title": "Android Pentesting",
+    "title": "Android Application Security: Foundations & Full",
     "shortTitle": "Android",
-    "description": "Hands-on Android security — static analysis, dynamic testing, evidence.",
-    "longDescription": "Planned learning path: Android architecture, APK analysis, static analysis, dynamic testing, intent testing, deep links, storage, crypto, network, evidence.",
+    "description": "Android static analysis and source-backed platform cases, with an optional owned-build runtime extension. APKs and dynamic outcomes are not supplied.",
+    "longDescription": "12 authored modules and 25 lessons cover platform trust boundaries, static triage, components, links, device data, network trust, WebView, runtime methods, crypto, code loading and an independent case. Nine downloadable source cases and a separate buildable Notes Boundary project support offline reasoning and optional owned-emulator testing. No prebuilt APK, measured dynamic outcome, independently graded test or field-competence certificate is supplied; quizzes and labs are local self-review, not proof of pentest readiness.",
     "category": "mobile-security",
     "icon": "📱",
     "color": "emerald",
     "gradient": "from-emerald-500/10 to-emerald-600/5",
     "border": "border-emerald-500/20",
     "text": "text-emerald-400",
-    "difficulty": "Intermediate → Advanced",
-    "estimatedHours": 35,
+    "difficulty": "Beginner → Advanced (source-first)",
+    "estimatedHours": 44.5,
     "prerequisites": [],
-    "status": "planned",
+    "status": "available",
     "featured": false,
-    "modules": [],
-    "phases": [],
-    "skills": ["reconnaissance", "configuration-review", "input-validation", "evidence-collection"],
-    "labs": 0,
+    "modules": [
+      "android-01-platform",
+      "android-02-workstation",
+      "android-03-apk-triage",
+      "android-04-components",
+      "android-05-links",
+      "android-06-storage",
+      "android-07-network",
+      "android-08-webview",
+      "android-09-runtime",
+      "android-10-crypto",
+      "android-11-release",
+      "android-12-case"
+    ],
+    "phases": [
+      {
+        "id": 1,
+        "name": "Platform and setup",
+        "desc": "Android trust boundaries and authorized test setup",
+        "color": "emerald",
+        "modules": [
+          "android-01-platform",
+          "android-02-workstation"
+        ]
+      },
+      {
+        "id": 2,
+        "name": "Static triage",
+        "desc": "Artifact literacy and source-to-sink decisions",
+        "color": "cyan",
+        "modules": [
+          "android-03-apk-triage"
+        ]
+      },
+      {
+        "id": 3,
+        "name": "Android platform boundaries",
+        "desc": "Authored source cases with optional owned-device follow-up",
+        "color": "emerald",
+        "modules": [
+          "android-04-components",
+          "android-05-links"
+        ]
+      },
+      {
+        "id": 4,
+        "name": "Data, network and embedded content",
+        "desc": "Authored source cases with optional owned-device follow-up",
+        "color": "emerald",
+        "modules": [
+          "android-06-storage",
+          "android-07-network",
+          "android-08-webview"
+        ]
+      },
+      {
+        "id": 5,
+        "name": "Runtime, crypto and release",
+        "desc": "Authored source cases with optional owned-device follow-up",
+        "color": "emerald",
+        "modules": [
+          "android-09-runtime",
+          "android-10-crypto",
+          "android-11-release"
+        ]
+      },
+      {
+        "id": 6,
+        "name": "Independent case",
+        "desc": "Authored source cases with optional owned-device follow-up",
+        "color": "emerald",
+        "modules": [
+          "android-12-case"
+        ]
+      }
+    ],
+    "skills": [
+      "android-architecture",
+      "static-analysis",
+      "component-ipc",
+      "app-links",
+      "device-storage",
+      "network-trust",
+      "webview",
+      "runtime-methods",
+      "cryptography",
+      "reverse-engineering",
+      "evidence-interpretation"
+    ],
+    "labs": 9,
     "challenges": 0,
     "certificate": false
   },
@@ -164,7 +313,12 @@
     "featured": false,
     "modules": [],
     "phases": [],
-    "skills": ["reconnaissance", "exploitation", "evidence-collection", "reporting"],
+    "skills": [
+      "reconnaissance",
+      "exploitation",
+      "evidence-collection",
+      "reporting"
+    ],
     "labs": 0,
     "challenges": 0,
     "certificate": false
@@ -183,12 +337,19 @@
     "text": "text-violet-400",
     "difficulty": "Advanced → Professional",
     "estimatedHours": 50,
-    "prerequisites": ["network-pentesting"],
+    "prerequisites": [
+      "network-pentesting"
+    ],
     "status": "planned",
     "featured": false,
     "modules": [],
     "phases": [],
-    "skills": ["reconnaissance", "authentication-testing", "authorization-testing", "exploitation"],
+    "skills": [
+      "reconnaissance",
+      "authentication-testing",
+      "authorization-testing",
+      "exploitation"
+    ],
     "labs": 0,
     "challenges": 0,
     "certificate": false
@@ -207,12 +368,19 @@
     "text": "text-amber-400",
     "difficulty": "Intermediate → Professional",
     "estimatedHours": 45,
-    "prerequisites": ["network-pentesting"],
+    "prerequisites": [
+      "network-pentesting"
+    ],
     "status": "planned",
     "featured": false,
     "modules": [],
     "phases": [],
-    "skills": ["configuration-review", "authentication-testing", "authorization-testing", "evidence-collection"],
+    "skills": [
+      "configuration-review",
+      "authentication-testing",
+      "authorization-testing",
+      "evidence-collection"
+    ],
     "labs": 0,
     "challenges": 0,
     "certificate": false
@@ -231,12 +399,20 @@
     "text": "text-pink-400",
     "difficulty": "Advanced → Professional",
     "estimatedHours": 35,
-    "prerequisites": ["web-application-security", "api-security"],
+    "prerequisites": [
+      "web-application-security",
+      "api-security"
+    ],
     "status": "planned",
     "featured": false,
     "modules": [],
     "phases": [],
-    "skills": ["input-validation", "configuration-review", "risk-analysis", "evidence-collection"],
+    "skills": [
+      "input-validation",
+      "configuration-review",
+      "risk-analysis",
+      "evidence-collection"
+    ],
     "labs": 0,
     "challenges": 0,
     "certificate": false

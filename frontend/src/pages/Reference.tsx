@@ -87,24 +87,24 @@ export function Reference() {
   }, [query, allFilters, pathFilter])
 
   return (
-    <div className="max-w-[1200px] mx-auto space-y-5 md:space-y-6">
+    <div className="ws-legacy max-w-[1200px] mx-auto space-y-5 md:space-y-6">
       <div className="flex items-center gap-2 flex-wrap">
-        <Link to={`/paths/${effectivePathId}`} className="inline-flex items-center gap-2 text-[12px] text-slate-400 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[#0f172a]/60 border border-transparent hover:border-[#1e293b]/60">
+        <Link to={`/paths/${effectivePathId}`} className="inline-flex items-center gap-2 text-[12px] text-slate-400 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[var(--panel-bg)]/60 border border-transparent hover:border-[var(--line-normal)]/60">
           <ArrowLeft className="w-4 h-4" />
           {currentPath.title} — Path Detail
         </Link>
-        <span className="text-[11px] px-2 py-1 rounded-full bg-[#0f172a] border border-[#1e293b] text-slate-400 font-mono flex items-center gap-1.5">
-          <MapIcon className="w-3 h-3" /> {currentPath.icon} {currentPath.title} • {currentPath.status.toUpperCase()} • {platform.name} Reference • Generic + Path-specific
+        <span className="text-[11px] px-2 py-1 rounded-full bg-[var(--panel-bg)] border border-[var(--line-normal)] text-slate-400 font-mono flex items-center gap-1.5">
+          <MapIcon className="w-3 h-3" /> {currentPath.icon} {currentPath.title} • {currentPath.status.toUpperCase()} • {platform.name} Reference • Commands, methods & checklists
         </span>
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-5">
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-5">
         <div className="flex flex-wrap items-start gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/15 to-violet-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
             <Terminal className="w-5 h-5 text-cyan-400" />
           </div>
           <div className="min-w-0">
-            <h1 className="font-heading font-bold text-[24px] md:text-[28px] text-slate-100 tracking-tight leading-none flex items-center gap-2 sc-page-title">
+            <h1 className="font-heading font-bold text-[24px] md:text-[28px] text-[var(--ink-primary)] tracking-tight leading-none flex items-center gap-2 sc-page-title">
               Reference <span className="text-[18px]">{currentPath.icon}</span>
             </h1>
             <p className="mt-2 max-w-[760px] text-[12.5px] text-slate-400 leading-relaxed">
@@ -123,7 +123,7 @@ export function Reference() {
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11.5px] border transition-colors ${
-                tab === t.id ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300' : 'bg-[#020617]/50 border-[#1e293b] text-slate-400 hover:border-[#334155]'
+                tab === t.id ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300' : 'bg-[var(--panel-inset)]/50 border-[var(--line-normal)] text-slate-400 hover:border-[var(--line-strong)]'
               }`}
             >
               <t.icon className="w-3.5 h-3.5" /> {t.label}
@@ -135,9 +135,9 @@ export function Reference() {
         {(tab === 'commands' || tab === 'filters') && (
           <div className="mt-4 flex flex-wrap gap-2 items-center">
             <span className="text-[11px] font-mono text-slate-400 uppercase tracking-widest">Path filter:</span>
-            <button onClick={() => setPathFilter(null)} className={`px-2.5 py-1 rounded-full text-[11px] font-mono border transition-colors ${!pathFilter ? 'bg-[#1e293b] text-slate-100 border-[#334155]' : 'bg-[#020617]/50 border-[#1e293b] text-slate-400 hover:border-[#334155]'}`}>All Paths</button>
+            <button onClick={() => setPathFilter(null)} className={`px-2.5 py-1 rounded-full text-[11px] font-mono border transition-colors ${!pathFilter ? 'bg-[#1e293b] text-[var(--ink-primary)] border-[var(--line-strong)]' : 'bg-[var(--panel-inset)]/50 border-[var(--line-normal)] text-slate-400 hover:border-[var(--line-strong)]'}`}>All Paths</button>
             {learningPaths.slice(0, 8).map(p => (
-              <button key={p.id} onClick={() => setPathFilter(p.id)} className={`px-2.5 py-1 rounded-full text-[11px] font-mono border transition-colors flex items-center gap-1 ${pathFilter === p.id ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30' : 'bg-[#020617]/50 border-[#1e293b] text-slate-400 hover:border-[#334155]'}`}>
+              <button key={p.id} onClick={() => setPathFilter(p.id)} className={`px-2.5 py-1 rounded-full text-[11px] font-mono border transition-colors flex items-center gap-1 ${pathFilter === p.id ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30' : 'bg-[var(--panel-inset)]/50 border-[var(--line-normal)] text-slate-400 hover:border-[var(--line-strong)]'}`}>
                 <span>{p.icon}</span> {p.shortTitle} {p.status !== 'available' ? '• planned' : ''}
               </button>
             ))}
@@ -145,13 +145,13 @@ export function Reference() {
         )}
 
         {(tab === 'commands' || tab === 'filters') && (
-          <div className="relative mt-4 sticky top-[64px] z-20 bg-[#020617]/90 backdrop-blur-xl p-3 -mx-3 rounded-xl border border-[#1e293b]/30 shadow-lg shadow-black/10">
+          <div className="relative mt-4 sticky top-[64px] z-20 bg-[var(--panel-inset)]/90 backdrop-blur-xl p-3 -mx-3 rounded-xl border border-[var(--line-normal)]/30 shadow-lg shadow-black/10">
             <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
             <input
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder={tab === 'commands' ? `Search commands in ${currentPath.title}, e.g. PMKID, RADIUS, deauth, retest…` : `Search filters in ${currentPath.title}, e.g. rsn, eapol, mfpr…`}
-              className="w-full pl-11 pr-4 py-2.5 rounded-xl bg-[#020617]/70 border border-[#1e293b] text-[12.5px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30"
+              className="w-full pl-11 pr-4 py-2.5 rounded-xl bg-[var(--panel-inset)]/70 border border-[var(--line-normal)] text-[12.5px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30"
             />
           </div>
         )}
@@ -159,9 +159,10 @@ export function Reference() {
 
       {tab === 'commands' && (
         <div className="space-y-4">
+          {cmdGroups.length > 0 && <nav aria-label="Command categories" className="sc-reference-categories">{cmdGroups.map(([category], index) => <a key={category} href={`#reference-category-${index}`}>{category}</a>)}</nav>}
           {cmdGroups.map(([category, list]) => (
-            <motion.div key={category} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl bg-[#0f172a] border border-[#1e293b] overflow-hidden">
-              <div className="px-4 py-3 border-b border-[#1e293b] text-[11px] font-mono uppercase tracking-widest text-cyan-400 flex items-center justify-between">
+            <motion.div key={category} id={`reference-category-${cmdGroups.findIndex(([name]) => name === category)}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] overflow-hidden">
+              <div className="px-4 py-3 border-b border-[var(--line-normal)] text-[11px] font-mono uppercase tracking-widest text-cyan-400 flex items-center justify-between">
                 <span>{category}</span>
                 <span className="text-[10px] text-slate-400">{list.length} commands • {currentPath.shortTitle} • {pathFilter ? 'filtered' : 'all paths'}</span>
               </div>
@@ -184,7 +185,7 @@ export function Reference() {
       )}
 
       {tab === 'filters' && (
-        <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] overflow-hidden">
+        <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] overflow-hidden">
           <div className="divide-y divide-[#1e293b]/70">
             {filterList.map(f => (
               <div key={f.filter} className="p-4 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
@@ -201,8 +202,8 @@ export function Reference() {
 
       {tab === 'method' && (
         <div className="grid gap-4 lg:grid-cols-2">
-          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4">
-            <h3 className="text-[13.5px] font-semibold text-slate-100">The loop that replaces command memorisation — {platform.name} generic • {platform.tagline}</h3>
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-4">
+            <h3 className="text-[13.5px] font-semibold text-[var(--ink-primary)]">The loop that replaces command memorisation — {platform.name} generic • {platform.tagline}</h3>
             <ol className="mt-3 space-y-2 text-[12.5px] text-slate-300">
               {['Observation — what does the artefact actually show?',
                 'Interpretation — what does it mean, and what else could explain it?',
@@ -217,12 +218,12 @@ export function Reference() {
                 </li>
               ))}
             </ol>
-            <div className="mt-4 text-[11px] font-mono text-slate-400 p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40">
+            <div className="mt-4 text-[11px] font-mono text-slate-400 p-3 rounded-xl bg-[var(--panel-inset)]/60 border border-[var(--line-normal)]/40">
               Platform philosophy: {platform.philosophy}
             </div>
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4">
-            <h3 className="text-[13.5px] font-semibold text-slate-100">Reporting & severity rules — generic VAPT</h3>
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-4">
+            <h3 className="text-[13.5px] font-semibold text-[var(--ink-primary)]">Reporting & severity rules — generic VAPT</h3>
             <ul className="mt-3 space-y-2.5 text-[12.5px] text-slate-300 leading-relaxed">
               <li>• A technique has no CVSS score. A finding does — derived from exploitability, impact, scope and this environment.</li>
               <li>• Quote CVSS as an <span className="font-mono">example vector</span> with each metric justified from your evidence.</li>
@@ -258,7 +259,7 @@ export function Reference() {
 
 function EmptyState() {
   return (
-    <div className="rounded-2xl border border-dashed border-[#334155]/60 p-8 text-center">
+    <div className="rounded-2xl border border-dashed border-[var(--line-strong)]/60 p-8 text-center">
       <p className="text-[12.5px] text-slate-400">Nothing matches that search — try clearing path filter or search query.</p>
     </div>
   )

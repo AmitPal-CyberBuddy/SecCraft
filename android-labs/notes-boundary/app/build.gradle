@@ -1,0 +1,21 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'org.seccraft.noteslab'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'org.seccraft.noteslab'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '1.0-training'
+    }
+    flavorDimensions 'boundary'
+    productFlavors {
+        vulnerable { dimension 'boundary'; applicationIdSuffix '.vulnerable'; buildConfigField 'boolean', 'DEMO_VULNERABLE', 'true' }
+        fixed { dimension 'boundary'; applicationIdSuffix '.fixed'; buildConfigField 'boolean', 'DEMO_VULNERABLE', 'false' }
+    }
+    buildFeatures { buildConfig true }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}

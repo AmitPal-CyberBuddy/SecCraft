@@ -38,11 +38,12 @@ try {
   const lessonKeys = new Set()
   let lessonCount = 0
 
-  assert.equal(modules.length, 20, 'the shipped wireless path has 20 modules')
+  assert.equal(modules.length, 27, '15 wireless plus 12 Android modules')
   assert.equal(new Set(moduleIds).size, modules.length, 'module ids are unique')
 
   for (const module of modules) {
     assert.ok(pathIds.has(module.learningPathId), `${module.id} has a valid learning path`)
+    assert.ok(module.prerequisites.every(id => moduleIds.has(id) && id !== module.id), `${module.id} prerequisites survive the merge`)
     for (const lesson of module.lessons ?? []) {
       const key = `${module.id}/${lesson.id}`
       assert.ok(!lessonKeys.has(key), `${key} is unique`)
@@ -61,31 +62,59 @@ try {
     }
   }
 
-  assert.equal(lessonCount, 27, 'all 27 referenced lessons are present')
+  assert.equal(lessonCount, 57, '32 wireless and 25 Android lessons are present')
   assert.equal(lessonKeys.size, lessonCount)
-  assert.equal(Object.keys(quizzes).length, 17, 'quizzes are authored only where implemented')
+  assert.equal(Object.keys(quizzes).length, 27, 'all authored modules have knowledge checks')
   const totalQuestions = Object.values(quizzes).reduce((sum, list) => sum + list.length, 0)
-  assert.equal(totalQuestions, 85, 'every implemented quiz question is accounted for')
-  assert.deepEqual(modules.filter(module => !Object.hasOwn(quizzes, module.id)).map(module => module.id), [
-    '01-intro-wireless', '03-80211-architecture', '04-kali-wireless-setup',
-  ], 'modules without authored quizzes stay explicit rather than showing empty quiz tabs')
+  assert.equal(totalQuestions, 126, 'every implemented quiz question is accounted for')
+  assert.ok(modules.every(module => Object.hasOwn(quizzes, module.id)), 'each module has an authored knowledge check')
   assert.ok(quizzes['20-final-assessment']?.length, 'the final-assessment module has an authored knowledge check')
+  assert.deepEqual(modules.find(item => item.id === '20-final-assessment').prerequisites, ['18-corporate-attacks'], 'wireless final case follows corporate attacks')
+  const retired = new Set(['09-wpa2-practical', '13-rogue-ap', '16-eap', '17-radius', '19-methodology'])
+  assert.ok([...retired].every(id => !moduleIds.has(id) && !Object.hasOwn(quizzes, id)), 'retired modules and quiz banks are absent')
+  const wireless = learningPaths.find(item => item.id === 'wireless-pentesting')
+  assert.deepEqual(wireless.modules, modules.filter(item => item.learningPathId === wireless.id).map(item => item.id), 'wireless path order matches its modules')
+  const android = learningPaths.find(item => item.id === 'android-pentesting')
+  assert.equal(android.status, 'available', 'Android Foundations is an honest released slice')
+  assert.deepEqual(android.modules, modules.filter(item => item.learningPathId === android.id).map(item => item.id), 'Android path order matches its modules')
+  assert.deepEqual(android.phases.flatMap(phase => phase.modules), android.modules, 'Android phases cover all authored modules')
+  assert.match(android.longDescription, /no prebuilt APK, measured dynamic outcome/i, 'Android path states its dynamic-testing limitation')
+  assert.deepEqual(wireless.phases.flatMap(phase => phase.modules), wireless.modules, 'path phases enumerate the same modules once')
 
-  assert.equal(LABS.length, 20, 'planned and available lab catalogue entries are retained')
-  assert.equal(AVAILABLE_LABS.length, 19, 'only available labs enter learner progress')
+  assert.equal(LABS.length, 29, 'wireless labs and nine source-case labs are retained')
+  assert.equal(AVAILABLE_LABS.length, 28, 'only available labs enter learner progress')
   assert.equal(AVAILABLE_LABS.filter(lab => lab.grading === 'verified').length, 3, 'machine-checked grading scope is explicit')
   assert.ok(LABS.every(lab => moduleIds.has(lab.module)), 'every lab belongs to a shipped module')
-  assert.equal(challenges.length, 15)
-  assert.equal(challenges.reduce((sum, challenge) => sum + challenge.tasks.length, 0), 45)
+  const inventory = JSON.parse(fs.readFileSync(path.join(frontendRoot, 'src/content/lab-artifacts.json'), 'utf8')).artifacts
+  for (const lab of AVAILABLE_LABS) {
+    if (lab.pcap) assert.ok(inventory[lab.pcap], `${lab.id} references an available capture`)
+  }
+  assert.equal(LABS.find(lab => lab.id === 'lab-20-final')?.pcap, 'capstone-baseline', 'final lab is not recycled module 19 capture')
+  assert.ok(inventory['capstone-retest'], 'staged post-change capture is available')
+  assert.equal(challenges.find(challenge => challenge.id === 'chal-15-engagement')?.artifacts[0], 'capstone-baseline.pcapng', 'final challenge uses independent case')
+
+  assert.equal(challenges.length, 22)
+  assert.equal(challenges.reduce((sum, challenge) => sum + challenge.tasks.length, 0), 66)
   assert.ok(challenges.every(challenge => pathIds.has(challenge.learningPathId)), 'every challenge retains path ownership')
+  assert.ok(challenges.every(challenge => moduleIds.has(challenge.module)), 'every challenge points to a surviving module')
   assert.ok(scenarios.every(scenario => moduleIds.has(scenario.module)), 'every scenario belongs to a shipped module')
+  assert.ok(fs.existsSync(path.join(frontendRoot, 'public/android-foundations/SHA256SUMS')), 'Android text pack has an integrity manifest')
+  assert.ok(fs.existsSync(path.join(frontendRoot, 'public/android-demos/notes-boundary-source.zip')), 'Android owned demo source archive is published')
+  assert.ok(!fs.existsSync(path.join(frontendRoot, 'public/android-demos/notes-boundary.apk')), 'no unverified APK is presented as runnable')
+  const sourceCases = JSON.parse(fs.readFileSync(path.join(frontendRoot, 'src/content/androidCases.json'), 'utf8')).cases
+  const publishedCases = JSON.parse(fs.readFileSync(path.join(frontendRoot, 'public/android-cases/cases.json'), 'utf8')).cases
+  assert.deepEqual(sourceCases, publishedCases, 'downloadable case pack and interactive case answers match')
+  assert.deepEqual(sourceCases.map(item => item.id), android.modules.slice(3), 'each advanced Android module has its own case')
+  assert.ok(sourceCases.every(item => item.questions.length === 3 && item.feedback.length === 3), 'every case has three prompts and feedback')
+  assert.deepEqual(AVAILABLE_LABS.filter(lab => lab.learningPathId === android.id).map(lab => lab.id), sourceCases.map(item => `lab-${item.id}`), 'nine Android self-review labs resolve to cases')
+  assert.ok(AVAILABLE_LABS.filter(lab => lab.learningPathId === android.id).every(lab => lab.grading === 'self-review' && !lab.pcap), 'Android labs do not impersonate capture or device grading')
   const rsnDecode = scenarios.find(scenario => scenario.id === 'scn-03-rsn-decode')
   assert.equal(rsnDecode?.situation, 'RSNE (element 48), hex: 30 18 01 00 00 0f ac 04 01 00 00 0f ac 04 02 00 00 0f ac 02 00 0f ac 08 80 00', 'the transition-mode scenario has a correctly sized RSNE with MFPC set')
   assert.ok(rsnDecode?.model_answer.includes('0x0080') && rsnDecode.model_answer.includes('MFPC (bit 7)') && rsnDecode.model_answer.includes('MFPR (bit 6)'), 'the RSN capability interpretation uses the correct bit positions')
   const pmfBits = scenarios.find(scenario => scenario.id === 'scn-03-pmf-bits')
   assert.ok(pmfBits?.options.some(option => option.analysis.includes('bit 6 (0x0040)') && option.analysis.includes('bit 7 (0x0080)')), 'the PMF explanation uses IEEE 802.11 RSN capability bit positions')
 
-  console.log(`Learning-data contract passed: ${modules.length} modules, ${lessonCount} lessons, ${Object.keys(quizzes).length} quizzes/${totalQuestions} questions, ${LABS.length} labs (${AVAILABLE_LABS.length} available; 3 answer-checked), ${challenges.length} challenges/45 self-review tasks, ${scenarios.length} scenarios.`)
+  console.log(`Learning-data contract passed: ${modules.length} modules, ${lessonCount} lessons, ${Object.keys(quizzes).length} quizzes/${totalQuestions} questions, ${LABS.length} labs (${AVAILABLE_LABS.length} available; 3 answer-checked), ${challenges.length} challenges/66 self-review tasks, ${scenarios.length} scenarios.`)
 } finally {
   await server.close()
 }

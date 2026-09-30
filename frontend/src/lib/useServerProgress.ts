@@ -37,6 +37,16 @@ export interface ServerProgress {
   checkedAt: string
 }
 
+/** Match the GET /api/v1/progress achievement response (`id`, not `achievement_id`). */
+export function mapServerAchievements(rows: unknown): ServerProgress['achievements'] {
+  if (!Array.isArray(rows)) return []
+  return (rows as Array<{ id: string; verified: boolean; awarded_at: string | null }>).map(row => ({
+    id: String(row.id),
+    verified: row.verified === true,
+    awardedAt: row.awarded_at ?? null,
+  }))
+}
+
 export type ServerProgressState = 'idle' | 'loading' | 'ready' | 'denied' | 'unavailable'
 
 export interface ServerProgressResult {
@@ -104,13 +114,7 @@ export function useServerProgress(): ServerProgressResult {
         completed,
         xp: Number((body as { xp?: { total?: unknown } })?.xp?.total) || 0,
         xpVerified: (body as { xp?: { verified?: unknown } })?.xp?.verified === true,
-        achievements: Array.isArray((body as { achievements?: unknown })?.achievements)
-          ? ((body as { achievements: Array<{ achievement_id: string; verified: boolean; awarded_at: string }> }).achievements).map(row => ({
-              id: String(row.achievement_id),
-              verified: row.verified === true,
-              awardedAt: row.awarded_at ?? null,
-            }))
-          : [],
+        achievements: mapServerAchievements((body as { achievements?: unknown })?.achievements),
         checkedAt: new Date().toLocaleTimeString(),
       })
       setState('ready')

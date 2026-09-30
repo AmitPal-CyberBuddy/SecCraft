@@ -3,10 +3,10 @@
   {
    "id": "ENG-01",
    "name": "Northwind Retail \u2014 Flagship Store",
-   "subtitle": "Full authorised wireless penetration test (professional assessment)",
+   "subtitle": "Scenario brief and scoped evidence practicum (self-review)",
    "tier": "SIMULATION",
    "time_estimate": "6\u201310 hours",
-   "summary": "A complete engagement package: brief, scope, rules of engagement, target information, an AP inventory, an artefact bundle and a marking guide. No vulnerabilities are disclosed. You plan the test, choose the evidence, derive severity from impact, and write a client-ready report plus a retest plan.",
+   "summary": "Scenario brief with scope, rules of engagement and target descriptions; the Northwind inventory, captures, logs, configs and remediated retest artifacts are NOT bundled. Plan Northwind tests without inventing findings. For an executable evidence practicum, use the independent synthetic Case C-20 captures in the final lesson; do not attribute them to Northwind or claim an executed retest.",
    "client_background": [
     "Northwind Retail operates 12 stores and one small data centre; wireless is managed centrally by a two-person infrastructure team.",
     "The Flagship Store has a retail floor, a back office with POS terminals (wired), a stock room, and a customer seating area with an outdoor overflow.",
@@ -79,32 +79,32 @@
    ],
    "provided_artefacts": [
     {
-     "item": "Site topology diagram and AP placement plan",
-     "note": "Store, stock room, back office, seating area; 4 APs planned"
+     "item": "Site topology diagram and AP placement plan (scenario only; not bundled)",
+     "note": "Would need to show store, stock room, back office, seating area and AP locations"
     },
     {
-     "item": "AP inventory (BSSID, site, channel plan, firmware baseline)",
-     "note": "With two 'unknown' entries flagged by the client"
+     "item": "AP inventory (scenario only; not bundled)",
+     "note": "Hypothetical two unknown entries; no BSSID or ownership evidence is supplied"
     },
     {
-     "item": "Passive captures, 20 minutes per SSID",
-     "note": "Artefact bundle A \u2014 beacon, recon, traffic, handshake, PMKID, WPS, WPA3, deauth, rogue, portal, EAP, RADIUS (the 16 lab captures)"
+     "item": "Northwind per-SSID passive captures (scenario only; not bundled)",
+     "note": "The 16 teaching fixtures in public/pcaps are NOT Northwind captures; use them only in the separate evidence practicum"
     },
     {
-     "item": "RADIUS authentication and accounting logs for one business day",
-     "note": "Includes a burst of failures for one service account"
+     "item": "RADIUS authentication and accounting logs (scenario only; not bundled)",
+     "note": "Hypothetical burst of failures; no log lines available for investigation"
     },
     {
-     "item": "hostapd and wpa_supplicant configuration excerpts",
-     "note": "Redacted where credentials appear"
+     "item": "hostapd and wpa_supplicant configuration excerpts (scenario only; not bundled)",
+     "note": "Would be redacted where credentials appear; no actual excerpts supplied"
     },
     {
-     "item": "Guest portal redirect rules and session handling notes",
-     "note": "From the client's web team"
+     "item": "Guest portal redirect rules and session handling notes (scenario only; not bundled)",
+     "note": "Would come from the client's web team; no rules supplied"
     },
     {
-     "item": "Two test accounts (nw-test-01, nw-test-02), enterprise SSID only",
-     "note": "Credentials in the annex; never use other accounts"
+     "item": "Two named test accounts (scenario only; no credentials or access supplied)",
+     "note": "No annex or credentials shipped; do not try real accounts"
     }
    ],
    "deliverables": [
@@ -112,14 +112,14 @@
     "Test plan derived from the brief and RoE, with each intrusive test mapped to its authorising clause.",
     "Findings: claim, evidence, method, interpretation, impact, severity justification, remediation, retest criteria.",
     "Evidence appendix: capture hashes, filters, frame numbers, config excerpts, log lines, reproduction steps.",
-    "Retest results against the remediated artefacts supplied at the end of the assessment.",
+    "Retest criteria for Northwind; mark actual retest results NOT TESTED (no remediated artifacts supplied).",
     "Executive summary for the store manager (no jargon, no unverifiable claims)."
    ],
    "tasks": [
     {
      "id": "T1",
      "title": "Attack-surface inventory",
-     "detail": "Enumerate every BSS and client visible in the artefact bundle; classify policy (AKM, ciphers, PMF, WPS, OWE) with frame numbers. State the limits of the capture.",
+     "detail": "For Northwind, specify inventory fields and missing evidence; do not enumerate nonexistent captures. Separately inventory BSSs visible in the labelled synthetic C-20 baseline fixture with frame references.",
      "output": "Inventory table + limits statement"
     },
     {
@@ -131,37 +131,37 @@
     {
      "id": "T3",
      "title": "Non-intrusive assessment",
-     "detail": "From the artefacts and configuration excerpts, determine which weaknesses exist without transmitting anything. Justify each candidate finding with the exact artefact.",
+     "detail": "For Northwind, list hypotheses and required config/capture evidence, not findings. In the separate synthetic practicum, distinguish observed policy from validated weakness.",
      "output": "Candidate findings with evidence references"
     },
     {
      "id": "T4",
      "title": "Key material analysis",
-     "detail": "Audit the PSK-based SSIDs offline using the documented lab wordlist; relate each result to the environment (what the key actually grants).",
+     "detail": "Audit only the labelled synthetic C-20 baseline fixture with the lab wordlist; do not attribute its result to NW-Ops or NW-Legacy. State that access and segment impact require separate tests.",
      "output": "hc22000 files, hashcat output, interpretation"
     },
     {
      "id": "T5",
      "title": "Enterprise path analysis",
-     "detail": "Reconstruct the 802.1X/EAP/RADIUS flow; determine what is exposed and under which precondition; verify one RADIUS integrity attribute where the material allows.",
+     "detail": "Compare the separate synthetic EAP and RADIUS fixtures; verify the lab authenticator, then list what cannot be linked across captures or concluded about NW-Corp.",
      "output": "Timeline + precondition analysis"
     },
     {
      "id": "T6",
      "title": "Segmentation and isolation",
-     "detail": "Design and (using the captures/logs) evaluate the tests that prove or disprove guest isolation and inter-VLAN restriction. State what the artefacts do not prove and what you would run on site.",
+     "detail": "Design scoped guest isolation and inter-VLAN tests; evaluate only what synthetic captive/ICMP frames show. No Northwind logs, client config or real policy test is supplied.",
      "output": "Test design + evidence assessment"
     },
     {
      "id": "T7",
      "title": "Findings and impact",
-     "detail": "Write each finding with severity derived from this environment, quoting CVSS only as an example vector with justification.",
+     "detail": "Write an evidence-supported synthetic-fixture observation and an explicitly hypothetical Northwind risk; no severity claim based on absent Northwind evidence.",
      "output": "Client-ready findings"
     },
     {
      "id": "T8",
      "title": "Report and retest plan",
-     "detail": "Assemble the report with an executive summary, prioritisation and per-finding retest criteria; execute the retest against the remediated artefacts and record pass/fail.",
+     "detail": "Assemble a bounded practicum report and Northwind test plan; define retest criteria but mark execution NOT TESTED because remediated artifacts are absent.",
      "output": "Report + retest record"
     }
    ],
@@ -203,8 +203,8 @@
     }
    ],
    "notes": [
-    "There is at least one red herring: a configuration that looks severe but is not reachable or not exploitable in this environment. Say so, and say why.",
-    "At least one SSID yields no exploitable weakness. Document the test you performed and the control that held \u2014 that section is graded.",
+    "Identify a plausible red-herring hypothesis and specify what evidence would confirm or falsify it; no Northwind reachability data is supplied.",
+    "Do not assert a negative Northwind test outcome: no per-SSID captures or client logs are supplied. Describe how you would substantiate a no-finding result.",
     "If a test is not authorised or not safe, record why you did not perform it and what you did instead.",
     "Timebox: no more than 40% of your effort on any single SSID."
    ],
@@ -222,7 +222,7 @@
      "path": "docs/SIMULATION_VS_HARDWARE.md"
     },
     {
-     "label": "Artefact bundle (16 verified captures + offline lab data)",
+     "label": "Synthetic teaching fixtures (18 integrity-checked captures; not Northwind)",
      "path": "public/pcaps/MANIFEST.md"
     }
    ],

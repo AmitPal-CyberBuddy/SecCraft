@@ -1,7 +1,6 @@
 import { LoadingPanel } from '@/components/common/LoadingPanel'
-import { motion } from 'framer-motion'
-import { Flame, Target, Clock, Zap, Calendar, Trophy } from 'lucide-react'
-import { lazy, Suspense } from 'react'
+import { Flame, Clock, Calendar } from 'lucide-react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { PageTransition, FadeIn } from '@/components/animations'
 import platform from '@/content/platform.json'
 import { PracticeStandingNotice, StandingChip } from '@/components/account/PracticeStanding'
@@ -13,7 +12,20 @@ const DailyChallenges = lazy(() => import('@/components/gamification/DailyChalle
 
 export function Daily() {
   const streak = useProgressStore(s => s.getStreak())
-  const totalXp = useProgressStore(s => s.getTotalXp())
+  const lessons = useProgressStore(s => s.completedLessons)
+  const labs = useProgressStore(s => s.completedLabs)
+  const quizzes = useProgressStore(s => s.quizScores)
+  const [today, setToday] = useState(() => new Date().toDateString())
+  useEffect(() => {
+    const now = new Date()
+    const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+    const timer = window.setTimeout(() => setToday(new Date().toDateString()), nextMidnight.getTime() - now.getTime() + 50)
+    return () => window.clearTimeout(timer)
+  }, [today])
+  const recordedToday = (at?: string) => Boolean(at) && new Date(at!).toDateString() === today
+  const lessonsToday = lessons.filter(item => recordedToday(item.completedAt)).length
+  const labsToday = labs.filter(item => recordedToday(item.completedAt)).length
+  const perfectToday = quizzes.filter(item => recordedToday(item.completedAt) && item.total > 0 && item.score === item.total).length
   const { userState } = useSession()
   const standing = standingFor(userState)
 
@@ -28,10 +40,10 @@ export function Daily() {
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/10 border border-orange-500/20 flex items-center justify-center">
                   <Flame className="w-5 h-5 text-orange-400" />
                 </div>
-                Daily Challenges
+                Daily Practice
               </h1>
               <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13px] text-slate-400">
-                <span>{platform.tagline} • Streak {streak} days • {totalXp} XP • Forge daily habits</span>
+                <span>{platform.tagline} • Short, optional practice in this browser</span>
                 <StandingChip standing={standing} />
               </p>
             </div>
@@ -44,47 +56,21 @@ export function Daily() {
         </FadeIn>
 
         <FadeIn delay={0.1}>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="p-4 rounded-2xl bg-[#0f172a] border border-[#1e293b] relative overflow-hidden group hover:border-[#334155] transition-all">
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative">
-                <div className="flex items-center gap-2 text-[11px] text-slate-400 uppercase tracking-wide"><Flame className="w-3 h-3 text-orange-400" /> Streak</div>
-                <div className="text-[22px] font-bold font-mono text-slate-100 mt-1">{streak} days</div>
-                <div className="text-[11px] text-slate-400">Keep the forge hot</div>
-              </div>
-            </div>
-            <div className="p-4 rounded-2xl bg-[#0f172a] border border-[#1e293b] relative overflow-hidden group hover:border-[#334155] transition-all">
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative">
-                <div className="flex items-center gap-2 text-[11px] text-slate-400 uppercase tracking-wide"><Zap className="w-3 h-3 text-amber-400" /> XP Today</div>
-                <div className="text-[22px] font-bold font-mono text-slate-100 mt-1">+0</div>
-                <div className="text-[11px] text-slate-400">Complete tasks to earn</div>
-              </div>
-            </div>
-            <div className="p-4 rounded-2xl bg-[#0f172a] border border-[#1e293b] relative overflow-hidden group hover:border-[#334155] transition-all">
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative">
-                <div className="flex items-center gap-2 text-[11px] text-slate-400 uppercase tracking-wide"><Target className="w-3 h-3 text-cyan-400" /> Goals</div>
-                <div className="text-[22px] font-bold font-mono text-slate-100 mt-1">3 active</div>
-                <div className="text-[11px] text-slate-400">Daily objectives</div>
-              </div>
-            </div>
-            <div className="p-4 rounded-2xl bg-[#0f172a] border border-[#1e293b] relative overflow-hidden group hover:border-[#334155] transition-all">
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative">
-                <div className="flex items-center gap-2 text-[11px] text-slate-400 uppercase tracking-wide"><Trophy className="w-3 h-3 text-violet-400" /> Completion</div>
-                <div className="text-[22px] font-bold font-mono text-slate-100 mt-1">0%</div>
-                <div className="text-[11px] text-slate-400">Today's progress</div>
-              </div>
-            </div>
-          </div>
+          <dl className="sc-daily-summary">
+            {[
+              ['Current streak', `${streak} days`, 'Local practice days'],
+              ['Lessons today', lessonsToday, 'Recorded in this browser'],
+              ['Lab reviews today', labsToday, 'Self-review or answer-checked'],
+              ['Perfect quizzes today', perfectToday, 'Local quiz results'],
+            ].map(([label, value, detail]) => <div key={label}><dt>{label}</dt><dd>{value}</dd><small>{detail}</small></div>)}
+          </dl>
         </FadeIn>
 
         <FadeIn delay={0.2}>
           <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-5 md:p-6 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/[0.02] to-amber-500/[0.02] pointer-events-none" />
             <div className="relative">
-              <Suspense fallback={<LoadingPanel label="Loading daily challenges…" />}>
+              <Suspense fallback={<LoadingPanel label="Loading daily practice…" />}>
                 <DailyChallenges />
               </Suspense>
             </div>

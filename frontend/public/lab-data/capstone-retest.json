@@ -1,0 +1,194 @@
+{
+ "pcap_id": "capstone-retest",
+ "method": "platform-labkit",
+ "legacyMethod": "wififorge-labkit",
+ "filter": "",
+ "frames": [
+  {
+   "frame_type": "mgmt",
+   "type": 0,
+   "subtype": 8,
+   "subtype_name": "Beacon",
+   "addr1": "ff:ff:ff:ff:ff:ff",
+   "addr2": "02:aa:10:00:00:01",
+   "addr3": "02:aa:10:00:00:01",
+   "seq": 0,
+   "duration": 0,
+   "protected": false,
+   "to_ds": false,
+   "from_ds": false,
+   "radio": {
+    "channel": 6,
+    "freq": 2437,
+    "signal": -45,
+    "rate": 1.0
+   },
+   "channel": 6,
+   "timestamp": 0,
+   "beacon_interval": 100,
+   "capability": 1041,
+   "ssid": "CASE-OPS",
+   "ssid_len": 8,
+   "ds_channel": 6,
+   "rsn": {
+    "version": 1,
+    "group": 172,
+    "pairwise": [
+     4
+    ],
+    "akm": [
+     8
+    ],
+    "caps": 192,
+    "mfpc": true,
+    "mfpr": true
+   },
+   "akm_names": [
+    "SAE (WPA3-Personal)"
+   ],
+   "cipher_names": [
+    "CCMP-128"
+   ],
+   "mfpc": true,
+   "mfpr": true,
+   "ht": true,
+   "bssid": "02:aa:10:00:00:01",
+   "sa": "02:aa:10:00:00:01",
+   "da": "ff:ff:ff:ff:ff:ff",
+   "number": 1
+  },
+  {
+   "frame_type": "mgmt",
+   "type": 0,
+   "subtype": 8,
+   "subtype_name": "Beacon",
+   "addr1": "ff:ff:ff:ff:ff:ff",
+   "addr2": "02:aa:10:00:00:02",
+   "addr3": "02:aa:10:00:00:02",
+   "seq": 0,
+   "duration": 0,
+   "protected": false,
+   "to_ds": false,
+   "from_ds": false,
+   "radio": {
+    "channel": 36,
+    "freq": 5180,
+    "signal": -45,
+    "rate": 1.0
+   },
+   "channel": 36,
+   "timestamp": 0,
+   "beacon_interval": 100,
+   "capability": 1041,
+   "ssid": "CASE-CORP",
+   "ssid_len": 9,
+   "ds_channel": 36,
+   "rsn": {
+    "version": 1,
+    "group": 172,
+    "pairwise": [
+     4
+    ],
+    "akm": [
+     1
+    ],
+    "caps": 192,
+    "mfpc": true,
+    "mfpr": true
+   },
+   "akm_names": [
+    "802.1X (EAP)"
+   ],
+   "cipher_names": [
+    "CCMP-128"
+   ],
+   "mfpc": true,
+   "mfpr": true,
+   "ht": true,
+   "vht": true,
+   "bssid": "02:aa:10:00:00:02",
+   "sa": "02:aa:10:00:00:02",
+   "da": "ff:ff:ff:ff:ff:ff",
+   "number": 2
+  },
+  {
+   "frame_type": "mgmt",
+   "type": 0,
+   "subtype": 8,
+   "subtype_name": "Beacon",
+   "addr1": "ff:ff:ff:ff:ff:ff",
+   "addr2": "02:aa:10:00:00:09",
+   "addr3": "02:aa:10:00:00:09",
+   "seq": 0,
+   "duration": 0,
+   "protected": false,
+   "to_ds": false,
+   "from_ds": false,
+   "radio": {
+    "channel": 11,
+    "freq": 2462,
+    "signal": -45,
+    "rate": 1.0
+   },
+   "channel": 11,
+   "timestamp": 0,
+   "beacon_interval": 50,
+   "capability": 1041,
+   "ssid": "CASE-OPS",
+   "ssid_len": 8,
+   "ds_channel": 11,
+   "rsn": {
+    "version": 1,
+    "group": 172,
+    "pairwise": [
+     4
+    ],
+    "akm": [
+     2
+    ],
+    "caps": 128,
+    "mfpc": true,
+    "mfpr": false
+   },
+   "akm_names": [
+    "PSK"
+   ],
+   "cipher_names": [
+    "CCMP-128"
+   ],
+   "mfpc": true,
+   "mfpr": false,
+   "ht": true,
+   "bssid": "02:aa:10:00:00:09",
+   "sa": "02:aa:10:00:00:09",
+   "da": "ff:ff:ff:ff:ff:ff",
+   "number": 3
+  }
+ ],
+ "summary": {
+  "total_frames": 3,
+  "ssids": [
+   "CASE-CORP",
+   "CASE-OPS"
+  ],
+  "bssids": [
+   "02:aa:10:00:00:01",
+   "02:aa:10:00:00:02",
+   "02:aa:10:00:00:09"
+  ],
+  "clients": [],
+  "channels": [
+   6,
+   11,
+   36
+  ],
+  "beacons": 3,
+  "probes": 0,
+  "eapol": 0,
+  "deauth": 0,
+  "disassoc": 0,
+  "assoc": 0,
+  "wps": 0
+ },
+ "module": "capstone"
+}

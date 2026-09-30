@@ -33,7 +33,7 @@ required. **A PCAP simulation is never presented as RF testing.**
 
 ```bash
 python3 scripts/generate-lab-artifacts.py    # 16 PCAPNGs + lab-data JSON + wordlist + MANIFEST + inventory
-python3 scripts/generate-challenges.py       # 15 challenges; every answer is computed from the captures
+python3 scripts/generate-challenges.py       # 22 self-review challenges; frame facts are checked but interpretation is authored guidance
 python3 scripts/verify-lab-artifacts.py      # 206 checks: hashes, RSNE, MICs, PMKID, RADIUS, MS-CHAPv2, answers
 ```
 

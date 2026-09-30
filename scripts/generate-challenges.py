@@ -222,7 +222,7 @@ def build() -> List[Dict[str, object]]:
     pmk = pmk_from_psk(LAB_PSK, "LAB-WIFI")
     challenges.append(dict(
         id="chal-04-handshake", title="Two Clients, One Complete Handshake",
-        module="09-wpa2-practical", difficulty="Intermediate", type="pcap_analysis", level="guided",
+        module="08-wpa-wpa2", difficulty="Intermediate", type="pcap_analysis", level="guided",
         estimated_time="25m", points=100, status="simulated",
         description=("wpa2-handshake.pcapng has a complete M1–M4 exchange and a truncated M1–M2. Decide what each "
                      "one is worth for an offline audit, and verify the MIC yourself."),
@@ -260,7 +260,7 @@ def build() -> List[Dict[str, object]]:
     pmkid_value = str(rec[m1[0] - 1]["pmkid"]) if m1 else ""
     challenges.append(dict(
         id="chal-05-pmkid", title="PMKID Without a Full Handshake — The KDE in M1",
-        module="09-wpa2-practical", difficulty="Intermediate", type="pcap_analysis", level="semi-guided",
+        module="08-wpa-wpa2", difficulty="Intermediate", type="pcap_analysis", level="semi-guided",
         estimated_time="20m", points=100, status="simulated",
         description=("pmkid.pcapng holds a single EAPOL-Key M1 with a PMKID key data encapsulation. Decide why this "
                      "matters operationally and what it does not prove."),
@@ -445,7 +445,7 @@ def build() -> List[Dict[str, object]]:
     local = int(twin.split(":")[0], 16) & 0x02
     challenges.append(dict(
         id="chal-10-rogue", title="Rogue Infrastructure — Build the Case From Signals",
-        module="13-rogue-ap", difficulty="Advanced", type="pcap_analysis", level="assessment",
+        module="12-deauth-disassoc", difficulty="Advanced", type="pcap_analysis", level="assessment",
         estimated_time="30m", points=150, status="simulated",
         description=("rogue-ap.pcapng contains an enterprise-style BSS and a same-SSID look-alike with differing advertised settings. No authorized BSSID inventory is supplied; decide what the capture supports and what remains unproven."),
         objectives=["Compare BSSID administration bits, RSNE and beacon parameters",
@@ -539,7 +539,7 @@ def build() -> List[Dict[str, object]]:
     chal = numbers(rec, eap_type_name="MS-CHAPv2", mschapv2_opcode_name="Challenge")
     challenges.append(dict(
         id="chal-13-eap", title="EAP Methods and MS-CHAPv2 Material",
-        module="16-eap", difficulty="Advanced", type="pcap_analysis", level="assessment",
+        module="15-enterprise-fundamentals", difficulty="Advanced", type="pcap_analysis", level="assessment",
         estimated_time="35m", points=150, status="simulated",
         description=("eap.pcapng contains abbreviated EAP method identifiers and an intentionally direct MS-CHAPv2 teaching exchange. It is not a set of complete PEAP, EAP-TLS or EAP-TTLS sessions; analyse the visible fields and state what the fixture cannot prove."),
         objectives=["Identify methods from outer exchanges",
@@ -569,7 +569,7 @@ def build() -> List[Dict[str, object]]:
     vlan = next((r.get("radius_attributes", {}) for r in rec if isinstance(r.get("radius_attributes"), dict)), {})
     challenges.append(dict(
         id="chal-14-radius", title="RADIUS — Verifiable Integrity and Trust Boundaries",
-        module="17-radius", difficulty="Professional", type="pcap_analysis", level="assessment",
+        module="15-enterprise-fundamentals", difficulty="Professional", type="pcap_analysis", level="assessment",
         estimated_time="40m", points=200, status="simulated",
         description=("radius.pcapng contains an authentication exchange, an accounting pair, a rogue NAS request and "
                      "policy attributes. Verify the integrity fields yourself before drawing conclusions."),
@@ -602,38 +602,91 @@ def build() -> List[Dict[str, object]]:
         deliverable="A verification record (packet bytes, secret used, calculation) plus an impact analysis.",
     ))
 
-    # ---------------------------------------------------------------- 15. engagement
-    rec = frames("methodology")
-    all_bss = bssids(rec)
-    pmf_req = [b for b in all_bss if "MFPR=1" in pmf_for(rec, b)]
-    weak = [b for b in all_bss if ssid_for(rec, b) == "LAB-WEAK-PSK"]
+    # ---------------------------------------------------------------- 15. independent staged case (not Northwind)
+    before, after = frames("capstone-baseline"), frames("capstone-retest")
+    owned, unknown = "02:aa:10:00:00:01", "02:aa:10:00:00:09"
     challenges.append(dict(
-        id="chal-15-engagement", title="Multi-BSS Engagement — Test Plan and Findings",
+        id="chal-15-engagement", title="Case C-20 — Baseline and Bounded Retest",
         module="20-final-assessment", difficulty="Professional", type="pcap_analysis", level="assessment",
-        estimated_time="45m", points=200, status="simulated",
-        description=("methodology.pcapng is a synthetic multi-BSS capture with several SSIDs and a look-alike example; it is not evidence from a real estate. You get the capture and nothing "
-                     "else: prioritise the estate, select the tests, and write findings that survive review."),
-        objectives=["Triage an estate from a single capture",
-                    "Choose tests by expected impact, not by tool availability",
-                    "Produce findings, limits and a retest plan"],
-        artifacts=["methodology.pcapng"],
+        estimated_time="60m", points=200, status="simulated",
+        description="Separate staged synthetic case; inspect the case notes and two new PCAPs. Neither is Northwind evidence or a real on-site retest.",
+        objectives=["Inventory and correlate a partial asset list", "Verify a lab-only PSK candidate from M2",
+                    "Compare policy before/after without claiming client acceptance"],
+        artifacts=["capstone-baseline.pcapng", "capstone-retest.pcapng"],
         tasks=[
-            dict(id="t1", question="Produce the attack-surface inventory (BSSID, SSID, AKM, PMF, notable frames).",
-                 answer=("; ".join(f"{b}: {ssid_for(rec, b)}, AKM {akm_for(rec, b)}, {pmf_for(rec, b)}" for b in all_bss)
-                         + f". BSSs requiring PMF: {', '.join(pmf_req) if pmf_req else 'none'}; the weak-passphrase BSS is "
-                           f"{', '.join(weak) if weak else 'not present'}."),
-                 hint="Beacon fields give you the policy; the rest of the capture gives you behaviour."),
-            dict(id="t2", question="Prioritise the test sequence and justify it.",
-                 answer=("Start with passive inventory and decode beacon/RSNE/WPS fields. Next, audit only the supplied weak-PSK practice handshake offline. Treat the open Guest beacon as a policy observation—not proof of portal behavior or exposed user traffic. The look-alike and EAP/MS-CHAPv2 frames are synthetic examples; ownership, a complete PEAP flow, certificate validation, or credential capture require authorized inventory/profile review and controlled tests. Test availability and segmentation only with explicit scope, named clients, controls and impact monitoring."),
-                 hint="Cheapest, least disruptive, highest information first."),
-            dict(id="t3", question="Write the finding list with severity reasoning and retest criteria.",
-                 answer=("Evidence-bounded report: (a) the supplied LAB-WEAK-PSK fixture contains a handshake for the documented weak training passphrase—this is not a production credential; retest a real scoped SSID after rotation. (b) Guest-WLAN advertises no RSNE in its beacon—this does not prove portal behavior, client-to-client access or cleartext credentials; inspect the actual portal and controlled traffic. (c) WPS information elements appear in beacons—this does not prove a PIN attack is possible; inspect setup lock/rate limiting and test only with authorization. (d) a look-alike BSSID, abbreviated EAP/MS-CHAPv2 fields, one deauth and an ICMP pair are present, but these do not establish a rogue owner, completed PEAP credential capture, client disconnection or production segmentation. For each, state the evidence, limitation, impact assumption, and a concrete authorized retest; assign severity only after scope and likelihood/impact are known."),
-                 hint="Four findings, four retests, each stating what would falsify it."),
+            dict(id="t1", question="Inventory baseline BSSIDs and determine which are owner-confirmed.",
+                 answer="; ".join(f"{b}: {ssid_for(before, b)}, {akm_for(before, b)}, {pmf_for(before, b)}"
+                                  for b in bssids(before)) +
+                 ". The case notes confirm only the .01 and .02 BSSIDs; .09 is unlisted, not proven rogue.",
+                 hint="Read the partial inventory, then cite beacon frames in the baseline file."),
+            dict(id="t2", question="What does the baseline handshake demonstrate, and what remains unknown?",
+                 answer="Frames 8–11 are a synthetic PSK M1–M4 exchange on CASE-OPS at " + owned +
+                 ". M2 verifies with the published training candidate password123; this validates the fixture, not any production credential, impact, or the unknown BSSID's secret.",
+                 hint="Match address and nonce/replay counter, then use the artifact verifier."),
+            dict(id="t3", question="Compare the same owned BSSID across baseline and retest. Is the case closed?",
+                 answer=f"{owned} changed from PSK/MFPC-only to SAE-only/MFPC+MFPR in the staged beacon. "
+                 f"{unknown} still advertises same-name PSK; owner unknown. No retest client association, "
+                 "supplicant log, negative PSK test, or wired inventory was supplied: advertising-policy change observed, full client/security retest NOT TESTED.",
+                 hint="Compare BSSID, AKM and both PMF bits; require client and ownership evidence for closure."),
         ],
-        flag="WIFIFORGE{ENGAGEMENT_TRIAGE_RETEST}", skills=["methodology", "assessment", "reporting", "retest"],
-        answer_basis="frame-derived observations from a synthetic teaching capture; no production findings or retests are verified",
-        deliverable="An inventory, a sequenced test plan, findings with severity reasoning and retest criteria.",
+        flag="WIFIFORGE{CASE_POLICY_NOT_CLIENT_RETEST}", skills=["assessment", "reporting", "retest"],
+        answer_basis="two independent synthetic case captures and a fictional partial inventory; no actual RF outcome",
+        deliverable="Evidence-linked case inventory, bounded before/after comparison, and NOT TESTED client retest criteria.",
     ))
+
+    # Seven previously scenario-only modules now have distinct self-review exercises.
+    # Answers are teaching guidance, not machine-checked submissions or RF outcomes.
+    extra = [
+        ("chal-16-scope", "01-intro-wireless", "From Scope to a Bounded Claim", "beacon-only.pcapng", "guided", [
+            ("Which clause would you request before passively collecting client traffic?", "Named scope, authorized collector/signatory, collection window and data-handling/retention terms; an SSID alone is not capture authorization.", "Think about people and payloads outside the named BSS."),
+            ("Give one defensible claim from a beacon and one claim it cannot support.", "With hash and frame: a BSSID advertises a stated AKM; the beacon cannot establish whether a client validated an EAP server or what network segment it reached.", "Separate advertisement from negotiated behavior."),
+            ("How do you document missing observations?", "State tuned channel, duration, receiver conditions, filter and scope. No observed client is not proof that none joined.", "Explain the negative evidence limit."),
+        ]),
+        ("chal-17-state", "03-80211-architecture", "Association State and RSN Decode", "traffic-analysis.pcapng", "guided", [
+            ("Place open authentication, association and M1–M4 into the correct MAC states.", "Open authentication moves state 1 to 2; successful association moves state 2 to 3; M1–M4 follows association and does not create state 4.", "Do not confuse 802.11 MAC state with controlled-port authorization."),
+            ("Decode the beacon/association RSNE and identify what remains unproved.", "Read counts before suites; cite PSK/CCMP and PMF advertisement, then state that successful association alone does not prove installed keys or client acceptance.", "Use the worked RSN example, then check the actual capture bytes."),
+            ("Where would Enterprise EAP appear, and can you show it in this PSK capture?", "For Enterprise, EAP over EAPOL occurs after 802.11 association, followed by the 4-way handshake after EAP success. This PSK fixture does not contain a full Enterprise EAP session.", "Do not invent missing method frames."),
+        ]),
+        ("chal-18-readiness", "04-kali-wireless-setup", "Adapter Evidence Versus Offline Evidence", "deauth.pcapng", "guided", [
+            ("What does an offline deauth fixture prove about your own adapter?", "Nothing: it supports frame/reason-code practice but not your driver's monitor/injection capability or receiver acceptance.", "Stored bytes are not a radio capability check."),
+            ("What must be recorded before an owned passive capture?", "RoE, allowed band/channel and regulatory domain, actual adapter/driver/mode, start/stop window, capture hash and handling of out-of-scope frames.", "No injection is necessary here."),
+            ("No adapter is available. What is the honest result?", "Complete the offline frame classification; mark monitor, injection and actual RF delivery NOT TESTED, not failed or passed.", "Do not award yourself a hardware result."),
+        ]),
+        ("chal-19-wep", "07-wep-legacy", "WEP Evidence Gap and Migration", "beacon-only.pcapng", "semi-guided", [
+            ("Does an absent RSNE alone in this beacon capture prove WEP?", "No: consider the Privacy capability, WPA vendor IE, AP configuration and authorized station evidence. The bundled capture is not a WEP recovery trace.", "Compare open, legacy WPA and WEP."),
+            ("Why is a longer shared WEP key insufficient?", "The 24-bit IV, RC4 key-scheduling weakness and malleable CRC-32/replay limitation remain. Replace WEP rather than rotate only its key.", "Separate confidentiality from integrity."),
+            ("Write a bounded migration retest.", "Inspect a new RSNE/cipher on the owned BSS and controlled client authentication with logs; mark result NOT TESTED until a real remediated AP is supplied.", "A test plan is not a performed result."),
+        ]),
+        ("chal-20-rsn", "08-wpa-wpa2", "Handshake Inputs and Decryption Limit", "wpa2-handshake.pcapng", "semi-guided", [
+            ("Compare M1/M2 with M1–M4 across the two clients.", "Both pairs can carry inputs for offline PSK candidate verification; only one four-message sequence is present. M1/M2 does not prove completion or AP acceptance.", "Trace client MACs, nonces and replay counters."),
+            ("Which keys do PMK, PTK and GTK represent?", "In PSK mode PMK comes from passphrase and SSID; PTK binds AP/STA addresses and nonces, with KCK for MIC; GTK protects group data. SAE and Enterprise derive PMK differently.", "Explain mechanism, not just acronyms."),
+            ("Can this fixture demonstrate decrypted protected payloads?", "No: this 13-frame capture has no CCMP-protected post-handshake data payload. State the additional scoped capture and key material needed.", "Filter Protected bit and check the manifest."),
+        ]),
+        ("chal-21-chain", "18-corporate-attacks", "Kill-Chain Evidence Breaks", "corporate-attacks.pcapng", "assessment", [
+            ("Which chain links are direct observations?", "The synthetic file contains management/look-alike, PSK handshake, direct EAP-MSCHAPv2 examples and an ICMP pair. It contains no complete PEAP, RADIUS, real client disconnect or VLAN policy test.", "Separate packet records from attack outcomes."),
+            ("What would show a PEAP client validation failure?", "A controlled client's effective trust/name policy plus supplicant logs and a coherent authorized test-server session; a direct EAP fixture or TLS alert alone is insufficient.", "No invented certificate transcript."),
+            ("Rewrite a full-compromise claim.", "Record only the observed synthetic sequence; list unknown ownership, receiver acceptance, authentication and network enforcement separately with approved follow-up tests.", "Use an evidence-gap table."),
+        ]),
+        ("chal-22-report", "20-final-assessment", "Evidence Decision Under Peer Review", "methodology.pcapng", "assessment", [
+            ("Write one frame-supported claim and its limits.", "Cite capture hash/frame/filter for an advertised BSS policy or synthetic weak-PSK exchange; do not assert production password, unauthorized owner or applied segmentation.", "Can a peer reproduce it?"),
+            ("How do you rate impact when the network context is absent?", "Mark impact and production severity undetermined; request an authorized inventory, client path and reachability evidence before a contextual rating.", "A technique label is not a severity score."),
+            ("What makes a retest record more than a plan?", "New dated capture and hash, same controlled client/target/criteria, effective config and client/AP logs with actual pass/fail. None is provided for a real site; mark NOT TESTED.", "Another learner may review the evidence, but that is not trusted grading."),
+        ]),
+    ]
+    for cid, module, title, artifact, level, prompts in extra:
+        challenges.append(dict(
+            id=cid, title=title, module=module, difficulty="Intermediate", type="pcap_analysis",
+            level=level, estimated_time="25m", points=100, status="simulated",
+            description="Self-review of bounded evidence and an authorized next test; no live RF or verified grading.",
+            objectives=["Interpret artifact evidence", "State unsupported claims", "Choose a safe next test"],
+            artifacts=[artifact],
+            tasks=[dict(id=f"t{i}", question=q, answer=a, hint=h)
+                   for i, (q, a, h) in enumerate(prompts, 1)],
+            flag=f"WIFIFORGE{{{cid.upper().replace('-', '_')}_REVIEW}}",
+            skills=["evidence", "methodology"],
+            answer_basis="authored self-review interpretation of existing synthetic artifact; no live result",
+            deliverable="Evidence-linked answers, explicit limits and a feasible next-test decision.",
+        ))
 
     return challenges
 

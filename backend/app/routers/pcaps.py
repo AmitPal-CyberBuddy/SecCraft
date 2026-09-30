@@ -19,17 +19,23 @@ def find_pcap(pcap_id: str) -> Optional[Path]:
         REPO_CONTENT_DIR / "pcaps" / f"{pcap_id}.pcap",
         BASE_DIR.parent / "content" / "pcaps" / f"{pcap_id}.pcapng",
     ]
+    # Never parse a prefix match, a symlink outside the shipped capture tree, or an
+    # unexpectedly large file. The API accepts identifiers, not arbitrary file paths.
+    roots = (PCAP_DIR, REPO_CONTENT_DIR / "pcaps")
+    def curated(candidate: Path) -> bool:
+        return (candidate.is_file() and not candidate.is_symlink()
+                and candidate.stat().st_size <= 5 * 1024 * 1024
+                and any(candidate.resolve().is_relative_to(root.resolve()) for root in roots))
+
     for candidate in candidates:
-        if candidate.exists():
+        if curated(candidate):
             return candidate
 
-    # Captures live in per-module subdirectories (frontend/public/pcaps/<group>/<id>.pcapng).
-    for root in (PCAP_DIR, REPO_CONTENT_DIR, BASE_DIR.parent / "content" / "pcaps"):
-        if not root or not root.exists():
-            continue
-        matches = [p for p in root.rglob(f"{pcap_id}*.pcap*") if p.is_file()]
-        if matches:
-            return sorted(matches)[0]
+    for root in roots:
+        if root.exists():
+            for candidate in sorted(root.rglob("*.pcap*")):
+                if candidate.stem == pcap_id and candidate.suffix in {".pcap", ".pcapng"} and curated(candidate):
+                    return candidate
     return None
 
 

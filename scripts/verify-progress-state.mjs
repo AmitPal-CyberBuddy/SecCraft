@@ -91,13 +91,45 @@ try {
   const repeatedLab = useProgressStore.getState().completeLab('02-wifi-fundamentals', 'lab-02-beacon', 100)
   assert.equal(firstLab.points, 25)
   assert.equal(repeatedLab.points, 0, 'verified lab XP is one-time')
-  const selfReview = useProgressStore.getState().completeLab('09-wpa2-practical', 'lab-09-handshake', 100)
+  const selfReview = useProgressStore.getState().completeLab('08-wpa-wpa2', 'lab-09-handshake', 100)
   assert.equal(selfReview.points, 0, 'self-review is recorded without verified XP')
 
   const firstLesson = useProgressStore.getState().completeLesson('02-wifi-fundamentals', '01-identity-topology-and-beacons')
   const repeatedLesson = useProgressStore.getState().completeLesson('02-wifi-fundamentals', '01-identity-topology-and-beacons')
   assert.equal(firstLesson.points, 10)
   assert.equal(repeatedLesson.points, 0, 'lesson XP is one-time')
+
+  // Upgrade a v5 local record after the real module merge: preserve active lesson/lab
+  // identity, archive retired knowledge checks and the retired report lesson without
+  // silently calling an old quiz a pass on the larger current module.
+  values.set('platform-progress', JSON.stringify({ version: 5, state: {
+    currentModule: '16-eap',
+    currentLearningPathId: 'wireless-pentesting',
+    completedLessons: [
+      { moduleId: '09-wpa2-practical', lessonId: '01-offline-audit-lab', points: 10 },
+      { moduleId: '19-methodology', lessonId: '01-methodology-and-roe', points: 10 },
+      { moduleId: '19-methodology', lessonId: '02-evidence-severity-reporting', points: 10 },
+      { moduleId: '20-final-assessment', lessonId: '01-final-engagement', points: 10 },
+    ],
+    completedLabs: [{ moduleId: '09-wpa2-practical', labId: 'lab-09-handshake', points: 0 }],
+    completedChallenges: [],
+    quizScores: [
+      { moduleId: '09-wpa2-practical', quizId: 'quiz-01', score: 5, total: 5, points: 30 },
+      { moduleId: '19-methodology', quizId: 'quiz-01', score: 4, total: 5, points: 20 },
+      { moduleId: '20-final-assessment', quizId: 'quiz-01', score: 5, total: 5, points: 30 },
+    ],
+    achievements: [],
+  }}))
+  await useProgressStore.persist.rehydrate()
+  state = useProgressStore.getState()
+  assert.equal(state.currentModule, '15-enterprise-fundamentals', 'resume moves to the surviving Enterprise module')
+  assert.deepEqual(state.completedLessons.map(item => [item.moduleId, item.lessonId]), [
+    ['08-wpa-wpa2', '01-offline-audit-lab'], ['20-final-assessment', '01-methodology-and-roe'],
+  ], 'active lessons keep credit under their new parent; reporting lesson does not become capstone credit')
+  assert.equal(state.completedLabs[0]?.moduleId, '08-wpa-wpa2', 'lab review follows its retained lab ID')
+  assert.equal(state.quizScores.length, 0, 'retired module-specific quizzes do not pass different current checks')
+  assert.equal(state.retiredRecords.length, 5, 'old quiz scores and replaced lessons survive as non-credit local history')
+  assert.equal(state.getTotalXp(), 20, 'only still-active completed lessons earn credit after migration')
 
   const [moduleContent, quizContent, labContent, challengeContent] = await Promise.all([
     server.ssrLoadModule('/src/content/modules.json'),

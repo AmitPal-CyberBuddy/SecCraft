@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, ArrowRight, CheckCircle2, CircleAlert, Compass, KeyRound, LoaderCircle, LockKeyhole, Mail, RefreshCw, ShieldCheck, Sparkles, UserRound, WifiOff } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle2, CircleAlert, Compass, Eye, EyeOff, KeyRound, LoaderCircle, LockKeyhole, Mail, RefreshCw, ShieldCheck, Sparkles, UserRound, WifiOff } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { accountRedirect, supabase, supabaseConfigured } from '@/lib/supabase'
 import { useSession } from '@/lib/session'
+import { generatePassword, passwordGuidance } from '@/lib/passwordGuidance'
 import { ACCOUNT_ADDS_NOTE, isSignedIn, STATE_META } from '@/lib/access'
 import { currentCurriculumLabel } from '@/lib/contentAccess'
 import { StateChip } from '@/components/account/StateChip'
@@ -17,11 +18,11 @@ interface PublicConfig {
 
 function AccountFrame({ title, eyebrow, children }: { title: string; eyebrow: string; children: ReactNode }) {
   return (
-    <div className="mx-auto flex min-h-[70vh] max-w-6xl items-center justify-center px-4 py-12 sm:px-6">
-      <div className="grid w-full max-w-4xl overflow-hidden rounded-3xl border border-slate-800 bg-[#07101e] shadow-[0_24px_90px_rgba(0,0,0,.35)] md:grid-cols-[.85fr_1.15fr]">
-        <aside className="hidden flex-col justify-between border-r border-slate-800 bg-[radial-gradient(ellipse_at_10%_0%,rgba(34,211,238,.12),transparent_55%),#050b17] p-8 md:flex">
+    <div className="ws-account-frame mx-auto max-w-[980px] px-4 py-10 sm:px-6">
+      <div className="sc-account-layout grid w-full md:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
+        <aside className="sc-account-context flex flex-col justify-between p-6 md:p-8">
           <div>
-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-cyan-300/20 bg-cyan-300/10">
+            <span className="inline-flex h-11 w-11 items-center justify-center text-[var(--learning)]">
               <ShieldCheck className="h-5 w-5 text-cyan-200" aria-hidden="true" />
             </span>
             <div className="mt-5 text-xl font-bold text-white">
@@ -31,10 +32,10 @@ function AccountFrame({ title, eyebrow, children }: { title: string; eyebrow: st
           </div>
           <div className="text-xs leading-5 text-slate-500">
             New accounts verify their email and then wait for owner approval before any account-backed feature is enabled.
-            Nothing about that changes the learning material.
+            Preview and Full describe the product experience, not a content security boundary.
           </div>
         </aside>
-        <section className="p-6 sm:p-9">
+        <section className="sc-account-form p-6 sm:p-9">
           <Link to="/" className="mb-8 inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200">
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back to SecCraft
           </Link>
@@ -141,7 +142,7 @@ export function LoginPage() {
   return (
     <AccountFrame eyebrow="Account access" title="Sign in to SecCraft">
       <p className="mb-5 text-sm leading-6 text-slate-400">
-        Guest learning is complete on its own. Sign in only if you already have an account.
+        The Preview Curriculum is available without an account. Sign in if you already have an approved account.
       </p>
       {!supabaseConfigured && (
         <ServiceUnavailable>
@@ -212,6 +213,9 @@ export function SignupPage() {
   const [configError, setConfigError] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [copyStatus, setCopyStatus] = useState('')
+  const guidance = passwordGuidance(password)
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -350,17 +354,34 @@ export function SignupPage() {
             <KeyRound className="h-4 w-4 text-slate-500" aria-hidden="true" />
             <input
               autoComplete="new-password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               minLength={8}
               maxLength={128}
               required
+              aria-describedby="signup-password-guidance"
               value={password}
-              onChange={event => setPassword(event.target.value)}
+              onChange={event => { setPassword(event.target.value); setCopyStatus('') }}
               className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-600"
               placeholder="At least 8 characters"
             />
+            <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} onClick={() => setShowPassword(visible => !visible)} className="shrink-0 rounded p-2 text-slate-300 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300">{showPassword ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}</button>
           </span>
         </label>
+        <div id="signup-password-guidance" className="space-y-2 text-xs text-slate-300">
+          <p role="status" aria-live="polite">Password strength: <strong>{guidance.strength ?? 'Not entered'}</strong>. Estimate only, not a security guarantee.</p>
+          <ul className="grid grid-cols-2 gap-x-3 gap-y-1" aria-label="Suggested password checks">{guidance.checks.map(check => <li key={check.label} className={check.met ? 'text-emerald-300' : 'text-slate-400'}>{check.met ? '✓' : '○'} {check.label}</li>)}</ul>
+          <p>Uppercase, lowercase and a symbol are recommended; a longer unique password is safer. The account service and Supabase may apply additional rules.</p>
+          <button type="button" className="min-h-10 rounded-lg border border-cyan-300/40 px-3 font-semibold text-cyan-200 hover:bg-cyan-300/10" onClick={() => {
+            try { setPassword(generatePassword()); setConfirmPassword(''); setShowPassword(true); setCopyStatus(''); setError('') }
+            catch { setError('Secure password generation is unavailable in this browser. Please create a unique password yourself.') }
+          }}>Suggest a strong password</button>
+          {password && <button type="button" className="ml-2 min-h-10 rounded-lg border border-slate-600 px-3 text-slate-200 hover:bg-slate-800" onClick={async () => {
+            try { await navigator.clipboard.writeText(password); setCopyStatus('Copied. Paste into your password manager and the confirmation field.') }
+            catch { setCopyStatus('Copy unavailable. Select the shown password to save it yourself.') }
+          }}>Copy password</button>}
+          {copyStatus && <p role="status">{copyStatus}</p>}
+          <p>Generated passwords are shown so you can save them in a password manager. Re-enter it below to confirm; SecCraft does not store the suggestion.</p>
+        </div>
         <label className="block text-sm text-slate-300">
           Confirm password
           <span className="mt-1.5 flex min-h-11 items-center gap-2 rounded-xl border border-slate-700 bg-slate-950/70 px-3 focus-within:border-cyan-300/50">
@@ -472,6 +493,9 @@ export function ResetPasswordPage() {
 
 export function UpdatePasswordPage() {
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [copyStatus, setCopyStatus] = useState('')
+  const guidance = passwordGuidance(password)
   const [confirm, setConfirm] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -519,17 +543,29 @@ export function UpdatePasswordPage() {
       <form onSubmit={submit} className="space-y-4">
         <label className="block text-sm text-slate-300">
           New password
-          <input
-            autoComplete="new-password"
-            type="password"
-            minLength={8}
-            maxLength={128}
-            required
-            value={password}
-            onChange={event => setPassword(event.target.value)}
-            className="mt-1.5 min-h-11 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-3 text-sm text-white outline-none focus:border-cyan-300/50"
-          />
+          <span className="mt-1.5 flex min-h-11 items-center rounded-xl border border-slate-700 bg-slate-950/70 px-3 focus-within:border-cyan-300/50">
+            <input autoComplete="new-password" type={showPassword ? 'text' : 'password'} minLength={8} maxLength={128} required
+              aria-describedby="recovery-password-guidance" value={password}
+              onChange={event => { setPassword(event.target.value); setCopyStatus('') }}
+              className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none" />
+            <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} onClick={() => setShowPassword(visible => !visible)} className="rounded p-2 text-slate-300 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300">{showPassword ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}</button>
+          </span>
         </label>
+        <div id="recovery-password-guidance" className="space-y-2 text-xs text-slate-300">
+          <p role="status" aria-live="polite">Password strength: <strong>{guidance.strength ?? 'Not entered'}</strong>. Estimate only, not a security guarantee.</p>
+          <ul className="grid grid-cols-2 gap-x-3 gap-y-1" aria-label="Suggested password checks">{guidance.checks.map(check => <li key={check.label} className={check.met ? 'text-emerald-300' : 'text-slate-400'}>{check.met ? '✓' : '○'} {check.label}</li>)}</ul>
+          <p>Use a long, unique password. Supabase may apply additional project-side rules.</p>
+          <button type="button" className="min-h-10 rounded-lg border border-cyan-300/40 px-3 font-semibold text-cyan-200 hover:bg-cyan-300/10" onClick={() => {
+            try { setPassword(generatePassword()); setConfirm(''); setShowPassword(true); setCopyStatus(''); setError('') }
+            catch { setError('Secure password generation is unavailable in this browser. Please create a unique password yourself.') }
+          }}>Suggest a strong password</button>
+          {password && <button type="button" className="ml-2 min-h-10 rounded-lg border border-slate-600 px-3 text-slate-200 hover:bg-slate-800" onClick={async () => {
+            try { await navigator.clipboard.writeText(password); setCopyStatus('Copied. Paste into your password manager and the confirmation field.') }
+            catch { setCopyStatus('Copy unavailable. Select the shown password to save it yourself.') }
+          }}>Copy password</button>}
+          {copyStatus && <p role="status">{copyStatus}</p>}
+          <p>Save a suggested password in your password manager; re-enter it below to confirm.</p>
+        </div>
         <label className="block text-sm text-slate-300">
           Confirm password
           <input
@@ -559,9 +595,10 @@ export function UpdatePasswordPage() {
  */
 export function AccountStatusPage() {
   const [params] = useSearchParams()
-  const { userState, account, accountError, ready, refreshAccount, signOut, can } = useSession()
+  const { userState, account, accountError, ready, accountLoading, refreshAccount, signOut, can } = useSession()
   const [checking, setChecking] = useState(false)
-  const signedIn = ready && isSignedIn(userState)
+  const signedIn = ready && !accountLoading && isSignedIn(userState)
+  const statusUnavailable = signedIn && !account && (accountError.kind === 'unavailable' || accountError.kind === 'unknown')
   const justRegistered = params.get('sent') === '1'
 
   const recheck = useCallback(async () => {
@@ -597,10 +634,19 @@ export function AccountStatusPage() {
     : 'Approval pending'
 
   return (
-    <AccountFrame eyebrow="Account status" title={signedIn ? headline : 'Check your account'}>
-      {!ready ? (
+    <AccountFrame eyebrow="Account status" title={!ready || accountLoading ? 'Checking account status' : statusUnavailable ? 'Account status unavailable' : signedIn ? headline : 'Check your account'}>
+      {!ready || accountLoading ? (
         <div className="flex items-center gap-2 text-sm text-slate-400" role="status" aria-live="polite">
           <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /> Checking account status…
+        </div>
+      ) : statusUnavailable ? (
+        <div className="space-y-4">
+          <ServiceUnavailable>{accountError.message}</ServiceUnavailable>
+          <p className="text-sm text-slate-400">You are signed in, but the account service has not confirmed approval or owner access. This is not an approval decision. Preview learning and browser-local practice remain available.</p>
+          <div className="flex flex-wrap gap-3">
+            <button type="button" onClick={() => void recheck()} disabled={checking} className="inline-flex min-h-11 items-center rounded-xl border border-slate-700 px-4 text-sm text-slate-200 disabled:opacity-60">{checking ? 'Checking…' : 'Re-check status'}</button>
+            <Link to="/app" className="inline-flex min-h-11 items-center rounded-xl border border-slate-700 px-4 text-sm text-slate-200">Go to workspace</Link>
+          </div>
         </div>
       ) : !signedIn ? (
         <div className="space-y-4">

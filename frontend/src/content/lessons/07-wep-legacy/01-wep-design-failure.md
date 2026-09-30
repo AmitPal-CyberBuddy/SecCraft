@@ -28,13 +28,12 @@ Three independent design failures:
 3. **Integrity that cannot detect modification.** CRC-32 is linear: an attacker who knows the plaintext
    can adjust the ICV after flipping bits. WEP provides no real integrity, and no replay protection.
 
-**Key length is not the problem.** 104-bit vs. 40-bit changes how many packets an attack needs, not whether
-the attack works.
+**Key length is not the problem.** 104-bit vs. 40-bit does not repair the IV, RC4 or integrity failures; attack requirements vary by traffic and technique.
 
 ## 2. What a WEP finding must evidence
 
 * BSS in scope: BSSID/SSID, channel, frame number of a beacon with the WEP capability bit set (bit 4 of the
-  capability field) — *there is no RSNE on a WEP network*.
+  capability field) — *there is no RSNE on a WEP network*. Absence of an RSNE is not by itself proof of WEP: distinguish open, legacy WPA vendor IE and WEP using the Privacy bit, security IEs, configuration and authorized client evidence.
 * Data frames with the protected bit set and the IV visible (WEP exposes the IV in the frame header;
   WPA2/CCMP does not).
 * The recovery result: frames consumed, attack used, tool output, and time.
@@ -60,7 +59,21 @@ compensating control (isolated VLAN, no access to sensitive data) and a dated re
 * An authorized legacy-client test no longer completes a WEP association. Capture the client/AP result and relevant logs; response codes and failure behavior vary, so do not rely on one status code alone.
 * The old WEP key must not work; record the attempt and the failure.
 
-## 5. Decision practice
+## 5. Offline reasoning exercise (no key-recovery capture supplied)
+
+A **toy** repeated-keystream illustration (not real WEP bytes): suppose two one-byte plaintexts
+`0x41` and `0x42` use the same keystream byte `0x20`. Their ciphertexts are `0x61` and `0x62`;
+XORing the ciphertexts gives `0x03`, equal to `0x41 XOR 0x42`. In WEP, IV reuse with a shared
+key can create the same keystream under the stream cipher; this relationship is **not** a recovered
+key and does not prove any particular capture exposes plaintext. CRC-32's linearity separately
+permits malleability. Name both independent flaws before recommending replacement.
+
+Write two bounded report lines: (a) a configuration observation supported by a WEP setting in an
+**authorized** sample config (if none is supplied, mark NOT TESTED); (b) the additional IV-bearing
+traffic and scope/impact evidence needed before claiming exploitation. No WEP pcap or actual
+recovery result is bundled; the self-review config lab is conceptual.
+
+## 6. Decision practice
 
 **`scn-07-wep-report`** — write the finding and pick a defensible severity for a WEP segment that is
 isolated from internal systems but carries POS traffic.

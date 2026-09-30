@@ -39,7 +39,7 @@
     "akm": [
      2
     ],
-    "caps": 32,
+    "caps": 128,
     "mfpc": true,
     "mfpr": false
    },
@@ -92,7 +92,7 @@
     "akm": [
      1
     ],
-    "caps": 48,
+    "caps": 192,
     "mfpc": true,
     "mfpr": true
    },

@@ -14,27 +14,32 @@ Learn. Practice. Investigate. Improve.<br />
   <img src="https://img.shields.io/badge/Offline-capable-34d399?style=flat-square" alt="Offline-capable" />
 </p>
 
-> **Pages address:** [amitpal-cyberbuddy.github.io/SecCraft](https://amitpal-cyberbuddy.github.io/SecCraft/). GitHub Pages is configured for GitHub Actions; the site is served after a successful deployment from `main`.
+> **Pages address:** [amitpal-cyberbuddy.github.io/SecCraft](https://amitpal-cyberbuddy.github.io/SecCraft/). GitHub Pages publishes from `main`; the live site observed in the 2026-09-30 audit still showed older content. Counts below describe the working tree, not a verified live release.
 
 ## What it is
 
-SecCraft is a local-first platform for learning cybersecurity through practical, evidence-led assessment. Learners investigate a system, choose and run tests, record what the evidence supports, assess impact, recommend remediation, retest, and report. The platform is broader than its first available learning path: Wireless Pentesting.
+SecCraft is a local-first platform for learning cybersecurity through practical, evidence-led assessment. Learners investigate a system, choose and run tests, record what the evidence supports, assess impact, recommend remediation, retest, and report. The platform currently includes two available source-backed paths: Wireless Pentesting and Android Application Security.
 
 Guest learning is the default: authored content, local progress, and the offline-capable PWA remain usable without an account. Optional hosted accounts use Supabase Auth, FastAPI `/api/v1`, and PostgreSQL; the API supports email verification, owner approval, account-scoped progress sync/import, and owner controls. Account services require deployment configuration and are disabled by default. Local XP and practice records are not server-verified credentials; see [`docs/ACCOUNT_SYNC_PLATFORM.md`](docs/ACCOUNT_SYNC_PLATFORM.md) for setup, trust boundaries, limitations, and the production checklist.
 
 ## What is included
 
-**Wireless Pentesting — the currently available path**
+**Wireless Pentesting — available, synthetic/offline-first**
 
-- 20 modules across 6 phases, with 27 authored lessons
-- 20 labs, including 16 verified capture artifacts
-- 15 challenges with 45 tasks, plus 35 decision scenarios
+- 15 modules across 6 phases, with 32 authored lessons
+- 19 available wireless labs (plus one planned entry); 18 integrity-checked synthetic PCAP artifacts across the wireless case pack
+- 22 local self-review challenges with 66 tasks, plus 35 decision scenarios
 - A 42-item engagement checklist and the `ENG-01` assessment pack
 - Reference material, evidence collection, reporting, CVSS calculation, and printable local completion records
 
+**Android Application Security — available, source-first**
+
+- 12 modules and 25 authored lessons; nine integrity-checked source cases and optional buildable demo source
+- No prebuilt APK, measured runtime result, independently graded exam or certificate is supplied
+
 **Platform shell**
 
-- 8 learning paths are represented in the catalogue: 1 available and 7 planned
+- 8 learning paths are represented in the catalogue: 2 available (Wireless, Android source-first) and 6 planned
 - Path-aware learning, labs, challenges, analytics, and browser-local progress
 - Search, keyboard shortcuts, theme preferences, and offline-capable static app shell
 - Simulation, hybrid, and RF-required lab tiers are identified honestly; simulation labs require no wireless hardware
@@ -105,7 +110,7 @@ Guest learning is static-host friendly and uses no analytics or external font CD
 
 ## Safety and evidence
 
-Use the labs only in a local lab or against systems for which you have explicit authorization. Simulation results do not prove radio-frequency behavior; hybrid and RF-required exercises state their hardware and evidence limits. Captures and challenge answers are checked by `scripts/verify-lab-artifacts.py` (206 checks in this revision).
+Use the labs only in a local lab or against systems for which you have explicit authorization. Simulation results do not prove radio-frequency behavior; hybrid and RF-required exercises state their hardware and evidence limits. Captures and challenge answers are checked by `scripts/verify-lab-artifacts.py` (run the verifier for the current check count; 242/242 passed in the 2026-09-30 pre-publication audit).
 
 For security reporting and project security claims, see [`SECURITY.md`](SECURITY.md). For lab boundaries, see [`docs/SIMULATION_VS_HARDWARE.md`](docs/SIMULATION_VS_HARDWARE.md).
 

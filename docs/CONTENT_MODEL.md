@@ -50,7 +50,7 @@ interface LearningPath {
 
 File: `frontend/src/content/learning-paths.json`
 
-- 1 available: wireless-pentesting (20 modules, 27 lessons, 16 PCAPs, 15 challenges, 35 scenarios, ENG-01)
+- 1 available: wireless-pentesting (20 modules, 30 lessons, 18 synthetic PCAPs, 22 self-review challenges, 35 scenarios, ENG-01)
 - 7 planned: web-application-security, api-security, android-pentesting, network-pentesting, active-directory, cloud-security, ai-llm-security — empty modules, no placeholder lessons, architecture ready
 
 ### Module (Generic)

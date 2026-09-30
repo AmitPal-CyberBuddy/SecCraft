@@ -86,22 +86,22 @@
 }
 
 *::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #334155, #1e293b);
+  background: #334155;
   border-radius: 10px;
   border: 1px solid #0f172a;
 }
 
 .light *::-webkit-scrollbar-thumb, [data-theme="light"] *::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #cbd5e1, #94a3b8);
+  background: #94a3b8;
   border: 1px solid #f8fafc;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #475569, #334155);
+  background: #475569;
 }
 
 .light *::-webkit-scrollbar-thumb:hover, [data-theme="light"] *::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #94a3b8, #64748b);
+  background: #64748b;
 }
 
 html {
@@ -122,11 +122,6 @@ html {
 body {
   margin: 0;
   background: var(--bg);
-  background-image: 
-    radial-gradient(ellipse 800px 600px at 0% -10%, rgba(51,207,255,0.08), transparent 60%),
-    radial-gradient(ellipse 600px 500px at 100% 0%, rgba(167,139,250,0.06), transparent 60%),
-    radial-gradient(ellipse 500px 400px at 100% 100%, rgba(52,211,153,0.04), transparent 60%);
-  background-attachment: fixed;
   color: var(--text);
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   font-size: 14px;
@@ -174,215 +169,6 @@ h1, h2, h3, h4, h5 {
   color: #0f172a;
 }
 
-/* Modern card base */
-@layer components {
-  .card-premium {
-    @apply border rounded-xl;
-    background: var(--card);
-    border-color: var(--border);
-    background-image: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%), var(--card);
-    box-shadow: var(--shadow-soft);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  
-  .light .card-premium, [data-theme="light"] .card-premium {
-    background: var(--card);
-    background-image: linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 100%), var(--card);
-    border-color: var(--border);
-  }
-  
-  .card-premium:hover {
-    border-color: var(--border-hover);
-    background: var(--card-hover);
-    background-image: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%), var(--card-hover);
-    box-shadow: var(--shadow-medium);
-    transform: translateY(-1px);
-  }
-
-  .card-interactive {
-    @apply card-premium cursor-pointer;
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .card-interactive:hover {
-    transform: translateY(-2px) scale(1.005);
-    box-shadow: var(--shadow-medium), 0 0 0 1px rgba(255,255,255,0.05);
-  }
-
-  .light .card-interactive:hover, [data-theme="light"] .card-interactive:hover {
-    box-shadow: var(--shadow-medium), 0 0 0 1px rgba(0,0,0,0.05);
-  }
-
-  .card-interactive:active {
-    transform: translateY(0) scale(0.998);
-    transition-duration: 0.1s;
-  }
-
-  .btn-primary {
-    @apply relative inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-[13px] tracking-wide;
-    background: linear-gradient(180deg, #33CFFF 0%, #0ea5e9 100%);
-    color: #020617;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.2), 0 0 0 1px rgba(51,207,255,0.3), 0 0 16px rgba(51,207,255,0.2);
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .btn-primary:hover {
-    background: linear-gradient(180deg, #7dd3fc 0%, #33CFFF 100%);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(51,207,255,0.4), 0 0 24px rgba(51,207,255,0.3);
-    transform: translateY(-1px);
-  }
-
-  .btn-primary:active {
-    transform: translateY(0);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 0 0 1px rgba(51,207,255,0.3);
-  }
-
-  .btn-secondary {
-    @apply relative inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-[13px];
-    background: var(--surface);
-    background-image: linear-gradient(180deg, var(--surface) 0%, var(--bg-soft) 100%);
-    color: var(--text-soft);
-    border: 1px solid var(--border-strong);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .btn-secondary:hover {
-    background: var(--surface-hover);
-    border-color: var(--border-hover);
-    color: var(--text);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    transform: translateY(-1px);
-  }
-
-  .btn-secondary:active {
-    transform: translateY(0);
-  }
-
-  .badge-modern {
-    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium tracking-wide border;
-    backdrop-filter: blur(8px);
-    transition: all 0.2s ease;
-  }
-
-  .input-modern {
-    @apply w-full px-3.5 py-2.5 rounded-xl text-[13px];
-    background: var(--bg);
-    border: 1px solid var(--border);
-    color: var(--text);
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .input-modern::placeholder {
-    color: var(--text-dim);
-  }
-
-  .input-modern:hover {
-    border-color: var(--border-hover);
-    background: var(--bg-soft);
-  }
-
-  .input-modern:focus {
-    outline: none;
-    border-color: rgba(51,207,255,0.4);
-    background: var(--bg-soft);
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1), 0 0 0 3px rgba(51,207,255,0.1), 0 0 16px rgba(51,207,255,0.08);
-  }
-
-  .light .input-modern:focus, [data-theme="light"] .input-modern:focus {
-    border-color: rgba(14,165,233,0.4);
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05), 0 0 0 3px rgba(14,165,233,0.1), 0 0 16px rgba(14,165,233,0.06);
-  }
-
-  .glass {
-    background: rgba(15, 23, 42, 0.7);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255,255,255,0.05);
-  }
-
-  .light .glass, [data-theme="light"] .glass {
-    background: rgba(255,255,255,0.7);
-    border: 1px solid rgba(0,0,0,0.05);
-  }
-
-  .glass-strong {
-    background: rgba(15, 23, 42, 0.85);
-    backdrop-filter: blur(24px) saturate(200%);
-    -webkit-backdrop-filter: blur(24px) saturate(200%);
-    border: 1px solid rgba(255,255,255,0.08);
-  }
-
-  .light .glass-strong, [data-theme="light"] .glass-strong {
-    background: rgba(255,255,255,0.85);
-    border: 1px solid rgba(0,0,0,0.08);
-  }
-
-  .shimmer {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .shimmer::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-    animation: shimmer 2.5s infinite;
-  }
-
-  .light .shimmer::after, [data-theme="light"] .shimmer::after {
-    background: linear-gradient(90deg, transparent, rgba(0,0,0,0.05), transparent);
-  }
-
-  @keyframes shimmer {
-    100% { left: 100%; }
-  }
-
-  .animate-in {
-    animation: animate-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  @keyframes animate-in {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .animate-in-delayed {
-    animation: animate-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-
-  .animate-in-delayed:nth-child(1) { animation-delay: 0.05s; }
-  .animate-in-delayed:nth-child(2) { animation-delay: 0.1s; }
-  .animate-in-delayed:nth-child(3) { animation-delay: 0.15s; }
-  .animate-in-delayed:nth-child(4) { animation-delay: 0.2s; }
-  .animate-in-delayed:nth-child(5) { animation-delay: 0.25s; }
-  .animate-in-delayed:nth-child(6) { animation-delay: 0.3s; }
-}
-
-/* Glow effects enhanced */
-.glow-cyan {
-  box-shadow: var(--shadow-glow-cyan);
-}
-
-.glow-violet {
-  box-shadow: var(--shadow-glow-violet);
-}
-
-.glow-emerald {
-  box-shadow: var(--shadow-glow-emerald);
-}
-
 /* ─────────────────────────────────────────────────────────────────────────
    Product-state channel
    One colour per user state so account state is legible at a glance. Every
@@ -409,38 +195,17 @@ h1, h2, h3, h4, h5 {
   --state-owner: #6d28d9;
 }
 
-/* The journey rail reused on the landing page, account screens, and banners. */
-.journey-rail {
-  position: relative;
-}
-.journey-rail::before {
-  content: "";
-  position: absolute;
-  left: 11px;
-  top: 14px;
-  bottom: 14px;
-  width: 1px;
-  background: linear-gradient(180deg, var(--state-guest), var(--state-pending), var(--state-active));
-  opacity: 0.45;
-}
-
-/* A quiet focus ring for the new account surfaces, matching the app's existing
-   focus treatment rather than introducing a second one. */
-.account-surface:focus-within {
-  border-color: rgba(51, 207, 255, 0.35);
-}
-
 /* Terminal — always dark for readability */
 .terminal {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  background: linear-gradient(180deg, #0a0f1c 0%, #080d18 100%);
+  background: #0a0f1c;
   border: 1px solid #1e293b;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), var(--shadow-soft);
   color: #cbd5e1;
 }
 
 .light .terminal, [data-theme="light"] .terminal {
-  background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
+  background: #0f172a;
   border: 1px solid #1e293b;
   color: #cbd5e1;
 }
@@ -534,7 +299,7 @@ h1, h2, h3, h4, h5 {
 }
 
 .markdown pre {
-  background: linear-gradient(180deg, #0a0f1c 0%, #080d18 100%);
+  background: #0a0f1c;
   border: 1px solid #1e293b;
   border-radius: 12px;
   padding: 16px;
@@ -693,26 +458,6 @@ body {
 img, video, canvas, svg {
   max-width: 100%;
   height: auto;
-}
-
-/* Production-ready card hover only on devices that support hover */
-@media (hover: hover) {
-  .card-premium:hover {
-    transform: translateY(-1px);
-  }
-  .card-interactive:hover {
-    transform: translateY(-2px) scale(1.005);
-  }
-}
-
-@media (hover: none) {
-  .card-premium:hover, .card-interactive:hover {
-    transform: none;
-  }
-  /* Remove hover effects that cause sticky hover on mobile */
-  .group:hover .group-hover\:scale-110 {
-    transform: none;
-  }
 }
 
 .markdown li::marker {

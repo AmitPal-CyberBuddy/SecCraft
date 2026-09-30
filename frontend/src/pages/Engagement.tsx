@@ -48,14 +48,14 @@ const SECTIONS = [
 function Section({ title, icon: Icon, children, defaultOpen = true }: { title: string; icon: typeof Briefcase; children: ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] overflow-hidden">
+    <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] overflow-hidden">
       <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between gap-3 p-4 hover:bg-[#131f36] transition-colors text-left">
-        <span className="flex items-center gap-2.5 text-[13.5px] font-semibold text-slate-100">
+        <span className="flex items-center gap-2.5 text-[13.5px] font-semibold text-[var(--ink-primary)]">
           <Icon className="w-4 h-4 text-cyan-400" /> {title}
         </span>
         <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-      {open && <div className="px-4 pb-4 border-t border-[#1e293b] pt-4">{children}</div>}
+      {open && <div className="px-4 pb-4 border-t border-[var(--line-normal)] pt-4">{children}</div>}
     </div>
   )
 }
@@ -101,18 +101,18 @@ export function Engagement() {
   // List view when no id and multiple engagements
   if (!id && filteredList.length !== 1) {
     return (
-      <div className="max-w-[1200px] mx-auto space-y-6">
+      <div className="ws-legacy max-w-[1200px] mx-auto space-y-6">
         <div className="flex items-center gap-2 flex-wrap">
-          <Link to={`/paths/${effectivePathId}`} className="inline-flex items-center gap-2 text-[12px] text-slate-500 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[#0f172a]/60 border border-transparent hover:border-[#1e293b]/60">
+          <Link to={`/paths/${effectivePathId}`} className="inline-flex items-center gap-2 text-[12px] text-slate-500 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[var(--panel-bg)]/60 border border-transparent hover:border-[var(--line-normal)]/60">
             <ArrowLeft className="w-4 h-4" />
             {currentPath.title} — Path Detail
           </Link>
-          <span className="text-[11px] px-2 py-1 rounded-full bg-[#0f172a] border border-[#1e293b] text-slate-400 font-mono flex items-center gap-1.5">
-            <MapIcon className="w-3 h-3" /> {currentPath.icon} {currentPath.title} • {filteredList.length} assessments • Platform-level
+          <span className="text-[11px] px-2 py-1 rounded-full bg-[var(--panel-bg)] border border-[var(--line-normal)] text-slate-400 font-mono flex items-center gap-1.5">
+            <MapIcon className="w-3 h-3" /> {currentPath.icon} {currentPath.title} • {filteredList.length} assessments • Local self-review
           </span>
         </div>
 
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="relative rounded-2xl bg-[#0f172a] border border-[#1e293b] p-6 overflow-hidden">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="relative rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-6 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-violet-500/5 opacity-70" />
           <div className="relative">
             <div className="flex items-center gap-3">
@@ -120,18 +120,18 @@ export function Engagement() {
                 <Target className="w-5 h-5 text-cyan-400" />
               </div>
               <div>
-                <h1 className="font-heading font-bold text-[24px] md:text-[28px] text-slate-100 tracking-tight leading-none flex items-center gap-2 sc-page-title">
+                <h1 className="font-heading font-bold text-[24px] md:text-[28px] text-[var(--ink-primary)] tracking-tight leading-none flex items-center gap-2 sc-page-title">
                   Assessments / Engagements <span className="text-[18px]">{currentPath.icon}</span>
                 </h1>
                 <p className="text-[13px] text-slate-400 mt-1.5">
-                  Platform-level assessment engine • {platform.tagline} • {filteredList.length} available • {learningPaths.filter(p => p.status !== 'available').length} planned • Methodology generic
+                  Scoped assessment briefs • local self-review • {filteredList.length} available in this catalogue
                 </p>
               </div>
             </div>
-            <div className="mt-4 p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/60">
+            <div className="mt-4 p-3 rounded-xl bg-[var(--panel-inset)]/60 border border-[var(--line-normal)]/60">
               <div className="text-[11px] font-mono text-slate-500 uppercase tracking-widest mb-1">Assessment Workflow — Generic VAPT</div>
               <div className="text-[12px] font-mono text-slate-400 leading-relaxed">{platform.philosophy}</div>
-              <div className="text-[11px] text-slate-500 mt-2">Same workflow for Wireless, Web, API, Android, Network, AD, Cloud, AI — scope, RoE, targets, artefacts, tasks, marking guide, evidence, reporting, retest.</div>
+              <div className="text-[11px] text-slate-500 mt-2">Use the supplied brief to work through scope, rules, evidence, tasks and reporting. Other domains appear only when an authored engagement is available. There is no independent grader.</div>
             </div>
           </div>
         </motion.div>
@@ -140,14 +140,14 @@ export function Engagement() {
           {filteredList.map(e => {
             const pathForEng = learningPaths.find(p => p.id === (e as any).learningPathId) || currentPath
             return (
-              <Link key={e.id} to={`/engagement/${e.id}?path=${(e as any).learningPathId || effectivePathId}`} className="group rounded-2xl bg-[#0f172a] border border-[#1e293b] p-5 hover:border-[#334155] hover:bg-[#111d33] transition-all block">
+              <Link key={e.id} to={`/engagement/${e.id}?path=${(e as any).learningPathId || effectivePathId}`} className="group rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-5 hover:border-[var(--line-strong)] hover:bg-[#111d33] transition-all block">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-mono px-2 py-1 rounded-full bg-[#020617] border border-[#1e293b] text-slate-400">{e.id}</span>
+                  <span className="text-[10px] font-mono px-2 py-1 rounded-full bg-[var(--panel-inset)] border border-[var(--line-normal)] text-slate-400">{e.id}</span>
                   <TierBadge tier={e.tier} size="xs" />
-                  <span className="text-[10px] font-mono px-2 py-1 rounded-full bg-[#020617] border border-[#1e293b] text-slate-400">{e.time_estimate}</span>
+                  <span className="text-[10px] font-mono px-2 py-1 rounded-full bg-[var(--panel-inset)] border border-[var(--line-normal)] text-slate-400">{e.time_estimate}</span>
                   <span className="text-[10px] font-mono px-2 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">{pathForEng.icon} {pathForEng.shortTitle}</span>
                 </div>
-                <h3 className="mt-3 text-[16px] font-bold text-slate-100 group-hover:text-white transition-colors">{e.name}</h3>
+                <h3 className="mt-3 text-[16px] font-bold text-[var(--ink-primary)] group-hover:text-white transition-colors">{e.name}</h3>
                 <p className="text-[12px] text-slate-400 mt-1">{e.subtitle}</p>
                 <p className="text-[12px] text-slate-500 mt-2 line-clamp-3 leading-relaxed">{e.summary}</p>
                 <div className="mt-4 flex items-center gap-2 text-[12px] text-cyan-400 font-medium group-hover:gap-3 transition-all">
@@ -159,8 +159,8 @@ export function Engagement() {
         </div>
 
         {filteredList.length === 0 && (
-          <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-8 text-center">
-            <div className="w-12 h-12 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center mx-auto mb-3">
+          <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-8 text-center">
+            <div className="w-12 h-12 rounded-xl bg-[#1e293b] border border-[var(--line-strong)] flex items-center justify-center mx-auto mb-3">
               <Clock className="w-6 h-6 text-slate-500" />
             </div>
             <div className="text-[14px] font-semibold text-slate-200">No assessments for {currentPath.title} yet</div>
@@ -170,7 +170,7 @@ export function Engagement() {
           </div>
         )}
 
-        <div className="rounded-2xl bg-[#020617]/60 border border-[#1e293b]/40 p-5">
+        <div className="rounded-2xl bg-[var(--panel-inset)]/60 border border-[var(--line-normal)]/40 p-5">
           <div className="flex items-center gap-2 mb-2">
             <Layers className="w-4 h-4 text-violet-400" />
             <span className="text-[12px] font-semibold text-slate-200">Planned Expansion</span>
@@ -187,7 +187,7 @@ export function Engagement() {
 
   if (!engagement) {
     return (
-      <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-8 text-center max-w-[800px] mx-auto">
+      <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-8 text-center max-w-[800px] mx-auto">
         <p className="text-slate-300">Unknown engagement {id}. Available: {filteredList.map(e => e.id).join(', ') || 'none for this path'}</p>
         <Link to={`/engagement?path=${effectivePathId}`} className="mt-4 inline-block text-[12px] font-mono text-cyan-400">← back to assessments for {currentPath.title}</Link>
       </div>
@@ -200,26 +200,26 @@ export function Engagement() {
     <div className="max-w-[1200px] mx-auto space-y-5">
       {/* Path-aware breadcrumb */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Link to={`/paths/${effectivePathId}`} className="inline-flex items-center gap-2 text-[12px] text-slate-500 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[#0f172a]/60 border border-transparent hover:border-[#1e293b]/60">
+        <Link to={`/paths/${effectivePathId}`} className="inline-flex items-center gap-2 text-[12px] text-slate-500 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[var(--panel-bg)]/60 border border-transparent hover:border-[var(--line-normal)]/60">
           <ArrowLeft className="w-4 h-4" />
           {currentPath.title}
         </Link>
-        <Link to={`/engagement?path=${effectivePathId}`} className="text-[11px] px-2 py-1 rounded-full bg-[#0f172a] border border-[#1e293b] text-slate-400 font-mono hover:border-[#334155] transition-colors">Assessments • {currentPath.shortTitle}</Link>
+        <Link to={`/engagement?path=${effectivePathId}`} className="text-[11px] px-2 py-1 rounded-full bg-[var(--panel-bg)] border border-[var(--line-normal)] text-slate-400 font-mono hover:border-[var(--line-strong)] transition-colors">Assessments • {currentPath.shortTitle}</Link>
         <span className="text-[11px] px-2 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-mono">{currentPath.icon} {currentPath.title} • {engagement.id}</span>
       </div>
 
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="assessment-dossier-header relative rounded-2xl bg-[#0f172a] border border-[#1e293b] p-5 sm:p-6 overflow-hidden">
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="assessment-dossier-header relative rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-5 sm:p-6 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-violet-500/5 opacity-70" />
         <div className="relative">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-[#020617]/70 border border-[#1e293b] text-slate-400">{engagement.id}</span>
+            <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-[var(--panel-inset)]/70 border border-[var(--line-normal)] text-slate-400">{engagement.id}</span>
             <TierBadge tier={engagement.tier} />
-            <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-[#020617]/70 border border-[#1e293b] text-slate-400">{engagement.time_estimate}</span>
+            <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-[var(--panel-inset)]/70 border border-[var(--line-normal)] text-slate-400">{engagement.time_estimate}</span>
             <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">{currentPath.icon} {currentPath.title} • {currentPath.id}</span>
           </div>
-          <h1 className="mt-3 text-[24px] sm:text-[28px] font-heading font-bold text-slate-100 leading-tight sc-page-title">{engagement.name}</h1>
-          <p className="mt-1 text-[13px] text-slate-400">{engagement.subtitle} • Platform-level assessment engine • {platform.tagline}</p>
+          <h1 className="mt-3 text-[24px] sm:text-[28px] font-heading font-bold text-[var(--ink-primary)] leading-tight sc-page-title">{engagement.name}</h1>
+          <p className="mt-1 text-[13px] text-slate-400">{engagement.subtitle} • Local self-review assessment engine • {platform.tagline}</p>
           <p className="mt-3 max-w-[820px] text-[12.5px] text-slate-400 leading-relaxed">{engagement.summary}</p>
           <div className="assessment-section-nav mt-5" aria-label="Assessment workpapers">
             <div className="assessment-section-meta"><span>ENGAGEMENT WORKPAPERS</span><span>{String(SECTIONS.findIndex(s => s.id === section) + 1).padStart(2, '0')} <i>/</i> {String(SECTIONS.length).padStart(2, '0')}</span></div>
@@ -245,7 +245,7 @@ export function Engagement() {
         <div className="space-y-4">
           <Section title="Client background" icon={Briefcase}>
             <Bullets items={engagement.client_background} />
-            <div className="mt-4 rounded-xl bg-[#020617]/60 border border-[#1e293b]/60 p-3.5">
+            <div className="mt-4 rounded-xl bg-[var(--panel-inset)]/60 border border-[var(--line-normal)]/60 p-3.5">
               <div className="text-[10px] font-mono uppercase tracking-widest text-slate-500 mb-2">Objectives (as the client stated them)</div>
               <Bullets items={engagement.objectives} tone="emerald" />
             </div>
@@ -258,9 +258,9 @@ export function Engagement() {
           </Section>
           <Section title="How this assessment works — platform-level" icon={BookOpen}>
             <p className="text-[12.5px] text-slate-300 leading-relaxed">
-              You are given artefacts, not answers. The package contains at least one <strong className="text-slate-100">red herring</strong> (a
+              You are given artefacts, not answers. The package contains at least one <strong className="text-[var(--ink-primary)]">red herring</strong> (a
               configuration that looks severe but is not reachable in this environment) and at least one SSID with
-              <strong className="text-slate-100"> no exploitable weakness</strong> — documenting a control that held is part of the grade.
+              <strong className="text-[var(--ink-primary)]"> no exploitable weakness</strong> — documenting a control that held is part of the grade.
               Nothing about the vulnerabilities is disclosed anywhere in the pack. Same workflow for any path: {platform.philosophy}
             </p>
             <div className="mt-4">
@@ -338,7 +338,7 @@ export function Engagement() {
                 <Link
                   key={a.pid}
                   to={`/labs?pcap=${a.pid}&path=${effectivePathId}`}
-                  className="rounded-xl bg-[#020617]/60 border border-[#1e293b] p-3 hover:border-cyan-500/30 transition-colors group"
+                  className="rounded-xl bg-[var(--panel-inset)]/60 border border-[var(--line-normal)] p-3 hover:border-cyan-500/30 transition-colors group"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[12px] font-mono text-slate-200 truncate">{a.pid}</span>
@@ -356,10 +356,10 @@ export function Engagement() {
       {section === 'tasks' && (
         <div className="space-y-3">
           {engagement.tasks.map(t => (
-            <div key={t.id} className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4">
+            <div key={t.id} className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-4">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300">{t.id}</span>
-                <h3 className="text-[13.5px] font-semibold text-slate-100">{t.title}</h3>
+                <h3 className="text-[13.5px] font-semibold text-[var(--ink-primary)]">{t.title}</h3>
               </div>
               <p className="mt-2 text-[12.5px] text-slate-300 leading-relaxed">{t.detail}</p>
               <p className="mt-2 text-[11.5px] font-mono text-slate-500">output: {t.output}</p>
@@ -375,8 +375,8 @@ export function Engagement() {
 
       {section === 'reasoning' && (
         <div className="space-y-3">
-          <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4">
-            <h3 className="text-[13.5px] font-semibold text-slate-100">Decision practice for the final engagement — {currentPath.title}</h3>
+          <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-4">
+            <h3 className="text-[13.5px] font-semibold text-[var(--ink-primary)]">Decision practice for the final engagement — {currentPath.title}</h3>
             <p className="mt-1 text-[12px] text-slate-400 leading-relaxed">
               The same loop runs through the whole academy: <span className="font-mono text-slate-300">Observe → Interpret →
               Hypothesise → Choose the test → Execute → Evidence → Conclude</span>. Work these before writing the report. Platform philosophy: {platform.tagline}
@@ -408,7 +408,7 @@ export function Engagement() {
           </div>
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {engagement.companion_assets.map(a => (
-              <div key={a.label} className="rounded-xl bg-[#020617]/60 border border-[#1e293b] p-3">
+              <div key={a.label} className="rounded-xl bg-[var(--panel-inset)]/60 border border-[var(--line-normal)] p-3">
                 <div className="text-[12px] text-slate-200">{a.label}</div>
                 <div className="mt-1 text-[10.5px] font-mono text-slate-500 break-all">{a.path}</div>
               </div>

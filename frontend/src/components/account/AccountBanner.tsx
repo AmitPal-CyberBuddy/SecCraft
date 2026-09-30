@@ -14,10 +14,10 @@ import { StateChip } from './StateChip'
  * approved users never see a banner — the product does not nag.
  */
 export function AccountBanner() {
-  const { userState, accountError, signOut, ready } = useSession()
+  const { userState, accountError, signOut, ready, accountLoading, hasSession, refreshAccount } = useSession()
   const [dismissedFor, setDismissedFor] = useState<UserState | null>(null)
 
-  if (!ready) return null
+  if (!ready || accountLoading) return null
 
   const unverified = accountError.kind === 'unverified'
   const transient = accountError.kind === 'unavailable' || accountError.kind === 'unknown'
@@ -62,7 +62,7 @@ export function AccountBanner() {
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="font-heading text-[14px] font-bold text-slate-100">
-                  {unverified ? 'Confirm your email address' : transient ? 'Account services unavailable' : STATE_META[userState as Exclude<UserState, 'public' | 'guest'>].label}
+                  {unverified ? 'Confirm your email address' : transient ? hasSession ? 'Signed in · account status unavailable' : 'Account services unavailable' : STATE_META[userState as Exclude<UserState, 'public' | 'guest'>].label}
                 </h2>
                 {!transient && <StateChip state={userState} size="sm" />}
               </div>
@@ -70,7 +70,7 @@ export function AccountBanner() {
                 {unverified
                   ? 'Open the verification message sent to your inbox, then come back. Until then, account features stay unavailable — guest learning does not.'
                   : transient
-                  ? `${accountError.message} Nothing below depends on it: the Preview Curriculum, your labs and challenges, and the progress kept in this browser all keep working.`
+                  ? `${accountError.message} ${hasSession ? 'Your approval and owner access cannot be confirmed right now. This is not a pending-approval decision.' : 'Your account status cannot be checked right now.'} Preview learning and browser-local practice remain available.`
                   : STATE_META[userState as Exclude<UserState, 'public' | 'guest'>].summary}
               </p>
               <p className="mt-2 text-[11.5px] leading-relaxed text-slate-400">
@@ -83,6 +83,9 @@ export function AccountBanner() {
           </div>
 
           <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+            {transient && hasSession && (
+              <button type="button" onClick={() => void refreshAccount()} className="inline-flex min-h-9 items-center rounded-lg border border-cyan-300/25 px-3 text-[12px] font-semibold text-cyan-100 hover:bg-cyan-300/10">Re-check status</button>
+            )}
             {userState === 'rejected' || userState === 'suspended' ? (
               <Link
                 to="/profile"

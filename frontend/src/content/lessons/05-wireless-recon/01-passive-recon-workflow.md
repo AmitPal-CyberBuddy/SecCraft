@@ -1,7 +1,7 @@
 # Passive Reconnaissance Workflow (Lab)
 
 > Artifact: `recon-lab.pcapng` (17 frames, **SIMULATION**) — generated and verified by
-> `scripts/generate-lab-artifacts.py`. 6 BSSs, 1 hidden BSS, 3 clients (one with a randomised MAC).
+> `scripts/generate-lab-artifacts.py`. 6 BSSs, 1 hidden BSS, 3 client addresses (one locally administered; the generator constructed it as randomised, but capture bytes alone cannot prove the device policy).
 
 ## Objective
 
@@ -14,7 +14,7 @@ defensible statement about what the capture **cannot** tell you.
 1. Inventory BSSs        → BSSID, SSID, channel, band, capability
 2. Classify security     → RSNE: ciphers, AKM list, MFPC/MFPR, WPS IE
 3. Group networks        → which BSSIDs share an SSID (ESS) and which are look-alikes
-4. Inventory clients     → MAC, randomised?, what it probed for, what it associated to
+4. Inventory clients     → observed MAC, locally administered bit, probes and association (do not equate addresses to devices)
 5. Correlate             → which client is seen with which BSS (auth/assoc/data)
 6. State limits          → what the capture does not establish (identity, payload, intent)
 ```
@@ -42,7 +42,7 @@ tshark -r recon-lab.pcapng -Y 'wlan.fc.type_subtype == 5' \
 2. Which BSS hides its SSID, and which frame reveals it? What does that tell you about "hidden network" claims?
 3. Which BSS has **PMF required**? Which has only **PMF capable**? Quote the RSNE bytes.
 4. Which BSS has no RSNE, and which advertises OWE? Inspect the privacy capability and all security IEs before classifying an absent-RSNE BSS as open rather than legacy WEP; why does the distinction matter?
-5. Which client is using a **randomised MAC**? How did you decide?
+5. Which observed address has the **locally administered bit** set? Show the bit test; what additional device-side evidence would establish whether this was randomisation?
 6. What has a *look-alike* SSID in this capture, if anything — and what evidence would you need to prove it
    was a rogue twin rather than a legitimate ESS member? (Hint: it is not in the capture. Say so.)
 

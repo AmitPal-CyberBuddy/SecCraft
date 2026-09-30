@@ -100,3 +100,8 @@ export function StateDot({ state, withLabel = false }: { state: UserState; withL
 export function toneClasses(tone: StateTone) {
   return TONE_CLASS[tone]
 }
+
+/** Identity is known, but the API has not established an account decision. */
+export function UnavailableStatusChip({ size = 'md' }: { size?: keyof typeof SIZE_CLASS }) {
+  return <span className={`inline-flex items-center rounded-full border font-semibold ${SIZE_CLASS[size]} ${TONE_CLASS.neutral}`}>Status unavailable</span>
+}

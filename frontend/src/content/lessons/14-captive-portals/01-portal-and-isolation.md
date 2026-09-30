@@ -40,7 +40,25 @@ tshark -r captive-portal.pcapng -Y 'arp' -T fields -e frame.number -e arp.opcode
 4. Keep portal credential exposure, client isolation and inter-VLAN reachability as separate findings with separate evidence.
 5. Design a safe retest that proves the fix while preserving authorized guest portal access.
 
-## 4. Remediation themes
+## 4. Controlled negative cases (plan, not bundled outcomes)
+
+The ARP reply in this fixture is evidence about **scripted bytes** only. In a real owned
+lab, ask the AP owner to provide two test clients on the same guest BSS, one approved
+internal target, and a test portal account. Record client MAC/IP, assigned VLAN, AP
+isolation setting, routing and timestamps before trying each case:
+
+| Question | Authorized negative test | Evidence needed to decide |
+| --- | --- | --- |
+| Can guest A reach guest B at L2? | send one bounded ARP/ICMP attempt between test clients | both client captures plus AP forwarding/config logs; absence of a reply alone is ambiguous |
+| Can guest reach the internal target? | test one approved destination/service while portal policy is known | source route/VLAN, target/service response and ACL decision logs |
+| Does a portal session bind to the right user/device? | log out the test session and retry with a stale test token | server session policy/logs and controlled client result; a URL containing a MAC proves nothing |
+
+Keep application authorization, client isolation and routed segmentation as **separate**
+claims. No portal server, managed AP, negative control or real test account is supplied
+here: mark each live result NOT TESTED. A reproducible test design is useful but does not
+become a finding without these observations.
+
+## 5. Remediation themes
 
 Use HTTPS-only portal flows with HSTS and strong server-side session controls; do not treat a MAC address as an authenticator. Configure client isolation and guest VLAN ACLs independently, then retest each with controlled endpoints. OWE can add link-layer confidentiality to an otherwise open guest experience where supported; it does not replace portal or network access controls.
 

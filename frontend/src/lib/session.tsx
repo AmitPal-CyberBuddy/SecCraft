@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import type { Session } from '@supabase/supabase-js'
 import { apiFetch } from '@/lib/api'
 import { supabase, supabaseConfigured } from '@/lib/supabase'
 import {
@@ -34,6 +35,8 @@ interface SessionValue {
   /** `true` once the first, unavoidable session lookup has settled. */
   ready: boolean
   hasSession: boolean
+  /** Account record is being resolved; null must not be presented as pending approval. */
+  accountLoading: boolean
   userState: UserState
   account: AccountRecord | null
   accountError: AccountError
@@ -75,7 +78,7 @@ function readError(body: unknown, status: number): AccountError {
   if (typeof detail === 'string' && detail) {
     return { kind: status === 401 ? 'unauthorized' : 'unknown', message: detail }
   }
-  if (status === 401) return { kind: 'unauthorized', message: 'Your session has expired. Sign in again to use account features.' }
+  if (status === 401) return { kind: 'unauthorized', message: 'The account API did not accept this session. Re-check status or sign in again to use account features.' }
   if (status === 403) return { kind: 'unauthorized', message: 'This account cannot use that account-backed feature yet.' }
   if (status === 503) return { kind: 'unavailable', message: 'Account services are temporarily unavailable.' }
   return { kind: 'unknown', message: 'Account status could not be loaded right now.' }
@@ -84,11 +87,13 @@ function readError(body: unknown, status: number): AccountError {
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false)
   const [hasSession, setHasSession] = useState(false)
+  const [accountLoading, setAccountLoading] = useState(false)
   const [account, setAccount] = useState<AccountRecord | null>(null)
   const [accountError, setAccountError] = useState<AccountError>({ kind: 'none', message: '' })
   const [apiState, setApiState] = useState<ApiState>('unknown')
   const [publicConfig, setPublicConfig] = useState<PublicConfig | null>(null)
-  const inFlight = useRef<Promise<void> | null>(null)
+  const inFlight = useRef<{ promise: Promise<void>; epoch: number; authoritative: boolean } | null>(null)
+  const accountEpoch = useRef(0)
 
   /** Public availability probe. Failure is expected and must never block the app. */
   const loadPublicConfig = useCallback(async () => {
@@ -121,47 +126,73 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [])
 
   /**
-   * Read the caller's own account record. Guarded against overlapping runs so a burst of
-   * `onAuthStateChange` events cannot fan out into repeated account requests.
+   * A SIGNED_IN event invalidates any older request, even if it is still in flight. Its
+   * session token is passed directly to the API instead of waiting for a second getSession
+   * (which can still resolve to the previous cached session). Only the latest epoch may commit.
    */
-  const loadAccount = useCallback(async () => {
-    if (inFlight.current) return inFlight.current
+  const loadAccount = useCallback((options: { session?: Session; fresh?: boolean } = {}): Promise<void> => {
+    if (inFlight.current && (!options.fresh || inFlight.current.authoritative)) return inFlight.current.promise
+    const epoch = ++accountEpoch.current
+    setAccountLoading(true)
+    setAccountError({ kind: 'none', message: '' })
     const run = (async () => {
-      if (!supabase) {
-        setAccount(null)
-        setAccountError({ kind: 'unavailable', message: 'Account services are not configured in this build.' })
-        return
-      }
+      // Yield once so inFlight is registered even for the no-provider early return.
+      await Promise.resolve()
       try {
-        const sessionResult = await withTimeout(
+        if (!supabase) {
+          setAccount(null)
+          setAccountError({ kind: 'unavailable', message: 'Account services are not configured in this build.' })
+          return
+        }
+        const sessionResult = options.session ? null : await withTimeout(
           supabase.auth.getSession(),
           SESSION_LOOKUP_TIMEOUT_MS,
           null as Awaited<ReturnType<typeof supabase.auth.getSession>> | null,
         )
-        const session = sessionResult?.data?.session ?? null
+        if (epoch !== accountEpoch.current) return
+        // A timed-out identity lookup is not evidence of sign-out. Retain the last
+        // provider-confirmed session if one exists; only a resolved null or SIGNED_OUT clears it.
+        if (!options.session && (!sessionResult || sessionResult.error)) {
+          setAccount(null)
+          setAccountError({ kind: 'unavailable', message: 'Account session could not be checked. Try again when the identity service responds.' })
+          return
+        }
+        const session = options.session ?? sessionResult?.data?.session ?? null
         setHasSession(Boolean(session))
         if (!session) {
           setAccount(null)
           setAccountError({ kind: 'none', message: '' })
           return
         }
-        const response = await withTimeout(apiFetch('/api/v1/account'), ACCOUNT_LOOKUP_TIMEOUT_MS, null)
+        const response = await withTimeout(
+          apiFetch('/api/v1/account', { headers: { authorization: `Bearer ${session.access_token}` } }),
+          ACCOUNT_LOOKUP_TIMEOUT_MS,
+          null,
+        )
+        if (epoch !== accountEpoch.current) {
+          response?.body?.cancel().catch(() => {})
+          return
+        }
         if (!response) {
-          // Keep the session; the account panel shows a transient, non-blocking unavailable state.
+          setAccount(null)
           setAccountError({ kind: 'unavailable', message: 'Account services did not respond. Guest learning is unaffected.' })
           setApiState('unreachable')
           return
         }
         if (!response.ok) {
           const body = await response.json().catch(() => null)
+          if (epoch !== accountEpoch.current) return
           setApiState('reachable')
-          if (response.status === 401) setHasSession(false)
+          // A 401 from the account API is not a Supabase sign-out. Preserve the
+          // provider session; the API still refuses all unauthorized requests.
           setAccount(null)
           setAccountError(readError(body, response.status))
           return
         }
         const body = (await response.json().catch(() => null)) as AccountRecord | null
+        if (epoch !== accountEpoch.current) return
         if (!body || typeof body.account_status !== 'string' || typeof body.is_admin !== 'boolean') {
+          setAccount(null)
           setApiState('unreachable')
           setAccountError({ kind: 'unavailable', message: 'The account service returned an unexpected response.' })
           return
@@ -170,15 +201,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setAccount(body)
         setAccountError({ kind: 'none', message: '' })
       } catch {
-        // Identity lookup failure must degrade to guest, never to a broken screen.
-        setHasSession(false)
+        if (epoch !== accountEpoch.current) return
+        // A network/body failure is not proof that Supabase signed the person out.
         setAccount(null)
+        setApiState('unreachable')
         setAccountError({ kind: 'unavailable', message: 'Account services are unavailable. Guest learning is unaffected.' })
       } finally {
-        inFlight.current = null
+        if (epoch === accountEpoch.current) {
+          setAccountLoading(false)
+          setReady(true)
+          inFlight.current = null
+        }
       }
     })()
-    inFlight.current = run
+    inFlight.current = { promise: run, epoch, authoritative: Boolean(options.session) }
     return run
   }, [])
 
@@ -202,12 +238,25 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // page load to a single /account request.
       if (_event === 'INITIAL_SESSION') return
       if (_event === 'SIGNED_OUT' || !session) {
+        ++accountEpoch.current // Ignore a late response from a previous identity.
+        inFlight.current = null
         setHasSession(false)
         setAccount(null)
+        setAccountLoading(false)
         setAccountError({ kind: 'none', message: '' })
+        setReady(true)
         return
       }
-      void loadAccount()
+      if (_event === 'SIGNED_IN') {
+        setHasSession(true)
+        setAccount(null)
+        setReady(false)
+        // Never reuse a mount-time account request made before this login.
+        inFlight.current = null
+        void loadAccount({ session, fresh: true })
+      } else {
+        void loadAccount()
+      }
     })
     return () => {
       data.subscription.unsubscribe()
@@ -231,8 +280,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     } catch {
       /* signing out locally is still the right outcome if the provider call fails */
     }
+    ++accountEpoch.current
+    inFlight.current = null
     setAccount(null)
     setHasSession(false)
+    setAccountLoading(false)
+    setReady(true)
     setAccountError({ kind: 'none', message: '' })
   }, [])
 
@@ -241,6 +294,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return {
       ready,
       hasSession,
+      accountLoading,
       userState,
       account,
       accountError,
@@ -248,10 +302,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       apiState,
       publicConfig,
       can: (capability: Capability) => allows(userState, capability),
-      refreshAccount: loadAccount,
+      refreshAccount: () => loadAccount({ fresh: true }),
       signOut,
     }
-  }, [ready, hasSession, account, accountError, apiState, publicConfig, loadAccount, signOut])
+  }, [ready, hasSession, accountLoading, account, accountError, apiState, publicConfig, loadAccount, signOut])
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
 }
@@ -264,6 +318,7 @@ export function useSession(): SessionValue {
   return {
     ready: true,
     hasSession: false,
+    accountLoading: false,
     userState: 'guest',
     account: null,
     accountError: { kind: 'none', message: '' },

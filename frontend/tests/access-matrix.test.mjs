@@ -96,8 +96,8 @@ test('user-state derivation, curriculum tiers, and the access matrix hold for ev
 
   /* --- the cut line must stay pinned to modules 01-06 ------------------- */
 
-  assert.equal(TIER_COUNTS.preview, 6, 'the Preview Curriculum must remain 6 modules')
-  assert.equal(TIER_COUNTS.full, 14, 'the Full Curriculum must remain 14 modules')
+  assert.equal(TIER_COUNTS.preview, 9, 'six wireless and three Android Foundations preview modules')
+  assert.equal(TIER_COUNTS.full, 18, 'nine wireless and nine Android Full modules')
 
   const modules = (await load('/src/content/modules.json')).default
   const derivedPreview = modules.filter(m => contentTierOf(m) === 'preview').map(m => m.id)
@@ -110,6 +110,9 @@ test('user-state derivation, curriculum tiers, and the access matrix hold for ev
       '04-kali-wireless-setup',
       '05-wireless-recon',
       '06-traffic-analysis',
+      'android-01-platform',
+      'android-02-workstation',
+      'android-03-apk-triage',
     ],
     'the Preview Curriculum must be exactly modules 01-06',
   )
@@ -186,4 +189,13 @@ test('user-state derivation, curriculum tiers, and the access matrix hold for ev
   assert.equal(currentCurriculumLabel('active'), 'Full Curriculum')
   assert.equal(currentCurriculumLabel('pending'), 'Preview Curriculum')
   assert.equal(currentCurriculumLabel('suspended'), 'Preview Curriculum')
+})
+
+
+test('account achievements use the backend id field without promoting import trust', async () => {
+  const { mapServerAchievements } = await load('/src/lib/useServerProgress.ts')
+  assert.deepEqual(mapServerAchievements([
+    { id: 'first-steps', verified: false, awarded_at: '2026-09-30T00:00:00Z' },
+  ]), [{ id: 'first-steps', verified: false, awardedAt: '2026-09-30T00:00:00Z' }])
+  assert.deepEqual(mapServerAchievements(null), [])
 })

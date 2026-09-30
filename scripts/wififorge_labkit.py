@@ -167,18 +167,16 @@ CIPHER_NAMES = {
     CIPHER_BIP_GMAC_256: "BIP-GMAC-256",
 }
 
-# RSN Capabilities — IEEE 802.11-2020 Figure 9-289.
-# B0 Preauth, B1 No-Pairwise, B2 PTKSA-Replay-Counter, B3 GTKSA-Replay-Counter,
-# RSN capabilities bit 6 (0x0040) MFPR (required), bit 7 (0x0080) MFPC (capable),
-# B6 Joint Multi-band RSNA, B7 PeerKey.
+# RSN Capabilities — IEEE 802.11 RSN capabilities (little-endian 16-bit field).
+# Bits 2–3 and 4–5 are two-bit replay counter subfields, not single booleans.
 RSNCAP_PREAUTH = 1 << 0
 RSNCAP_NO_PAIRWISE = 1 << 1
-RSNCAP_PTKSA_REPLAY = 1 << 2
-RSNCAP_GTKSA_REPLAY = 1 << 3
-RSNCAP_MFPR = 1 << 4
-RSNCAP_MFPC = 1 << 5
-RSNCAP_JOINT_MULTIBAND = 1 << 6
-RSNCAP_PEERKEY = 1 << 7
+RSNCAP_PTKSA_REPLAY = 0x000c
+RSNCAP_GTKSA_REPLAY = 0x0030
+RSNCAP_MFPR = 1 << 6
+RSNCAP_MFPC = 1 << 7
+RSNCAP_JOINT_MULTIBAND = 1 << 8
+RSNCAP_PEERKEY = 1 << 9
 
 # Deauthentication / disassociation reason codes (IEEE 802.11-2020 Table 9-49)
 REASON_UNSPECIFIED = 1

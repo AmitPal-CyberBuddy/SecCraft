@@ -1,61 +1,26 @@
-# Security policy and design guarantees
+# SecCraft security policy and boundaries
 
-SecCraft is a **local-first cybersecurity learning platform**. The static app has no hosted user database,
-no telemetry, and no third-party runtime service in the loop, so the security surface is small — but it is not zero, and this file
-states exactly what is guaranteed, what is not, and how to report a problem.
+Report vulnerabilities privately through the repository's GitHub Security → Report a vulnerability flow, or the maintainer contact on the repository profile. Include reproduction and impact; do not test systems without authorization. There is no bug bounty or penetration-test assurance.
 
-## Reporting a vulnerability
+## Current architecture
 
-Open a **private** report through GitHub: *Security → Report a vulnerability* on
-<https://github.com/AmitPal-CyberBuddy/SecCraft>, or email the maintainer address listed on the
-repository profile. Please include the affected file or route, a reproduction, and the impact you can
-demonstrate. Do not open a public issue for an unreported vulnerability, and do not test against
-systems you do not own or have written permission to test.
+The GitHub Pages frontend serves public static curriculum, captures and application code. Preview vs Full is a **UX distinction**, not confidential-content enforcement. Supabase Auth handles identity, email confirmation, login and recovery. The optional FastAPI service on Render (or self-hosted) verifies signed Supabase JWTs (JWKS or legacy HS256 secret), issuer, audience and expiry and checks the provider's current email confirmation status before accessing PostgreSQL account data. Backend account states (pending, active, rejected, suspended) and a database owner allowlist determine authorization. Browser `access.ts` and `contentAccess.ts` are presentation controls only. CORS is an explicit origin allowlist, without credentials or wildcard origins; it is not authentication.
 
-There is no bug bounty. Acknowledgement targets are best-effort: within 7 days, with a fix or a
-decision (fix / accept / document) within 30 days for anything exploitable in the shipped build.
+Browser-local progress/XP, notes and practice evidence are editable by the browser user and are not authoritative. Imports are account-scoped by the server token subject and remain **unverified**, award zero verified XP and cannot replace verified records. Server-held XP comes only from server-side verified events; assessment attempts store unverified metadata until a trusted grader exists. There is no trusted live grader or server-issued certificate. Never describe static bundled lessons as protected material or local XP as server-verified.
 
-## What the shipped (static) build guarantees
+The application signup toggle gates only `/api/v1/auth/signup`; it cannot block direct Supabase Auth identity creation. Provider-wide blocking requires a configured and tested provider-side Auth Hook. Supabase's own throttling does not replace application abuse controls. The application signup limiter is **per process and in memory**, not a distributed quota. Deploy an ingress/provider rate limit as appropriate and configure provider SMTP, auth redirect allowlists and abuse protections. Responses from signup avoid passing through provider enumeration details; review provider-hosted login/recovery enumeration behavior separately.
 
-| Property | How it is true |
-| --- | --- |
-| **No accounts, no credentials** | There is no login in the hosted build. Progress, notes and evidence records live in the browser's `localStorage`; clearing site data removes them. |
-| **No third-party requests** | No CDN, no remote font requests (the app uses system font stacks), no analytics, no pixels. Every request is same-origin and relative. |
-| **No server-side processing** | Analysis runs in the browser or against the optional local API. Captures you open never leave your machine. |
-| **No secrets in the client** | Nothing in the bundle is a credential. The optional backend takes its JWT secret from `WIFIFORGE_JWT_SECRET` and refuses to issue tokens when it is unset. |
-| **No invented data** | `scripts/verify-no-dummy-data.py` fails the build if mock datasets, placeholder hashes, fabricated claims or external requests reappear; `scripts/verify-lab-artifacts.py` (206 checks) proves the shipped captures decode to the values the lessons assert. |
-| **Headers where the host allows** | The built `index.html` carries a CSP meta tag, `dist/_headers` carries the full header set for hosts that read it, and `nginx.conf` sets them for self-hosting. GitHub Pages cannot set response headers, which is why the CSP is in the document itself. |
+PostgreSQL migrations enable RLS on account tables without anon/authenticated policies. The table-owning runtime database role **bypasses RLS** unless FORCE RLS is enabled; backend query scoping is therefore the primary isolation control for this role. Separate migration ownership from a least-privileged runtime role only after testing grants and policies against PostgreSQL; do not blindly enable FORCE RLS. Protect DB connectivity, backups and owner bootstrap identifiers server-side. Browser VITE variables must contain only public API origin, Supabase URL and anon key. Never ship DB credentials, service-role keys or signing secrets in a static bundle.
 
-## Optional API (`backend/`)
+The API uses `nosniff`, frame denial, no-referrer, permissions policy and no-store for account endpoints; public catalogue responses may be cached briefly. TLS/HSTS must be enforced at the actual HTTPS ingress, not assumed from an HTTP-only backend. GitHub Pages cannot configure arbitrary response headers; the frontend meta CSP is not equivalent to response-header CSP. Docker API runs as the non-root `seccraft` user; the standalone Nginx web image uses its upstream runtime model.
 
-The FastAPI service is not required by the academy. If you run it:
+## Deployment checks
 
-* **CORS** is an explicit allowlist from `WIFIFORGE_ALLOWED_ORIGINS` (default: local dev origins only).
-  There is no wildcard origin and no wildcard method/header set.
-* **Auth is opt-in.** Without `WIFIFORGE_JWT_SECRET` the auth endpoints return `503`; the throwaway
-  classroom accounts load only with `WIFIFORGE_DEMO_USERS=1` and are stored as PBKDF2-SHA256 hashes.
-* **Uploads** are size-limited (`WIFIFORGE_MAX_UPLOAD_BYTES`, default 50 MB), type-checked, hashed with
-  SHA-256, and parsed only by a local parser — never uploaded anywhere else.
-* **Responses are derived or refused.** Endpoints that once returned placeholder data (certificate
-  verification, "generated" PDFs, mock analytics, mock frames) now return a specific error explaining
-  why the data does not exist.
-* **Headers**: `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`,
-  `Permissions-Policy`, `Cross-Origin-Resource-Policy` and `Cache-Control: no-store`.
+- Use HTTPS for browser/API/provider connections and exact CORS origins; verify rendered security headers at the ingress.
+- Keep runtime secrets in the deployment secret manager, not Docker build arguments or `VITE_*` values; never commit real `.env` files.
+- Migrate using Alembic; verify role grants, backups, TLS and RLS in the target PostgreSQL instance.
+- Test Supabase email confirmation, recovery and direct-signup policy against a non-production project.
+- Apply an ingress/provider enrollment rate limit if a global quota is needed (the in-process limiter is not global).
+- Re-run dependency audits, backend and frontend tests, content checks and build before deployment.
 
-## What this project does **not** claim
-
-* The completion record is **not** an accreditation; no third party has audited or endorsed it.
-* The simulated terminal does not execute commands and is not a shell — it teaches syntax and
-  interpretation. RF transmission labs (18.4 GHz… specifically the `RF_REQUIRED` tier) are documented,
-  not performed: they need hardware, licensing and a signed scope.
-* The app has not been through a professional penetration test. Treat the statements above as
-  engineering properties you can re-verify, not as assurance.
-
-## Hardening checklist for a self-hosted deployment
-
-1. Serve over HTTPS only (`nginx.conf` already redirects and sets HSTS).
-2. Set `WIFIFORGE_JWT_SECRET` to a random value of at least 32 bytes if you enable the API.
-3. Keep `WIFIFORGE_ALLOWED_ORIGINS` to the exact origins you serve.
-4. Leave `WIFIFORGE_DEMO_USERS` unset unless you are teaching a class and will reset it afterwards.
-5. Keep dependencies current: `cd frontend && npm ci && npm audit`; CI pins actions to commit SHAs.
-6. Never commit `.env` files — CI fails the build if one is tracked.
+See [account deployment](docs/ACCOUNT_SYNC_PLATFORM.md) for the owner and deployment workflow. These are engineering boundaries, not a claim that the system is fully secure or penetration tested.

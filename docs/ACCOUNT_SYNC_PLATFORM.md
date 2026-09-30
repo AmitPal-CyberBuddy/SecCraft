@@ -75,7 +75,7 @@ Then sign in and open `/account` → **Open owner console**, or visit `/admin`. 
 4. Create a backend env file from `backend/.env.example`. Set the matching `SUPABASE_URL`, `SUPABASE_ANON_KEY`, issuer/JWKS URL, and exact browser origins in `PLATFORM_ALLOWED_ORIGINS`. Set `SUPABASE_EMAIL_REDIRECT_URL` to an HTTPS URL on an allowed origin. Keep all database and provider secrets in the API host's secret manager.
 5. Point Supabase Auth callbacks/site URLs at the deployed app. Verify confirmation, sign-in, password recovery, and the API's `/auth/v1/user` confirmation check against a non-production project before enabling signup.
 
-The app should have a separate managed PostgreSQL database (or a deliberately selected Supabase PostgreSQL database) for the application tables. The migration enables RLS on all account tables without anon/authenticated policies, so Supabase PostgREST cannot bypass the FastAPI ownership checks; use the same restricted, table-owning application database role for migration/runtime (or a separately reviewed grants/RLS design) and TLS. Never expose its connection string or a Supabase service-role key to the browser.
+The app should have a separate managed PostgreSQL database (or a deliberately selected Supabase PostgreSQL database) for the application tables. The migration enables RLS on all account tables without anon/authenticated policies, so Supabase PostgREST cannot bypass the FastAPI ownership checks; the current table-owning runtime role bypasses RLS: backend ownership filters are the effective boundary. For a stronger database boundary, plan separate migration-owner and least-privileged runtime roles with tested grants and policies on PostgreSQL; do not enable FORCE RLS without corresponding policy tests. Use TLS. Never expose its connection string or a Supabase service-role key to the browser.
 
 ## Database migrations
 
@@ -128,3 +128,5 @@ The `web` service listens on HTTP port 8080 by default. Put it behind a TLS-term
 - [ ] No certificate, score, or mastery claim is displayed as server-verified until a real server-controlled rubric/grader and issuance policy exist.
 
 Contract tests: `python -m pytest backend/tests -q`. Frontend API resilience regression: `cd frontend && npm test`. Frontend build and content checks are described in the root README and CI workflow.
+
+The application signup limiter is per-process only, not a global quota; Supabase throttles are not a replacement for an ingress/provider rate limit. Closing the API signup toggle does not close direct Supabase identity creation without a configured and tested provider-side Auth Hook.
