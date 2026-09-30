@@ -2,7 +2,7 @@
   "name": "seccraft",
   "private": true,
   "version": "2.1.0",
-  "description": "SecCraft — Hands-on Cybersecurity Learning Platform. Learn. Practice. Investigate. Improve.",
+  "description": "SecCraft \u2014 Hands-on Cybersecurity Learning Platform. Learn. Practice. Investigate. Improve.",
   "type": "module",
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
@@ -11,7 +11,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "test": "node --test tests/api-resilience.test.mjs",
+    "test": "node --test --test-concurrency=1 tests/api-resilience.test.mjs tests/access-matrix.test.mjs tests/account-states.test.mjs",
     "preview": "vite preview",
     "preview:pages": "node ../scripts/serve-pages-preview.mjs"
   },
@@ -38,6 +38,7 @@
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "autoprefixer": "^10.4.22",
+    "jsdom": "^25.0.1",
     "oxlint": "^1.81.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.1",

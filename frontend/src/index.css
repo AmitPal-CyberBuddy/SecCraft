@@ -383,6 +383,53 @@ h1, h2, h3, h4, h5 {
   box-shadow: var(--shadow-glow-emerald);
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   Product-state channel
+   One colour per user state so account state is legible at a glance. Every
+   chip that uses these also carries a text label, so state is never conveyed
+   by hue alone. Values are also flipped in light mode below.
+   ───────────────────────────────────────────────────────────────────────── */
+:root {
+  --state-public: #94a3b8;
+  --state-guest: #33cfff;
+  --state-pending: #fbbf24;
+  --state-active: #34d399;
+  --state-rejected: #fb7185;
+  --state-suspended: #fb7185;
+  --state-owner: #c4b5fd;
+}
+
+.light, [data-theme="light"] {
+  --state-public: #475569;
+  --state-guest: #0369a1;
+  --state-pending: #b45309;
+  --state-active: #047857;
+  --state-rejected: #be123c;
+  --state-suspended: #be123c;
+  --state-owner: #6d28d9;
+}
+
+/* The journey rail reused on the landing page, account screens, and banners. */
+.journey-rail {
+  position: relative;
+}
+.journey-rail::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 14px;
+  bottom: 14px;
+  width: 1px;
+  background: linear-gradient(180deg, var(--state-guest), var(--state-pending), var(--state-active));
+  opacity: 0.45;
+}
+
+/* A quiet focus ring for the new account surfaces, matching the app's existing
+   focus treatment rather than introducing a second one. */
+.account-surface:focus-within {
+  border-color: rgba(51, 207, 255, 0.35);
+}
+
 /* Terminal — always dark for readability */
 .terminal {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;

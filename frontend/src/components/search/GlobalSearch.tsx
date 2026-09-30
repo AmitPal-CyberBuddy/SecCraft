@@ -143,7 +143,8 @@ function buildIndex(): SearchItem[] {
 
   // Platform pages
   items.push(
-    { id: 'page-dashboard', title: `${platform.name} Dashboard`, description: `${platform.tagline} • ${platform.secondaryTagline} • Platform overview`, type: 'tool', path: '/', keywords: ['dashboard', 'platform', 'overview', platform.name, platform.tagline], badge: 'platform' },
+    // The dashboard lives at /app; / is the public homepage.
+    { id: 'page-dashboard', title: `${platform.name} Dashboard`, description: `${platform.tagline} • Your next step • Local-first progress`, type: 'tool', path: '/app', keywords: ['dashboard', 'workspace', 'home', 'start', 'next step', platform.name, platform.tagline], badge: 'platform' },
     { id: 'page-paths', title: 'Learning Paths', description: `All learning paths • ${learningPaths.length} total • ${platform.name}`, type: 'tool', path: '/paths', keywords: ['learning paths', 'paths', 'wireless', 'web', 'api', 'android'], badge: 'platform' },
     { id: 'page-modules', title: 'Modules', description: 'Path-aware modules • 20 wireless • generic engine', type: 'tool', path: '/modules', keywords: ['modules', 'phases', 'foundations', 'recon', 'enterprise'], badge: 'learn' },
     { id: 'page-labs', title: 'Labs — Artifact Library', description: 'Artifact analysis • Config audit • Scenario • Platform generic', type: 'tool', path: '/labs', keywords: ['labs', 'pcap', 'artifact', 'config', 'terminal', 'evidence'], badge: 'practice' },
@@ -151,7 +152,10 @@ function buildIndex(): SearchItem[] {
     { id: 'page-engagement', title: 'Engagements / Assessments', description: 'ENG-01 Northwind Retail • Authorized assessment mode • Platform', type: 'tool', path: '/engagement', keywords: ['engagement', 'assessment', 'northwind', 'ENG-01'], badge: 'assess' },
     { id: 'page-reference', title: 'Reference — Commands, Filters, Checklist, Methodology', description: 'VAPT methodology • Evidence standard • Reporting • Platform generic', type: 'tool', path: '/reference', keywords: ['reference', 'commands', 'filters', 'checklist', 'methodology', 'evidence'], badge: 'reference' },
     { id: 'page-reports', title: 'Reports — Findings & Evidence Vault', description: 'Report editor • Timeline • Evidence vault • Platform generic', type: 'tool', path: '/reports', keywords: ['reports', 'evidence', 'vault', 'findings'], badge: 'track' },
-    { id: 'page-settings', title: 'Settings — Profile, Theme, Privacy, Local Data', description: 'Guest-first • Optional account sync • Theme • Accessibility • Offline learning', type: 'tool', path: '/settings', keywords: ['settings', 'profile', 'theme', 'privacy', 'accessibility'], badge: 'settings' },
+    { id: 'page-profile', title: 'Profile — Identity, Account State, Display Name', description: 'Who you are in SecCraft • Guest display name • Local record', type: 'tool', path: '/profile', keywords: ['profile', 'identity', 'account', 'display name', 'guest'], badge: 'account' },
+    { id: 'page-sync', title: 'Progress Sync — Import, Export, Merge', description: 'Local vs account vs imported records • Manual synchronization', type: 'tool', path: '/sync', keywords: ['sync', 'import', 'export', 'merge', 'backup', 'transfer', 'progress'], badge: 'account' },
+    { id: 'page-account', title: 'Account Status — Verification & Approval', description: 'Email verification • Owner approval • Sign out', type: 'tool', path: '/account', keywords: ['account', 'status', 'approval', 'pending', 'verify', 'sign out'], badge: 'account' },
+    { id: 'page-settings', title: 'Settings — Appearance, Accessibility, Local Data', description: 'Theme • Accessibility • Local data management • Account links', type: 'tool', path: '/settings', keywords: ['settings', 'theme', 'accessibility', 'local data', 'appearance'], badge: 'settings' },
   )
 
   return items
