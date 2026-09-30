@@ -14,9 +14,11 @@ import platform from '@/content/platform.json'
 import { AnimatedCard, FadeIn, StaggerContainer, StaggerItem, PulseDot, GlowOrb, SpotlightCard, HoverScale } from '@/components/animations'
 import { AccountBanner, OwnerNotice } from '@/components/account/AccountBanner'
 import { ProvenanceChip, StateChip } from '@/components/account/StateChip'
+import { StandingChip } from '@/components/account/PracticeStanding'
+import { canAccessTier, currentCurriculumLabel } from '@/lib/contentAccess'
 import { useSession } from '@/lib/session'
 import { useServerProgress } from '@/lib/useServerProgress'
-import { ACCOUNT_SYNC_NOTE, GUEST_LEARNING_NOTE, isSignedIn, STATE_META } from '@/lib/access'
+import { ACCOUNT_SYNC_NOTE, ACCOUNT_ADDS_NOTE, isSignedIn, STATE_META } from '@/lib/access'
 
 type Lesson = { id: string; title?: string }
 
@@ -131,6 +133,7 @@ export function Dashboard() {
   const streak = useProgressStore(s => s.getStreak())
 
   const { userState, can } = useSession()
+  const hasFullCurriculum = canAccessTier(userState, 'full')
   const server = useServerProgress()
   const nextAction = useNextAction(currentModuleId)
 
@@ -175,7 +178,7 @@ export function Dashboard() {
           <div className="min-w-0">
             <div className="dashboard-eyebrow">
               <span className="dashboard-eyebrow-mark" />
-              <span>{signedIn ? 'YOUR LEARNING WORKSPACE' : 'GUEST LEARNING WORKSPACE'}</span>
+              <span>{signedIn ? 'YOUR LEARNING WORKSPACE' : 'LEARNING WORKSPACE'}</span>
               <span className="dashboard-eyebrow-rule" />
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-2.5">
@@ -183,7 +186,21 @@ export function Dashboard() {
                 {signedIn ? 'Welcome back' : 'Start here'}
               </h1>
               <StateChip state={userState} />
-              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20">
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-wide ${
+                  hasFullCurriculum
+                    ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300'
+                    : 'border-cyan-500/25 bg-cyan-500/10 text-cyan-300'
+                }`}
+                title={
+                  hasFullCurriculum
+                    ? 'You have the Full Curriculum and account-backed records'
+                    : 'You have the Preview Curriculum'
+                }
+              >
+                {currentCurriculumLabel(userState)}
+              </span>
+              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20" title="Practice day streak, kept in this browser — not a record">
                 <Flame className="w-3 h-3 text-orange-400" aria-hidden="true" />
                 <span className="text-[10px] font-semibold text-amber-400">{streak}d</span>
               </div>
@@ -382,7 +399,7 @@ export function Dashboard() {
                       <span className="text-[11px] text-slate-400 uppercase">
                         {level.icon} {level.title} Lv.{level.level}
                       </span>
-                      <ProvenanceChip provenance="local" />
+                      <StandingChip standing="practice" />
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-[15px] font-bold font-mono text-slate-100">{totalXp} XP</span>
@@ -390,7 +407,10 @@ export function Dashboard() {
                         <motion.div initial={{ width: 0 }} animate={{ width: `${xpToNext.percent}%` }} transition={{ duration: 0.8 }} className="h-full bg-gradient-to-r from-amber-400 to-orange-400 rounded-full" />
                       </div>
                     </div>
-                    <p className="mt-1 text-[10px] text-slate-500">Local XP — a record of activity, not a validated skill grade.</p>
+                    <p className="mt-1 text-[10px] text-slate-500">
+                      Practice XP from this browser — not a verified score, and counted separately from the server
+                      ledger below.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -470,6 +490,7 @@ export function Dashboard() {
                     { label: 'Verified', value: server.data.verified, chip: 'server' as const },
                     { label: 'Imported', value: server.data.imported, chip: 'imported' as const },
                     { label: 'Server XP', value: server.data.xp, chip: 'server' as const },
+                    { label: 'Practice XP (this browser)', value: totalXp, chip: 'local' as const },
                   ].map(stat => (
                     <div key={stat.label} className="rounded-xl border border-[#1e293b] bg-[#020617]/50 p-3">
                       <div className="font-mono text-[18px] font-bold leading-none text-slate-100">{stat.value}</div>
@@ -480,6 +501,14 @@ export function Dashboard() {
                     </div>
                   ))}
                 </div>
+                {server.data.xp === 0 && (
+                  <p className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.05] px-3 py-2 text-[11.5px] leading-relaxed text-amber-200/90">
+                    The server ledger is live and is what an award of record would come from, but
+                    nothing has been awarded into it yet. Until a trusted grader issues XP, your{' '}
+                    <span className="font-semibold">{totalXp} practice XP</span> above is the only XP
+                    you have — and it stays in this browser.
+                  </p>
+                )}
                 <p className="mt-3 text-[11.5px] leading-relaxed text-slate-400">{ACCOUNT_SYNC_NOTE}</p>
                 <Link to="/sync" className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#334155] px-3 text-[12px] text-slate-200 transition-colors hover:bg-[#1e293b]">
                   <CloudUpload className="h-3.5 w-3.5" aria-hidden="true" /> Open progress sync
@@ -544,11 +573,11 @@ export function Dashboard() {
             <div className="flex min-w-0 items-start gap-3">
               <Shield className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" aria-hidden="true" />
               <div className="min-w-0">
-                <p className="text-[12.5px] font-semibold text-slate-200">{GUEST_LEARNING_NOTE}</p>
+                <p className="text-[12.5px] font-semibold text-slate-200">{ACCOUNT_ADDS_NOTE}</p>
                 <p className="mt-1 text-[12px] leading-relaxed text-slate-400">
                   {signedIn
                     ? STATE_META[userState].summary
-                    : 'An account adds an approval state and a platform-side copy of your progress. It does not unlock material that is already here.'}
+                    : 'The Preview Curriculum stays open either way. What an account adds is where your progress is kept and who can rely on it.'}
                 </p>
               </div>
             </div>

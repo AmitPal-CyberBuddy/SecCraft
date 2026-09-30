@@ -1,15 +1,71 @@
 import { motion } from 'framer-motion'
 import { CERT_PROGRESS_THRESHOLD, MAX_XP, useProgressStore } from '@/store/useProgressStore'
 import { TOTAL_LESSONS, TOTAL_MODULES, TOTAL_PCAPS, getStatsForPath } from '@/content/stats'
-import { ACHIEVEMENTS_DEF } from '@/content/achievements'
+
 import { Award, Trophy, Shield, Zap, CheckCircle, Crown, Star, Download, Share2, QrCode, Map as MapIcon } from 'lucide-react'
 import { useState, useMemo } from 'react'
 import learningPaths from '@/content/learning-paths.json'
 import platform from '@/content/platform.json'
 import { Link } from 'react-router-dom'
 import { useLocalProfile } from '@/components/profile/LocalProfile'
+import { useSession } from '@/lib/session'
+import { allows, CERTIFICATE_DISABLED_NOTE } from '@/lib/access'
+import { ShieldAlert } from 'lucide-react'
 
+/**
+ * Certificate entry point.
+ *
+ * Issuance is switched off for every user state. A certificate built from browser-local XP would
+ * assert a verified achievement that nothing on the platform has confirmed, which is a worse
+ * failure than not having one. The `certificate` capability in `lib/access.ts` is the single
+ * switch: when the platform issues verified XP and a completion record, adding a state that
+ * satisfies it restores the document below with no change to this component.
+ */
 export function Certificate({ className = '' }: { className?: string }) {
+  const { userState } = useSession()
+  if (!allows(userState, 'certificate')) return <CertificateUnavailable className={className} />
+  return <CertificateDocument className={className} />
+}
+
+function CertificateUnavailable({ className = '' }: { className?: string }) {
+  return (
+    <div
+      className={`relative overflow-hidden rounded-2xl border border-slate-800 bg-[#020617] p-6 xs:p-8 ${className}`}
+      role="status"
+    >
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-start">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-500/25 bg-amber-500/10">
+          <ShieldAlert className="h-5 w-5 text-amber-300" aria-hidden="true" />
+        </div>
+        <div className="min-w-0">
+          <h2 className="font-heading text-[16px] font-semibold text-slate-100">Certificates are not issued yet</h2>
+          <p className="mt-2 max-w-prose text-[13px] leading-relaxed text-slate-300">{CERTIFICATE_DISABLED_NOTE}</p>
+          <p className="mt-3 max-w-prose text-[12px] leading-relaxed text-slate-500">
+            We would rather show nothing than hand out a document that looks like proof of
+            something the platform has not checked. Your practice achievements, levels, and module
+            progress all still count — they are simply not awards of record yet.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              to="/achievements"
+              className="inline-flex min-h-9 items-center rounded-xl border border-slate-700 bg-slate-900 px-3.5 text-[12px] font-semibold text-slate-200 transition-colors hover:border-slate-600 hover:bg-slate-800 focus-ring"
+            >
+              See your achievements
+            </Link>
+            <Link
+              to="/app"
+              className="inline-flex min-h-9 items-center rounded-xl border border-slate-700 bg-slate-900 px-3.5 text-[12px] font-semibold text-slate-200 transition-colors hover:border-slate-600 hover:bg-slate-800 focus-ring"
+            >
+              Back to the dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CertificateDocument({ className = '' }: { className?: string }) {
   const { profile } = useLocalProfile()
   const totalXp = useProgressStore(s => s.getTotalXp())
   const level = useProgressStore(s => s.getLevel())

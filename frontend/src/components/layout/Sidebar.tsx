@@ -192,7 +192,7 @@ export function Sidebar({ onClose, isMobile, isOpen }: Props) {
             onClick={isMobile ? onClose : undefined}
             className="mt-2.5 inline-flex min-h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-cyan-300/25 bg-cyan-300/10 px-2.5 text-[11px] font-semibold text-cyan-100 transition-colors hover:border-cyan-200/50 hover:bg-cyan-300/15"
           >
-            Request an account
+            Continue with an account
           </NavLink>
         )}
       </div>

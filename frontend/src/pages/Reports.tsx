@@ -42,7 +42,7 @@ export function Reports() {
         <div className="flex gap-1 p-1 rounded-xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm w-fit">
           {[
             { id: 'editor', label: 'Report Editor', icon: FileText },
-            { id: 'certificate', label: 'Certificate', icon: Trophy },
+            { id: 'certificate', label: 'Certificates', icon: Trophy },
             { id: 'vault', label: 'Evidence Vault', icon: Shield },
             { id: 'pdf', label: 'PDF Export', icon: Download },
             { id: 'cvss', label: 'CVSS', icon: BarChart3 },
@@ -60,7 +60,7 @@ export function Reports() {
         </div>
       </motion.div>
 
-      {activeTab === 'certificate' && <Suspense fallback={<LoadingPanel label="Loading Certificate QR…" />}><Certificate /></Suspense>}
+      {activeTab === 'certificate' && <Suspense fallback={<LoadingPanel label="Loading certificate status…" />}><Certificate /></Suspense>}
       {activeTab === 'vault' && <Suspense fallback={<LoadingPanel label="Loading Vault…" />}><EvidenceVault /></Suspense>}
       {activeTab === 'pdf' && <Suspense fallback={<LoadingPanel label="Loading PDF/A Export…" />}><ReportPdfExport /></Suspense>}
       {activeTab === 'cvss' && <Suspense fallback={<LoadingPanel label="Loading CVSS…" />}><CvssCalculator /></Suspense>}

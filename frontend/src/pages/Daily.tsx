@@ -4,6 +4,9 @@ import { Flame, Target, Clock, Zap, Calendar, Trophy } from 'lucide-react'
 import { lazy, Suspense } from 'react'
 import { PageTransition, FadeIn } from '@/components/animations'
 import platform from '@/content/platform.json'
+import { PracticeStandingNotice, StandingChip } from '@/components/account/PracticeStanding'
+import { useSession } from '@/lib/session'
+import { standingFor } from '@/lib/access'
 import { useProgressStore } from '@/store/useProgressStore'
 
 const DailyChallenges = lazy(() => import('@/components/gamification/DailyChallenges').then(m => ({ default: m.DailyChallenges })))
@@ -11,10 +14,13 @@ const DailyChallenges = lazy(() => import('@/components/gamification/DailyChalle
 export function Daily() {
   const streak = useProgressStore(s => s.getStreak())
   const totalXp = useProgressStore(s => s.getTotalXp())
+  const { userState } = useSession()
+  const standing = standingFor(userState)
 
   return (
     <PageTransition>
       <div className="space-y-6 max-w-[1400px] mx-auto">
+        <PracticeStandingNotice />
         <FadeIn>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -24,7 +30,10 @@ export function Daily() {
                 </div>
                 Daily Challenges
               </h1>
-              <p className="text-[13px] text-slate-400 mt-2">{platform.tagline} • Streak {streak} days • {totalXp} XP • Forge daily habits</p>
+              <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13px] text-slate-400">
+                <span>{platform.tagline} • Streak {streak} days • {totalXp} XP • Forge daily habits</span>
+                <StandingChip standing={standing} />
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <div className="px-3 py-1.5 rounded-full bg-[#0f172a] border border-[#1e293b] flex items-center gap-2 text-[11px] font-mono text-slate-400">

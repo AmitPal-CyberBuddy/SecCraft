@@ -5,7 +5,18 @@ import { useLocalProfile } from '@/components/profile/LocalProfile'
 import { useSession } from '@/lib/session'
 import { useServerProgress } from '@/lib/useServerProgress'
 import { useProgressStore } from '@/store/useProgressStore'
-import { ACCOUNT_SYNC_NOTE, isSignedIn, STATE_META } from '@/lib/access'
+import {
+  ACCOUNT_SYNC_NOTE,
+  isSignedIn,
+  PRACTICE_XP_NOTE,
+  STATE_META,
+} from '@/lib/access'
+import { StandingChip } from '@/components/account/PracticeStanding'
+import {
+  CONTENT_NOT_ENFORCED_NOTE,
+  CONTENT_TIER_META,
+  currentCurriculumLabel,
+} from '@/lib/contentAccess'
 import { ProvenanceChip, StateChip } from '@/components/account/StateChip'
 import { StateExplainer } from '@/components/account/AccountBanner'
 import { AnimatedCard, FadeIn } from '@/components/animations'
@@ -180,22 +191,29 @@ export function Profile() {
               <ProvenanceChip provenance="local" />
             </div>
             <p className="mt-2 text-[12.5px] leading-relaxed text-slate-400">
-              You are learning as a guest. Everything in the workspace is open, and your progress stays in this browser.
-              An account adds an approval state and a platform-side copy of your progress — it does not unlock new material.
+              You are learning on the <span className="text-slate-200">{CONTENT_TIER_META.preview.label}</span>. Your
+              progress, XP, and achievements stay in this browser — they are practice, not a record.
+              An approved account is a different learning experience, not a bigger one.
             </p>
-            <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-              {[
-                'Keeps your current local record — nothing is reset when you sign in.',
-                'Adds a real approval state you can check at any time.',
-                'Lets you move a progress file to another device by hand.',
-                'Is entirely optional, and can be discarded at any time.',
-              ].map(item => (
-                <li key={item} className="flex items-start gap-2 rounded-lg border border-[#1e293b] bg-[#020617]/50 p-3 text-[12px] leading-relaxed text-slate-300">
-                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" aria-hidden="true" />
-                  {item}
-                </li>
-              ))}
-            </ul>
+            <div className="mt-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                What an approved account changes
+              </p>
+              <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+                {[
+                  'The Full Curriculum, including the authored modules and the final assessment.',
+                  'Progress held on the platform for your account, instead of only in this browser.',
+                  'Verified XP and account-backed achievements — awards of record, not practice.',
+                  'Assessment attempt history, and a manual way to move a progress file between devices.',
+                ].map(item => (
+                  <li key={item} className="flex items-start gap-2 rounded-lg border border-[#1e293b] bg-[#020617]/50 p-3 text-[12px] leading-relaxed text-slate-300">
+                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" aria-hidden="true" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-[11.5px] leading-relaxed text-slate-500">{CONTENT_NOT_ENFORCED_NOTE}</p>
+            </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link to="/login" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#334155] px-3 text-[12px] text-slate-200 transition-colors hover:bg-[#1e293b]">
                 <LogIn className="h-3.5 w-3.5" aria-hidden="true" /> Log in
@@ -208,8 +226,8 @@ export function Profile() {
             </div>
             {authAvailability === 'unavailable' && (
               <p className="mt-3 text-[12px] leading-relaxed text-slate-500">
-                Account services are not configured in this build, so sign-in is unavailable. Guest learning is complete
-                on its own.
+                Account services are not configured in this build, so sign-in is unavailable. The Preview Curriculum
+                works on its own.
               </p>
             )}
           </AnimatedCard>
@@ -221,19 +239,24 @@ export function Profile() {
         <AnimatedCard glowColor="none" className="p-4 xs:p-5 sm:p-6" hoverLift={false}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="flex items-center gap-2 font-heading text-[14px] font-bold text-slate-100">
-              <Eye className="h-4 w-4 text-cyan-400" aria-hidden="true" /> This browser&rsquo;s record
+              <Eye className="h-4 w-4 text-cyan-400" aria-hidden="true" /> This browser&rsquo;s practice record
             </h2>
-            <ProvenanceChip provenance="local" />
+            <StandingChip standing="practice" />
           </div>
           <p className="mt-2 text-[12px] leading-relaxed text-slate-400">
-            Progress, XP, and achievements computed in this browser from what you have completed here. Not confirmed by the
-            platform, and not transferable on its own.
+            {PRACTICE_XP_NOTE} Nothing here is confirmed by the platform, and it does not follow you to another device
+            unless you export it yourself.
           </p>
           <div className="mt-4">
             <Row label="Recorded activities" value={`${localCount}`} />
-            <Row label="Local XP" value={`${totalXp} XP`} chip={<ProvenanceChip provenance="derived" />} />
-            <Row label="Local level" value={`${level.title} · Lv.${level.level}`} chip={<ProvenanceChip provenance="derived" />} />
-            <Row label="Day streak" value={`${streak}d`} chip={<ProvenanceChip provenance="derived" />} />
+            <Row label="Practice XP" value={`${totalXp} XP`} chip={<ProvenanceChip provenance="derived" />} />
+            <Row label="Practice level" value={`${level.title} · Lv.${level.level}`} chip={<ProvenanceChip provenance="derived" />} />
+            <Row label="Practice day streak" value={`${streak}d`} chip={<ProvenanceChip provenance="derived" />} />
+            <Row
+              label="Curriculum"
+              value={currentCurriculumLabel(userState)}
+              chip={<ProvenanceChip provenance="derived" />}
+            />
           </div>
         </AnimatedCard>
       </FadeIn>

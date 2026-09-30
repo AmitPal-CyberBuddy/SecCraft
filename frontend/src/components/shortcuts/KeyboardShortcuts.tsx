@@ -9,7 +9,7 @@ const shortcuts = [
   { keys: ['G', 'M'], desc: 'Go to Modules', section: 'Navigation' },
   { keys: ['G', 'L'], desc: 'Go to Labs — PCAP + Terminal + Vault', section: 'Navigation' },
   { keys: ['G', 'C'], desc: 'Go to Challenges', section: 'Navigation' },
-  { keys: ['G', 'R'], desc: 'Go to Reports & Certificate', section: 'Navigation' },
+  { keys: ['G', 'R'], desc: 'Go to Reports & Certificates', section: 'Navigation' },
   { keys: ['J'], desc: 'Next lesson / next item', section: 'Learning' },
   { keys: ['K'], desc: 'Previous lesson', section: 'Learning' },
   { keys: ['C'], desc: 'Mark complete — earn XP', section: 'Learning' },

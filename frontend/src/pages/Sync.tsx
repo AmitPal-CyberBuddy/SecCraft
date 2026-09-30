@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { ArrowRight, CloudUpload, Database, HardDrive, Info, Layers, Lock, ShieldCheck } from 'lucide-react'
 import { ProgressSyncPanel } from '@/components/progress/ProgressSyncPanel'
 import { useServerProgress } from '@/lib/useServerProgress'
+import { useProgressStore } from '@/store/useProgressStore'
 import { useSession } from '@/lib/session'
 import { ACCOUNT_SYNC_NOTE, CROSS_DEVICE_NOTE, NO_VERIFICATION_CLAIM, STATE_META } from '@/lib/access'
 import { ProvenanceChip, StateChip } from '@/components/account/StateChip'
@@ -20,6 +21,7 @@ export function Sync() {
   const { userState, can } = useSession()
   const server = useServerProgress()
   const accountBacked = can('account-progress')
+  const totalXp = useProgressStore(s => s.getTotalXp())
 
   return (
     <div className="mx-auto w-full max-w-[1100px] min-w-0 space-y-4 xs:space-y-6">
@@ -70,7 +72,8 @@ export function Sync() {
               <ProvenanceChip provenance="imported" />
             </div>
             <p className="mt-2 text-[12px] leading-relaxed text-slate-400">
-              Transferred in from a file. Imported rows stay unverified forever and can never award XP or a certificate.
+              Transferred in from a file. Imported rows stay unverified forever and can never award XP or a
+              certificate. An approved account makes this an account record instead — it does not make it verified.
             </p>
           </AnimatedCard>
         </div>
@@ -130,7 +133,8 @@ export function Sync() {
                     { label: 'Records held', value: server.data.records.length, chip: 'server' as const, sub: `${server.data.completed} completed` },
                     { label: 'Verified', value: server.data.verified, chip: 'server' as const, sub: 'confirmed by the platform' },
                     { label: 'Imported', value: server.data.imported, chip: 'imported' as const, sub: 'unverified' },
-                    { label: 'Server XP', value: server.data.xp, chip: 'server' as const, sub: 'verified ledger' },
+                    { label: 'Server XP', value: server.data.xp, chip: 'server' as const, sub: 'server ledger' },
+                    { label: 'Practice XP (this browser)', value: totalXp, chip: 'local' as const, sub: 'not a record' },
                   ].map(stat => (
                     <div key={stat.label} className="rounded-xl border border-[#1e293b] bg-[#020617]/50 p-3">
                       <div className="font-mono text-[20px] font-bold leading-none text-slate-100">{stat.value}</div>

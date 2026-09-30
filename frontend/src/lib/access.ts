@@ -64,6 +64,8 @@ export type Capability =
   | 'account-progress'
   | 'progress-merge'
   | 'assessment-attempts'
+  | 'full-curriculum'
+  | 'certificate'
   | 'admin-console'
 
 const LEARNER_STATES: UserState[] = ['public', 'guest', 'pending', 'active', 'rejected', 'suspended']
@@ -86,8 +88,18 @@ export const ACCESS_MATRIX: Record<Capability, UserState[]> = {
   'account-progress': ACCOUNT_BACKED_STATES,
   'progress-merge': ACCOUNT_BACKED_STATES,
   'assessment-attempts': ACCOUNT_BACKED_STATES,
+  'full-curriculum': ACCOUNT_BACKED_STATES,
+  // No state qualifies. Certificates require authoritative XP and a completion record, and
+  // nothing on the server awards verified XP yet, so issuance is off everywhere. See
+  // CERTIFICATE_DISABLED_NOTE. A certificate that could be earned from browser-local state
+  // would be a false claim of verification, which is worse than no certificate at all.
+  certificate: [],
   'admin-console': ['owner'],
 }
+
+/** Certificate issuance is globally disabled — see ACCESS_MATRIX. */
+export const CERTIFICATE_DISABLED_NOTE =
+  'Certificates are not issued yet. They would need verified XP and a completion record from the platform, and right now neither is issued, so no certificate can be honestly produced. Practice achievements are still yours — they just are not awards of record.'
 
 export function allows(state: UserState, capability: Capability): boolean {
   return ACCESS_MATRIX[capability].includes(state)
@@ -156,40 +168,44 @@ export const STATE_META: Record<UserState, StateDescriptor> = {
   public: {
     label: 'Visitor',
     tone: 'neutral',
-    nextAction: 'Explore the platform — no account required.',
-    summary: 'You can read the material and open the guest workspace. Nothing is stored for you yet.',
+    nextAction: 'Explore the Preview Curriculum — no account required.',
+    summary:
+      'Read the Preview Curriculum and try a few labs. Nothing is recorded for you, and you can keep your place in this browser.',
   },
   guest: {
-    label: 'Guest learner',
+    label: 'Preview learner',
     tone: 'guest',
-    nextAction: 'Start a module — progress is saved in this browser.',
-    summary: 'Every learning surface is open. Progress, XP, and notes stay on this device.',
+    nextAction: 'Work through the Preview Curriculum — your place is saved in this browser.',
+    summary:
+      'You have the Preview Curriculum and practice labs. XP, levels, and achievements here are practice, kept on this device — they are not a record and are not verified.',
   },
   pending: {
     label: 'Approval pending',
     tone: 'pending',
-    nextAction: 'Nothing to do — keep learning as a guest while the request is reviewed.',
+    nextAction: 'Nothing to do — keep working in the Preview Curriculum while the request is reviewed.',
     summary:
-      'Your email is verified and your request is with the platform owner. Account-backed features switch on only after approval.',
+      'Your email is verified and your request is with the platform owner. You are being shown the Preview Curriculum until it is approved; the Full Curriculum and account records switch on after that.',
   },
   active: {
     label: 'Approved account',
     tone: 'active',
     nextAction: 'Check the account snapshot, or keep going on your current module.',
     summary:
-      'Your account is approved, so progress records, import/merge, and assessment records are available. Synchronization stays manual.',
+      'Your account is approved, so the Full Curriculum, account-backed progress records, import/merge, and assessment history are available. Synchronization stays manual.',
   },
   rejected: {
     label: 'Not approved',
     tone: 'danger',
-    nextAction: 'Continue with guest learning — every learning surface is still open.',
-    summary: 'This access request was not approved. Public and guest learning is unaffected.',
+    nextAction: 'Continue in the Preview Curriculum — nothing you have read is taken away.',
+    summary:
+      'This access request was not approved, so you are being shown the Preview Curriculum and no account records. The public material is unaffected.',
   },
   suspended: {
     label: 'Suspended',
     tone: 'danger',
-    nextAction: 'Continue with guest learning — every learning surface is still open.',
-    summary: 'This account is suspended, so account-backed features are unavailable. Guest learning is unaffected.',
+    nextAction: 'Continue in the Preview Curriculum — account-backed features are unavailable.',
+    summary:
+      'This account is suspended, so account records, verified XP, and the Full Curriculum are unavailable. The public Preview Curriculum is unaffected.',
   },
   owner: {
     label: 'Owner',
@@ -208,6 +224,14 @@ export const STATE_META: Record<UserState, StateDescriptor> = {
  * `Account` chips so nothing browser-side is ever read as server-confirmed.
  */
 export type Provenance = 'local' | 'derived' | 'server' | 'imported'
+
+/**
+ * Whether a number is an *award of record* or a *practice figure*.
+ *
+ * This is the distinction the product turns on. `practice` figures come from browser-local state
+ * and are useful for motivation but carry no authority. `record` figures are held on the platform.
+ */
+export type Standing = 'practice' | 'record'
 
 export const PROVENANCE_META: Record<Provenance, { label: string; tone: StateTone; note: string }> = {
   local: {
@@ -232,6 +256,24 @@ export const PROVENANCE_META: Record<Provenance, { label: string; tone: StateTon
   },
 }
 
+export const STANDING_META: Record<Standing, { label: string; tone: StateTone; note: string }> = {
+  practice: {
+    label: 'Practice',
+    tone: 'guest',
+    note: 'Kept in this browser. It is not a verified score and it is not a record of achievement.',
+  },
+  record: {
+    label: 'Account record',
+    tone: 'active',
+    note: 'Held on the platform for your account.',
+  },
+}
+
+/** True when a state's XP/achievement figures are practice-only and must be labelled as such. */
+export function standingFor(state: UserState): Standing {
+  return allows(state, 'account-progress') ? 'record' : 'practice'
+}
+
 /* ------------------------------------------------------------------ *
  * Reusable copy
  * ------------------------------------------------------------------ */
@@ -245,5 +287,15 @@ export const CROSS_DEVICE_NOTE =
 export const NO_VERIFICATION_CLAIM =
   'Assessment answers are recorded as a digest only. No server rubric grades them, so no score here is a verified result.'
 
-export const GUEST_LEARNING_NOTE =
-  'Guest learning is a complete experience, not a trial. Nothing below is removed by not having an account.'
+export const PREVIEW_NOTE =
+  'The Preview Curriculum is a real slice of the SecCraft method, not a watered-down trial. What an account adds is the record, not the reading.'
+
+export const ACCOUNT_ADDS_NOTE =
+  'An approved account adds the Full Curriculum, progress you can rely on, verified XP, assessment history, and a record that survives a new device.'
+
+export const ACCOUNT_ADDOES_NOT_ADD_NOTE =
+  'An account does not change how much of the public material you can read, and it never uploads your progress on its own. Synchronization is always a deliberate step.'
+
+/** Shown wherever local XP appears for a non-approved state, so it is never read as standing. */
+export const PRACTICE_XP_NOTE =
+  'Practice XP is stored in this browser. It is not verified, it is not a record, and it will not follow you to another device.'

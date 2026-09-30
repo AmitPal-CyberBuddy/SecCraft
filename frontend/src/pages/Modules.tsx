@@ -3,11 +3,19 @@ import { useParams, Link } from 'react-router-dom'
 import { ModuleCard } from '@/components/learning/ModuleCard'
 import { useProgressStore } from '@/store/useProgressStore'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Filter, Layers, Sparkles, BookOpen, Target, TrendingUp, ArrowLeft, Map } from 'lucide-react'
+import { Search, Filter, Layers, Sparkles, BookOpen, Target, TrendingUp, ArrowLeft, ArrowRight, Map } from 'lucide-react'
 import modules from '@/content/modules.json'
 import learningPaths from '@/content/learning-paths.json'
 import { TOTAL_CHALLENGES, TOTAL_LESSONS, TOTAL_MODULES, TOTAL_PCAPS, TOTAL_SCENARIOS, getModulesForPath } from '@/content/stats'
 import { MAX_XP } from '@/store/useProgressStore'
+import { useSession } from '@/lib/session'
+import { allows } from '@/lib/access'
+import {
+  canAccessTier,
+  CONTENT_NOT_ENFORCED_NOTE,
+  CONTENT_TIER_META,
+  contentTierOf,
+} from '@/lib/contentAccess'
 
 export function Modules() {
   const { pathId } = useParams()
@@ -26,6 +34,13 @@ export function Modules() {
   const totalXp = useProgressStore(s => s.getTotalXp())
   const level = useProgressStore(s => s.getLevel())
   const completedLessons = useProgressStore(s => s.completedLessons.length)
+  const { userState } = useSession()
+  const hasFullCurriculum = canAccessTier(userState, 'full')
+  const tierCounts = useMemo(() => {
+    const out = { preview: 0, full: 0 }
+    for (const m of pathModules) out[contentTierOf({ id: m.id, phase: m.phase })] += 1
+    return out
+  }, [pathModules])
 
   const filtered = useMemo(() => {
     return pathModules.filter(m => {
@@ -233,6 +248,60 @@ export function Modules() {
         </div>
       </motion.div>
 
+      {/* Curriculum tier — an honest statement of what the account changes, and what it does not */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        data-tour="curriculum-tier"
+        className={`rounded-2xl border p-4 sm:p-5 ${
+          hasFullCurriculum
+            ? 'border-emerald-500/20 bg-emerald-500/[0.04]'
+            : 'border-violet-500/20 bg-violet-500/[0.04]'
+        }`}
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <div
+              className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${
+                hasFullCurriculum
+                  ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300'
+                  : 'border-violet-500/25 bg-violet-500/10 text-violet-300'
+              }`}
+            >
+              {hasFullCurriculum ? <Target className="h-4 w-4" aria-hidden="true" /> : <Map className="h-4 w-4" aria-hidden="true" />}
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="font-heading text-[15px] font-semibold text-slate-100">
+                  {hasFullCurriculum ? CONTENT_TIER_META.full.label : CONTENT_TIER_META.preview.label}
+                </h2>
+                <span className="rounded-full border border-slate-700 bg-slate-900 px-2 py-0.5 font-mono text-[10px] text-slate-400">
+                  {tierCounts.preview} preview · {tierCounts.full} full
+                </span>
+              </div>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-slate-300">
+                {hasFullCurriculum ? CONTENT_TIER_META.full.blurb : CONTENT_TIER_META.preview.blurb}
+              </p>
+            </div>
+          </div>
+
+          {!hasFullCurriculum && (
+            <Link
+              to="/account"
+              className="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-xl border border-violet-500/30 bg-violet-500/10 px-3.5 text-[12px] font-semibold text-violet-200 transition-colors hover:border-violet-500/50 hover:bg-violet-500/20 focus-ring"
+            >
+              Continue with an approved account
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+          )}
+        </div>
+
+        <p className="mt-3 border-t border-slate-800/80 pt-3 text-[11.5px] leading-relaxed text-slate-500">
+          {CONTENT_NOT_ENFORCED_NOTE}
+        </p>
+      </motion.div>
+
       {/* Modules Grid */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -265,6 +334,8 @@ export function Modules() {
                 progress={useProgressStore.getState().getModuleProgress(m.id)}
                 description={m.description}
                 locked={false}
+                tier={contentTierOf({ id: m.id, phase: m.phase })}
+                tierIsAccountContent={!hasFullCurriculum && contentTierOf({ id: m.id, phase: m.phase }) === 'full'}
               />
             </motion.div>
           ))}

@@ -103,7 +103,7 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
 
   const openSearch = () => document.dispatchEvent(new CustomEvent('open-search'))
 
-  const identityLabel = account?.email ?? (isSignedIn(userState) ? 'Account' : 'Guest learner')
+  const identityLabel = account?.email ?? (isSignedIn(userState) ? 'Account' : 'Preview learner')
   const displayLabel = identityLabel.length > 22 ? `${identityLabel.slice(0, 19)}…` : identityLabel
 
   async function handleSignOut() {
@@ -277,7 +277,7 @@ export function Topbar({ onMenuToggle, sidebarOpen, isMobile }: Props) {
                 >
                   <div className="px-4 py-3.5 border-b border-[#1e293b] bg-[#020617]/60">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[12px] font-semibold text-slate-100 truncate">{account?.email ?? (isSignedIn(userState) ? 'Signed-in account' : 'Guest learner')}</span>
+                      <span className="text-[12px] font-semibold text-slate-100 truncate">{account?.email ?? (isSignedIn(userState) ? 'Signed-in account' : 'Preview learner')}</span>
                       <StateChip state={userState} size="sm" />
                     </div>
                     <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">{STATE_META[userState].nextAction}</p>

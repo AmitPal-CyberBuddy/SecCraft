@@ -62,7 +62,7 @@ export function PublicLayout() {
                 Request access
               </Link>
               <Link to="/app" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-cyan-300/25 bg-cyan-300/10 px-4 text-sm font-semibold text-cyan-100 transition-colors hover:border-cyan-200/50 hover:bg-cyan-300/15">
-                Explore as guest <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                Start the preview <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
             </div>
           )}
@@ -106,7 +106,7 @@ export function PublicLayout() {
                   <Link to="/signup" className="hidden flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-700 px-3 py-2 text-center text-sm text-slate-200">
                     <CloudUpload className="h-4 w-4" aria-hidden="true" /> Request access
                   </Link>
-                  <Link to="/app" className="flex-1 rounded-lg bg-cyan-300 px-3 py-2 text-center text-sm font-semibold text-slate-950">Explore as guest</Link>
+                  <Link to="/app" className="flex-1 rounded-lg bg-cyan-300 px-3 py-2 text-center text-sm font-semibold text-slate-950">Start the preview</Link>
                 </div>
               )}
             </div>

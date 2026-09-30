@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { ArrowRight, Clock, Compass, Fingerprint, Info, LogOut, ShieldAlert, UserCheck, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { useSession } from '@/lib/session'
-import { GUEST_LEARNING_NOTE, STATE_META, type UserState } from '@/lib/access'
+import { allows, PREVIEW_NOTE, STATE_META, type UserState } from '@/lib/access'
 import { StateChip } from './StateChip'
 
 /**
@@ -70,12 +70,14 @@ export function AccountBanner() {
                 {unverified
                   ? 'Open the verification message sent to your inbox, then come back. Until then, account features stay unavailable — guest learning does not.'
                   : transient
-                  ? `${accountError.message} Nothing below depends on it: every lesson, lab, challenge, and local progress record keeps working.`
+                  ? `${accountError.message} Nothing below depends on it: the Preview Curriculum, your labs and challenges, and the progress kept in this browser all keep working.`
                   : STATE_META[userState as Exclude<UserState, 'public' | 'guest'>].summary}
               </p>
               <p className="mt-2 text-[11.5px] leading-relaxed text-slate-400">
                 <Compass className="mr-1 inline h-3 w-3 align-[-1px]" aria-hidden="true" />
-                {GUEST_LEARNING_NOTE}
+                {allows(userState, 'full-curriculum')
+                  ? 'The Full Curriculum and your account records are both available.'
+                  : PREVIEW_NOTE}
               </p>
             </div>
           </div>

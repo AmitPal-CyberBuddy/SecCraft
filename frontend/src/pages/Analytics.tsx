@@ -4,6 +4,7 @@ import { BarChart3, TrendingUp, Activity, Target, BookOpen, FlaskConical, Swords
 import { lazy, Suspense } from 'react'
 import { PageTransition, FadeIn, StaggerContainer, StaggerItem } from '@/components/animations'
 import platform from '@/content/platform.json'
+import { PracticeStandingNotice } from '@/components/account/PracticeStanding'
 import { PLATFORM_STATS } from '@/content/stats'
 import { useProgressStore } from '@/store/useProgressStore'
 
@@ -20,6 +21,7 @@ export function Analytics() {
   return (
     <PageTransition>
       <div className="space-y-6 max-w-[1400px] mx-auto">
+        <PracticeStandingNotice />
         <FadeIn>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>

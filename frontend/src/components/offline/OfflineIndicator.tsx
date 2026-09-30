@@ -41,10 +41,10 @@ export function OfflineIndicator() {
   const message = online
     ? accountBacked
       ? 'Back online — the account service is reachable again. Your progress is still only sent when you import it.'
-      : 'Back online — lessons, labs, and local progress kept working. Nothing was uploaded.'
+      : 'Back online — lessons, labs, and the progress kept in this browser kept working. Nothing was uploaded.'
     : signedIn
-    ? `Offline — the shell, ${TOTAL_LESSONS} lessons, lab datasets, and your local progress all keep working.`
-    : `Offline — the shell, ${TOTAL_LESSONS} lessons, lab datasets, and local progress all keep working; nothing is sent anywhere.`
+    ? `Offline — the shell, ${TOTAL_LESSONS} lessons, lab datasets, and the progress kept in this browser all keep working.`
+    : `Offline — the shell, ${TOTAL_LESSONS} lessons, lab datasets, and the progress kept in this browser all keep working; nothing is sent anywhere.`
 
   return (
     <AnimatePresence>

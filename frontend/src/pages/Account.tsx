@@ -5,7 +5,8 @@ import { ArrowLeft, ArrowRight, CheckCircle2, CircleAlert, Compass, KeyRound, Lo
 import { apiFetch } from '@/lib/api'
 import { accountRedirect, supabase, supabaseConfigured } from '@/lib/supabase'
 import { useSession } from '@/lib/session'
-import { GUEST_LEARNING_NOTE, isSignedIn, STATE_META } from '@/lib/access'
+import { ACCOUNT_ADDS_NOTE, isSignedIn, STATE_META } from '@/lib/access'
+import { currentCurriculumLabel } from '@/lib/contentAccess'
 import { StateChip } from '@/components/account/StateChip'
 
 interface PublicConfig {
@@ -104,7 +105,7 @@ function NextActions() {
           </Link>
         ))}
       </div>
-      <p className="mt-3 text-[11.5px] leading-relaxed text-slate-500">{GUEST_LEARNING_NOTE}</p>
+      <p className="mt-3 text-[11.5px] leading-relaxed text-slate-500">{ACCOUNT_ADDS_NOTE}</p>
     </div>
   )
 }
@@ -558,7 +559,7 @@ export function UpdatePasswordPage() {
  */
 export function AccountStatusPage() {
   const [params] = useSearchParams()
-  const { userState, account, accountError, ready, refreshAccount, signOut } = useSession()
+  const { userState, account, accountError, ready, refreshAccount, signOut, can } = useSession()
   const [checking, setChecking] = useState(false)
   const signedIn = ready && isSignedIn(userState)
   const justRegistered = params.get('sent') === '1'
@@ -612,7 +613,7 @@ export function AccountStatusPage() {
           {accountError.kind !== 'none' && <ServiceUnavailable>{accountError.message}</ServiceUnavailable>}
           <p className="text-sm leading-6 text-slate-400">
             Sign in after confirming your email to view your account state. New accounts stay pending until the owner
-            approves access — and in the meantime every learning surface is open to you as a guest.
+            approves access — and in the meantime you keep the full Preview Curriculum.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link
@@ -622,7 +623,7 @@ export function AccountStatusPage() {
               Sign in <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
             <Link to="/app" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-700 px-4 text-sm text-slate-200 transition-colors hover:bg-slate-800">
-              Continue as a guest
+              Continue in the Preview Curriculum
             </Link>
           </div>
           <NextActions />
@@ -644,6 +645,25 @@ export function AccountStatusPage() {
               </p>
             )}
             <p className="mt-3 text-[12.5px] leading-relaxed text-slate-300">{STATE_META[userState].nextAction}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-800/80 pt-3">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                Your curriculum
+              </span>
+              <span
+                className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${
+                  can('full-curriculum')
+                    ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300'
+                    : 'border-cyan-500/25 bg-cyan-500/10 text-cyan-300'
+                }`}
+              >
+                {currentCurriculumLabel(userState)}
+              </span>
+              {!can('full-curriculum') && (
+                <span className="text-[11.5px] leading-relaxed text-slate-500">
+                  Approval switches on the Full Curriculum and account-backed records.
+                </span>
+              )}
+            </div>
           </div>
 
           {accountError.kind !== 'none' && accountError.kind !== 'unverified' && (

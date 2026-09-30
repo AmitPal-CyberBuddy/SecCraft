@@ -6,10 +6,15 @@ import { PageTransition, FadeIn, StaggerContainer, StaggerItem } from '@/compone
 import { LevelBadge, CertificationPayoff } from '@/components/gamification/LevelBadge'
 import { useProgressStore } from '@/store/useProgressStore'
 import platform from '@/content/platform.json'
+import { PracticeStandingNotice, StandingChip } from '@/components/account/PracticeStanding'
+import { useSession } from '@/lib/session'
+import { standingFor } from '@/lib/access'
 
 const BadgesShowcase = lazy(() => import('@/components/gamification/BadgesShowcase').then(m => ({ default: m.BadgesShowcase })))
 
 export function Achievements() {
+  const { userState } = useSession()
+  const standing = standingFor(userState)
   const totalXp = useProgressStore(s => s.getTotalXp())
   const level = useProgressStore(s => s.getLevel())
   const achievements = useProgressStore(s => s.achievements)
@@ -17,6 +22,7 @@ export function Achievements() {
   return (
     <PageTransition>
       <div className="space-y-6 max-w-[1400px] mx-auto">
+        <PracticeStandingNotice />
         <FadeIn>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -26,7 +32,10 @@ export function Achievements() {
                 </div>
                 Achievements
               </h1>
-              <p className="text-[13px] text-slate-400 mt-2">{platform.tagline} • {achievements.length} unlocked • {totalXp} XP • {level.title} Lv.{level.level}</p>
+              <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13px] text-slate-400">
+                <span>{platform.tagline} • {achievements.length} unlocked • {totalXp} XP • {level.title} Lv.{level.level}</span>
+                <StandingChip standing={standing} />
+              </p>
             </div>
           </div>
         </FadeIn>

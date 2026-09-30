@@ -28,6 +28,7 @@ import { PLATFORM_STATS, TOTAL_CHALLENGES, TOTAL_LABS, TOTAL_LESSONS, TOTAL_MODU
 import { useSession } from '@/lib/session'
 import { isSignedIn, STATE_META } from '@/lib/access'
 import { StateChip } from '@/components/account/StateChip'
+import { PREVIEW_MODULE_COUNT } from '@/lib/contentAccess'
 
 const firstPath = learningPaths.find(path => path.status === 'available')
 const plannedPaths = learningPaths.filter(path => path.status !== 'available')
@@ -134,24 +135,24 @@ export function PublicHome() {
                 to={signedIn ? '/app' : firstPath ? `/paths/${firstPath.id}` : '/paths'}
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-cyan-300 px-5 text-sm font-bold text-slate-950 shadow-[0_10px_32px_rgba(34,211,238,.18)] transition hover:bg-cyan-200"
               >
-                {signedIn ? 'Open your workspace' : 'Explore the learning path'} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                {signedIn ? 'Open your workspace' : 'Explore the Preview Curriculum'} <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               {!signedIn && (
                 <Link
                   to="/app"
                   className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900/50 px-5 text-sm font-semibold text-slate-100 transition hover:border-slate-500 hover:bg-slate-800/70"
                 >
-                  <Compass className="h-4 w-4 text-cyan-300" aria-hidden="true" /> Learn as a guest
+                  <Compass className="h-4 w-4 text-cyan-300" aria-hidden="true" /> Start learning, no account
                 </Link>
               )}
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12.5px] text-slate-400">
               <span className="inline-flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-emerald-300" aria-hidden="true" /> Every lesson, lab, and challenge is open to guests
+                <Check className="h-3.5 w-3.5 text-emerald-300" aria-hidden="true" /> {PREVIEW_MODULE_COUNT} modules of the method, open now
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <HardDrive className="h-3.5 w-3.5 text-cyan-300" aria-hidden="true" /> Progress stays in your browser
+                <HardDrive className="h-3.5 w-3.5 text-cyan-300" aria-hidden="true" /> Your place is kept in this browser
               </span>
             </div>
 
@@ -425,24 +426,26 @@ export function PublicHome() {
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_110%,rgba(34,211,238,0.14),transparent_60%),linear-gradient(180deg,#020617,#06101e)]" aria-hidden="true" />
         <div className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6 lg:py-24 lg:px-8">
           <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-80px' }} transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}>
-            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Start now. Decide about an account later.</h2>
+            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Start the Preview Curriculum now.</h2>
             <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-7 text-slate-400">
-              The whole Wireless path is open to you right now, in this browser. If you later want an approval state and a
-              platform-side copy of your progress, you request one — and you keep everything you have already done either way.
+              Foundations, reconnaissance, and traffic analysis are open to you right now, in this
+              browser, with no account. An approved account adds the{' '}
+              <span className="text-slate-200">Full Curriculum</span> — and, more importantly, a
+              progress record that is yours rather than this browser&apos;s.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 to={signedIn ? '/app' : '/app'}
                 className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-cyan-300 px-6 text-sm font-bold text-slate-950 shadow-[0_10px_32px_rgba(34,211,238,.18)] transition-colors hover:bg-cyan-200 sm:w-auto"
               >
-                {signedIn ? 'Open your workspace' : 'Learn as a guest'} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                {signedIn ? 'Open your workspace' : 'Start the Preview Curriculum'} <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               {!signedIn && (
                 <Link
                   to="/signup"
                   className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900/50 px-6 text-sm font-semibold text-slate-100 transition hover:border-slate-500 hover:bg-slate-800/70 sm:w-auto"
                 >
-                  <Fingerprint className="h-4 w-4 text-violet-300" aria-hidden="true" /> Request an account
+                  <Fingerprint className="h-4 w-4 text-violet-300" aria-hidden="true" /> Continue with an approved account
                 </Link>
               )}
             </div>

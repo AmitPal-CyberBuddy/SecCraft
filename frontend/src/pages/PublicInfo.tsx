@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { ArrowRight, BadgeCheck, BookOpen, CloudUpload, FileCheck2, HardDrive, ShieldCheck, Wifi, CircleSlash, Fingerprint } from 'lucide-react'
 import { useSession } from '@/lib/session'
 import { isSignedIn } from '@/lib/access'
+import { CONTENT_NOT_ENFORCED_NOTE, PREVIEW_MODULE_COUNT } from '@/lib/contentAccess'
 
 function PublicPage({ eyebrow, title, intro, children }: { eyebrow: string; title: string; intro: string; children: ReactNode }) {
   const { userState, ready } = useSession()
@@ -18,7 +19,7 @@ function PublicPage({ eyebrow, title, intro, children }: { eyebrow: string; titl
           to="/app"
           className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-cyan-300 px-4 text-sm font-bold text-slate-950 transition-colors hover:bg-cyan-200"
         >
-          {signedIn ? 'Open your workspace' : 'Explore as a guest'} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          {signedIn ? 'Open your workspace' : 'Start the preview'} <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
         {!signedIn && (
           <Link to="/signup" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-200 transition-colors hover:bg-slate-800">
@@ -41,7 +42,7 @@ export function AboutPage() {
         {[
           { icon: BookOpen, title: 'Authored content', text: 'Lessons, knowledge checks, module metadata, and lab artifacts are version-controlled alongside the application, so the material and the app never drift apart.' },
           { icon: Wifi, title: 'Wireless first', text: 'Wireless Pentesting is the first available path. Other catalogue entries are listed as planned and are not presented as ready before their content exists.' },
-          { icon: ShieldCheck, title: 'Guest by default', text: 'Learning does not depend on registration. Browser progress and imported records are always shown as distinct from anything the platform has confirmed.' },
+          { icon: ShieldCheck, title: 'Preview by default', text: `You can work through ${PREVIEW_MODULE_COUNT} modules with no account. Practice progress stays in your browser and is always shown as distinct from anything the platform has confirmed.` },
         ].map(({ icon: Icon, title, text }) => (
           <article key={title} className="rounded-2xl border border-slate-800 bg-[#081120] p-5">
             <Icon className="h-5 w-5 text-cyan-300" aria-hidden="true" />
@@ -58,9 +59,11 @@ export function AboutPage() {
         <ul className="mt-4 grid gap-2.5 sm:grid-cols-2">
           {[
             'The labs are simulated and use bundled capture artifacts. There is no live cyber range and no wireless hardware control.',
-            'Local XP and levels record activity. They are not a validated skill grade and are not a certification.',
+            'Practice XP and levels record activity in your browser. They are not a validated skill grade, not a record, and not a certification.',
             'No server rubric grades your assessment answers, so no result here is presented as verified.',
             'Progress is never uploaded automatically, and is never restored on another device automatically.',
+            'No certificate is issued. Certificates would need verified XP and a completion record, and the platform issues neither yet.',
+            CONTENT_NOT_ENFORCED_NOTE,
           ].map(item => (
             <li key={item} className="flex items-start gap-2.5 rounded-xl border border-slate-800/80 bg-slate-950/40 p-3 text-[13px] leading-6 text-slate-400">
               <CircleSlash className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-600" aria-hidden="true" />
@@ -105,8 +108,8 @@ export function HowItWorksPage() {
         </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {[
-            { icon: HardDrive, label: 'Local', text: 'Recorded in your browser. Never confirmed by the platform.' },
-            { icon: BadgeCheck, label: 'Account', text: 'Held on the platform for your account, split into verified rows.' },
+            { icon: HardDrive, label: 'Practice', text: 'Recorded in your browser. Never confirmed by the platform, and not an award of record.' },
+            { icon: BadgeCheck, label: 'Account record', text: 'Held on the platform for your account, split into verified rows. Requires an approved account.' },
             { icon: CloudUpload, label: 'Imported', text: 'Transferred from a file. Permanently unverified, and awards nothing.' },
           ].map(item => (
             <div key={item.label} className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
