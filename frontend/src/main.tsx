@@ -1,8 +1,8 @@
 import { createRoot } from 'react-dom/client'
 import { MotionConfig } from 'framer-motion'
 import './index.css'
-import './styles/production.css'
-import './styles/refinement.css'
+import './styles/workspace.css'
+import './styles/public-home.css'
 import App from './App.tsx'
 import { ThemeProvider } from '@/components/theme/ThemeProvider'
 import { LocalProfileProvider } from '@/components/profile/LocalProfile'
@@ -27,9 +27,40 @@ createRoot(document.getElementById('root')!).render(
 // on purpose so Vite's HMR is never served from the cache.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    let reloading = false
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      // A newly activated worker may serve a different shell and asset set.
+      // Reload once, but not on the initial install (when no worker controlled this tab).
+      if (hadController && !reloading) {
+        reloading = true
+        window.location.reload()
+      }
+    })
+    const hadController = Boolean(navigator.serviceWorker.controller)
     navigator.serviceWorker
-      .register(`${import.meta.env.BASE_URL}sw.js`, { scope: import.meta.env.BASE_URL })
-      .then(r => console.log('[seccraft] service worker ready —', r.scope))
+      .register(`${import.meta.env.BASE_URL}sw.js`, {
+        scope: import.meta.env.BASE_URL,
+        updateViaCache: 'none',
+      })
+      .then(r => {
+        const announceWaiting = () => {
+          if (r.waiting && navigator.serviceWorker.controller) {
+            window.dispatchEvent(new Event('seccraft:update-available'))
+          }
+        }
+        announceWaiting()
+        r.addEventListener('updatefound', () => {
+          const installing = r.installing
+          installing?.addEventListener('statechange', () => {
+            if (installing.state === 'installed') announceWaiting()
+          })
+        })
+        void r.update().catch(() => {})
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden) void r.update().catch(() => {})
+        })
+        console.log('[seccraft] service worker ready —', r.scope)
+      })
       .catch(e => console.log('[seccraft] service worker unavailable —', e.message))
   })
 }

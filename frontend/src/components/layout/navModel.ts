@@ -28,7 +28,8 @@ export interface NavSection {
 export function buildLearnerSections(): NavSection[] {
   return [
     {
-      key: 'platform',
+      key: 'home',
+      label: 'Home',
       items: [
         {
           to: '/app',
@@ -69,7 +70,7 @@ export function buildLearnerSections(): NavSection[] {
           icon: FlaskConical,
           label: 'Labs',
           badge: `${TOTAL_PCAPS}`,
-          desc: `Artifacts • ${TOTAL_PCAPS} verified`,
+          desc: `Artifacts • ${TOTAL_PCAPS} supplied`,
         },
         {
           to: '/challenges',
@@ -82,13 +83,13 @@ export function buildLearnerSections(): NavSection[] {
     },
     {
       key: 'track',
-      label: 'Track',
+      label: 'Work & progress',
       icon: BarChart3,
       items: [
-        { to: '/daily', icon: Flame, label: 'Daily', desc: 'Streak • goals • forge habits' },
-        { to: '/achievements', icon: Trophy, label: 'Achievements', desc: 'Badges • XP • levels' },
+        { to: '/daily', icon: Flame, label: 'Daily Practice', desc: 'Optional local practice' },
+        { to: '/achievements', icon: Trophy, label: 'Achievements', desc: 'Local practice milestones' },
         { to: '/progress', icon: BarChart, label: 'Analytics', desc: 'Progress • insights • path-aware' },
-        { to: '/reports', icon: FileText, label: 'Reports', desc: 'Findings & evidence vault' },
+        { to: '/reports', icon: FileText, label: 'Findings & reports', desc: 'Evidence-led writing practice' },
       ],
     },
     {

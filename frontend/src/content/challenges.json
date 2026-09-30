@@ -150,7 +150,7 @@
  {
   "id": "chal-04-handshake",
   "title": "Two Clients, One Complete Handshake",
-  "module": "09-wpa2-practical",
+  "module": "08-wpa-wpa2",
   "difficulty": "Intermediate",
   "type": "pcap_analysis",
   "level": "guided",
@@ -199,7 +199,7 @@
  {
   "id": "chal-05-pmkid",
   "title": "PMKID Without a Full Handshake \u2014 The KDE in M1",
-  "module": "09-wpa2-practical",
+  "module": "08-wpa-wpa2",
   "difficulty": "Intermediate",
   "type": "pcap_analysis",
   "level": "semi-guided",
@@ -445,7 +445,7 @@
  {
   "id": "chal-10-rogue",
   "title": "Rogue Infrastructure \u2014 Build the Case From Signals",
-  "module": "13-rogue-ap",
+  "module": "12-deauth-disassoc",
   "difficulty": "Advanced",
   "type": "pcap_analysis",
   "level": "assessment",
@@ -593,7 +593,7 @@
  {
   "id": "chal-13-eap",
   "title": "EAP Methods and MS-CHAPv2 Material",
-  "module": "16-eap",
+  "module": "15-enterprise-fundamentals",
   "difficulty": "Advanced",
   "type": "pcap_analysis",
   "level": "assessment",
@@ -642,7 +642,7 @@
  {
   "id": "chal-14-radius",
   "title": "RADIUS \u2014 Verifiable Integrity and Trust Boundaries",
-  "module": "17-radius",
+  "module": "15-enterprise-fundamentals",
   "difficulty": "Professional",
   "type": "pcap_analysis",
   "level": "assessment",
@@ -690,19 +690,357 @@
  },
  {
   "id": "chal-15-engagement",
-  "title": "Multi-BSS Engagement \u2014 Test Plan and Findings",
+  "title": "Case C-20 \u2014 Baseline and Bounded Retest",
   "module": "20-final-assessment",
   "difficulty": "Professional",
   "type": "pcap_analysis",
   "level": "assessment",
-  "estimated_time": "45m",
+  "estimated_time": "60m",
   "points": 200,
   "status": "simulated",
-  "description": "methodology.pcapng is a synthetic multi-BSS capture with several SSIDs and a look-alike example; it is not evidence from a real estate. You get the capture and nothing else: prioritise the estate, select the tests, and write findings that survive review.",
+  "description": "Separate staged synthetic case; inspect the case notes and two new PCAPs. Neither is Northwind evidence or a real on-site retest.",
   "objectives": [
-   "Triage an estate from a single capture",
-   "Choose tests by expected impact, not by tool availability",
-   "Produce findings, limits and a retest plan"
+   "Inventory and correlate a partial asset list",
+   "Verify a lab-only PSK candidate from M2",
+   "Compare policy before/after without claiming client acceptance"
+  ],
+  "artifacts": [
+   "capstone-baseline.pcapng",
+   "capstone-retest.pcapng"
+  ],
+  "tasks": [
+   {
+    "id": "t1",
+    "question": "Inventory baseline BSSIDs and determine which are owner-confirmed.",
+    "answer": "02:aa:10:00:00:01: CASE-OPS, PSK, MFPC=1, MFPR=0; 02:aa:10:00:00:02: CASE-CORP, 802.1X (EAP), MFPC=1, MFPR=1; 02:aa:10:00:00:09: CASE-OPS, PSK, MFPC=1, MFPR=0. The case notes confirm only the .01 and .02 BSSIDs; .09 is unlisted, not proven rogue.",
+    "hint": "Read the partial inventory, then cite beacon frames in the baseline file."
+   },
+   {
+    "id": "t2",
+    "question": "What does the baseline handshake demonstrate, and what remains unknown?",
+    "answer": "Frames 8\u201311 are a synthetic PSK M1\u2013M4 exchange on CASE-OPS at 02:aa:10:00:00:01. M2 verifies with the published training candidate password123; this validates the fixture, not any production credential, impact, or the unknown BSSID's secret.",
+    "hint": "Match address and nonce/replay counter, then use the artifact verifier."
+   },
+   {
+    "id": "t3",
+    "question": "Compare the same owned BSSID across baseline and retest. Is the case closed?",
+    "answer": "02:aa:10:00:00:01 changed from PSK/MFPC-only to SAE-only/MFPC+MFPR in the staged beacon. 02:aa:10:00:00:09 still advertises same-name PSK; owner unknown. No retest client association, supplicant log, negative PSK test, or wired inventory was supplied: advertising-policy change observed, full client/security retest NOT TESTED.",
+    "hint": "Compare BSSID, AKM and both PMF bits; require client and ownership evidence for closure."
+   }
+  ],
+  "flag": "WIFIFORGE{CASE_POLICY_NOT_CLIENT_RETEST}",
+  "skills": [
+   "assessment",
+   "reporting",
+   "retest"
+  ],
+  "answer_basis": "two independent synthetic case captures and a fictional partial inventory; no actual RF outcome",
+  "deliverable": "Evidence-linked case inventory, bounded before/after comparison, and NOT TESTED client retest criteria.",
+  "learningPathId": "wireless-pentesting"
+ },
+ {
+  "id": "chal-16-scope",
+  "title": "From Scope to a Bounded Claim",
+  "module": "01-intro-wireless",
+  "difficulty": "Intermediate",
+  "type": "pcap_analysis",
+  "level": "guided",
+  "estimated_time": "25m",
+  "points": 100,
+  "status": "simulated",
+  "description": "Self-review of bounded evidence and an authorized next test; no live RF or verified grading.",
+  "objectives": [
+   "Interpret artifact evidence",
+   "State unsupported claims",
+   "Choose a safe next test"
+  ],
+  "artifacts": [
+   "beacon-only.pcapng"
+  ],
+  "tasks": [
+   {
+    "id": "t1",
+    "question": "Which clause would you request before passively collecting client traffic?",
+    "answer": "Named scope, authorized collector/signatory, collection window and data-handling/retention terms; an SSID alone is not capture authorization.",
+    "hint": "Think about people and payloads outside the named BSS."
+   },
+   {
+    "id": "t2",
+    "question": "Give one defensible claim from a beacon and one claim it cannot support.",
+    "answer": "With hash and frame: a BSSID advertises a stated AKM; the beacon cannot establish whether a client validated an EAP server or what network segment it reached.",
+    "hint": "Separate advertisement from negotiated behavior."
+   },
+   {
+    "id": "t3",
+    "question": "How do you document missing observations?",
+    "answer": "State tuned channel, duration, receiver conditions, filter and scope. No observed client is not proof that none joined.",
+    "hint": "Explain the negative evidence limit."
+   }
+  ],
+  "flag": "WIFIFORGE{CHAL_16_SCOPE_REVIEW}",
+  "skills": [
+   "evidence",
+   "methodology"
+  ],
+  "answer_basis": "authored self-review interpretation of existing synthetic artifact; no live result",
+  "deliverable": "Evidence-linked answers, explicit limits and a feasible next-test decision.",
+  "learningPathId": "wireless-pentesting"
+ },
+ {
+  "id": "chal-17-state",
+  "title": "Association State and RSN Decode",
+  "module": "03-80211-architecture",
+  "difficulty": "Intermediate",
+  "type": "pcap_analysis",
+  "level": "guided",
+  "estimated_time": "25m",
+  "points": 100,
+  "status": "simulated",
+  "description": "Self-review of bounded evidence and an authorized next test; no live RF or verified grading.",
+  "objectives": [
+   "Interpret artifact evidence",
+   "State unsupported claims",
+   "Choose a safe next test"
+  ],
+  "artifacts": [
+   "traffic-analysis.pcapng"
+  ],
+  "tasks": [
+   {
+    "id": "t1",
+    "question": "Place open authentication, association and M1\u2013M4 into the correct MAC states.",
+    "answer": "Open authentication moves state 1 to 2; successful association moves state 2 to 3; M1\u2013M4 follows association and does not create state 4.",
+    "hint": "Do not confuse 802.11 MAC state with controlled-port authorization."
+   },
+   {
+    "id": "t2",
+    "question": "Decode the beacon/association RSNE and identify what remains unproved.",
+    "answer": "Read counts before suites; cite PSK/CCMP and PMF advertisement, then state that successful association alone does not prove installed keys or client acceptance.",
+    "hint": "Use the worked RSN example, then check the actual capture bytes."
+   },
+   {
+    "id": "t3",
+    "question": "Where would Enterprise EAP appear, and can you show it in this PSK capture?",
+    "answer": "For Enterprise, EAP over EAPOL occurs after 802.11 association, followed by the 4-way handshake after EAP success. This PSK fixture does not contain a full Enterprise EAP session.",
+    "hint": "Do not invent missing method frames."
+   }
+  ],
+  "flag": "WIFIFORGE{CHAL_17_STATE_REVIEW}",
+  "skills": [
+   "evidence",
+   "methodology"
+  ],
+  "answer_basis": "authored self-review interpretation of existing synthetic artifact; no live result",
+  "deliverable": "Evidence-linked answers, explicit limits and a feasible next-test decision.",
+  "learningPathId": "wireless-pentesting"
+ },
+ {
+  "id": "chal-18-readiness",
+  "title": "Adapter Evidence Versus Offline Evidence",
+  "module": "04-kali-wireless-setup",
+  "difficulty": "Intermediate",
+  "type": "pcap_analysis",
+  "level": "guided",
+  "estimated_time": "25m",
+  "points": 100,
+  "status": "simulated",
+  "description": "Self-review of bounded evidence and an authorized next test; no live RF or verified grading.",
+  "objectives": [
+   "Interpret artifact evidence",
+   "State unsupported claims",
+   "Choose a safe next test"
+  ],
+  "artifacts": [
+   "deauth.pcapng"
+  ],
+  "tasks": [
+   {
+    "id": "t1",
+    "question": "What does an offline deauth fixture prove about your own adapter?",
+    "answer": "Nothing: it supports frame/reason-code practice but not your driver's monitor/injection capability or receiver acceptance.",
+    "hint": "Stored bytes are not a radio capability check."
+   },
+   {
+    "id": "t2",
+    "question": "What must be recorded before an owned passive capture?",
+    "answer": "RoE, allowed band/channel and regulatory domain, actual adapter/driver/mode, start/stop window, capture hash and handling of out-of-scope frames.",
+    "hint": "No injection is necessary here."
+   },
+   {
+    "id": "t3",
+    "question": "No adapter is available. What is the honest result?",
+    "answer": "Complete the offline frame classification; mark monitor, injection and actual RF delivery NOT TESTED, not failed or passed.",
+    "hint": "Do not award yourself a hardware result."
+   }
+  ],
+  "flag": "WIFIFORGE{CHAL_18_READINESS_REVIEW}",
+  "skills": [
+   "evidence",
+   "methodology"
+  ],
+  "answer_basis": "authored self-review interpretation of existing synthetic artifact; no live result",
+  "deliverable": "Evidence-linked answers, explicit limits and a feasible next-test decision.",
+  "learningPathId": "wireless-pentesting"
+ },
+ {
+  "id": "chal-19-wep",
+  "title": "WEP Evidence Gap and Migration",
+  "module": "07-wep-legacy",
+  "difficulty": "Intermediate",
+  "type": "pcap_analysis",
+  "level": "semi-guided",
+  "estimated_time": "25m",
+  "points": 100,
+  "status": "simulated",
+  "description": "Self-review of bounded evidence and an authorized next test; no live RF or verified grading.",
+  "objectives": [
+   "Interpret artifact evidence",
+   "State unsupported claims",
+   "Choose a safe next test"
+  ],
+  "artifacts": [
+   "beacon-only.pcapng"
+  ],
+  "tasks": [
+   {
+    "id": "t1",
+    "question": "Does an absent RSNE alone in this beacon capture prove WEP?",
+    "answer": "No: consider the Privacy capability, WPA vendor IE, AP configuration and authorized station evidence. The bundled capture is not a WEP recovery trace.",
+    "hint": "Compare open, legacy WPA and WEP."
+   },
+   {
+    "id": "t2",
+    "question": "Why is a longer shared WEP key insufficient?",
+    "answer": "The 24-bit IV, RC4 key-scheduling weakness and malleable CRC-32/replay limitation remain. Replace WEP rather than rotate only its key.",
+    "hint": "Separate confidentiality from integrity."
+   },
+   {
+    "id": "t3",
+    "question": "Write a bounded migration retest.",
+    "answer": "Inspect a new RSNE/cipher on the owned BSS and controlled client authentication with logs; mark result NOT TESTED until a real remediated AP is supplied.",
+    "hint": "A test plan is not a performed result."
+   }
+  ],
+  "flag": "WIFIFORGE{CHAL_19_WEP_REVIEW}",
+  "skills": [
+   "evidence",
+   "methodology"
+  ],
+  "answer_basis": "authored self-review interpretation of existing synthetic artifact; no live result",
+  "deliverable": "Evidence-linked answers, explicit limits and a feasible next-test decision.",
+  "learningPathId": "wireless-pentesting"
+ },
+ {
+  "id": "chal-20-rsn",
+  "title": "Handshake Inputs and Decryption Limit",
+  "module": "08-wpa-wpa2",
+  "difficulty": "Intermediate",
+  "type": "pcap_analysis",
+  "level": "semi-guided",
+  "estimated_time": "25m",
+  "points": 100,
+  "status": "simulated",
+  "description": "Self-review of bounded evidence and an authorized next test; no live RF or verified grading.",
+  "objectives": [
+   "Interpret artifact evidence",
+   "State unsupported claims",
+   "Choose a safe next test"
+  ],
+  "artifacts": [
+   "wpa2-handshake.pcapng"
+  ],
+  "tasks": [
+   {
+    "id": "t1",
+    "question": "Compare M1/M2 with M1\u2013M4 across the two clients.",
+    "answer": "Both pairs can carry inputs for offline PSK candidate verification; only one four-message sequence is present. M1/M2 does not prove completion or AP acceptance.",
+    "hint": "Trace client MACs, nonces and replay counters."
+   },
+   {
+    "id": "t2",
+    "question": "Which keys do PMK, PTK and GTK represent?",
+    "answer": "In PSK mode PMK comes from passphrase and SSID; PTK binds AP/STA addresses and nonces, with KCK for MIC; GTK protects group data. SAE and Enterprise derive PMK differently.",
+    "hint": "Explain mechanism, not just acronyms."
+   },
+   {
+    "id": "t3",
+    "question": "Can this fixture demonstrate decrypted protected payloads?",
+    "answer": "No: this 13-frame capture has no CCMP-protected post-handshake data payload. State the additional scoped capture and key material needed.",
+    "hint": "Filter Protected bit and check the manifest."
+   }
+  ],
+  "flag": "WIFIFORGE{CHAL_20_RSN_REVIEW}",
+  "skills": [
+   "evidence",
+   "methodology"
+  ],
+  "answer_basis": "authored self-review interpretation of existing synthetic artifact; no live result",
+  "deliverable": "Evidence-linked answers, explicit limits and a feasible next-test decision.",
+  "learningPathId": "wireless-pentesting"
+ },
+ {
+  "id": "chal-21-chain",
+  "title": "Kill-Chain Evidence Breaks",
+  "module": "18-corporate-attacks",
+  "difficulty": "Intermediate",
+  "type": "pcap_analysis",
+  "level": "assessment",
+  "estimated_time": "25m",
+  "points": 100,
+  "status": "simulated",
+  "description": "Self-review of bounded evidence and an authorized next test; no live RF or verified grading.",
+  "objectives": [
+   "Interpret artifact evidence",
+   "State unsupported claims",
+   "Choose a safe next test"
+  ],
+  "artifacts": [
+   "corporate-attacks.pcapng"
+  ],
+  "tasks": [
+   {
+    "id": "t1",
+    "question": "Which chain links are direct observations?",
+    "answer": "The synthetic file contains management/look-alike, PSK handshake, direct EAP-MSCHAPv2 examples and an ICMP pair. It contains no complete PEAP, RADIUS, real client disconnect or VLAN policy test.",
+    "hint": "Separate packet records from attack outcomes."
+   },
+   {
+    "id": "t2",
+    "question": "What would show a PEAP client validation failure?",
+    "answer": "A controlled client's effective trust/name policy plus supplicant logs and a coherent authorized test-server session; a direct EAP fixture or TLS alert alone is insufficient.",
+    "hint": "No invented certificate transcript."
+   },
+   {
+    "id": "t3",
+    "question": "Rewrite a full-compromise claim.",
+    "answer": "Record only the observed synthetic sequence; list unknown ownership, receiver acceptance, authentication and network enforcement separately with approved follow-up tests.",
+    "hint": "Use an evidence-gap table."
+   }
+  ],
+  "flag": "WIFIFORGE{CHAL_21_CHAIN_REVIEW}",
+  "skills": [
+   "evidence",
+   "methodology"
+  ],
+  "answer_basis": "authored self-review interpretation of existing synthetic artifact; no live result",
+  "deliverable": "Evidence-linked answers, explicit limits and a feasible next-test decision.",
+  "learningPathId": "wireless-pentesting"
+ },
+ {
+  "id": "chal-22-report",
+  "title": "Evidence Decision Under Peer Review",
+  "module": "20-final-assessment",
+  "difficulty": "Intermediate",
+  "type": "pcap_analysis",
+  "level": "assessment",
+  "estimated_time": "25m",
+  "points": 100,
+  "status": "simulated",
+  "description": "Self-review of bounded evidence and an authorized next test; no live RF or verified grading.",
+  "objectives": [
+   "Interpret artifact evidence",
+   "State unsupported claims",
+   "Choose a safe next test"
   ],
   "artifacts": [
    "methodology.pcapng"
@@ -710,32 +1048,30 @@
   "tasks": [
    {
     "id": "t1",
-    "question": "Produce the attack-surface inventory (BSSID, SSID, AKM, PMF, notable frames).",
-    "answer": "de:ad:be:ef:00:01: Corp-WLAN, AKM 802.1X (EAP), MFPC=1, MFPR=1; de:ad:be:ef:00:02: Guest-WLAN, AKM no RSNE, no RSNE; cc:dd:ee:ff:00:11: IoT-PSK, AKM PSK, MFPC=1, MFPR=0; aa:bb:cc:11:22:33: (hidden), AKM PSK, MFPC=1, MFPR=0; ee:ff:00:11:22:33: LAB-WPA3-TRANS, AKM PSK, SAE (WPA3-Personal), MFPC=1, MFPR=0; ff:00:11:22:33:44: LAB-WPS, AKM PSK, MFPC=1, MFPR=0; aa:bb:cc:dd:ee:01: LAB-WEAK-PSK, AKM PSK, MFPC=1, MFPR=0; 02:11:22:33:44:55: Corp-WLAN, AKM PSK, MFPC=1, MFPR=0. BSSs requiring PMF: de:ad:be:ef:00:01; the weak-passphrase BSS is aa:bb:cc:dd:ee:01.",
-    "hint": "Beacon fields give you the policy; the rest of the capture gives you behaviour."
+    "question": "Write one frame-supported claim and its limits.",
+    "answer": "Cite capture hash/frame/filter for an advertised BSS policy or synthetic weak-PSK exchange; do not assert production password, unauthorized owner or applied segmentation.",
+    "hint": "Can a peer reproduce it?"
    },
    {
     "id": "t2",
-    "question": "Prioritise the test sequence and justify it.",
-    "answer": "Start with passive inventory and decode beacon/RSNE/WPS fields. Next, audit only the supplied weak-PSK practice handshake offline. Treat the open Guest beacon as a policy observation\u2014not proof of portal behavior or exposed user traffic. The look-alike and EAP/MS-CHAPv2 frames are synthetic examples; ownership, a complete PEAP flow, certificate validation, or credential capture require authorized inventory/profile review and controlled tests. Test availability and segmentation only with explicit scope, named clients, controls and impact monitoring.",
-    "hint": "Cheapest, least disruptive, highest information first."
+    "question": "How do you rate impact when the network context is absent?",
+    "answer": "Mark impact and production severity undetermined; request an authorized inventory, client path and reachability evidence before a contextual rating.",
+    "hint": "A technique label is not a severity score."
    },
    {
     "id": "t3",
-    "question": "Write the finding list with severity reasoning and retest criteria.",
-    "answer": "Evidence-bounded report: (a) the supplied LAB-WEAK-PSK fixture contains a handshake for the documented weak training passphrase\u2014this is not a production credential; retest a real scoped SSID after rotation. (b) Guest-WLAN advertises no RSNE in its beacon\u2014this does not prove portal behavior, client-to-client access or cleartext credentials; inspect the actual portal and controlled traffic. (c) WPS information elements appear in beacons\u2014this does not prove a PIN attack is possible; inspect setup lock/rate limiting and test only with authorization. (d) a look-alike BSSID, abbreviated EAP/MS-CHAPv2 fields, one deauth and an ICMP pair are present, but these do not establish a rogue owner, completed PEAP credential capture, client disconnection or production segmentation. For each, state the evidence, limitation, impact assumption, and a concrete authorized retest; assign severity only after scope and likelihood/impact are known.",
-    "hint": "Four findings, four retests, each stating what would falsify it."
+    "question": "What makes a retest record more than a plan?",
+    "answer": "New dated capture and hash, same controlled client/target/criteria, effective config and client/AP logs with actual pass/fail. None is provided for a real site; mark NOT TESTED.",
+    "hint": "Another learner may review the evidence, but that is not trusted grading."
    }
   ],
-  "flag": "WIFIFORGE{ENGAGEMENT_TRIAGE_RETEST}",
+  "flag": "WIFIFORGE{CHAL_22_REPORT_REVIEW}",
   "skills": [
-   "methodology",
-   "assessment",
-   "reporting",
-   "retest"
+   "evidence",
+   "methodology"
   ],
-  "answer_basis": "frame-derived observations from a synthetic teaching capture; no production findings or retests are verified",
-  "deliverable": "An inventory, a sequenced test plan, findings with severity reasoning and retest criteria.",
+  "answer_basis": "authored self-review interpretation of existing synthetic artifact; no live result",
+  "deliverable": "Evidence-linked answers, explicit limits and a feasible next-test decision.",
   "learningPathId": "wireless-pentesting"
  }
 ]

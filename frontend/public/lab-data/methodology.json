@@ -39,7 +39,7 @@
     "akm": [
      1
     ],
-    "caps": 48,
+    "caps": 192,
     "mfpc": true,
     "mfpr": true
    },
@@ -94,7 +94,7 @@
     "akm": [
      1
     ],
-    "caps": 48,
+    "caps": 192,
     "mfpc": true,
     "mfpr": true
    },
@@ -179,7 +179,7 @@
     "akm": [
      2
     ],
-    "caps": 32,
+    "caps": 128,
     "mfpc": true,
     "mfpr": false
    },
@@ -244,7 +244,7 @@
     "akm": [
      2
     ],
-    "caps": 32,
+    "caps": 128,
     "mfpc": true,
     "mfpr": false
    },
@@ -298,7 +298,7 @@
      2,
      8
     ],
-    "caps": 32,
+    "caps": 128,
     "mfpc": true,
     "mfpr": false
    },
@@ -353,7 +353,7 @@
     "akm": [
      2
     ],
-    "caps": 32,
+    "caps": 128,
     "mfpc": true,
     "mfpr": false
    },
@@ -445,7 +445,7 @@
     "akm": [
      2
     ],
-    "caps": 32,
+    "caps": 128,
     "mfpc": true,
     "mfpr": false
    },
@@ -498,7 +498,7 @@
     "akm": [
      2
     ],
-    "caps": 32,
+    "caps": 128,
     "mfpc": true,
     "mfpr": false
    },
@@ -607,7 +607,7 @@
     "akm": [
      2
     ],
-    "caps": 32,
+    "caps": 128,
     "mfpc": true,
     "mfpr": false
    },
@@ -867,7 +867,7 @@
     "akm": [
      2
     ],
-    "caps": 32,
+    "caps": 128,
     "mfpc": true,
     "mfpr": false
    },

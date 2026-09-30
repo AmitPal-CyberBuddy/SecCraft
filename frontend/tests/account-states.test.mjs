@@ -64,13 +64,15 @@ test('every account state renders the right surfaces and never drops the learner
 
   let accountResponse = { status: 200, body: null }
   let backendDown = false
+  let accountHandler = null
   const savedFetch = globalThis.fetch
-  globalThis.fetch = async url => {
+  globalThis.fetch = async (url, init) => {
     if (backendDown) throw new Error('backend unavailable')
     const target = String(url)
     const json = (body, status) =>
       new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
     if (target.includes('/api/v1/account')) {
+      if (accountHandler) return accountHandler(init)
       return accountResponse.status === 200 ? json(accountResponse.body, 200) : json(accountResponse.body, accountResponse.status)
     }
     if (target.includes('/api/v1/progress')) return json({ records: [], xp: { total: 0, verified: true }, achievements: [] }, 200)
@@ -104,29 +106,32 @@ test('every account state renders the right surfaces and never drops the learner
   const { MemoryRouter } = await import('react-router-dom')
   const { ThemeProvider } = await vite.ssrLoadModule('/src/components/theme/ThemeProvider.tsx')
   const { LocalProfileProvider } = await vite.ssrLoadModule('/src/components/profile/LocalProfile.tsx')
-  const { SessionProvider } = await vite.ssrLoadModule('/src/lib/session.tsx')
+  const { SessionProvider, useSession } = await vite.ssrLoadModule('/src/lib/session.tsx')
   const { Shell } = await vite.ssrLoadModule('/src/components/layout/Shell.tsx')
   const { AdminShell } = await vite.ssrLoadModule('/src/components/layout/AdminShell.tsx')
   const { Dashboard } = await vite.ssrLoadModule('/src/pages/Dashboard.tsx')
+  const { PublicHome } = await vite.ssrLoadModule('/src/pages/PublicHome.tsx')
   const { Profile } = await vite.ssrLoadModule('/src/pages/Profile.tsx')
   const { Sync } = await vite.ssrLoadModule('/src/pages/Sync.tsx')
   const { Settings } = await vite.ssrLoadModule('/src/pages/Settings.tsx')
   const { AdminPage } = await vite.ssrLoadModule('/src/pages/Admin.tsx')
+  const { AccountStatusPage, SignupPage, UpdatePasswordPage } = await vite.ssrLoadModule('/src/pages/Account.tsx')
+  const { ReportEditor } = await vite.ssrLoadModule('/src/components/report/ReportEditor.tsx')
+  const { passwordGuidance, generatePassword } = await vite.ssrLoadModule('/src/lib/passwordGuidance.ts')
   const { supabase } = await vite.ssrLoadModule('/src/lib/supabase.ts')
 
   let fakeSession = null
+  let authListener = null
   if (supabase) {
     supabase.auth.getSession = async () => ({ data: { session: fakeSession }, error: null })
-    supabase.auth.onAuthStateChange = () => ({ data: { subscription: { unsubscribe() {} } } })
+    supabase.auth.onAuthStateChange = callback => { authListener = callback; return { data: { subscription: { unsubscribe() {} } } } }
     supabase.auth.signOut = async () => { fakeSession = null; return { error: null } }
   }
 
   // The Supabase client and the Vite SSR pipeline both leave timers behind, so the process would
   // never exit on its own. Subtest failures are counted here and the exit code is set explicitly.
   const failures = []
-  t.after(() => {
-    process.exit(failures.length === 0 ? 0 : 1)
-  })
+  // Supabase/Vite leave timers alive; exit after the *last* subtest, not in an early after-hook.
 
   const container = document.getElementById('root')
   const wrap = child =>
@@ -195,9 +200,20 @@ test('every account state renders the right surfaces and never drops the learner
         ),
       )
 
+      assert.ok(shellText.includes(APPROVED.has(scenario.label) ? 'Your learning workspace' : 'Explore the preview'), `${scenario.label}: workspace presentation must reflect the actual tier`)
+      assert.ok(shellText.includes(APPROVED.has(scenario.label) ? 'View account records' : 'Practice stays in this browser'), `${scenario.label}: header must explain record provenance`)
+
       for (const destination of learnerNav) {
         assert.ok(shellText.includes(destination), `${scenario.label}: learner navigation lost "${destination}"`)
       }
+
+      const publicText = await render(
+        wrap(React.createElement(MemoryRouter, { initialEntries: ['/'] }, React.createElement(PublicHome))),
+      )
+      assert.ok(publicText.includes('Preview Curriculum'), `${scenario.label}: public site must describe guest preview access`)
+      assert.ok(publicText.includes('Pending approval'), `${scenario.label}: public site must describe approval honestly`)
+      assert.ok(publicText.includes('unverified'), `${scenario.label}: public site must label imported/practice data`)
+      assert.ok(!publicText.includes('Certificate issued'), `${scenario.label}: no issuance claim`)
 
       // The curriculum tier shown must match the product model for this state.
       const tier = tierByState[scenario.label]
@@ -273,4 +289,213 @@ test('every account state renders the right surfaces and never drops the learner
     throw error
    }
   })
+  await t.test('login ignores an older in-flight lookup and shows loading until fresh owner status arrives', async () => {
+    try {
+      backendDown = false
+      const json = body => new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })
+      let resolveOld, resolveNew
+      const oldResponse = new Promise(resolve => { resolveOld = resolve })
+      const newResponse = new Promise(resolve => { resolveNew = resolve })
+      const requests = []
+      accountHandler = init => {
+        const token = new Headers(init?.headers).get('authorization')
+        requests.push(token)
+        if (token === 'Bearer old-session') return oldResponse
+        if (token === 'Bearer new-session') return newResponse
+        throw new Error(`Unexpected account request identity: ${token}`)
+      }
+      fakeSession = { access_token: 'old-session' }
+      let manualRetry
+      function Probe() {
+        manualRetry = useSession().refreshAccount
+        return null
+      }
+      const root = createRoot(container)
+      act(() => {
+        root.render(wrap(React.createElement(MemoryRouter, { initialEntries: ['/account'] },
+          React.createElement(React.Fragment, null,
+            React.createElement(AccountStatusPage),
+            React.createElement(AdminShell, null, React.createElement('span', null, 'Owner console visible')),
+            React.createElement(Probe),
+          ),
+        )))
+      })
+      for (let i = 0; i < 3; i++) await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)) })
+      assert.deepEqual(requests, ['Bearer old-session'], 'the mount lookup has started')
+
+      // Supabase signs in while the old request is unresolved. Normal login must launch a new
+      // lookup; the explicit refresh performed by LoginPage joins that fresh request.
+      fakeSession = { access_token: 'new-session' }
+      act(() => { authListener('SIGNED_IN', fakeSession) })
+      const retry = manualRetry()
+      await act(async () => { await Promise.resolve() })
+      assert.deepEqual(requests, ['Bearer old-session', 'Bearer new-session'])
+      assert.match(container.textContent, /Checking account status/i)
+      assert.doesNotMatch(container.textContent, /Approval pending|Owner console visible/)
+
+      resolveOld(json({ account_status: 'pending', is_admin: false }))
+      await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)) })
+      assert.match(container.textContent, /Checking account status/i, 'stale pending response must not win')
+      assert.doesNotMatch(container.textContent, /Approval pending/)
+
+      resolveNew(json({ user_id: 'owner-1', email: 'owner@example.com', account_status: 'active', is_admin: true }))
+      await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)) })
+      await retry
+      assert.match(container.textContent, /Owner access/)
+      assert.match(container.textContent, /Owner console visible/)
+      assert.match(container.textContent, /Re-check status/, 'manual retry remains available')
+      assert.doesNotMatch(container.textContent, /Approval pending/)
+      await act(async () => { root.unmount() })
+      accountHandler = null
+    } catch (error) {
+      failures.push(error)
+      throw error
+    }
+  })
+
+  await t.test('a failed account lookup never masquerades as approval pending', async () => {
+    try {
+      fakeSession = { access_token: 't' }
+      accountResponse = { status: 503, body: { detail: 'Temporarily unavailable' } }
+      const text = await render(wrap(React.createElement(MemoryRouter, { initialEntries: ['/account'] }, React.createElement(AccountStatusPage))))
+      assert.match(text, /Account status unavailable/)
+      assert.match(text, /Re-check status/)
+      assert.doesNotMatch(text, /Approval pending/)
+      const workspace = await render(wrap(React.createElement(MemoryRouter, { initialEntries: ['/app'] },
+        React.createElement(Shell, null, React.createElement(Dashboard)))))
+      assert.match(workspace, /Signed in · account status unavailable/)
+      assert.match(workspace, /Status unavailable/)
+      assert.doesNotMatch(workspace, /Approval pending/)
+    } catch (error) {
+      failures.push(error)
+      throw error
+    }
+  })
+
+  await t.test('account API failure preserves confirmed identity without inventing approval', async () => {
+    try {
+      backendDown = false
+      fakeSession = { access_token: 'confirmed-session' }
+      accountHandler = () => { throw new Error('temporary network failure') }
+      let snapshot
+      function Probe() {
+        snapshot = useSession()
+        return React.createElement('span', null, snapshot.hasSession ? 'Signed in' : 'Guest')
+      }
+      const text = await render(wrap(React.createElement(MemoryRouter, { initialEntries: ['/account'] },
+        React.createElement(React.Fragment, null, React.createElement(Probe), React.createElement(AccountStatusPage)))))
+      assert.match(text, /Signed in/)
+      assert.match(text, /Account status unavailable/)
+      assert.doesNotMatch(text, /Approval pending/)
+      assert.equal(snapshot.account, null, 'failed lookups cannot retain owner or active authority')
+      accountHandler = null
+    } catch (error) {
+      failures.push(error)
+      throw error
+    }
+  })
+
+  await t.test('non-owner admin gate never mounts page or requests owner endpoints', async () => {
+    try {
+      fakeSession = { access_token: 'ordinary-session' }
+      accountResponse = { status: 200, body: { user_id: 'learner', email: 'learner@example.com', account_status: 'active', is_admin: false } }
+      let adminRequests = 0
+      // Count network calls from the real AdminPage, not just a synthetic child.
+      const previousFetch = globalThis.fetch
+      globalThis.fetch = (url, init) => {
+        if (String(url).includes('/api/v1/admin/')) adminRequests++
+        return previousFetch(url, init)
+      }
+      try {
+        const text = await render(wrap(React.createElement(MemoryRouter, { initialEntries: ['/admin'] },
+          React.createElement(AdminShell, null, React.createElement(AdminPage)))))
+        assert.match(text, /Owner access required/)
+        assert.equal(adminRequests, 0)
+      } finally {
+        globalThis.fetch = previousFetch
+      }
+    } catch (error) {
+      failures.push(error)
+      throw error
+    }
+  })
+
+  await t.test('signup explains estimated strength and generates unique passwords with required character groups', async () => {
+    try {
+      backendDown = false
+      accountHandler = null
+      const text = await render(wrap(React.createElement(MemoryRouter, { initialEntries: ['/signup'] }, React.createElement(SignupPage))))
+      assert.match(text, /Password strength: Not entered/)
+      assert.match(text, /Suggest a strong password/)
+      assert.match(text, /Supabase may apply additional rules/)
+      assert.equal(passwordGuidance('abc').strength, 'Weak')
+      assert.equal(passwordGuidance('Longer7!word').strength, 'Moderate')
+      const passwords = new Set(Array.from({ length: 25 }, () => generatePassword()))
+      assert.equal(passwords.size, 25, 'fresh secure randomness on each suggestion')
+      for (const password of passwords) {
+        assert.equal(password.length, 20)
+        assert.match(password, /[A-Z]/)
+        assert.match(password, /[a-z]/)
+        assert.match(password, /[0-9]/)
+        assert.match(password, /[^A-Za-z0-9\s]/)
+        assert.equal(passwordGuidance(password).strength, 'Strong')
+      }
+      const root = createRoot(container)
+      await act(async () => { root.render(wrap(React.createElement(MemoryRouter, { initialEntries: ['/signup'] }, React.createElement(SignupPage)))) })
+      const suggest = [...container.querySelectorAll('button')].find(button => button.textContent.includes('Suggest a strong password'))
+      await act(async () => { suggest.click() })
+      const generatedInput = container.querySelector('input[autocomplete="new-password"]')
+      assert.equal(generatedInput.value.length, 20)
+      assert.equal(generatedInput.type, 'text', 'generated password is visible so it can be saved')
+      assert.match(container.textContent, /Password strength: Strong/)
+      await act(async () => { root.unmount() })
+    } catch (error) {
+      failures.push(error)
+      throw error
+    }
+  })
+
+  await t.test('recovery shows matching guidance and a generated password', async () => {
+    try {
+      const root = createRoot(container)
+      await act(async () => { root.render(wrap(React.createElement(MemoryRouter, { initialEntries: ['/update-password'] }, React.createElement(UpdatePasswordPage)))) })
+      const suggest = [...container.querySelectorAll('button')].find(button => button.textContent.includes('Suggest a strong password'))
+      assert.ok(suggest)
+      await act(async () => { suggest.click() })
+      assert.match(container.textContent, /Password strength: Strong/)
+      assert.equal(container.querySelector('input[autocomplete="new-password"]').type, 'text')
+      await act(async () => { root.unmount() })
+    } catch (error) { failures.push(error); throw error }
+  })
+
+  await t.test('finding draft warns on unsaved navigation and confirms local save', async () => {
+    const oldConfirm = window.confirm
+    try {
+      localStorage.removeItem('platform-report-draft')
+      const root = createRoot(container)
+      await act(async () => { root.render(React.createElement('div', null, React.createElement(ReportEditor), React.createElement('a', { href: '/paths' }, 'Leave editor'))) })
+      const title = container.querySelector('input[placeholder^="Finding title"]')
+      assert.ok(title)
+      await act(async () => {
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+        setter.call(title, 'Scoped finding')
+        title.dispatchEvent(new window.Event('input', { bubbles: true }))
+      })
+      assert.match(container.textContent, /Unsaved changes in this browser/)
+      window.confirm = () => false
+      const leave = container.querySelector('a[href="/paths"]')
+      const click = new window.MouseEvent('click', { bubbles: true, cancelable: true })
+      await act(async () => { leave.dispatchEvent(click) })
+      assert.equal(click.defaultPrevented, true)
+      const save = [...container.querySelectorAll('button')].find(button => button.textContent.trim() === 'Save')
+      await act(async () => { save.click() })
+      assert.match(container.textContent, /Draft saved in this browser only/)
+      assert.equal(JSON.parse(localStorage.getItem('platform-report-draft')).title, 'Scoped finding')
+      await act(async () => { root.unmount() })
+      localStorage.removeItem('platform-report-draft')
+    } catch (error) { failures.push(error); throw error }
+    finally { window.confirm = oldConfirm }
+  })
+
+  setTimeout(() => process.exit(failures.length === 0 ? 0 : 1), 40)
 })

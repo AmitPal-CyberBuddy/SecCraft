@@ -10,7 +10,7 @@
 
 ## 1. SAE (Simultaneous Authentication of Equals)
 
-SAE is a password-authenticated key exchange (Dragonfly) that replaces the PSK handshake:
+SAE is a password-authenticated key exchange (Dragonfly) that replaces PSK-based PMK derivation. A four-way EAPOL-Key handshake still follows SAE to install traffic keys:
 
 ```
 commit   : each side sends a scalar + element derived from the password and a random value

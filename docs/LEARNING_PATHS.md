@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-28
 **Version:** 2.1
-**Status:** Stage 1 implemented — path-aware, backward compatible
+**Status:** Two available source-backed paths; six planned. Historical architecture passages below may describe the earlier single-path state.
 
 ## Concept
 
@@ -10,10 +10,10 @@
 Platform
 │
 ├── Learning Paths
-│   ├── Wireless / Wi-Fi Pentesting (available, 20 modules, reference)
+│   ├── Wireless / Wi-Fi Pentesting (available, 15 modules, source-first/reference)
 │   ├── Web Application Security (planned)
 │   ├── API Security (planned)
-│   ├── Android Pentesting (planned)
+│   ├── Android Application Security (available, 12 modules, source-first; no prebuilt APK)
 │   ├── Network Pentesting (planned)
 │   ├── Active Directory (planned)
 │   ├── Cloud Security (planned)
@@ -26,7 +26,7 @@ Platform
 └── Evidence / Reporting (reusable)
 ```
 
-Do NOT implement all future paths just to demonstrate structure. Make existing Wireless path fit naturally into this model.
+Do not implement the six planned paths just to demonstrate structure. Wireless and Android are the two available paths; planned paths have no placeholder modules.
 
 ## Learning Path Structure
 
@@ -50,8 +50,8 @@ Each learning path is defined in `frontend/src/content/learning-paths.json`:
     { "id": 1, "name": "Foundations", "desc": "Wireless fundamentals & 802.11", "color": "cyan", "modules": ["01-intro-wireless", ...] }
   ],
   "skills": ["reconnaissance", "traffic-analysis", ...],
-  "labs": 16,
-  "challenges": 15,
+  "labs": 19,
+  "challenges": 22,
   "tagline": "Understand the Protocol. Test the Implementation.",
   "legacyBrand": "WiFiForge"
 }
@@ -128,7 +128,7 @@ frontend/src/content/lessons/web-application-security/web-01-intro/01-why-web-is
 ```
 Platform:
   / -> Dashboard (platform overview, featured path Wireless)
-  /paths -> LearningPaths (list all paths, 1 available, 7 planned)
+  /paths -> LearningPaths (list all paths, 2 available, 6 planned)
   /paths/:pathId -> PathDetail (phases within path)
   /paths/:pathId/modules -> Modules (path-aware filter)
   /paths/:pathId/modules/:moduleId -> ModuleDetail (path-aware breadcrumb)
@@ -166,7 +166,7 @@ Future domain-specific can extend without rewrite.
 ## Lab Engine — Reusable
 
 Same lab framework should eventually support:
-- PCAP analysis (current, 16 verified captures)
+- PCAP analysis (current, 18 integrity-checked synthetic captures)
 - Web applications (future: HTTP, Burp logs)
 - API testing (future: OpenAPI, HTTP)
 - Android analysis (future: APK, Manifest, logs)
@@ -206,7 +206,7 @@ Domain-specific (wireless path):
 
 A clean architecture with one excellent path is preferable to shallow platform containing many empty paths.
 
-- Wireless Pentesting: 20 modules, 27 lessons, 16 verified PCAPs, 15 challenges, 35 decision scenarios, 42-item checklist, ENG-01 — mature, reference implementation
+- Wireless Pentesting: 15 modules, 32 lessons, 18 integrity-checked synthetic PCAPs, 22 self-review challenges, 35 decision scenarios, 42-item checklist, ENG-01 — mature, reference implementation
 - Future paths: planned expansion, architecture ready, content after wireless maturity
 
 *Forge. Break. Fix. Retest. — Learning Paths Architecture*

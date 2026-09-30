@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FileText, Download, Save, Eye, Code, Sparkles, Shield, Target, Award, CheckCircle, Zap } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -45,8 +45,38 @@ interface LabFrame {
   mfpr?: boolean
 }
 
+function readSavedFinding(): Finding {
+  try {
+    const raw = localStorage.getItem('platform-report-draft') ?? localStorage.getItem('wififorge-report-draft')
+    if (!raw) return emptyFinding
+    const parsed = JSON.parse(raw) as Record<string, unknown>
+    if (!parsed || typeof parsed !== 'object' || Object.keys(emptyFinding).some(key => typeof parsed[key] !== 'string')) return emptyFinding
+    return parsed as unknown as Finding
+  } catch { return emptyFinding }
+}
+
 export function ReportEditor() {
-  const [finding, setFinding] = useState<Finding>(emptyFinding)
+  const [finding, setFinding] = useState<Finding>(readSavedFinding)
+  const [savedSnapshot, setSavedSnapshot] = useState(() => JSON.stringify(readSavedFinding()))
+  const [saveMessage, setSaveMessage] = useState('')
+  const dirty = JSON.stringify(finding) !== savedSnapshot
+
+  useEffect(() => {
+    if (!dirty) return
+    const beforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
+    const guardLink = (event: MouseEvent) => {
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+      const anchor = (event.target as Element)?.closest?.('a[href]') as HTMLAnchorElement | null
+      if (!anchor || anchor.download || anchor.target === '_blank' || anchor.hash && anchor.pathname === location.pathname && anchor.search === location.search) return
+      if (!window.confirm('Your finding has unsaved changes. Leave without saving?')) {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+      }
+    }
+    window.addEventListener('beforeunload', beforeUnload)
+    document.addEventListener('click', guardLink, true)
+    return () => { window.removeEventListener('beforeunload', beforeUnload); document.removeEventListener('click', guardLink, true) }
+  }, [dirty])
   const [preview, setPreview] = useState(false)
   const [exampleState, setExampleState] = useState<'idle' | 'loading' | 'error'>('idle')
 
@@ -61,14 +91,15 @@ export function ReportEditor() {
       const akms = beacon.akm_names?.join(' + ') || 'none advertised'
       const ciphers = beacon.cipher_names?.join(' + ') || 'none advertised'
       const pmf = beacon.mfpr ? 'required (MFPR=1)' : beacon.mfpc ? 'capable only (MFPC=1, MFPR=0)' : 'not advertised'
+      if (dirty && !window.confirm('Replace unsaved finding changes with the worked example?')) { setExampleState('idle'); return }
       setFinding({
         title: `PMF capable but not required on ${beacon.ssid || '(hidden SSID)'}`,
         severity: 'Medium',
-        description: `The beacon for ${beacon.ssid || '(hidden)'} (BSSID ${beacon.bssid}, channel ${beacon.channel}) advertises RSN with ${akms} / ${ciphers} and PMF ${pmf}. Because management frames are not protected, deauthentication and disassociation frames can be spoofed against clients of this BSS.`,
+        description: `The beacon for ${beacon.ssid || '(hidden)'} (BSSID ${beacon.bssid}, channel ${beacon.channel}) advertises RSN with ${akms} / ${ciphers} and PMF ${pmf}. The beacon alone does not establish whether a client negotiated PMF or whether spoofed management frames affected a client.`,
         technicalDetails: `Decoded from beacon-only.pcapng frame ${beacon.number}: RSNE AKM list ${akms}, pairwise/group ciphers ${ciphers}, RSN capabilities MFPC=${beacon.mfpc ? 1 : 0} MFPR=${beacon.mfpr ? 1 : 0}. The capture is a passive beacon sample, so no client authentication is present in it.`,
         affectedComponent: `SSID: ${beacon.ssid || '(hidden)'}, BSSID: ${beacon.bssid}, Channel: ${beacon.channel}`,
         evidence: `PCAP: beacon-only.pcapng (SHA-256 in frontend/public/pcaps/MANIFEST.md)\nFrame ${beacon.number} Beacon — SSID ${beacon.ssid || '(empty)'}, BSSID ${beacon.bssid}, Ch ${beacon.channel}\nDisplay filter: wlan.fc.type_subtype==8 && wlan.rsn.capabilities\nLimit of this evidence: PMF capability is read from the beacon; whether clients negotiate PMF requires the association frames.`,
-        impact: 'Spoofed deauthentication/disassociation frames can disrupt client connectivity (availability impact) and are used to force handshake capture during an authorised test.',
+        impact: 'Potential availability risk if an associated client does not negotiate PMF; this passive beacon sample does not demonstrate client impact.',
         recommendation: 'If clients support it, set ieee80211w=2 (PMF required) in hostapd; otherwise document the capability gap and the compensating controls (WIDS, MFP-capable clients, WPA3-only where possible).',
         references: 'IEEE 802.11-2020 §9.4.2.24 (RSN capabilities), hostapd.conf ieee80211w, NIST SP 800-153',
         retest: 'Re-capture a beacon and an association exchange after the change: MFPR must be 1 and the association response must show PMF negotiated; confirm a spoofed deauth no longer terminates the session in the RF lab.',
@@ -80,14 +111,13 @@ export function ReportEditor() {
   }
 
   const update = (field: keyof Finding, value: string) => {
+    setSaveMessage('')
     setFinding({...finding, [field]: value})
   }
 
   const markdown = `# Finding: ${finding.title}
 
 **Severity:** ${finding.severity}
-**Module:** Wi-Fi Fundamentals
-**Type:** Wireless Configuration
 
 ## Description
 ${finding.description}
@@ -126,10 +156,19 @@ ${finding.retest}
     a.href = url
     a.download = `finding-${finding.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.md`
     a.click()
+    URL.revokeObjectURL(url)
+    setSaveMessage(`Download requested: ${a.download}. Your browser chooses where to save it; this does not submit the finding for review.`)
   }
 
   const save = () => {
-    try { localStorage.setItem('platform-report-draft', JSON.stringify(finding)); localStorage.setItem('wififorge-report-draft', JSON.stringify(finding)) } catch { /* storage blocked */ }
+    try {
+      localStorage.setItem('platform-report-draft', JSON.stringify(finding))
+      localStorage.setItem('wififorge-report-draft', JSON.stringify(finding))
+      setSavedSnapshot(JSON.stringify(finding))
+      setSaveMessage('Draft saved in this browser only. It is not synced to your account or independently reviewed.')
+    } catch {
+      setSaveMessage('Could not save in this browser. Export the draft before leaving this page.')
+    }
   }
 
   return (
@@ -187,6 +226,7 @@ ${finding.retest}
         </div>
       </div>
 
+      <p role="status" aria-live="polite" className="text-xs text-slate-300">{saveMessage || (dirty ? 'Unsaved changes in this browser. Save or export before leaving.' : 'Draft loaded from this browser or ready to edit.')}</p>
       <AnimatePresence mode="wait">
         {!preview ? (
           <motion.div
@@ -207,12 +247,12 @@ ${finding.retest}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="sm:col-span-2">
-                    <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Title</label>
-                    <input value={finding.title} onChange={e => update('title', e.target.value)} placeholder="Finding title — state the weakness, not the tool" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:bg-[#0a1020] focus:outline-none hover:border-[#334155]/60 transition-all duration-200" />
+                    <label htmlFor="finding-title" className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Title</label>
+                    <input id="finding-title" value={finding.title} onChange={e => update('title', e.target.value)} placeholder="Finding title — state the weakness, not the tool" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:bg-[#0a1020] focus:outline-none hover:border-[#334155]/60 transition-all duration-200" />
                   </div>
                   <div>
-                    <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Severity</label>
-                    <select value={finding.severity} onChange={e => update('severity', e.target.value)} className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none hover:border-[#334155]/60 transition-all duration-200">
+                    <label htmlFor="finding-severity" className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Severity</label>
+                    <select id="finding-severity" value={finding.severity} onChange={e => update('severity', e.target.value)} className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none hover:border-[#334155]/60 transition-all duration-200">
                       <option>Low</option>
                       <option>Medium</option>
                       <option>High</option>
@@ -222,18 +262,18 @@ ${finding.retest}
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Description</label>
-                  <textarea value={finding.description} onChange={e => update('description', e.target.value)} rows={3} placeholder="What is the weakness, on which BSSID/SSID, observed how?" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
+                  <label htmlFor="finding-description" className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Description</label>
+                  <textarea id="finding-description" value={finding.description} onChange={e => update('description', e.target.value)} rows={3} placeholder="What is the weakness, on which BSSID/SSID, observed how?" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Technical Details</label>
-                  <textarea value={finding.technicalDetails} onChange={e => update('technicalDetails', e.target.value)} rows={3} placeholder="Protocol detail: frame numbers, fields, config lines" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
+                  <label htmlFor="finding-technical-details" className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Technical Details</label>
+                  <textarea id="finding-technical-details" value={finding.technicalDetails} onChange={e => update('technicalDetails', e.target.value)} rows={3} placeholder="Protocol detail: frame numbers, fields, config lines" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Affected Component</label>
-                  <input value={finding.affectedComponent} onChange={e => update('affectedComponent', e.target.value)} placeholder="SSID / BSSID / channel / hostapd.conf line" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[12px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none hover:border-[#334155]/60 transition-all duration-200" />
+                  <label htmlFor="finding-affected-component" className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Affected Component</label>
+                  <input id="finding-affected-component" value={finding.affectedComponent} onChange={e => update('affectedComponent', e.target.value)} placeholder="SSID / BSSID / channel / hostapd.conf line" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[12px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none hover:border-[#334155]/60 transition-all duration-200" />
                 </div>
               </div>
             </div>
@@ -248,28 +288,28 @@ ${finding.retest}
                 </div>
                 
                 <div>
-                  <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Evidence</label>
-                  <textarea value={finding.evidence} onChange={e => update('evidence', e.target.value)} rows={4} placeholder="Artifact + SHA-256 + filter + frame numbers + what it does NOT prove" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[11px] font-mono text-slate-300 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
+                  <label htmlFor="finding-evidence" className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Evidence</label>
+                  <textarea id="finding-evidence" value={finding.evidence} onChange={e => update('evidence', e.target.value)} rows={4} placeholder="Artifact + SHA-256 + filter + frame numbers + what it does NOT prove" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[11px] font-mono text-slate-300 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Impact</label>
-                  <textarea value={finding.impact} onChange={e => update('impact', e.target.value)} rows={2} placeholder="What an attacker gains — data, access, availability" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
+                  <label htmlFor="finding-impact" className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Impact</label>
+                  <textarea id="finding-impact" value={finding.impact} onChange={e => update('impact', e.target.value)} rows={2} placeholder="What an attacker gains — data, access, availability" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Recommendation</label>
-                  <textarea value={finding.recommendation} onChange={e => update('recommendation', e.target.value)} rows={2} placeholder="Exact change plus the standard/property it maps to" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
+                  <label htmlFor="finding-recommendation" className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Recommendation</label>
+                  <textarea id="finding-recommendation" value={finding.recommendation} onChange={e => update('recommendation', e.target.value)} rows={2} placeholder="Exact change plus the standard/property it maps to" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">References</label>
-                    <input value={finding.references} onChange={e => update('references', e.target.value)} placeholder="Spec section, vendor doc, framework control" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[11px] text-slate-400 focus:border-cyan-500/30 focus:outline-none hover:border-[#334155]/60 transition-all duration-200" />
+                    <label htmlFor="finding-references" className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">References</label>
+                    <input id="finding-references" value={finding.references} onChange={e => update('references', e.target.value)} placeholder="Spec section, vendor doc, framework control" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[11px] text-slate-400 focus:border-cyan-500/30 focus:outline-none hover:border-[#334155]/60 transition-all duration-200" />
                   </div>
                   <div>
-                    <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Retest</label>
-                    <input value={finding.retest} onChange={e => update('retest', e.target.value)} placeholder="The exact check that proves the fix (command, filter, expected output)" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[11px] text-slate-400 focus:border-cyan-500/30 focus:outline-none hover:border-[#334155]/60 transition-all duration-200" />
+                    <label htmlFor="finding-retest" className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Retest</label>
+                    <input id="finding-retest" value={finding.retest} onChange={e => update('retest', e.target.value)} placeholder="The exact check that proves the fix (command, filter, expected output)" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[11px] text-slate-400 focus:border-cyan-500/30 focus:outline-none hover:border-[#334155]/60 transition-all duration-200" />
                   </div>
                 </div>
               </div>

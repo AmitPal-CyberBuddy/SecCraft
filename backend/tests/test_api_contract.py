@@ -114,7 +114,7 @@ def seed_admin(user_id: str) -> None:
 
 def test_api_contract_public_content_and_disabled_legacy_routes(client: TestClient) -> None:
     expected = {"/api/health", "/api/modules", "/api/learning-paths", "/api/platform", "/api/pcaps"}
-    mounted = {route.path for route in app.routes}
+    mounted = set(app.openapi()["paths"]) | {route.path for route in app.routes if hasattr(route, "path")}
     assert expected.issubset(mounted)
     assert client.get("/api/health").status_code == 200
     assert client.get("/api/modules").status_code == 200
@@ -629,3 +629,21 @@ def test_path_parameters_and_pcap_filters_are_bounded(client: TestClient) -> Non
     assert client.get("/api/pcaps/example/frames?limit=0").status_code == 422
     assert client.get("/api/pcaps/example/frames?offset=-1").status_code == 422
     assert client.get("/api/pcaps/example/analyze?filter=" + ("x" * 513)).status_code == 422
+
+
+def test_pcap_lookup_requires_exact_curated_identifier(client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.routers import pcaps
+
+    root = tmp_path / "pcaps"
+    root.mkdir()
+    (root / "recon-lab.pcapng").write_bytes(b"capture")
+    (root / "outside.pcapng").symlink_to(tmp_path / "outside.pcapng")
+    (tmp_path / "outside.pcapng").write_bytes(b"capture")
+    (root / "large.pcapng").write_bytes(b"x" * (5 * 1024 * 1024 + 1))
+    monkeypatch.setattr(pcaps, "PCAP_DIR", root)
+    monkeypatch.setattr(pcaps, "REPO_CONTENT_DIR", tmp_path / "empty")
+    assert pcaps.find_pcap("recon-lab") == root / "recon-lab.pcapng"
+    assert pcaps.find_pcap("recon") is None
+    assert pcaps.find_pcap("outside") is None
+    assert pcaps.find_pcap("large") is None
+    assert pcaps.find_pcap("..") is None

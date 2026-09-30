@@ -29,7 +29,7 @@ export function Analytics() {
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500/20 to-cyan-500/10 border border-violet-500/20 flex items-center justify-center">
                   <BarChart3 className="w-5 h-5 text-violet-400" />
                 </div>
-                Progress Analytics
+                Learning progress
               </h1>
               <p className="text-[13px] text-slate-400 mt-2">{platform.tagline} • Platform • Path-aware • Local-first</p>
             </div>
@@ -48,7 +48,7 @@ export function Analytics() {
               <div className="relative">
                 <div className="flex items-center gap-2 text-[11px] text-slate-400 uppercase tracking-wide"><TrendingUp className="w-3 h-3" /> Overall</div>
                 <div className="text-[22px] font-bold font-mono text-slate-100 mt-1">{overall}%</div>
-                <div className="text-[11px] text-slate-400">Platform completion</div>
+                <div className="text-[11px] text-slate-400">Local practice coverage</div>
               </div>
             </div>
           </StaggerItem>
@@ -78,7 +78,7 @@ export function Analytics() {
               <div className="relative">
                 <div className="flex items-center gap-2 text-[11px] text-slate-400 uppercase tracking-wide"><Activity className="w-3 h-3" /> Activity</div>
                 <div className="text-[22px] font-bold font-mono text-slate-100 mt-1">{completedLessons.length + completedLabs.length + quizScores.length}</div>
-                <div className="text-[11px] text-slate-400">Total completions</div>
+                <div className="text-[11px] text-slate-400">Recorded local activity</div>
               </div>
             </div>
           </StaggerItem>
@@ -90,7 +90,7 @@ export function Analytics() {
             <div className="relative">
               <div className="flex items-center gap-2 mb-5">
                 <BarChart3 className="w-5 h-5 text-violet-400" />
-                <h3 className="font-heading font-bold text-[15px] text-slate-100">Detailed analytics</h3>
+                <h3 className="font-heading font-bold text-[15px] text-slate-100">Path progress and activity</h3>
                 <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 font-mono">Platform • Path-aware</span>
               </div>
               <Suspense fallback={<LoadingPanel label="Loading analytics…" />}>

@@ -32,6 +32,8 @@ Published credentials are lab-only values for reproducing the explicitly documen
 | `eap/eap.pcapng` | 12 | EAP method identifiers and direct MS-CHAPv2 challenge/response/success fixture values; this is not a complete PEAP inner exchange or EAP-TLS/TTLS session |
 | `corporate/corporate-attacks.pcapng` | 19 | Synthetic 19-frame collection with management frames, a look-alike/weak-PSK practice exchange, direct EAP-MSCHAPv2 packets and an ICMP pair; does not demonstrate successful deauth, PEAP, RADIUS or production segmentation |
 | `methodology/methodology.pcapng` | 29 | Multi-BSS teaching capture: beacons/probes, weak-PSK exercise handshake, deauthentication frame, look-alike, abbreviated EAP and synthetic ICMP examples; not a real engagement or validated segmentation/isolation test |
+| `capstone/capstone-baseline.pcapng` | 11 | Fictional case beacons and a PSK 4-way handshake with reproducible lab MICs; not Northwind or an RF observation |
+| `capstone/capstone-retest.pcapng` | 3 | Fictional same-BSSID before/after comparison: owned BSS advertises SAE-only and MFPR; same-name PSK BSS remains |
 
 ## Synthetic elements per capture
 
@@ -53,5 +55,7 @@ Published credentials are lab-only values for reproducing the explicitly documen
 | `eap` | TLS payloads are abbreviated structural bytes; the direct MS-CHAPv2 exchange is intentionally visible and must not be described as a passive PEAP capture |
 | `corporate-attacks` | EAP/TLS payloads are abbreviated structural fixtures; no complete PEAP tunnel, RADIUS exchange, production configuration or live network path is represented |
 | `methodology` | EAP/TLS and SAE payloads are abbreviated structural examples; no complete PEAP negotiation, RADIUS policy, client certificate-validation result, or real segmentation/isolation test |
+| `capstone-baseline` | No real ownership, client impact or applied segmentation is represented |
+| `capstone-retest` | No SAE client association, enforced PMF, asset ownership or executed on-site retest is demonstrated |
 
 Machine-readable inventory: `frontend/src/content/lab-artifacts.json`.

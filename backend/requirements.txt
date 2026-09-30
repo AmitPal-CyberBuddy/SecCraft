@@ -1,9 +1,9 @@
-fastapi==0.115.0
+fastapi==0.142.2
 uvicorn[standard]==0.30.6
 sqlalchemy==2.0.36
 alembic==1.14.0
 pydantic==2.11.7
-PyJWT[crypto]==2.8.0
+PyJWT[crypto]==2.15.1
 httpx==0.28.1
 psycopg[binary]==3.2.3
-scapy==2.5.0
+scapy==2.7.0

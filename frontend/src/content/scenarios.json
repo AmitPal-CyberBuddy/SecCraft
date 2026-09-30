@@ -68,31 +68,31 @@
   "module": "02-wifi-fundamentals",
   "type": "choice",
   "title": "The client MAC keeps changing",
-  "situation": "You are correlating client behaviour across a 30-minute capture. One device appears with three different locally administered MAC addresses, all probing for 'Corp-WLAN' and 'HomeNet'.",
+  "situation": "A 30-minute capture contains probes for 'Corp-WLAN' and 'HomeNet' from three different locally administered MAC addresses. There are no device logs, stable identifiers or corroborated client fingerprints.",
   "question": "What do you record?",
   "options": [
    {
     "id": "a",
-    "text": "Three separate clients.",
-    "analysis": "Classic over-counting error. Randomisation is a privacy feature; treating each address as a device inflates the client inventory.",
+    "text": "Exactly three physical devices.",
+    "analysis": "Three observed addresses are not necessarily three physical devices; one device can use multiple addresses. Count addresses, not people or hardware.",
     "correct": false
    },
    {
     "id": "b",
-    "text": "One device profile, flagged as randomised, with the probe behaviour as the identifier.",
-    "analysis": "Probe patterns, timing and IE fingerprints are the correlating evidence. State clearly that the hardware identity is not determinable.",
-    "correct": true
+    "text": "Exactly one device using MAC randomisation, identified by its probe SSIDs.",
+    "analysis": "Shared probe targets and the local bit do not prove either a single device or the mechanism that assigned its MACs.",
+    "correct": false
    },
    {
     "id": "c",
-    "text": "None \u2014 randomised MACs mean the data is useless.",
-    "analysis": "Over-correction. Randomisation limits device tracking, not client-behaviour analysis.",
-    "correct": false
+    "text": "Three observed client addresses with similar probes; physical device count and address-assignment mechanism are unconfirmed.",
+    "analysis": "Record the frame/time/address/SSID evidence and locally administered bit; seek authorized device-side logs or corroboration before linking addresses or asserting randomisation.",
+    "correct": true
    }
   ],
-  "best": "b",
-  "rationale": "Report what the evidence supports: a device using MAC randomisation that leaks SSIDs in probe requests. Note the limit on inventory precision.",
-  "evidence_note": "The limit statement is part of the evidence: 'device identity not determinable due to MAC randomisation'.",
+  "best": "c",
+  "rationale": "Do not collapse multiple locally administered addresses into a single device profile or equate them with three devices. Probe similarity is a lead, not identity proof.",
+  "evidence_note": "List each observed address and cited probes separately; label possible correlation as a hypothesis, not a finding about one device.",
   "learningPathId": "wireless-pentesting"
  },
  {
@@ -377,7 +377,7 @@
  },
  {
   "id": "scn-09-pmkid-vs-handshake",
-  "module": "09-wpa2-practical",
+  "module": "08-wpa-wpa2",
   "type": "choice",
   "title": "Which collection method is appropriate?",
   "situation": "The client requests a low-noise assessment during trading hours. The AP supports PMK caching. You need PSK-crackable material.",
@@ -409,7 +409,7 @@
  },
  {
   "id": "scn-09-cracked-not-owned",
-  "module": "09-wpa2-practical",
+  "module": "08-wpa-wpa2",
   "type": "free",
   "title": "Cracked PSK, reused as the AP admin password",
   "situation": "The recovered PSK is also the password that logs into the AP's web administration interface (confirmed by the client during the debrief).",
@@ -561,7 +561,7 @@
  },
  {
   "id": "scn-13-twin-detection",
-  "module": "13-rogue-ap",
+  "module": "12-deauth-disassoc",
   "type": "evidence",
   "title": "Three BSSIDs, one SSID",
   "situation": "Three BSSIDs advertise 'Corp-WLAN': two with consistent vendor OUIs, AKM 1, MFPR, channel plan 36/44; one with a locally administered MAC, AKM 2, MFPC only, channel 6, beacon interval 50 TU, and clients associating to it after deauth frames from it.",
@@ -593,7 +593,7 @@
  },
  {
   "id": "scn-13-enterprise-rogue",
-  "module": "13-rogue-ap",
+  "module": "12-deauth-disassoc",
   "type": "choice",
   "title": "Does the enterprise client validate?",
   "situation": "A lab client is configured with `ca_cert` and `domain_suffix_match='radius.corp.example'`. Your rogue authenticator presents a certificate for 'radius-lab.local' signed by a lab CA.",
@@ -701,7 +701,7 @@
  },
  {
   "id": "scn-16-method-identification",
-  "module": "16-eap",
+  "module": "15-enterprise-fundamentals",
   "type": "choice",
   "title": "PEAP then an immediate TLS alert",
   "situation": "You capture an EAP-Request/Identity, a PEAP start, a ClientHello, then a TLS alert from the client. Nothing else follows.",
@@ -733,7 +733,7 @@
  },
  {
   "id": "scn-16-cert-validation",
-  "module": "16-eap",
+  "module": "15-enterprise-fundamentals",
   "type": "choice",
   "title": "ca_cert only \u2014 still exploitable?",
   "situation": "Client profile: `ca_cert=/etc/corp-root.pem`, no `domain_suffix_match`, no `subject_match`. Your rogue authenticator presents a certificate signed by the same corporate root but with CN 'lab-radius.local'.",
@@ -765,7 +765,7 @@
  },
  {
   "id": "scn-17-secret-rotation",
-  "module": "17-radius",
+  "module": "15-enterprise-fundamentals",
   "type": "evidence",
   "title": "What does a leaked shared secret let an attacker do?",
   "situation": "The RADIUS shared secret was found in a 2019 configuration backup. It is still in use by all 40 APs.",
@@ -797,7 +797,7 @@
  },
  {
   "id": "scn-17-radius-log-reading",
-  "module": "17-radius",
+  "module": "15-enterprise-fundamentals",
   "type": "free",
   "title": "What can a RADIUS log prove?",
   "situation": "A RADIUS auth log shows, for username `svc-backup`, 4 312 Access-Rejects in 12 minutes from the same NAS, then one Access-Accept.",
@@ -873,7 +873,7 @@
  },
  {
   "id": "scn-19-severity-context",
-  "module": "19-methodology",
+  "module": "20-final-assessment",
   "type": "free",
   "title": "One finding, three environments",
   "situation": "Finding: WPS is enabled with the PIN method advertised, and lockout is not enforced. Environments: (A) home router for a remote worker; (B) store guest AP reachable from the car park; (C) corporate AP in a locked comms room.",
@@ -885,7 +885,7 @@
  },
  {
   "id": "scn-19-retest-fail",
-  "module": "19-methodology",
+  "module": "20-final-assessment",
   "type": "free",
   "title": "The fix did not hold",
   "situation": "Original finding: PMF not required, spoofed deauth works. Remediation applied: `ieee80211w=1` (capable). Retest: the deauth test still works against the legacy client population.",

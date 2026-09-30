@@ -2,6 +2,7 @@ import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 import path from 'path'
 import fs from 'node:fs'
+import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url))
@@ -13,6 +14,22 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url))
  *   VITE_BASE=/ npm run build
  */
 const DEFAULT_BASE = '/SecCraft/'
+
+// The HTML references Vite's hashed assets. Include the SW itself so changing its
+// fetch policy also forces an update even when the app bundles are unchanged.
+function serviceWorkerBuildPlugin(): Plugin {
+  return {
+    name: 'seccraft:service-worker-build',
+    apply: 'build',
+    closeBundle() {
+      const html = fs.readFileSync(path.join(ROOT, 'dist/index.html'))
+      const swPath = path.join(ROOT, 'dist/sw.js')
+      const sw = fs.readFileSync(swPath, 'utf8')
+      const id = createHash('sha256').update(html).update(sw).digest('hex').slice(0, 16)
+      fs.writeFileSync(swPath, sw.replace('__SECCRAFT_BUILD_ID__', id))
+    },
+  }
+}
 
 function normalizeBase(raw: string): string {
   if (!raw || raw === './') return '/'
@@ -197,7 +214,7 @@ export default defineConfig(({ mode, command }) => {
 
   return {
     base,
-    plugins: [react(), pagesHostingPlugin(base), securityPlugin(base, cspPolicy)],
+    plugins: [react(), pagesHostingPlugin(base), securityPlugin(base, cspPolicy), serviceWorkerBuildPlugin()],
     server: {
       host: '0.0.0.0',
       port: 3000,

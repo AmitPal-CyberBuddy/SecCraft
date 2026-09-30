@@ -36,11 +36,34 @@ tshark -r radius.pcapng -Y 'radius.code == 1' \
 3. Verify the constructed Message-Authenticator with the disclosed lab shared secret and compare the intentionally invalid example. Explain what this proves about those sample bytes—not about a deployed NAS or production secret.
 4. The RADIUS example includes a VLAN attribute. Design the authorized client/AP/switch/log tests needed to prove the client actually lands in that VLAN and cannot reach a disallowed destination; the PCAP does not prove enforcement.
 
-## 3. Reporting the enterprise findings
+## 3. Correlating a *real* controlled session: collection contract
+
+The two supplied PCAPs cannot be merged into one session. For a supervised, owned EAP lab,
+assign a unique test account and capture identifier first. Start synchronized client/AP/RADIUS
+logs and a wireless capture; collect **redacted** effective supplicant profile, certificate
+chain and expected server name. Correlate one attempt by client MAC, BSSID, EAP identifier,
+NAS-Identifier/Calling-Station-Id, request identifier, timestamp *with clock skew noted*, and
+server transaction ID. EAP identifiers can be reused; a timestamp or identity alone is not
+sufficient to join unrelated sessions. Keep raw evidence private; never put credentials or
+private keys in a repo.
+
+| Controlled case | Evidence to request | Bounded result |
+| --- | --- | --- |
+| Known server name and CA | client trust/profile + certificate chain + EAP outcome + AAA decision | for this client/profile, was expected identity validated? |
+| Test server with wrong name, same trusted CA | effective client profile + supplicant reason + EAP/TLS frames | rejection *reason* needs client log; a TLS alert alone is ambiguous |
+| Test account accepted | AAA Access-Accept + AP/client assigned VLAN + allowed/denied reachability + switch policy | assigned attribute is not applied policy without enforcement evidence |
+| Negative test account | AAA rejection and client failure + reason | distinguish intended rejection from unreachable RADIUS |
+
+Do **not** describe `enterprise.pcapng` and `radius.pcapng` as this collected session. If a
+client/AAA log is missing, mark that control **NOT TESTED** rather than filling the gap with
+illustrative output. Independent reviewer check: can each identity, policy decision and test
+result be followed through one authorized transaction without inferring a TLS secret from bytes?
+
+## 4. Reporting the enterprise findings
 
 A hypothetical report finding must be based on a separate authorized test, not inferred from these fixtures. For example, only if a controlled test demonstrates it and profile/log evidence corroborates it, report that a specific client profile failed to validate the expected server identity and that the test authenticator obtained specified inner-method material. Scope the impact to demonstrated test accounts and systems; credential reuse/lateral movement needs separate evidence. Retest the corrected managed profile with a controlled untrusted certificate and correlate supplicant logs, configuration, and packet evidence. The supplied captures alone do not support this finding.
 
-## 4. Decision practice
+## 5. Decision practice
 
 **`scn-15-msk-to-pmk`** — why does the 4-way handshake appear *after* a successful EAP exchange, and what
 would its absence indicate?

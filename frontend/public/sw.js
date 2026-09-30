@@ -1,10 +1,10 @@
 // SecCraft Service Worker — offline-first shell, static-host safe (GitHub Pages sub-path).
 // Every URL is derived from the registration scope, so the same file works at
 // https://<owner>.github.io/<repo>/ and at a domain root.
-const VERSION = 'v2.3.0'
-const CACHE = `seccraft-${VERSION}`
-
+const VERSION = '__SECCRAFT_BUILD_ID__'
 const BASE = new URL(self.registration.scope).pathname
+const CACHE_PREFIX = `seccraft-${BASE}-`
+const CACHE = `${CACHE_PREFIX}${VERSION}`
 const INDEX = new URL('index.html', self.registration.scope).href
 const PRECACHE = ['index.html', 'manifest.json', 'favicon.svg'].map(p => new URL(p, self.registration.scope).href)
 
@@ -20,18 +20,23 @@ self.addEventListener('install', (e) => {
     caches.open(CACHE)
       // Individually, so one missing asset cannot fail the whole install.
       .then(c => Promise.all(PRECACHE.map(url => c.add(url).catch(() => undefined))))
-      .then(() => self.skipWaiting()),
   )
+})
+
+self.addEventListener('message', (e) => {
+  if (e.data?.type === 'SKIP_WAITING') void self.skipWaiting()
 })
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
       // Drop caches from previous deploys so a release does not leave dead weight behind.
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => (k.startsWith(CACHE_PREFIX) || k === 'seccraft-v2.3.0') && k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim()),
   )
 })
+
+const cacheMatch = async (request) => (await caches.open(CACHE)).match(request)
 
 self.addEventListener('fetch', (e) => {
   const req = e.request
@@ -60,22 +65,28 @@ self.addEventListener('fetch', (e) => {
         const res = await fetch(INDEX, { cache: 'no-cache' })
         if (!res.ok) throw new Error(`shell ${res.status}`)
         const cache = await caches.open(CACHE)
-        cache.put(INDEX, res.clone())
+        await cache.put(INDEX, res.clone())
         return res
       } catch {
-        const cached = await caches.match(INDEX)
+        const cached = await cacheMatch(INDEX)
         return cached || new Response(OFFLINE_PAGE, { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
       }
     })())
     return
   }
 
-  // Hashed build assets + public files — cache first, then fill the cache.
-  e.respondWith(caches.match(req).then(cached => cached || fetch(req).then(res => {
-    if (res.ok) {
-      const clone = res.clone()
-      caches.open(CACHE).then(c => c.put(req, clone))
+  // Hashed assets are immutable; unhashed public files must be refreshed on deploy.
+  const immutable = url.pathname.startsWith(`${BASE}assets/`)
+  e.respondWith((async () => {
+    const cache = await caches.open(CACHE)
+    const cached = await cache.match(req)
+    if (immutable && cached) return cached
+    try {
+      const res = await fetch(req, { cache: 'no-cache' })
+      if (res.ok) await cache.put(req, res.clone())
+      return res
+    } catch {
+      return cached || Response.error()
     }
-    return res
-  }).catch(() => cached)))
+  })())
 })

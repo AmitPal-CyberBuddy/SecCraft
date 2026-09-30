@@ -6,11 +6,11 @@ import { isOwner, isSignedIn, STATE_META } from '@/lib/access'
 import { StateChip } from '@/components/account/StateChip'
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
-  `rounded-lg px-3 py-2 text-sm transition-colors ${isActive ? 'text-cyan-300 bg-cyan-400/10' : 'text-slate-300 hover:text-white hover:bg-white/5'}`
+  `rounded-lg px-3 py-2 text-sm transition-colors ${isActive ? 'text-[var(--learning)] bg-[var(--nav-active)]' : 'text-slate-300 hover:text-white hover:bg-white/5'}`
 
 export function PublicLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
-  const { userState, account, signOut } = useSession()
+  const { userState, account, accountLoading, signOut } = useSession()
   const location = useLocation()
 
   // Close the mobile drawer on navigation so it never strands over the new page.
@@ -19,18 +19,18 @@ export function PublicLayout() {
   const signedIn = isSignedIn(userState)
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-100">
-      <a href="#public-main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-cyan-300 focus:px-4 focus:py-2 focus:text-slate-950">
+    <div className="public-layout min-h-screen">
+      <a href="#public-main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-[var(--learning)] focus:px-4 focus:py-2 focus:text-slate-950">
         Skip to content
       </a>
       <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-[#020617]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex shrink-0 items-center gap-2.5 rounded-lg" aria-label="SecCraft home">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-300">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-cyan-300/20 bg-[var(--learning)]/10 text-[var(--learning)]">
               <Shield className="h-5 w-5" aria-hidden="true" />
             </span>
             <span className="text-[17px] font-bold tracking-tight">
-              Sec<span className="text-cyan-300">Craft</span>
+              Sec<span className="text-[var(--learning)]">Craft</span>
             </span>
           </Link>
 
@@ -42,8 +42,8 @@ export function PublicLayout() {
 
           {signedIn ? (
             <div className="hidden items-center gap-2 md:flex">
-              <StateChip state={userState} size="sm" />
-              <Link to="/app" className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-cyan-300 px-4 text-sm font-bold text-slate-950 transition-colors hover:bg-cyan-200">
+              {accountLoading ? <span role="status" className="text-xs text-slate-400">Checking account status…</span> : <StateChip state={userState} size="sm" />}
+              <Link to={isOwner(userState) ? "/admin" : "/app"} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[var(--learning)] px-4 text-sm font-bold text-slate-950 transition-colors hover:brightness-110">
                 {isOwner(userState) ? 'Owner console' : 'Open workspace'} <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <button
@@ -61,7 +61,7 @@ export function PublicLayout() {
               <Link to="/signup" className="rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium text-slate-200 transition-colors hover:border-slate-600 hover:bg-slate-800/60">
                 Request access
               </Link>
-              <Link to="/app" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-cyan-300/25 bg-cyan-300/10 px-4 text-sm font-semibold text-cyan-100 transition-colors hover:border-cyan-200/50 hover:bg-cyan-300/15">
+              <Link to="/app" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-cyan-300/25 bg-[var(--learning)]/10 px-4 text-sm font-semibold text-cyan-100 transition-colors hover:border-cyan-200/50 hover:bg-[var(--learning)]/15">
                 Start the preview <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
             </div>
@@ -88,10 +88,10 @@ export function PublicLayout() {
               {signedIn ? (
                 <div className="mt-2 flex flex-col gap-2 border-t border-slate-800 pt-3">
                   <div className="flex items-center justify-between gap-2 px-3">
-                    <span className="truncate text-xs text-slate-400">{account?.email ?? STATE_META[userState].label}</span>
-                    <StateChip state={userState} size="sm" />
+                    <span className="truncate text-xs text-slate-400">{accountLoading ? 'Checking account status…' : account?.email ?? STATE_META[userState].label}</span>
+                    {accountLoading ? <span role="status" className="text-xs text-slate-400">Checking account status…</span> : <StateChip state={userState} size="sm" />}
                   </div>
-                  <Link to="/app" className="flex items-center justify-center gap-2 rounded-lg bg-cyan-300 px-3 py-2 text-center text-sm font-semibold text-slate-950">
+                  <Link to="/app" className="flex items-center justify-center gap-2 rounded-lg bg-[var(--learning)] px-3 py-2 text-center text-sm font-semibold text-slate-950">
                     <LayoutDashboard className="h-4 w-4" aria-hidden="true" /> Open workspace
                   </Link>
                   <button type="button" onClick={() => void signOut()} className="flex items-center justify-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200">
@@ -103,10 +103,10 @@ export function PublicLayout() {
                   <Link to="/login" className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-700 px-3 py-2 text-center text-sm text-slate-200">
                     <UserRound className="h-4 w-4" aria-hidden="true" /> Log in
                   </Link>
-                  <Link to="/signup" className="hidden flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-700 px-3 py-2 text-center text-sm text-slate-200">
+                  <Link to="/signup" className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-700 px-3 py-2 text-center text-sm text-slate-200">
                     <CloudUpload className="h-4 w-4" aria-hidden="true" /> Request access
                   </Link>
-                  <Link to="/app" className="flex-1 rounded-lg bg-cyan-300 px-3 py-2 text-center text-sm font-semibold text-slate-950">Start the preview</Link>
+                  <Link to="/app" className="flex-1 rounded-lg bg-[var(--learning)] px-3 py-2 text-center text-sm font-semibold text-slate-950">Start the preview</Link>
                 </div>
               )}
             </div>
@@ -123,13 +123,13 @@ export function PublicLayout() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="max-w-md">
               <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-cyan-300/20 bg-cyan-300/10 text-cyan-300">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-cyan-300/20 bg-[var(--learning)]/10 text-[var(--learning)]">
                   <Shield className="h-4 w-4" aria-hidden="true" />
                 </span>
                 <span className="font-semibold text-slate-200">SecCraft</span>
               </div>
               <p className="mt-3 text-[13px] leading-relaxed text-slate-400">
-                Learn. Practice. Investigate. Improve. Guest learning is complete and needs no account.
+                Learn. Practice. Investigate. Improve. The Preview Curriculum is available without an account. Approved accounts have the Full Curriculum experience.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-x-10 gap-y-2 sm:text-right">

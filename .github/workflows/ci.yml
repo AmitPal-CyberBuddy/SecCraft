@@ -27,8 +27,8 @@ jobs:
         run: npm ci
         working-directory: frontend
 
-      - name: Dependency audit (informational)
-        run: npm audit --omit=dev --audit-level=high || true
+      - name: Dependency audit (production)
+        run: npm audit --omit=dev --audit-level=high
         working-directory: frontend
 
       - name: Typecheck
@@ -43,6 +43,12 @@ jobs:
 
       - name: Verify learning journey content contracts
         run: node scripts/verify-learning-data.mjs
+
+      - name: Verify Android source-only exercises and downloads
+        run: |
+          python3 scripts/verify-android-foundations.py
+          python3 scripts/verify-android-demo.py
+          python3 scripts/verify-android-cases.py
 
       - name: Test guest API outage and timeout fallback
         run: npm test

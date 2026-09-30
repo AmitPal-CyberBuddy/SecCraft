@@ -9,12 +9,12 @@ import { GlobalSearch } from '@/components/search/GlobalSearch'
 import { KeyboardShortcuts } from '@/components/shortcuts/KeyboardShortcuts'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
 import { OfflineIndicator } from '@/components/offline/OfflineIndicator'
+import { UpdateNotice } from '@/components/offline/UpdateNotice'
 import { PublicLayout } from '@/components/public/PublicLayout'
 import { Dashboard } from '@/pages/Dashboard'
 import { PublicHome } from '@/pages/PublicHome'
 import { AboutPage, HowItWorksPage } from '@/pages/PublicInfo'
 import { LoginPage, SignupPage, AccountStatusPage, ResetPasswordPage, UpdatePasswordPage } from '@/pages/Account'
-import { LearningPath } from '@/pages/LearningPath'
 import { LearningPaths } from '@/pages/LearningPaths'
 import { PathDetail } from '@/pages/PathDetail'
 import { Modules } from '@/pages/Modules'
@@ -86,11 +86,12 @@ function ApplicationRoutes() {
     <>
       <ScrollToTop />
       <OfflineIndicator />
+      <UpdateNotice />
       {!isPublicRoute && <>
         <PointsToast />
         <GlobalSearch open={searchOpen} onClose={closeSearch} />
         <KeyboardShortcuts />
-        <Suspense fallback={null}><GuidedTour /></Suspense>
+        {location.pathname !== '/admin' && <Suspense fallback={null}><GuidedTour /></Suspense>}
       </>}
       <Routes>
         <Route path="/" element={<PublicLayout />}>
@@ -144,7 +145,7 @@ function ApplicationRoutes() {
         <Route path="/badges" element={workspace(<Achievements />)} />
         <Route path="/daily" element={workspace(<Daily />)} />
         <Route path="/streak" element={workspace(<Daily />)} />
-        <Route path="/legacy/path" element={workspace(<LearningPath />)} />
+        <Route path="/legacy/path" element={<Navigate to="/paths/wireless-pentesting" replace />} />
         <Route path="*" element={workspace(<NotFound />)} />
       </Routes>
     </>

@@ -7,6 +7,7 @@ import learningPaths from '@/content/learning-paths.json'
 import { AVAILABLE_LABS, LABS } from '@/content/labs'
 import { quizData } from '@/content/quizData'
 import challenges from '@/content/challenges.json'
+import { currentModuleId, LEGACY_MODULE_MAP } from '@/content/legacy-module-map'
 
 interface LessonProgress {
   moduleId: string
@@ -89,7 +90,7 @@ export const CERT_PROGRESS_THRESHOLD = 100
 const OBSOLETE_ACHIEVEMENTS = new Set(['module_complete', 'three_modules', 'ten_modules', 'all_modules', 'first_quiz', 'five_quizzes', 'perfect_quiz'])
 
 /** Normalize pre-v5 local records so duplicated/obsolete credit cannot inflate progress or XP. */
-function normalizePersistedProgress(source: any, discardLegacyLabScores = false) {
+function normalizePersistedProgress(source: any, discardLegacyLabScores = false, retirePreviousFinalQuiz = false) {
   const input = source && typeof source === 'object' ? source : {}
   const unique = <T,>(items: T[], keyOf: (item: T) => string, scoreOf?: (item: T) => number) => {
     const byKey = new Map<string, T>()
@@ -101,12 +102,14 @@ function normalizePersistedProgress(source: any, discardLegacyLabScores = false)
     return [...byKey.values()]
   }
   const completedLessons = unique(
-    (Array.isArray(input.completedLessons) ? input.completedLessons : []).filter((item: any) =>
+    (Array.isArray(input.completedLessons) ? input.completedLessons : []).map((item: any) =>
+      item && typeof item === 'object' ? { ...item, moduleId: currentModuleId(item.moduleId) } : item).filter((item: any) =>
       item && typeof item === 'object' && (modules as any[]).some(m => m.id === item.moduleId && m.lessons?.some((lesson: any) => lesson.id === item.lessonId))),
     (item: any) => `${item.moduleId}:${item.lessonId}`,
   ).map((item: any) => ({ ...item, completed: true, points: POINTS.LESSON }))
   const completedLabs = unique(
-    (Array.isArray(input.completedLabs) ? input.completedLabs : []).filter((item: any) =>
+    (Array.isArray(input.completedLabs) ? input.completedLabs : []).map((item: any) =>
+      item && typeof item === 'object' ? { ...item, moduleId: currentModuleId(item.moduleId) } : item).filter((item: any) =>
       item && typeof item === 'object' && AVAILABLE_LABS.some(lab => lab.id === item.labId && lab.module === item.moduleId)),
     (item: any) => `${item.moduleId}:${item.labId}`,
   ).map((item: any) => {
@@ -116,7 +119,7 @@ function normalizePersistedProgress(source: any, discardLegacyLabScores = false)
     return { ...item, completed: true, score, points }
   })
   const quizCandidates = (Array.isArray(input.quizScores) ? input.quizScores : []).filter((item: any) =>
-    item && typeof item === 'object' && Object.prototype.hasOwnProperty.call(quizData, item.moduleId) && item.quizId === 'quiz-01' && Number.isFinite(item.score) && Number.isFinite(item.total) && item.total > 0 && item.score / item.total >= 0.8)
+    item && typeof item === 'object' && Object.prototype.hasOwnProperty.call(quizData, item.moduleId) && !(retirePreviousFinalQuiz && item.moduleId === '20-final-assessment') && item.quizId === 'quiz-01' && item.total === quizData[item.moduleId].length && Number.isFinite(item.score) && Number.isFinite(item.total) && item.total > 0 && item.score / item.total >= 0.8)
   const quizScores = unique(quizCandidates, (item: any) => `${item.moduleId}:${item.quizId}`, (item: any) => item.score / item.total)
     .map((item: any) => {
       const score = Math.min(Math.floor(item.score), Math.floor(item.total))
@@ -126,7 +129,8 @@ function normalizePersistedProgress(source: any, discardLegacyLabScores = false)
     }).filter((item: any) => item.score / item.total >= 0.8)
   const challengeById = new Map((challenges as Array<{ id: string; module: string; points: number }>).map(item => [item.id, item]))
   const completedChallenges = unique(
-    (Array.isArray(input.completedChallenges) ? input.completedChallenges : []).filter((item: any) =>
+    (Array.isArray(input.completedChallenges) ? input.completedChallenges : []).map((item: any) =>
+      item && typeof item === 'object' ? { ...item, moduleId: currentModuleId(item.moduleId) } : item).filter((item: any) =>
       item && typeof item === 'object' && challengeById.get(item.challengeId)?.module === item.moduleId),
     (item: any) => item.challengeId,
   ).map((item: any) => ({ ...item, points: challengeById.get(item.challengeId)!.points }))
@@ -135,6 +139,21 @@ function normalizePersistedProgress(source: any, discardLegacyLabScores = false)
     (Array.isArray(input.achievements) ? input.achievements : []).filter((item: any) => item && typeof item === 'object' && achievementById.has(item.id) && !OBSOLETE_ACHIEVEMENTS.has(item.id)),
     (item: any) => item.id,
   ).map((item: any) => ({ ...achievementById.get(item.id)!, unlockedAt: item.unlockedAt }))
+  // Old module-specific quiz scores cannot pass a new/merged module quiz by proxy. Keep
+  // their original result as local history without converting it to current XP or mastery.
+  // The retired reporting lesson is likewise kept as historical completion, not capstone credit.
+  const retiredRecords = unique([
+    ...(Array.isArray(input.retiredRecords) ? input.retiredRecords : []),
+    ...(Array.isArray(input.quizScores) ? input.quizScores : [])
+      .filter((item: any) => item && (Object.prototype.hasOwnProperty.call(LEGACY_MODULE_MAP, item.moduleId) || (retirePreviousFinalQuiz && item.moduleId === '20-final-assessment')) && item.quizId === 'quiz-01')
+      .map((item: any) => ({ type: 'quiz', moduleId: item.moduleId, activityId: item.quizId,
+        score: item.score, total: item.total, completedAt: item.completedAt })),
+    ...(Array.isArray(input.completedLessons) ? input.completedLessons : [])
+      .filter((item: any) => (item?.moduleId === '19-methodology' && item.lessonId === '02-evidence-severity-reporting') ||
+        (retirePreviousFinalQuiz && item?.moduleId === '20-final-assessment' && item.lessonId === '01-final-engagement'))
+      .map((item: any) => ({ type: 'lesson', moduleId: item.moduleId, activityId: item.lessonId,
+        completedAt: item.completedAt })),
+  ], (item: any) => `${item.type}:${item.moduleId}:${item.activityId}`)
   const totalXp = completedLessons.reduce((sum: number, item: any) => sum + item.points, 0)
     + completedLabs.reduce((sum: number, item: any) => sum + item.points, 0)
     + quizScores.reduce((sum: number, item: any) => sum + item.points, 0)
@@ -143,8 +162,8 @@ function normalizePersistedProgress(source: any, discardLegacyLabScores = false)
   return {
     ...input,
     currentLearningPathId: (learningPaths as Array<{ id: string }>).some(path => path.id === input.currentLearningPathId) ? input.currentLearningPathId : 'wireless-pentesting',
-    currentModule: (modules as Array<{ id: string }>).some(module => module.id === input.currentModule) ? input.currentModule : '01-intro-wireless',
-    completedLessons, completedLabs, quizScores, completedChallenges, achievements,
+    currentModule: (modules as Array<{ id: string }>).some(module => module.id === currentModuleId(input.currentModule)) ? currentModuleId(input.currentModule) : '01-intro-wireless',
+    completedLessons, completedLabs, quizScores, completedChallenges, retiredRecords, achievements,
     totalXp, streak: 0, lastEarnedPoints: null,
   }
 }
@@ -170,6 +189,7 @@ interface ProgressState {
   completedLabs: LabProgress[]
   completedChallenges: ChallengeProgress[]
   quizScores: QuizProgress[]
+  retiredRecords: Array<{ type: string; moduleId: string; activityId: string; score?: number; total?: number; completedAt?: string }>
   currentModule: string | null
   currentLearningPathId: string | null
   streak: number
@@ -208,6 +228,7 @@ export const useProgressStore = create<ProgressState>()(
       completedLabs: [],
       completedChallenges: [],
       quizScores: [],
+      retiredRecords: [],
       currentModule: "01-intro-wireless",
       currentLearningPathId: "wireless-pentesting",
       streak: 0,
@@ -514,6 +535,7 @@ export const useProgressStore = create<ProgressState>()(
         completedLabs: [],
         completedChallenges: [],
         quizScores: [],
+        retiredRecords: [],
         currentModule: "01-intro-wireless",
         currentLearningPathId: "wireless-pentesting",
         streak: 0,
@@ -525,7 +547,7 @@ export const useProgressStore = create<ProgressState>()(
     }),
     {
       name: 'platform-progress',
-      version: 5,
+      version: 6,
       merge: (persistedState, currentState) => {
         if (persistedState) return { ...currentState, ...normalizePersistedProgress(persistedState) }
         // Zustand does not call `migrate` when the new key is absent, so explicitly consult the
@@ -538,7 +560,7 @@ export const useProgressStore = create<ProgressState>()(
           if (!legacy || typeof legacy !== 'object') return currentState
           return {
             ...currentState,
-            ...normalizePersistedProgress({ ...legacy, completedChallenges: [] }, true),
+            ...normalizePersistedProgress({ ...legacy, completedChallenges: [] }, true, true),
             completedChallenges: [],
           }
         } catch {
@@ -557,7 +579,7 @@ export const useProgressStore = create<ProgressState>()(
           if (!state) return state
           // Before v4, lab buttons could record unverified 100% scores and failed quizzes could
           // count as complete. v5 also deduplicates records and recalculates credit from current rules.
-          return normalizePersistedProgress(state, version < 4)
+          return normalizePersistedProgress(state, version < 4, version < 6)
         } catch {
           return persistedState
         }

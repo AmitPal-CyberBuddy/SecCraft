@@ -8,9 +8,9 @@
 | Message | Direction | Key info flags | Carries | Proves |
 | --- | --- | --- | --- | --- |
 | M1 | AP → STA | Pairwise, ACK, no MIC | ANonce, replay counter, (optionally PMKID KDE) | AP is ready; nothing authenticated |
-| M2 | STA → AP | Pairwise, MIC | SNonce, MIC over the frame | Client knows the PMK → **both sides can now derive the PTK** |
-| M3 | AP → STA | Pairwise, ACK, MIC, Install, Secure | ANonce, MIC, encrypted GTK | AP knows the PMK and installs keys |
-| M4 | STA → AP | Pairwise, MIC, Secure | MIC only | Client confirms; group key in place |
+| M2 | STA → AP | Pairwise, MIC | SNonce, MIC over the frame | A *valid* MIC supports PMK possession; both peers have the inputs to derive the PTK, but a capture alone does not prove AP acceptance |
+| M3 | AP → STA | Pairwise, ACK, MIC, Install, Secure | ANonce, MIC, encrypted GTK | A valid MIC supports AP possession of the PMK; instructs the STA to install keys |
+| M4 | STA → AP | Pairwise, MIC, Secure | MIC only | Client acknowledges key setup; delivery/acceptance and installed state need corroboration |
 
 Flag meanings (EAPOL-Key "key information" field): bit 3 key type (1 = pairwise), bit 6 install,
 bit 7 ACK, bit 8 MIC, bit 9 secure, bit 12 encrypted key data.
@@ -32,9 +32,11 @@ Tasks:
    beacon, derive the PTK for the M1/M2 pair, and verify the M2 MIC yourself:
    `scripts/verify-lab-artifacts.py` performs exactly this check — read it, then reproduce it with your
    own tooling (`hcxpsktool`, Python, or Wireshark's decryption).
-5. Decrypt: with the PSK and handshake, load the capture in Wireshark (Preferences → Protocols →
-   IEEE 802.11 → decryption keys) and verify that the payload after the handshake becomes readable.
-   Which frames can now be decrypted, and which cannot?
+5. Check whether the capture contains any CCMP-protected data after the handshake (filter
+   `wlan.fc.protected == 1`). This 13-frame fixture does **not** include such a payload, so there is
+   nothing to decrypt here. Contrast the deliberately *unprotected* example payloads in
+   `traffic-analysis.pcapng` (module 06). State what extra authorized capture and keys would be required
+   to demonstrate decryption of real protected data; never claim decryption based on this fixture.
 
 ## 3. Evidence you should end up with
 

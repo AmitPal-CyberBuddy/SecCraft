@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { motion } from 'framer-motion'
-import { Activity, AlertTriangle, Check, ClipboardList, LoaderCircle, RefreshCw, Save, ShieldCheck, UserCheck, UserX, Users, Gauge, X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { AlertTriangle, Check, ClipboardList, LoaderCircle, RefreshCw, Save, UserX, X } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import type { AccountStatus } from '@/lib/access'
 
@@ -26,33 +25,49 @@ interface AuditEvent {
   details: Record<string, unknown>
   created_at: string
 }
-
 const FILTERS: { id: 'all' | AccountStatus; label: string }[] = [
-  { id: 'pending', label: 'Pending' },
-  { id: 'active', label: 'Active' },
-  { id: 'rejected', label: 'Rejected' },
-  { id: 'suspended', label: 'Suspended' },
-  { id: 'all', label: 'All' },
+  { id: 'pending', label: 'Pending' }, { id: 'active', label: 'Active' },
+  { id: 'rejected', label: 'Rejected' }, { id: 'suspended', label: 'Suspended' }, { id: 'all', label: 'All' },
 ]
+const STATUSES: AccountStatus[] = ['pending', 'active', 'rejected', 'suspended']
+const PAGE_LIMIT = 200 // The existing API has a maximum of 200; it does not expose pagination or total counts.
 
-const STATUS_TONE: Record<AccountStatus, string> = {
-  pending: 'border-amber-300/20 bg-amber-300/10 text-amber-200',
-  active: 'border-emerald-300/20 bg-emerald-300/10 text-emerald-200',
-  rejected: 'border-rose-300/20 bg-rose-300/10 text-rose-200',
-  suspended: 'border-slate-500/30 bg-slate-500/10 text-slate-300',
-}
-
-async function apiJson(path: string, init?: RequestInit) {
+async function apiJson(path: string, init?: RequestInit): Promise<Record<string, unknown>> {
   const response = await apiFetch(path, init)
   const body = await response.json().catch(() => ({}))
   if (!response.ok) {
     const detail = typeof body?.detail === 'string' ? body.detail : body?.detail?.message
     throw new Error(detail || (response.status === 403 ? 'Owner access is required.' : `The request failed (${response.status}).`))
   }
-  if (!body || typeof body !== 'object' || Array.isArray(body)) {
-    throw new Error('The owner API returned an invalid response. Check the configured API origin.')
-  }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('The owner API returned an invalid response. Check the configured API origin.')
   return body
+}
+function parseSettings(body: Record<string, unknown>): AdminSettings {
+  if (typeof body.signup_enabled !== 'boolean' || !Number.isInteger(body.active_approved_users) || Number(body.active_approved_users) < 0 ||
+    (body.approved_user_limit !== null && (!Number.isInteger(body.approved_user_limit) || Number(body.approved_user_limit) < 0))) {
+    throw new Error('The account policy response is incomplete. Refresh or check the account service.')
+  }
+  return body as unknown as AdminSettings
+}
+function parseUsers(body: Record<string, unknown>): ManagedUser[] {
+  if (!Array.isArray(body.users) || body.users.some((u: unknown) => !u || typeof u !== 'object' ||
+    typeof (u as ManagedUser).user_id !== 'string' || !STATUSES.includes((u as ManagedUser).account_status))) {
+    throw new Error('The account list response is incomplete. Refresh or check the account service.')
+  }
+  return body.users as ManagedUser[]
+}
+function parseAudit(body: Record<string, unknown>): AuditEvent[] {
+  if (!Array.isArray(body.events)) throw new Error('The audit response is incomplete. Refresh or check the account service.')
+  return body.events as AuditEvent[]
+}
+function dateLabel(value: string | null): string {
+  if (!value) return 'Date unavailable'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? 'Date unavailable' : date.toLocaleDateString()
+}
+function timestamp(value: string): string {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? 'Time unavailable' : date.toLocaleString()
 }
 
 export function AdminPage() {
@@ -60,378 +75,156 @@ export function AdminPage() {
   const [users, setUsers] = useState<ManagedUser[]>([])
   const [audit, setAudit] = useState<AuditEvent[]>([])
   const [filter, setFilter] = useState<'all' | AccountStatus>('pending')
+  const [signupDraft, setSignupDraft] = useState(false)
   const [limit, setLimit] = useState('')
-  const [busy, setBusy] = useState(true)
+  const [reload, setReload] = useState(0)
+  const [usersLoading, setUsersLoading] = useState(true)
+  const [settingsLoading, setSettingsLoading] = useState(true)
+  const [auditLoading, setAuditLoading] = useState(true)
+  const [usersError, setUsersError] = useState('')
+  const [settingsError, setSettingsError] = useState('')
+  const [auditError, setAuditError] = useState('')
   const [saving, setSaving] = useState(false)
   const [pendingUserId, setPendingUserId] = useState<string | null>(null)
-  const [error, setError] = useState('')
+  const [confirmation, setConfirmation] = useState<{ userId: string; status: AccountStatus } | null>(null)
+  const [actionError, setActionError] = useState('')
   const [notice, setNotice] = useState('')
-
-  const load = useCallback(
-    async (initial = false) => {
-      if (!initial) {
-        setBusy(true)
-        setError('')
-      }
-      try {
-        const usersQuery = filter === 'all' ? '' : `?status=${filter}&limit=200`
-        const [settingsResult, usersResult, auditResult] = await Promise.all([
-          apiJson('/api/v1/admin/settings'),
-          apiJson(`/api/v1/admin/users${usersQuery}`),
-          apiJson('/api/v1/admin/audit?limit=50'),
-        ])
-        setSettings(settingsResult as AdminSettings)
-        setLimit(settingsResult.approved_user_limit == null ? '' : String(settingsResult.approved_user_limit))
-        setUsers(usersResult.users as ManagedUser[])
-        setAudit(auditResult.events as AuditEvent[])
-      } catch (cause) {
-        setError(cause instanceof Error ? cause.message : 'The owner console could not be loaded.')
-      } finally {
-        setBusy(false)
-      }
-    },
-    [filter],
-  )
+  const preserveDraft = useRef(false)
+  const dirty = settings !== null && (signupDraft !== settings.signup_enabled || limit.trim() !== (settings.approved_user_limit == null ? '' : String(settings.approved_user_limit)))
 
   useEffect(() => {
+    const controller = new AbortController()
+    // Never leave rows from another filter visible while a new request is in flight or has failed.
     const timer = window.setTimeout(() => {
-      void load(true)
+      setUsers([]); setUsersLoading(true); setUsersError('')
+      void apiJson(`/api/v1/admin/users?${filter === 'all' ? '' : `status=${filter}&`}limit=${PAGE_LIMIT}`, { signal: controller.signal })
+        .then(result => { if (!controller.signal.aborted) setUsers(parseUsers(result)) })
+        .catch(cause => { if (!controller.signal.aborted) setUsersError(cause instanceof Error ? cause.message : 'Accounts could not be loaded.') })
+        .finally(() => { if (!controller.signal.aborted) setUsersLoading(false) })
     }, 0)
-    return () => window.clearTimeout(timer)
-  }, [load])
+    return () => { window.clearTimeout(timer); controller.abort() }
+  }, [filter, reload])
 
+  useEffect(() => {
+    const controller = new AbortController()
+    const timer = window.setTimeout(() => {
+      setSettingsLoading(true); setSettingsError(''); setAuditLoading(true); setAuditError('')
+      void apiJson('/api/v1/admin/settings', { signal: controller.signal })
+        .then(result => {
+          if (controller.signal.aborted) return
+          const next = parseSettings(result)
+          setSettings(next)
+          if (!preserveDraft.current) { setSignupDraft(next.signup_enabled); setLimit(next.approved_user_limit == null ? '' : String(next.approved_user_limit)) }
+        })
+        .catch(cause => { if (!controller.signal.aborted) { setSettings(null); setSettingsError(cause instanceof Error ? cause.message : 'Policy could not be loaded.') } })
+        .finally(() => { if (!controller.signal.aborted) setSettingsLoading(false) })
+      void apiJson('/api/v1/admin/audit?limit=50', { signal: controller.signal })
+        .then(result => { if (!controller.signal.aborted) setAudit(parseAudit(result)) })
+        .catch(cause => { if (!controller.signal.aborted) { setAudit([]); setAuditError(cause instanceof Error ? cause.message : 'Audit could not be loaded.') } })
+        .finally(() => { if (!controller.signal.aborted) setAuditLoading(false) })
+    }, 0)
+    return () => { window.clearTimeout(timer); controller.abort() }
+  }, [reload])
+
+  function refresh() {
+    if (dirty && !window.confirm('Discard unsaved enrollment changes and refresh from the server?')) return
+    preserveDraft.current = false
+    setConfirmation(null); setActionError(''); setNotice('')
+    setReload(value => value + 1)
+  }
   async function saveSettings(event: FormEvent) {
     event.preventDefault()
-    setSaving(true)
-    setError('')
-    setNotice('')
+    if (!settings || saving) return
+    setActionError(''); setNotice('')
     const parsedLimit = limit.trim() === '' ? null : Number(limit)
     if (parsedLimit !== null && (!Number.isSafeInteger(parsedLimit) || parsedLimit < 0)) {
-      setSaving(false)
-      setError('Enter a non-negative whole-number approved-user limit, or leave it empty to keep approvals fail-closed.')
+      setActionError('Enter a non-negative whole-number approved-user limit, or leave it empty to keep approvals fail-closed.')
       return
     }
+    setSaving(true)
     try {
-      const result = await apiJson('/api/v1/admin/settings', {
-        method: 'PATCH',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ signup_enabled: settings?.signup_enabled ?? false, approved_user_limit: parsedLimit }),
-      })
-      setSettings(result as AdminSettings)
-      setNotice('Owner-controlled settings saved.')
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Settings could not be saved.')
-    } finally {
-      setSaving(false)
-    }
+      const result = parseSettings(await apiJson('/api/v1/admin/settings', {
+        method: 'PATCH', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ signup_enabled: signupDraft, approved_user_limit: parsedLimit }),
+      }))
+      setSettings(result); setSignupDraft(result.signup_enabled); setLimit(result.approved_user_limit == null ? '' : String(result.approved_user_limit))
+      preserveDraft.current = false
+      setNotice('Enrollment policy saved on the server.')
+      setReload(value => value + 1)
+    } catch (cause) { setActionError(cause instanceof Error ? cause.message : 'Settings could not be saved.') }
+    finally { setSaving(false) }
   }
-
   async function changeStatus(user: ManagedUser, status: AccountStatus) {
-    setError('')
-    setNotice('')
-    setPendingUserId(user.user_id)
+    if (pendingUserId) return
+    setConfirmation(null); setActionError(''); setNotice(''); setPendingUserId(user.user_id)
     try {
       await apiJson(`/api/v1/admin/users/${encodeURIComponent(user.user_id)}/status`, {
-        method: 'PATCH',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ account_status: status }),
+        method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ account_status: status }),
       })
-      setNotice(`Account moved to “${status}”.`)
-      await load()
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'The account status could not be changed.')
-    } finally {
-      setPendingUserId(null)
-    }
+      setNotice(`${user.email || user.display_name || 'Account'} moved to ${status}.`)
+      preserveDraft.current = dirty
+      setReload(value => value + 1)
+    } catch (cause) { setActionError(cause instanceof Error ? cause.message : 'The account status could not be changed.') }
+    finally { setPendingUserId(null) }
   }
-
   const capacity = useMemo(() => {
     if (!settings) return null
     const active = settings.active_approved_users
-    if (settings.approved_user_limit == null) return { label: 'Fail-closed — no limit set', percent: 0, tone: 'text-amber-300' }
-    const percent = settings.approved_user_limit === 0 ? 100 : Math.min((active / settings.approved_user_limit) * 100, 100)
-    return {
-      label: `${active} of ${settings.approved_user_limit} active`,
-      percent,
-      tone: active >= settings.approved_user_limit ? 'text-amber-300' : 'text-emerald-300',
+    const max = settings.approved_user_limit
+    return { label: max === null ? `${active} active · limit not set` : `${active} of ${max} active`,
+      percent: max === null ? 0 : max === 0 ? 100 : Math.min((active / max) * 100, 100),
+      available: max !== null && active < max,
     }
   }, [settings])
+  const canApprove = capacity?.available === true
 
-  return (
-    <div className="space-y-6">
-      <motion.header initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }} className="flex flex-wrap items-end justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-[.2em] text-violet-300">Owner-only</p>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">Platform administration</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            Account approvals, enrollment capacity, and an auditable record of every owner action. This console is separate
-            from the learner application and grants nothing on its own.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => void load()}
-          disabled={busy}
-          className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-700 px-3 text-sm text-slate-200 transition-colors hover:bg-slate-800 disabled:opacity-50"
-        >
-          <RefreshCw className={`h-4 w-4 ${busy ? 'animate-spin' : ''}`} aria-hidden="true" /> Refresh
-        </button>
-      </motion.header>
+  return <div className="ws-admin sc-owner-page">
+    <header className="sc-owner-intro"><div><p className="sc-library-domain">SecCraft / Owner operations</p><h1>Platform administration</h1><p>Manage enrollment, review learner accounts and inspect recent owner actions. Access and capacity are enforced by the server—not by this screen.</p></div><button type="button" onClick={refresh} disabled={usersLoading || settingsLoading || auditLoading || saving || Boolean(pendingUserId)} className="ws-action ws-action-secondary"><RefreshCw size={16} aria-hidden="true" /> Refresh data</button></header>
+    {(actionError || notice) && <div role={actionError ? 'alert' : 'status'} className={`sc-owner-feedback ${actionError ? 'is-error' : 'is-success'}`}>{actionError || notice}</div>}
 
-      {error && (
-        <div role="alert" className="flex items-start gap-2 rounded-xl border border-rose-300/20 bg-rose-300/[0.06] p-4 text-sm leading-6 text-rose-100">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-          <span>{error}</span>
-        </div>
-      )}
-      {notice && (
-        <div role="status" className="rounded-xl border border-emerald-300/20 bg-emerald-300/[0.06] p-3 text-sm text-emerald-100">
-          {notice}
-        </div>
-      )}
+    <section className="sc-owner-overview" aria-labelledby="owner-overview"><h2 id="owner-overview">Owner overview</h2><div className="sc-owner-overview-grid">
+      <div><span>Pending approvals</span><strong>{usersLoading || usersError ? 'Unavailable' : filter === 'pending' || filter === 'all' ? `${users.filter(user => user.account_status === 'pending').length}${users.length === PAGE_LIMIT ? '+' : ''}` : 'Switch to Pending'}</strong><small>Current {filter} list only; not a platform-wide total.</small></div>
+      <div><span>Active learners</span><strong>{settingsLoading || settingsError || !settings ? 'Unavailable' : settings.active_approved_users}</strong><small>Server-reported approved non-owner accounts.</small></div>
+      <div><span>Recent owner events</span><strong>{auditLoading || auditError ? 'Unavailable' : audit.length}</strong><small>Up to 50 recent events, not a complete audit export.</small></div>
+    </div></section>
+    <section className="sc-owner-capacity" aria-labelledby="capacity-heading"><div className="sc-owner-section-head"><div><h2 id="capacity-heading">Enrollment capacity</h2><p>Approved non-owner accounts only. Pending, rejected, suspended and owner-allowlisted accounts are excluded.</p></div></div>
+      {settingsError ? <p role="alert" className="sc-owner-error">{settingsError} <button type="button" onClick={refresh}>Retry</button></p> : settingsLoading || !settings || !capacity ? <p role="status">Loading enrollment policy…</p> : <div className="sc-capacity-grid"><div><strong>{capacity.label}</strong><p>{capacity.available ? 'Space available for another approval.' : 'Approvals currently fail closed or capacity is full.'}</p></div><div>{settings.approved_user_limit !== null && settings.approved_user_limit > 0 ? <div className="ws-progress" role="progressbar" aria-label="Approved account capacity used" aria-valuemin={0} aria-valuemax={settings.approved_user_limit} aria-valuenow={Math.min(settings.active_approved_users, settings.approved_user_limit)}><span style={{ width: `${capacity.percent}%` }} /></div> : null}<small>{settings.approved_user_limit === null ? 'Set a limit to enable approvals.' : settings.approved_user_limit === 0 ? 'Zero approved-account places configured.' : 'Capacity is rechecked by the server for every approval.'}</small></div></div>}
+    </section>
 
-      {/* Capacity summary — real numbers from the server, not client-side counting. */}
-      {settings && capacity && (
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-          className="rounded-2xl border border-slate-800 bg-[#081120] p-5"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <Gauge className="h-4 w-4 text-violet-300" aria-hidden="true" />
-              <h2 className="text-[14px] font-semibold text-white">Approved-user capacity</h2>
-            </div>
-            <span className={`font-mono text-sm font-semibold ${capacity.tone}`}>{capacity.label}</span>
+    <section className="sc-owner-policy" aria-labelledby="policy-heading"><div className="sc-owner-section-head"><div><h2 id="policy-heading">Enrollment policy</h2><p>Changes are not applied until you save. The API checks signup before forwarding it; the identity provider is independently reachable.</p></div></div>
+      {settingsError ? <p className="sc-owner-error">Policy is unavailable until the account service responds.</p> : settingsLoading || !settings ? <p role="status">Loading policy controls…</p> : <form onSubmit={saveSettings} className="sc-owner-form">
+        <label className="sc-owner-toggle"><span><strong>Allow new account requests</strong><small>This controls requests sent through the SecCraft API. Configure provider-side signup restrictions separately if required.</small></span><input type="checkbox" checked={signupDraft} onChange={event => setSignupDraft(event.target.checked)} /></label>
+        <label className="sc-owner-limit"><strong>Approved active user limit</strong><input inputMode="numeric" type="number" min="0" step="1" value={limit} onChange={event => setLimit(event.target.value)} placeholder="No limit set — approvals disabled" /><small>Leave blank to fail closed. Zero permits no regular learner approvals.</small></label>
+        <div className="sc-owner-form-actions"><button type="submit" className="ws-action" disabled={saving || !dirty}>{saving ? <LoaderCircle className="animate-spin" size={16} aria-hidden="true" /> : <Save size={16} aria-hidden="true" />}{saving ? 'Saving…' : 'Save policy'}</button><span aria-live="polite">{dirty ? 'Unsaved changes' : 'No unsaved changes'}</span></div>
+      </form>}
+    </section>
+
+    <section className="sc-owner-accounts" aria-labelledby="accounts-heading"><div className="sc-owner-section-head"><div><h2 id="accounts-heading">Learner accounts</h2><p>Only email-verified accounts appear for review. Owner-allowlisted identities are not in this list.</p></div><span>Oldest requests first · up to {PAGE_LIMIT} per filter</span></div>
+      <div className="sc-owner-filters" role="group" aria-label="Filter accounts by status">{FILTERS.map(item => <button key={item.id} type="button" aria-pressed={filter === item.id} onClick={() => { setFilter(item.id); setConfirmation(null); setActionError(''); setUsers([]); setUsersLoading(true) }}>{item.label}</button>)}</div>
+      {!canApprove && !settingsLoading && settings && <p className="sc-owner-advisory" role="status">Approvals and reactivations are unavailable until a positive limit with spare capacity is saved. The API independently checks every request.</p>}
+      {usersError ? <p role="alert" className="sc-owner-error">{usersError} <button type="button" onClick={refresh}>Retry</button></p> : usersLoading ? <p role="status" className="sc-owner-loading"><LoaderCircle size={16} className="animate-spin" aria-hidden="true" /> Loading {filter === 'all' ? '' : `${filter} `}accounts…</p> : users.length === 0 ? <p className="sc-owner-empty">No accounts in this filter. Try another status or refresh the list.</p> : <>
+        <p className="sc-owner-count" role="status">Showing {users.length}{users.length === PAGE_LIMIT ? ' (first 200 only; the API has no next page)'  : ''} · {filter === 'all' ? 'all statuses' : filter}</p>
+        <div className="sc-owner-table" role="table" aria-label="Learner accounts"><div className="sc-owner-columns" role="row"><span role="columnheader">Account / requested</span><span role="columnheader">Status</span><span role="columnheader">Actions</span></div>
+        {users.map(user => {
+          const actionPending = pendingUserId !== null
+          const approveDisabled = actionPending || !canApprove
+          return <div key={user.user_id} className="sc-owner-row" role="row"><div className="sc-owner-person" role="cell"><strong>{user.email || user.display_name || 'Learner account'}</strong><code>{user.user_id}</code><small>Requested {dateLabel(user.created_at)}{user.reviewed_at ? ` · reviewed ${dateLabel(user.reviewed_at)}` : ''}</small></div><div className="sc-owner-status" role="cell"><span data-status={user.account_status}>{user.account_status}</span></div><div className="sc-owner-actions" role="cell">
+            {user.account_status !== 'active' && user.account_status !== 'suspended' && <button type="button" disabled={approveDisabled} title={!canApprove ? 'Set a limit or free capacity before approving.' : undefined} onClick={() => setConfirmation({ userId: user.user_id, status: 'active' })}><Check size={15} aria-hidden="true" /> Approve</button>}
+            {user.account_status === 'suspended' && <button type="button" disabled={approveDisabled} title={!canApprove ? 'Set a limit or free capacity before reactivating.' : undefined} onClick={() => setConfirmation({ userId: user.user_id, status: 'active' })}><Check size={15} aria-hidden="true" /> Reactivate</button>}
+            {user.account_status !== 'rejected' && <button type="button" disabled={actionPending} onClick={() => setConfirmation({ userId: user.user_id, status: 'rejected' })}><X size={15} aria-hidden="true" /> Reject</button>}
+            {user.account_status !== 'suspended' && user.account_status !== 'rejected' && <button type="button" disabled={actionPending} onClick={() => setConfirmation({ userId: user.user_id, status: 'suspended' })}><UserX size={15} aria-hidden="true" /> Suspend</button>}
+            {pendingUserId === user.user_id && <span role="status">Applying…</span>}
           </div>
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full border border-slate-800 bg-slate-950">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${capacity.percent}%` }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className={`h-full rounded-full ${settings.approved_user_limit == null || settings.active_approved_users >= (settings.approved_user_limit ?? 0) ? 'bg-gradient-to-r from-amber-400 to-orange-400' : 'bg-gradient-to-r from-emerald-400 to-cyan-400'}`}
-            />
+          {confirmation?.userId === user.user_id && <div className="sc-owner-confirm" role="cell" aria-colspan={3}><p>Change <strong>{user.email || user.user_id}</strong> from {user.account_status} to <strong>{confirmation.status}</strong>? The server will check capacity and record this action. Browser-local practice remains available.</p><div><button type="button" onClick={() => setConfirmation(null)}>Cancel</button><button type="button" disabled={actionPending || (confirmation.status === 'active' && !canApprove)} onClick={() => void changeStatus(user, confirmation.status)}>Confirm {confirmation.status === 'active' ? user.account_status === 'suspended' ? 'reactivation' : 'approval' : confirmation.status}</button></div></div>}
           </div>
-          <p className="mt-2.5 text-[11.5px] leading-relaxed text-slate-500">
-            Counts active non-admin accounts only. Suspended, rejected, and pending accounts do not consume capacity, and
-            owner-allowlisted accounts are excluded. Approvals are refused — not queued — when the limit is unset or full.
-          </p>
-        </motion.section>
-      )}
+        })}</div>
+      </>}
+      <p className="sc-owner-footnote">This is a bounded server list, not a total account count. The server remains authoritative for every change.</p>
+    </section>
 
-      <section className="grid gap-4 lg:grid-cols-[.9fr_1.1fr]">
-        <div className="rounded-2xl border border-slate-800 bg-[#081120] p-5 sm:p-6">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-300/20 bg-cyan-300/10">
-              <ShieldCheck className="h-5 w-5 text-cyan-200" aria-hidden="true" />
-            </span>
-            <div>
-              <h2 className="font-semibold text-white">Enrollment policy</h2>
-              <p className="text-xs text-slate-500">Applied on the server, effective immediately</p>
-            </div>
-          </div>
-
-          {settings ? (
-            <form onSubmit={saveSettings} className="mt-5 space-y-5">
-              <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-slate-800 bg-slate-950/60 p-3">
-                <span>
-                  <span className="block text-sm font-medium text-slate-200">Allow new account requests</span>
-                  <span className="mt-0.5 block text-xs leading-5 text-slate-500">
-                    Checked by the API before any signup is forwarded. The identity provider remains independently
-                    reachable — see the deployment notes.
-                  </span>
-                </span>
-                <input
-                  type="checkbox"
-                  checked={settings.signup_enabled}
-                  onChange={event => setSettings({ ...settings, signup_enabled: event.target.checked })}
-                  className="h-5 w-5 shrink-0 accent-cyan-300"
-                />
-              </label>
-
-              <label className="block text-sm text-slate-300">
-                Approved active user limit
-                <input
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  value={limit}
-                  onChange={event => setLimit(event.target.value)}
-                  placeholder="Not configured — approvals disabled"
-                  className="mt-1.5 min-h-11 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-3 text-sm text-white outline-none placeholder:text-xs placeholder:text-slate-600 focus:border-cyan-300/50"
-                />
-                <span className="mt-1 block text-xs leading-5 text-slate-500">
-                  Leave blank to fail closed. A limit of 0 means no regular learner account can be activated.
-                </span>
-              </label>
-
-              <button
-                type="submit"
-                disabled={saving}
-                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-cyan-300 px-4 text-sm font-bold text-slate-950 transition-colors hover:bg-cyan-200 disabled:opacity-60"
-              >
-                {saving ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
-                {saving ? 'Saving…' : 'Save enrollment settings'}
-              </button>
-            </form>
-          ) : (
-            <div className="mt-5 flex items-center gap-2 text-sm text-slate-400" role="status" aria-live="polite">
-              <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /> Loading owner settings…
-            </div>
-          )}
-        </div>
-
-        <div className="rounded-2xl border border-slate-800 bg-[#081120] p-5 sm:p-6">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-violet-300/20 bg-violet-300/10">
-              <UserCheck className="h-5 w-5 text-violet-200" aria-hidden="true" />
-            </span>
-            <div>
-              <h2 className="font-semibold text-white">Learner accounts</h2>
-              <p className="text-xs text-slate-500">Email verification happens before an account can be reviewed.</p>
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-1.5" role="tablist" aria-label="Filter accounts by status">
-            {FILTERS.map(item => (
-              <button
-                key={item.id}
-                type="button"
-                role="tab"
-                aria-selected={filter === item.id}
-                onClick={() => setFilter(item.id)}
-                className={`min-h-9 rounded-lg border px-3 text-xs font-medium transition-colors ${
-                  filter === item.id ? 'border-cyan-300/30 bg-cyan-300/10 text-cyan-100' : 'border-slate-700 text-slate-300 hover:bg-slate-800'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-4 space-y-3">
-            {busy && !settings ? (
-              <div className="flex items-center gap-2 text-sm text-slate-400" role="status" aria-live="polite">
-                <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /> Loading accounts…
-              </div>
-            ) : users.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-700 p-6 text-center">
-                <Users className="mx-auto h-5 w-5 text-slate-600" aria-hidden="true" />
-                <p className="mt-2 text-sm text-slate-400">No accounts in this state.</p>
-                <p className="mt-1 text-xs text-slate-500">Try a different filter above.</p>
-              </div>
-            ) : (
-              users.map(user => {
-                const busyRow = pendingUserId === user.user_id
-                return (
-                  <article key={user.user_id} className="rounded-xl border border-slate-800 bg-slate-950/55 p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold text-slate-100">
-                          {user.email || user.display_name || 'Verified SecCraft account'}
-                        </div>
-                        <div className="mt-1 break-all font-mono text-[10px] text-slate-500">{user.user_id}</div>
-                        <div className="mt-1 text-xs text-slate-500">
-                          Requested {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'date unavailable'}
-                          {user.reviewed_at ? ` • reviewed ${new Date(user.reviewed_at).toLocaleDateString()}` : ''}
-                        </div>
-                      </div>
-                      <span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-mono ${STATUS_TONE[user.account_status]}`}>
-                        {user.account_status}
-                      </span>
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {user.account_status !== 'active' && (
-                        <button
-                          type="button"
-                          disabled={busyRow}
-                          onClick={() => void changeStatus(user, 'active')}
-                          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-emerald-300 px-3 text-xs font-bold text-slate-950 transition-colors hover:bg-emerald-200 disabled:opacity-60"
-                        >
-                          <Check className="h-3.5 w-3.5" aria-hidden="true" /> Approve
-                        </button>
-                      )}
-                      {user.account_status !== 'rejected' && (
-                        <button
-                          type="button"
-                          disabled={busyRow}
-                          onClick={() => void changeStatus(user, 'rejected')}
-                          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-rose-300/20 bg-rose-300/[0.06] px-3 text-xs text-rose-100 transition-colors hover:bg-rose-300/10 disabled:opacity-60"
-                        >
-                          <X className="h-3.5 w-3.5" aria-hidden="true" /> Reject
-                        </button>
-                      )}
-                      {user.account_status !== 'suspended' && user.account_status !== 'rejected' && (
-                        <button
-                          type="button"
-                          disabled={busyRow}
-                          onClick={() => void changeStatus(user, 'suspended')}
-                          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-700 px-3 text-xs text-slate-300 transition-colors hover:bg-slate-800 disabled:opacity-60"
-                        >
-                          <UserX className="h-3.5 w-3.5" aria-hidden="true" /> Suspend
-                        </button>
-                      )}
-                      {user.account_status === 'suspended' && (
-                        <button
-                          type="button"
-                          disabled={busyRow}
-                          onClick={() => void changeStatus(user, 'active')}
-                          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-emerald-300/25 bg-emerald-300/10 px-3 text-xs font-medium text-emerald-100 transition-colors hover:bg-emerald-300/15 disabled:opacity-60"
-                        >
-                          <Check className="h-3.5 w-3.5" aria-hidden="true" /> Reactivate
-                        </button>
-                      )}
-                      {busyRow && (
-                        <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
-                          <LoaderCircle className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Applying…
-                        </span>
-                      )}
-                    </div>
-                  </article>
-                )
-              })
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-slate-800 bg-[#081120] p-5 sm:p-6">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-300/20 bg-amber-300/10">
-            <ClipboardList className="h-5 w-5 text-amber-200" aria-hidden="true" />
-          </span>
-          <div>
-            <h2 className="font-semibold text-white">Owner audit log</h2>
-            <p className="text-xs text-slate-500">Every approval and policy change is recorded server-side.</p>
-          </div>
-        </div>
-        <div className="mt-4 divide-y divide-slate-800">
-          {audit.length === 0 ? (
-            <p className="py-4 text-sm text-slate-500">No owner actions recorded yet.</p>
-          ) : (
-            audit.map(event => (
-              <div key={event.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-xs">
-                <span className="inline-flex items-center gap-2 text-slate-200">
-                  <Activity className="h-3.5 w-3.5 text-cyan-300" aria-hidden="true" />
-                  {event.action}
-                  {event.target_user_id && <span className="font-mono text-slate-500">{event.target_user_id}</span>}
-                </span>
-                <time className="font-mono text-slate-500">{event.created_at ? new Date(event.created_at).toLocaleString() : ''}</time>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      <div className="flex items-start gap-2 rounded-xl border border-amber-300/15 bg-amber-300/[0.04] p-4 text-xs leading-5 text-amber-100/80">
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" aria-hidden="true" />
-        <p>
-          Only identities listed in the server&rsquo;s owner allowlist can open this console. Learner profiles have no role
-          selector, and nothing on this page grants access to anyone. Suspending an account removes account-backed features
-          only — the learner keeps full guest access.
-        </p>
-      </div>
-    </div>
-  )
+    <section className="sc-owner-audit" aria-labelledby="audit-heading"><div className="sc-owner-section-head"><div><h2 id="audit-heading"><ClipboardList size={18} aria-hidden="true" /> Recent owner activity</h2><p>The latest 50 server-held events, not a complete audit export.</p></div></div>
+      {auditError ? <p role="alert" className="sc-owner-error">{auditError} <button type="button" onClick={refresh}>Retry</button></p> : auditLoading ? <p role="status">Loading recent activity…</p> : audit.length === 0 ? <p className="sc-owner-empty">No owner actions recorded yet.</p> : <ol className="sc-owner-events">{audit.map(event => <li key={event.id}><div><strong>{event.action === 'account.status_changed' ? 'Account status changed' : event.action === 'settings.updated' ? 'Enrollment policy updated' : event.action}</strong>{event.action === 'account.status_changed' && typeof event.details?.from === 'string' && typeof event.details?.to === 'string' && <span>{event.details.from} → {event.details.to}</span>}</div><div><span>{event.target_user_id ? `Target ${event.target_user_id}` : 'Platform settings'} · Actor {event.actor_user_id}</span><time dateTime={event.created_at}>{timestamp(event.created_at)}</time></div></li>)}</ol>}
+    </section>
+    <p className="sc-owner-boundary"><AlertTriangle size={16} aria-hidden="true" /> Only server-allowlisted owners can operate here. This UI cannot grant owner access; learner access checks remain on the API.</p>
+  </div>
 }

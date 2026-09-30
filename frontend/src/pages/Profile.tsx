@@ -17,20 +17,12 @@ import {
   CONTENT_TIER_META,
   currentCurriculumLabel,
 } from '@/lib/contentAccess'
-import { ProvenanceChip, StateChip } from '@/components/account/StateChip'
+import { ProvenanceChip, StateChip, UnavailableStatusChip } from '@/components/account/StateChip'
 import { StateExplainer } from '@/components/account/AccountBanner'
-import { AnimatedCard, FadeIn } from '@/components/animations'
+import { MetadataRow } from '@/components/common/Workspace'
 
 function Row({ label, value, mono = false, chip }: { label: string; value: React.ReactNode; mono?: boolean; chip?: React.ReactNode }) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1e293b]/50 py-2.5 last:border-b-0">
-      <span className="text-[12px] text-slate-400">{label}</span>
-      <span className={`flex min-w-0 items-center gap-2 text-[12.5px] text-slate-100 ${mono ? 'font-mono' : ''}`}>
-        <span className="truncate">{value}</span>
-        {chip}
-      </span>
-    </div>
-  )
+  return <MetadataRow label={label} value={value} aside={chip} mono={mono} />
 }
 
 function formatDate(value: string | null | undefined): string {
@@ -58,6 +50,7 @@ export function Profile() {
   const completedLabs = useProgressStore(s => s.completedLabs)
   const completedChallenges = useProgressStore(s => s.completedChallenges)
   const quizScores = useProgressStore(s => s.quizScores)
+  const retiredRecords = useProgressStore(s => s.retiredRecords)
   const totalXp = useProgressStore(s => s.getTotalXp())
   const level = useProgressStore(s => s.getLevel())
   const streak = useProgressStore(s => s.getStreak())
@@ -70,6 +63,7 @@ export function Profile() {
   )
 
   const signedIn = isSignedIn(userState)
+  const statusUnavailable = signedIn && !account && (accountError.kind === 'unavailable' || accountError.kind === 'unknown')
 
   async function handleRefresh() {
     setRefreshing(true)
@@ -79,44 +73,15 @@ export function Profile() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1000px] min-w-0 space-y-4 xs:space-y-6">
-      <FadeIn>
-        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/15 to-violet-500/10">
-                <UserRound className="h-5 w-5 text-cyan-300" aria-hidden="true" />
-              </span>
-              <div className="min-w-0">
-                <h1 className="font-heading text-[22px] font-bold leading-none tracking-tight text-slate-100 xs:text-[26px] sc-page-title">Profile</h1>
-                <p className="mt-1.5 text-[12.5px] text-slate-400">Who you are in SecCraft, and where your record lives.</p>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <StateChip state={userState} />
-            <button
-              type="button"
-              onClick={() => void handleRefresh()}
-              disabled={refreshing}
-              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#334155] bg-[#0f172a] px-3 text-[12px] text-slate-300 transition-colors hover:bg-[#1e293b] disabled:opacity-50"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} aria-hidden="true" /> Refresh
-            </button>
-          </div>
-        </div>
-      </FadeIn>
-
-      <FadeIn delay={0.05}>
-        <div className="rounded-2xl border border-[#1e293b] bg-[#0f172a] p-4 xs:p-5">
-          <StateExplainer state={userState} />
-        </div>
-      </FadeIn>
+    <div className="ws-account-area sc-profile-page mx-auto w-full max-w-[1000px] min-w-0">
+      <header className="sc-record-header"><div><p className="sc-library-domain">Account / Identity</p><h1>Profile</h1><p>Who you are in SecCraft, and where each record lives.</p></div><div className="sc-profile-actions">{statusUnavailable ? <UnavailableStatusChip /> : <StateChip state={userState} />}<button type="button" onClick={() => void handleRefresh()} disabled={refreshing} className="ws-action ws-action-secondary"><RefreshCw size={15} aria-hidden="true" />{refreshing ? 'Refreshing…' : 'Refresh'}</button></div></header>
+      <nav aria-label="Profile destinations" className="sc-profile-destinations"><Link to="/paths">Learning</Link><Link to="/progress">Practice activity</Link><Link to="/engagement">Assessments</Link><Link to="/achievements">Local achievements</Link><Link to="/sync">Progress transfer</Link></nav>
+      <div className="sc-profile-state">{statusUnavailable ? <p role="status">Signed in; account status unavailable. Preview learning remains available. Refresh to try again.</p> : <StateExplainer state={userState} />}</div>
 
       {/* ── Authenticated account ───────────────────────────────────────── */}
       {signedIn ? (
-        <FadeIn delay={0.08}>
-          <AnimatedCard glowColor="cyan" className="p-4 xs:p-5 sm:p-6" hoverLift={false}>
+        <>
+          <section className="sc-profile-section">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="flex items-center gap-2 font-heading text-[14px] font-bold text-slate-100">
                 <ShieldCheck className="h-4 w-4 text-cyan-400" aria-hidden="true" /> Account
@@ -129,7 +94,7 @@ export function Profile() {
 
             <div className="mt-4">
               <Row label="Email" value={account?.email ?? 'Not provided by the provider'} />
-              <Row label="Account status" value={STATE_META[userState].label} chip={<StateChip state={userState} size="sm" />} />
+              <Row label="Account status" value={statusUnavailable ? "Unavailable — not an approval decision" : STATE_META[userState].label} chip={statusUnavailable ? <UnavailableStatusChip size="sm" /> : <StateChip state={userState} size="sm" />} />
               <Row label="Member since" value={formatDate(account?.created_at)} />
               <Row label="Status reviewed" value={account?.reviewed_at ? formatDate(account.reviewed_at) : 'Not reviewed yet'} />
               <Row label="Account id" value={account?.user_id ? `${account.user_id.slice(0, 8)}…${account.user_id.slice(-4)}` : '—'} mono />
@@ -179,11 +144,11 @@ export function Profile() {
                 <LogOut className="h-3.5 w-3.5" aria-hidden="true" /> Sign out
               </button>
             </div>
-          </AnimatedCard>
-        </FadeIn>
+          </section>
+        </>
       ) : (
-        <FadeIn delay={0.08}>
-          <AnimatedCard glowColor="none" className="p-4 xs:p-5 sm:p-6" hoverLift={false}>
+        <>
+          <section className="sc-profile-section">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="flex items-center gap-2 font-heading text-[14px] font-bold text-slate-100">
                 <LogIn className="h-4 w-4 text-cyan-400" aria-hidden="true" /> Platform account
@@ -199,14 +164,14 @@ export function Profile() {
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 What an approved account changes
               </p>
-              <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+              <ul className="ws-account-benefits mt-2">
                 {[
                   'The Full Curriculum, including the authored modules and the final assessment.',
                   'Progress held on the platform for your account, instead of only in this browser.',
-                  'Verified XP and account-backed achievements — awards of record, not practice.',
+                  'Account-held XP and achievement records are distinct from local practice; without a trusted grader they are not proof of mastery.',
                   'Assessment attempt history, and a manual way to move a progress file between devices.',
                 ].map(item => (
-                  <li key={item} className="flex items-start gap-2 rounded-lg border border-[#1e293b] bg-[#020617]/50 p-3 text-[12px] leading-relaxed text-slate-300">
+                  <li key={item} className="flex items-start gap-2 text-[12px] leading-relaxed text-slate-300">
                     <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" aria-hidden="true" />
                     {item}
                   </li>
@@ -230,13 +195,13 @@ export function Profile() {
                 works on its own.
               </p>
             )}
-          </AnimatedCard>
-        </FadeIn>
+          </section>
+        </>
       )}
 
       {/* ── Local record ────────────────────────────────────────────────── */}
-      <FadeIn delay={0.11}>
-        <AnimatedCard glowColor="none" className="p-4 xs:p-5 sm:p-6" hoverLift={false}>
+      <>
+        <section className="sc-profile-section">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="flex items-center gap-2 font-heading text-[14px] font-bold text-slate-100">
               <Eye className="h-4 w-4 text-cyan-400" aria-hidden="true" /> This browser&rsquo;s practice record
@@ -249,6 +214,7 @@ export function Profile() {
           </p>
           <div className="mt-4">
             <Row label="Recorded activities" value={`${localCount}`} />
+            {retiredRecords.length > 0 && <Row label="Earlier course activities" value={`${retiredRecords.length} archived locally; not counted as current quiz/lesson credit or verified mastery`} />}
             <Row label="Practice XP" value={`${totalXp} XP`} chip={<ProvenanceChip provenance="derived" />} />
             <Row label="Practice level" value={`${level.title} · Lv.${level.level}`} chip={<ProvenanceChip provenance="derived" />} />
             <Row label="Practice day streak" value={`${streak}d`} chip={<ProvenanceChip provenance="derived" />} />
@@ -258,12 +224,12 @@ export function Profile() {
               chip={<ProvenanceChip provenance="derived" />}
             />
           </div>
-        </AnimatedCard>
-      </FadeIn>
+        </section>
+      </>
 
       {/* ── Guest profile — a display name, deliberately not an identity ── */}
-      <FadeIn delay={0.14}>
-        <AnimatedCard glowColor="none" className="p-4 xs:p-5 sm:p-6" hoverLift={false}>
+      <>
+        <section className="sc-profile-section">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="flex items-center gap-2 font-heading text-[14px] font-bold text-slate-100">
               <UserRound className="h-4 w-4 text-violet-400" aria-hidden="true" /> Guest display name
@@ -311,7 +277,7 @@ export function Profile() {
               save({ displayName: name.trim() || 'Guest learner' })
             }}
           >
-            <label htmlFor="guest-display-name" className="sr-only">Guest display name</label>
+            <label htmlFor="guest-display-name" className="sc-form-label">Guest display name (optional)</label>
             <input
               id="guest-display-name"
               value={name}
@@ -322,17 +288,17 @@ export function Profile() {
             />
             <button
               type="submit"
-              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 px-4 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
+              className="ws-action"
             >
               Save locally
             </button>
           </form>
-        </AnimatedCard>
-      </FadeIn>
+        </section>
+      </>
 
       {/* ── Synchronization summary ─────────────────────────────────────── */}
-      <FadeIn delay={0.17}>
-        <AnimatedCard glowColor="none" className="p-4 xs:p-5 sm:p-6" hoverLift={false}>
+      <>
+        <section className="sc-profile-section">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="flex items-center gap-2 font-heading text-[14px] font-bold text-slate-100">
               <Database className="h-4 w-4 text-emerald-400" aria-hidden="true" /> Synchronization
@@ -378,10 +344,10 @@ export function Profile() {
               </p>
             )}
           </div>
-        </AnimatedCard>
-      </FadeIn>
+        </section>
+      </>
 
-      <FadeIn delay={0.2}>
+      <>
         <div className="flex flex-col items-center gap-2 rounded-2xl border border-[#1e293b] bg-[#020617]/50 p-4 text-center">
           <CloudUpload className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
           <p className="text-[12px] leading-relaxed text-slate-400">
@@ -389,7 +355,7 @@ export function Profile() {
             notes. Those live in this browser and only move when you export and import a progress file.
           </p>
         </div>
-      </FadeIn>
+      </>
     </div>
   )
 }

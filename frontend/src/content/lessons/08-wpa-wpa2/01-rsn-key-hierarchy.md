@@ -7,9 +7,10 @@ Derive the key chain on paper, explain what each key protects, and read the RSNE
 ## 1. The chain
 
 ```
-passphrase/SAE or 802.1X MSK
+WPA2-Personal passphrase / WPA3 SAE / 802.1X MSK
         │  PMK = PBKDF2-HMAC-SHA1(passphrase, SSID, 4096, 256)      (PSK mode)
-        │  PMK = first 256 bits of the MSK                          (802.1X mode)
+        │  PMK = derived from SAE shared secret                      (SAE mode)
+        │  PMK = first 256 bits of the MSK                          (common 802.1X mode)
         ▼
        PMK ──── used by: 4-way handshake (proves knowledge of PMK; derives PTK)
         │
@@ -37,7 +38,7 @@ Two consequences worth stating out loud:
 | Field | Meaning | Red flags |
 | --- | --- | --- |
 | group cipher | cipher for broadcast/multicast | TKIP or WEP-40 present |
-| pairwise list | unicast ciphers offered | TKIP offered alongside CCMP (downgrade surface) |
+| pairwise list | unicast ciphers offered | TKIP offered alongside CCMP (legacy path; verify what clients actually select) |
 | AKM list | authentication/key management | PSK + SAE together = transition mode; 802.1X without cert validation on clients |
 | RSN capabilities bits 6/7 (`0x0040`/`0x0080`) | MFPR required / MFPC capable | Advertisement alone does not establish the negotiated PMF state of a station |
 | PMKID list (optional) | PMKSA identifiers in some association/cache exchanges | may enable offline PSK verification without the complete four-way handshake; availability varies and a station exchange is represented |

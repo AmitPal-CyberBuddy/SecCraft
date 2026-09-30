@@ -3,6 +3,8 @@
 **Canonical repository:** <https://github.com/AmitPal-CyberBuddy/SecCraft>
 **Canonical GitHub Pages URL:** <https://amitpal-cyberbuddy.github.io/SecCraft/>
 
+> **Release verification:** As of the 2026-09-30 audit the live Pages deployment still reflects older content (Android is labelled planned, and the older service worker is served). Counts below describe this working tree, **not** the currently published site. Re-check the deployed SHA, catalogue and worker after a reviewed release; do not treat a green root-URL check as end-to-end acceptance.
+
 The repository and Pages base are now both `SecCraft`. The Vite default base is `/SecCraft/`, and the Pages workflow derives `VITE_BASE` from the repository name so deployed assets, router links, and deep links share the same path. WiFiForge remains only in intentional legacy compatibility labels and migration history.
 
 ---
@@ -19,7 +21,7 @@ The repository and Pages base are now both `SecCraft`. The Vite default base is 
 | PWA manifest | `public/manifest.json` — relative `./` URLs — name SecCraft — Hands-on Cybersecurity Learning Platform | Resolves against manifest URL, no hard-coded `/` |
 | Local parity check | `scripts/serve-pages-preview.mjs` | Emulates Pages (sub-path + 404.html, no rewrite) before pushing |
 | Platform config | `frontend/src/content/platform.json` — name SecCraft, primary line Learn. Practice. Investigate. Improve., supporting line Learn cybersecurity by doing. | Domain-neutral platform metadata |
-| Learning paths | `frontend/src/content/learning-paths.json` — 8 paths, 1 available wireless-pentesting (legacy WiFiForge), 7 planned | Path-aware architecture |
+| Learning paths | `frontend/src/content/learning-paths.json` — 8 paths, 2 available (Wireless Pentesting and Android source-first), 6 planned | Path-aware architecture |
 
 ## Local preview that behaves like Pages
 
@@ -86,7 +88,7 @@ After that, every push to `main` redeploys automatically.
 
 ## What works on Pages — Platform
 
-Everything the SPA ships itself: public homepage, guest workspace, 8 learning paths (1 available Wireless Pentesting with 20 modules / 27 authored lessons, 7 planned), 16 verified artifacts, 15 challenges (45 tasks), 35 decision scenarios, 42-item checklist, ENG-01 engagement, reference, local gamification, reports + PDF export, simulated terminal, evidence vault, theme, generic search, and offline use after first visit. `/` is the public homepage; the existing workspace remains available at `/app` without registration.
+Everything the SPA ships itself: public homepage, guest workspace, 8 learning paths (2 available: Wireless Pentesting with 15 modules / 32 lessons; Android source-first with 12 modules / 25 lessons; 6 planned), 18 integrity-checked synthetic wireless captures, 22 self-review challenges (66 tasks), 35 decision scenarios, 42-item checklist, ENG-01 engagement, reference, local gamification, reports + PDF export, simulated terminal, evidence vault, theme, generic search, and offline use after first visit. `/` is the public homepage; the existing workspace remains available at `/app` without registration.
 
 The **FastAPI backend and PostgreSQL cannot run on Pages.** Without build-time `VITE_API_BASE`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_ANON_KEY`, the deployed app is guest-only and account controls stay unavailable. To enable accounts, deploy the API/database elsewhere, set those public frontend values as GitHub Actions repository variables, configure backend CORS and provider settings, then rebuild. Do not put service-role keys or database credentials in Pages variables or frontend builds. See [`ACCOUNT_SYNC_PLATFORM.md`](ACCOUNT_SYNC_PLATFORM.md) for the setup and provider-side signup limitation.
 
@@ -123,7 +125,7 @@ The repository is `AmitPal-CyberBuddy/SecCraft`, and the canonical Pages address
 | Blank page, 404s for `/assets/*` | Built with wrong base — local default is `/SecCraft/`; the workflow derives `VITE_BASE` from the repository name |
 | Deep link shows GitHub's 404 | `404.html` missing from `dist` — emitted by Vite plugin; check build log |
 | Styles/fonts missing | `index.html` still points at root-absolute `/favicon.svg` — plugin re-points `public/` files at base |
-| Stale content after deploy | Service worker caches shell; network-first for navigations, one hard reload enough. Bump `VERSION` in `public/sw.js` |
+| Stale content after deploy | Service worker build ID is generated from the built HTML/assets and worker code. Online tabs check for updates on load and when visible, then offer a non-disruptive Update now/Later notice. Choosing Update now activates the waiting worker and reloads once it takes control. Offline tabs use their cached shell until reconnecting |
 | `/api/*` fails in production | Expected — Pages static. Use local stack for API-backed labs. New platform routes /api/learning-paths, /api/platform also need local stack |
 | Legacy deep link `/path` not working | Should redirect to `/paths/wireless-pentesting` via App.tsx Navigate — check App.tsx routes (Stage 6 compatibility) |
 | Search shows only wireless items | Should show generic index of paths, modules, labs, challenges, skills — check GlobalSearch.tsx generic indexing (Stage 3) |

@@ -18,7 +18,7 @@ export function LearningPath() {
   ]
 
   return (
-    <div className="max-w-[1000px] mx-auto space-y-6 md:space-y-8">
+    <div className="ws-legacy max-w-[1000px] mx-auto space-y-6 md:space-y-8">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -29,7 +29,7 @@ export function LearningPath() {
           <Target className="w-5 h-5 text-violet-400" />
         </div>
         <div>
-          <h1 className="font-heading font-bold text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none sc-page-title">Learning Path</h1>
+          <h1 className="font-heading font-bold text-[28px] md:text-[32px] text-[var(--ink-primary)] tracking-tight leading-none sc-page-title">Learning Path</h1>
           <p className="text-[13px] text-slate-400 mt-1.5">{TOTAL_MODULES} modules • 6 phases • From fundamentals to professional assessment • Zero-cost</p>
         </div>
       </motion.div>
@@ -38,7 +38,7 @@ export function LearningPath() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-6 md:p-8 relative overflow-hidden group hover:border-[#334155]/60 transition-all duration-300"
+        className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-6 md:p-8 relative overflow-hidden group hover:border-[var(--line-strong)]/60 transition-all duration-300"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-violet-500/[0.02] via-transparent to-cyan-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         <div className="relative">
@@ -48,7 +48,7 @@ export function LearningPath() {
                 <BookOpen className="w-4 h-4 text-violet-400" />
               </div>
               <div>
-                <div className="font-heading font-bold text-[16px] text-slate-100">Visual Progression</div>
+                <div className="font-heading font-bold text-[16px] text-[var(--ink-primary)]">Visual Progression</div>
                 <div className="text-[11px] font-mono text-slate-500 tracking-widest uppercase">Simplified • Interactive • Premium</div>
               </div>
             </div>
@@ -79,22 +79,22 @@ export function LearningPath() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
-                      <span className="text-[14px] font-bold text-slate-100">Phase {phase.id} — {phase.name}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-mono ${phase.border} ${phase.text} bg-[#020617]/60`}>
+                      <span className="text-[14px] font-bold text-[var(--ink-primary)]">Phase {phase.id} — {phase.name}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-mono ${phase.border} ${phase.text} bg-[var(--panel-inset)]/60`}>
                         {phase.modules.length} modules
                       </span>
                     </div>
                     <div className="text-[11px] text-slate-500 mt-0.5">{phase.desc}</div>
                   </div>
                   <div className="hidden sm:flex items-center gap-2">
-                    <div className="w-16 h-1 bg-[#020617] rounded-full overflow-hidden border border-[#1e293b]/30">
+                    <div className="w-16 h-1 bg-[var(--panel-inset)] rounded-full overflow-hidden border border-[var(--line-normal)]/30">
                       <div className={`h-full bg-gradient-to-r rounded-full ${phase.color === 'cyan' ? 'from-cyan-400 to-cyan-500' : phase.color === 'violet' ? 'from-violet-400 to-violet-500' : phase.color === 'amber' ? 'from-amber-400 to-amber-500' : phase.color === 'emerald' ? 'from-emerald-400 to-emerald-500' : phase.color === 'pink' ? 'from-pink-400 to-pink-500' : 'from-slate-400 to-slate-500'}`} style={{ width: `${(phase.modules.filter(m => getProgress(m.id) === 100).length / phase.modules.length) * 100}%` }} />
                     </div>
                     <span className="text-[11px] font-mono text-slate-500">{phase.modules.filter(m => getProgress(m.id) === 100).length}/{phase.modules.length}</span>
                   </div>
                 </div>
 
-                <div className="ml-5 border-l-2 border-[#1e293b]/60 pl-6 space-y-2.5 relative">
+                <div className="ml-5 border-l-2 border-[var(--line-normal)]/60 pl-6 space-y-2.5 relative">
                   <div className={`absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b opacity-30 ${phase.color === 'cyan' ? 'from-cyan-500/50 to-transparent' : phase.color === 'violet' ? 'from-violet-500/50 to-transparent' : phase.color === 'amber' ? 'from-amber-500/50 to-transparent' : phase.color === 'emerald' ? 'from-emerald-500/50 to-transparent' : phase.color === 'pink' ? 'from-pink-500/50 to-transparent' : 'from-slate-500/50 to-transparent'}`} />
                   {phase.modules.map((m, idx) => {
                     const prog = getProgress(m.id)
@@ -110,23 +110,23 @@ export function LearningPath() {
                         <Link
                           to={`/modules/${m.id}`}
                           className={`group/module flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 backdrop-blur-sm ${
-                            isLocked 
-                              ? 'bg-[#020617]/40 border-[#1e293b]/30 opacity-60' 
+                            isLocked
+                              ? 'bg-[var(--panel-inset)]/40 border-[var(--line-normal)]/30 opacity-60'
                               : prog === 100
                                 ? 'bg-emerald-500/[0.03] border-emerald-500/15 hover:bg-emerald-500/[0.05] hover:border-emerald-500/20'
                                 : prog > 0
                                   ? 'bg-cyan-500/[0.03] border-cyan-500/15 hover:bg-cyan-500/[0.05] hover:border-cyan-500/20'
-                                  : 'bg-[#020617]/60 border-[#1e293b]/60 hover:bg-[#020617]/80 hover:border-[#334155]/60 hover:shadow-soft'
+                                  : 'bg-[var(--panel-inset)]/60 border-[var(--line-normal)]/60 hover:bg-[var(--panel-inset)]/80 hover:border-[var(--line-strong)]/60 hover:shadow-soft'
                           }`}
                         >
                           <div className="flex-shrink-0">
                             {prog === 100 ? <div className="w-6 h-6 rounded-full bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center"><CheckCircle className="w-4 h-4 text-emerald-400" /></div> :
                              prog > 0 ? <div className="w-6 h-6 rounded-full bg-cyan-500/15 border border-cyan-500/20 flex items-center justify-center"><Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin" /></div> :
-                             isLocked ? <div className="w-6 h-6 rounded-full bg-[#1e293b] border border-[#334155] flex items-center justify-center"><Lock className="w-3 h-3 text-slate-400" /></div> :
-                             <div className="w-6 h-6 rounded-full bg-[#1e293b] border border-[#334155] flex items-center justify-center group-hover/module:bg-[#25354f] group-hover/module:border-[#475569] transition-colors"><Circle className="w-3.5 h-3.5 text-slate-400 group-hover/module:text-slate-400 transition-colors" /></div>}
+                             isLocked ? <div className="w-6 h-6 rounded-full bg-[#1e293b] border border-[var(--line-strong)] flex items-center justify-center"><Lock className="w-3 h-3 text-slate-400" /></div> :
+                             <div className="w-6 h-6 rounded-full bg-[#1e293b] border border-[var(--line-strong)] flex items-center justify-center group-hover/module:bg-[#25354f] group-hover/module:border-[#475569] transition-colors"><Circle className="w-3.5 h-3.5 text-slate-400 group-hover/module:text-slate-400 transition-colors" /></div>}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-[13px] font-medium text-slate-200 truncate group-hover/module:text-slate-100 transition-colors">{m.title}</div>
+                            <div className="text-[13px] font-medium text-slate-200 truncate group-hover/module:text-[var(--ink-primary)] transition-colors">{m.title}</div>
                             <div className="text-[11px] text-slate-500 font-mono flex items-center gap-1.5 mt-0.5">
                               <span>{m.id}</span>
                               <span className="w-1 h-1 rounded-full bg-slate-700" />
@@ -137,7 +137,7 @@ export function LearningPath() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            <div className="text-[11px] text-slate-400 font-mono px-2 py-1 rounded-full bg-[#020617] border border-[#1e293b] group-hover/module:border-[#334155] transition-colors">{prog}%</div>
+                            <div className="text-[11px] text-slate-400 font-mono px-2 py-1 rounded-full bg-[var(--panel-inset)] border border-[var(--line-normal)] group-hover/module:border-[var(--line-strong)] transition-colors">{prog}%</div>
                             <ChevronRight className="w-4 h-4 text-slate-400 group-hover/module:text-slate-400 group-hover/module:translate-x-0.5 transition-all duration-200" />
                           </div>
                         </Link>
@@ -149,7 +149,7 @@ export function LearningPath() {
                 {phase.id < 6 && (
                   <div className="ml-5 mt-6 flex items-center gap-3">
                     <div className="w-px h-8 bg-gradient-to-b from-[#1e293b] to-transparent ml-5" />
-                    <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400 px-3 py-1.5 rounded-full bg-[#020617]/60 border border-[#1e293b]/40">
+                    <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400 px-3 py-1.5 rounded-full bg-[var(--panel-inset)]/60 border border-[var(--line-normal)]/40">
                       <div className="w-1.5 h-1.5 rounded-full bg-slate-600 animate-pulse" />
                       next phase
                       <ChevronRight className="w-3 h-3" />
@@ -166,7 +166,7 @@ export function LearningPath() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
-        className="rounded-2xl bg-[#020617]/60 border border-[#1e293b]/40 p-5 backdrop-blur-sm"
+        className="rounded-2xl bg-[var(--panel-inset)]/60 border border-[var(--line-normal)]/40 p-5 backdrop-blur-sm"
       >
         <div className="flex flex-wrap items-center gap-4 text-[11px] font-mono text-slate-500">
           <span className="flex items-center gap-1.5 xs:gap-2 min-w-0"><CheckCircle className="w-4 h-4 text-emerald-400" /> Completed</span>

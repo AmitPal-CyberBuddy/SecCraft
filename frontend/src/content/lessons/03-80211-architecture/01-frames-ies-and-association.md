@@ -35,7 +35,7 @@ wlan.bssid == 00:11:22:33:44:55       # one BSS
 ## 2. The information elements that matter
 
 * **SSID (0)** — length 0 means hidden.
-* **Supported Rates / Extended Rates (1, 35)** — legacy rates; keep for completeness, not for decisions.
+* **Supported Rates / Extended Supported Rates (1, 50)** — legacy rates; keep for completeness, not for decisions.
 * **DS Parameter (3)** — 2.4 GHz channel.
 * **TIM (5)** — DTIM/beacon count; useful when you interpret power-save client wake-ups.
 * **Country (7)** — the regulatory triplet the AP claims to use (channel ranges and EIRP limits).
@@ -44,27 +44,34 @@ wlan.bssid == 00:11:22:33:44:55       # one BSS
 * **HT/VHT/HE (45/61, 191/192, ext 35)** — channel width, MCS, spatial streams, OFDMA.
 * **Vendor (221)** — WPS (`00:50:F2` type `04`) and vendor-specific extensions; fingerprinting material.
 
-The RSNE is where the *policy* lives; the 4-way handshake is where the policy is *enforced*.
+The RSNE advertises security options; association selects a compatible option, and the EAP/4-way exchanges establish keys. Confirm the negotiated AKM/PMF and client policy before claiming enforcement.
 
 ## 3. Association state machine
 
 ```
-              ┌───────────────┐  Authenticate (alg 0/3)   ┌──────────────┐
-  Probe ────► │  State 1:     │  ───────────────────────► │ State 2:     │
-  (scan)      │  Unauthenticated/Associated? no          │ Authenticated│
-              └───────────────┘  ◄─────────────────────── └──────────────┘
-                                            Disassociate / Deauthenticate
-   State 2 ──► Associate Request/Response ──► State 3: Associated
-   State 3 ──► 4-way handshake (EAPOL-Key M1–M4) ──► State 4: Authenticated & Associated
-                 (for 802.1X: EAP runs between state 2 and the 4-way handshake)
+  Scan/probe (no state change)
+  State 1: unauthenticated, unassociated
+     │ 802.11 authentication exchange (open system or SAE)
+     ▼
+  State 2: authenticated at 802.11 MAC layer, unassociated
+     │ association request / successful response
+     ▼
+  State 3: authenticated at 802.11 MAC layer, associated
+     │ WPA-Personal: EAPOL-Key M1–M4 after association
+     │ WPA-Enterprise: 802.1X/EAP over EAPOL after association,
+     │                 then EAPOL-Key M1–M4 after EAP success
+     ▼
+  Still State 3: keys installed and controlled port authorized (not a fourth 802.11 state)
+
+  Disassociation returns to State 2; deauthentication returns to State 1.
 ```
 
 What each step proves:
 
-* **Probe**: what the client is willing to join.
+* **Probe**: a directed SSID can indicate interest, not proof the client will join or trusts that BSS.
 * **Authentication (open, algorithm 0)**: nothing. It is a formality; do not report it as "authentication".
 * **Association**: which capabilities the AP and client agreed on (RSNE is echoed here).
-* **4-way handshake**: both parties proved knowledge of the PMK and derived the same PTK.
+* **4-way handshake**: when valid and completed, both peers prove PMK possession and install session keys; a captured M1/M2 alone permits offline candidate verification but does not prove successful completion or acceptance.
 * **Status/reason codes**: protocol-level reasons for the frame outcome, not necessarily the underlying cause. Quote the code and correlate it with supplicant/AP logs and other evidence.
 
 ## 4. What the capture cannot show you
@@ -84,6 +91,12 @@ tshark -r traffic-analysis.pcapng -Y 'wlan.fc.type_subtype==8 || wlan.fc.type_su
 ```
 
 Deliverable: a table `frame | step | what it proves` plus the RSNE decoded from the association request.
+
+Before moving on, compare the RSNE in a beacon with the association request and response in
+`traffic-analysis.pcapng`: make three columns for *offered*, *requested* and *observed key exchange*.
+Do not interpret a successful association status alone as evidence that the WPA keys or 802.1X
+credentials were accepted. On the Enterprise path, draw where EAP and the subsequent four-way
+handshake would fit; the module 06 fixture is PSK, not Enterprise.
 
 ## 6. Decision practice
 

@@ -960,6 +960,41 @@ def build_methodology() -> Lab:
     return lab
 
 
+
+def build_capstone_baseline() -> Lab:
+    """Independent fictional case: baseline bytes, NOT Northwind or an RF observation."""
+    lab = Lab("capstone-baseline", "capstone")
+    ops, corp, twin = "02:aa:10:00:00:01", "02:aa:10:00:00:02", "02:aa:10:00:00:09"
+    bss_beacon(lab, "CASE-OPS", ops, 6, beacon_ies(rsn=ie_rsn(akm=[AKM_PSK], caps=RSNCAP_MFPC)))
+    bss_beacon(lab, "CASE-CORP", corp, 36, beacon_ies(
+        rsn=ie_rsn(akm=[AKM_8021X], caps=RSNCAP_MFPC | RSNCAP_MFPR), band_5=True))
+    bss_beacon(lab, "CASE-OPS", twin, 11, beacon_ies(rsn=ie_rsn(akm=[AKM_PSK], caps=RSNCAP_MFPC)), interval=50)
+    sta, ap = mac(STA_3), mac(ops)
+    lab.mgmt(SUBTYPE_AUTH, ap, sta, ap, struct.pack("<HHH", 0, 1, 0))
+    lab.mgmt(SUBTYPE_AUTH, sta, ap, ap, struct.pack("<HHH", 0, 2, 0))
+    lab.mgmt(SUBTYPE_ASSOC_REQ, ap, sta, ap, struct.pack("<HH", 0x0411, 10)
+             + __import__("wififorge_labkit").ie_ssid("CASE-OPS") + ie_supported_rates()
+             + ie_rsn(akm=[AKM_PSK], caps=RSNCAP_MFPC))
+    lab.mgmt(SUBTYPE_ASSOC_RESP, sta, ap, ap,
+             struct.pack("<HHH", 0x0411, 0, 1 | 0xC000) + ie_supported_rates())
+    _four_way(lab, sta, ap, "CASE-OPS", LAB_PSK_WEAK)
+    return lab
+
+
+def build_capstone_retest() -> Lab:
+    """Staged policy comparison, NOT proof of a client's negotiated protection."""
+    lab = Lab("capstone-retest", "capstone")
+    ops, corp, twin = "02:aa:10:00:00:01", "02:aa:10:00:00:02", "02:aa:10:00:00:09"
+    bss_beacon(lab, "CASE-OPS", ops, 6, beacon_ies(
+        rsn=ie_rsn(akm=[AKM_SAE], caps=RSNCAP_MFPC | RSNCAP_MFPR)))
+    bss_beacon(lab, "CASE-CORP", corp, 36, beacon_ies(
+        rsn=ie_rsn(akm=[AKM_8021X], caps=RSNCAP_MFPC | RSNCAP_MFPR), band_5=True))
+    # A same-name BSS persists: the owned AP's advertisement changed, but the wider
+    # site's inventory and client selection have NOT been proved remediated.
+    bss_beacon(lab, "CASE-OPS", twin, 11, beacon_ies(rsn=ie_rsn(akm=[AKM_PSK], caps=RSNCAP_MFPC)), interval=50)
+    return lab
+
+
 BUILDERS = [
     build_beacon_only,
     build_recon_lab,
@@ -977,6 +1012,8 @@ BUILDERS = [
     build_eap_methods,
     build_corporate_attacks,
     build_methodology,
+    build_capstone_baseline,
+    build_capstone_retest,
 ]
 
 # Per-artifact documentation of what is cryptographically real (goes into MANIFEST.md)
@@ -1011,6 +1048,10 @@ ARTIFACT_NOTES: Dict[str, Dict[str, str]] = {
             "synthetic": "TLS payloads are abbreviated structural bytes; the direct MS-CHAPv2 exchange is intentionally visible and must not be described as a passive PEAP capture"},
     "corporate-attacks": {"real": "Synthetic 19-frame collection with management frames, a look-alike/weak-PSK practice exchange, direct EAP-MSCHAPv2 packets and an ICMP pair; does not demonstrate successful deauth, PEAP, RADIUS or production segmentation",
                           "synthetic": "EAP/TLS payloads are abbreviated structural fixtures; no complete PEAP tunnel, RADIUS exchange, production configuration or live network path is represented"},
+    "capstone-baseline": {"real": "Fictional case beacons and a PSK 4-way handshake with reproducible lab MICs; not Northwind or an RF observation",
+                          "synthetic": "No real ownership, client impact or applied segmentation is represented"},
+    "capstone-retest": {"real": "Fictional same-BSSID before/after comparison: owned BSS advertises SAE-only and MFPR; same-name PSK BSS remains",
+                        "synthetic": "No SAE client association, enforced PMF, asset ownership or executed on-site retest is demonstrated"},
     "methodology": {"real": "Multi-BSS teaching capture: beacons/probes, weak-PSK exercise handshake, deauthentication frame, look-alike, abbreviated EAP and synthetic ICMP examples; not a real engagement or validated segmentation/isolation test",
                     "synthetic": "EAP/TLS and SAE payloads are abbreviated structural examples; no complete PEAP negotiation, RADIUS policy, client certificate-validation result, or real segmentation/isolation test"},
 }

@@ -120,8 +120,8 @@ export function NotificationCenter({ open, onClose }: { open: boolean; onClose: 
     <AnimatePresence>
       {open && (
         <>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-hidden="true" className="fixed inset-0 z-[90] bg-[#020617]/65 backdrop-blur-md" onClick={onClose} />
-          <motion.div id="activity-panel" role="dialog" aria-modal="true" aria-labelledby="activity-dialog-title" initial={{ opacity: 0, x: 20, scale: 0.98 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: 20, scale: 0.98 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }} className="activity-drawer fixed top-0 right-0 h-[100dvh] w-[min(420px,94vw)] z-[100] bg-[#0f172a] border-l border-[#1e293b] shadow-2xl flex flex-col">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-hidden="true" className="fixed inset-0 z-[90] bg-black/65" onClick={onClose} />
+          <motion.div id="activity-panel" role="dialog" aria-modal="true" aria-labelledby="activity-dialog-title" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }} className="activity-drawer fixed top-0 right-0 h-[100dvh] w-[min(420px,94vw)] z-[100] bg-[var(--overlay-bg)] border-l border-[var(--line-normal)] shadow-lg flex flex-col">
             <div className="p-5 border-b border-[#1e293b] flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">

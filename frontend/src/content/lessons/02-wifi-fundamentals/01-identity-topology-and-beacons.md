@@ -10,8 +10,8 @@ frame number that supports each field.
 
 | Term | What it identifies | Where you see it |
 | --- | --- | --- |
-| SSID | the network *name* (0–32 bytes, UTF-8 in practice) | SSID IE (ID 0) in beacon/probe response |
-| BSSID | one radio interface (MAC of the AP's radio) | address 3 of the beacon; address 1/2 of data frames |
+| SSID | the network *name* (0–32 arbitrary bytes; not necessarily UTF-8 or printable) | SSID IE (ID 0) in beacon/probe response |
+| BSSID | one radio interface (MAC of the AP's radio) | address 3 of a beacon; in data frames identify it using To DS/From DS direction and address roles, not a fixed field |
 | BSS | one AP's coverage cell, identified by its BSSID | beacon + its clients |
 | ESS | one extended service set comprising coordinated BSSs, commonly sharing an SSID | confirm with authorized inventory/configuration and network context; SSID equality alone does not establish ESS membership |
 | Hidden SSID | a BSS whose beacons carry a zero-length SSID IE | SSID IE length 0 |
@@ -62,8 +62,7 @@ Practical decoding notes:
 
 A probe request reveals intent: a **wildcard** probe (empty SSID IE) means "is anything there?", while a
 directed probe carries an SSID the device has stored — the Preferred Network List. Modern devices also
-**randomise their MAC** (locally administered bit set, second nibble of the first octet even, e.g.
-`92:…`), which weakens device tracking but does not remove the SSID leak.
+**randomise their MAC**. The locally administered bit is bit 1 (`0x02`) of the first octet: `92:…` has it set (`0x92 & 0x02 != 0`). Check the bit, not the parity of a hexadecimal digit. A locally administered address is only a clue, not proof of randomisation or one physical device. Probe SSIDs may still leak despite address changes.
 
 ## 5. Lab
 
@@ -83,7 +82,7 @@ Then answer, with frame numbers: which BSS has no RSNE, which has MFPR set, and 
 
 * Inventory rows must cite **frame numbers**, not screenshots of your own terminal.
 * Record the capture's SHA-256 (`sha256sum`) so a third party can verify the artefact.
-* State what you could not determine (e.g. "client MAC is randomised, so the device identity is unknown").
+* State what you could not determine (e.g. "locally administered client address observed; physical device and randomisation policy unconfirmed").
 
 ## 7. Common mistakes
 

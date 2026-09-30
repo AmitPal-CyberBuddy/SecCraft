@@ -82,6 +82,11 @@ Ask: *can the claim be established from an artefact, or does it require the air?
 ## 6. Lab
 
 Hardware labs in this module are optional and gated. Without hardware, complete the *reasoning* tasks:
-given `lab-artifacts.json` (adapter capabilities, bands, channels), decide for each of the 16 artefacts
-whether the lab is SIMULATION, HYBRID or RF_REQUIRED and why. Compare with the `lab_requirement` field in
-`modules.json`.
+use the capture entries in `frontend/src/content/lab-artifacts.json` as an inventory of *fixtures*,
+not an adapter-capability file. Pick `deauth.pcapng`, `wpa2-handshake.pcapng` and
+`enterprise.pcapng`: for each, identify one claim the stored frames can support and one claim
+requiring a real radio/client or configuration. Compare the module's `lab_requirement` in
+`modules.json` and justify any difference between learning a mechanism and proving an RF outcome.
+Do not run the injection test above without an owned, isolated test AP and written scope.
+Record the adapter/driver, supported bands/modes and regulatory domain only if using your own hardware;
+otherwise write “not tested” rather than inventing capability.

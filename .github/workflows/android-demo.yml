@@ -1,0 +1,50 @@
+name: Build Android training APKs (manual)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-training-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Install pinned platform and build tools
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Verify original source before building
+        run: python3 scripts/verify-android-demo.py
+      - name: Build both synthetic variants
+        working-directory: android-labs/notes-boundary
+        run: gradle --no-daemon :app:assembleVulnerableDebug :app:assembleFixedDebug
+      - name: Inspect built APK metadata and hash
+        working-directory: android-labs/notes-boundary
+        run: |
+          set -euo pipefail
+          vuln=app/build/outputs/apk/vulnerable/debug/app-vulnerable-debug.apk
+          fixed=app/build/outputs/apk/fixed/debug/app-fixed-debug.apk
+          test -s "$vuln" && test -s "$fixed"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$vuln" | grep "package: name='org.seccraft.noteslab.vulnerable'"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$fixed" | grep "package: name='org.seccraft.noteslab.fixed'"
+          sha256sum "$vuln" "$fixed" | tee APK-SHA256SUMS
+          echo 'Build and package metadata checked. No emulator was run or vulnerability dynamically verified.'
+      - name: Upload APKs as an Actions artifact (not published to Pages)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.1
+        with:
+          name: seccraft-owned-notes-demo-debug-apks
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            android-labs/notes-boundary/app/build/outputs/apk/vulnerable/debug/app-vulnerable-debug.apk
+            android-labs/notes-boundary/app/build/outputs/apk/fixed/debug/app-fixed-debug.apk
+            android-labs/notes-boundary/APK-SHA256SUMS

@@ -5,7 +5,6 @@ import { lazy, Suspense } from 'react'
 import { PageTransition, FadeIn, StaggerContainer, StaggerItem } from '@/components/animations'
 import { LevelBadge, CertificationPayoff } from '@/components/gamification/LevelBadge'
 import { useProgressStore } from '@/store/useProgressStore'
-import platform from '@/content/platform.json'
 import { PracticeStandingNotice, StandingChip } from '@/components/account/PracticeStanding'
 import { useSession } from '@/lib/session'
 import { standingFor } from '@/lib/access'
@@ -33,7 +32,7 @@ export function Achievements() {
                 Achievements
               </h1>
               <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13px] text-slate-400">
-                <span>{platform.tagline} • {achievements.length} unlocked • {totalXp} XP • {level.title} Lv.{level.level}</span>
+                <span>Local practice milestones • {achievements.length} unlocked • unverified</span>
                 <StandingChip standing={standing} />
               </p>
             </div>

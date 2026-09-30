@@ -32,7 +32,7 @@ The implementation source of truth is `frontend/src/styles/refinement.css`, `fro
 - **Title:** Wireless Pentesting
 - **Path line:** Understand the Protocol. Test the Implementation.
 - **Status:** Available
-- **Current scope:** 20 modules, 27 lessons, 20 labs, 16 capture artifacts, 15 challenges, 35 scenarios, 42 checklist items, and `ENG-01`.
+- **Current scope:** 20 modules, 30 lessons, 20 labs, 18 synthetic capture artifacts, 22 self-review challenges, 35 scenarios, 42 checklist items, and `ENG-01`.
 
 Other catalogue entries are planned and should not be described as shipped learning content until they contain authored modules and activities.
 

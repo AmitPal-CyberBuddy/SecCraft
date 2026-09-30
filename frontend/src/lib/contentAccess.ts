@@ -3,7 +3,7 @@
  *
  * ## This is a product boundary, not a security boundary
  *
- * All 20 modules ship inside the public Vite bundle and `/api/modules` is served without
+ * All authored modules ship inside the public Vite bundle and `/api/modules` is served without
  * authentication. Hiding a module behind a client-side check would create the appearance of
  * protection that does not exist — anyone can read the JSON in the bundle or call the public
  * endpoint. So the UI must never describe the Full Curriculum as locked, protected, or
@@ -21,7 +21,7 @@
  * nothing more.
  *
  * The tier is derived from fields that already exist in `modules.json` (`phase`), so no content
- * JSON is edited. A regression test pins the derived set to exactly modules 01–06.
+ * JSON is edited. A regression test pins the wireless preview to 01–06 and tests the Android Foundations slice separately.
  */
 
 import modules from '@/content/modules.json'
@@ -41,7 +41,7 @@ export const CONTENT_TIER_META: Record<ContentTier, { label: string; blurb: stri
   full: {
     label: 'Full Curriculum',
     blurb:
-      'The complete path, including the authored modules and the final assessment. This is the account learning experience, where your progress becomes a record you can rely on.',
+      'Advanced modules where authored; some paths are released in foundations-only slices. Account records show your activity, not independently verified skill.',
   },
 }
 

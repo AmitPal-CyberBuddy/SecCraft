@@ -1,39 +1,27 @@
 import { useState, useMemo } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { ModuleCard } from '@/components/learning/ModuleCard'
 import { useProgressStore } from '@/store/useProgressStore'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Filter, Layers, Sparkles, BookOpen, Target, TrendingUp, ArrowLeft, ArrowRight, Map } from 'lucide-react'
 import modules from '@/content/modules.json'
 import learningPaths from '@/content/learning-paths.json'
-import { TOTAL_CHALLENGES, TOTAL_LESSONS, TOTAL_MODULES, TOTAL_PCAPS, TOTAL_SCENARIOS, getModulesForPath } from '@/content/stats'
-import { MAX_XP } from '@/store/useProgressStore'
+import { getModulesForPath } from '@/content/stats'
 import { useSession } from '@/lib/session'
-import { allows } from '@/lib/access'
-import {
-  canAccessTier,
-  CONTENT_NOT_ENFORCED_NOTE,
-  CONTENT_TIER_META,
-  contentTierOf,
-} from '@/lib/contentAccess'
+import { canAccessTier, CONTENT_NOT_ENFORCED_NOTE, CONTENT_TIER_META, contentTierOf } from '@/lib/contentAccess'
+import { ProgressBar } from '@/components/common/Workspace'
 
 export function Modules() {
   const { pathId } = useParams()
   const effectivePathId = pathId || 'wireless-pentesting'
-  const currentPath = learningPaths.find(p => p.id === effectivePathId) || learningPaths[0]
+  const path = learningPaths.find(p => p.id === effectivePathId) || learningPaths[0]
   const pathModules = useMemo(() => {
     const list = getModulesForPath(effectivePathId)
-    return list.length > 0 ? list : (modules as any[]).filter(m => !m.learningPathId || m.learningPathId === effectivePathId)
+    return list.length ? list : (modules as any[]).filter(m => !m.learningPathId || m.learningPathId === effectivePathId)
   }, [effectivePathId])
-
   const [filterPhase, setFilterPhase] = useState<number | null>(null)
   const [filterStatus, setFilterStatus] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const getProgress = useProgressStore(s => s.getOverallProgress)
   const getModuleProgress = useProgressStore(s => s.getModuleProgress)
-  const totalXp = useProgressStore(s => s.getTotalXp())
-  const level = useProgressStore(s => s.getLevel())
-  const completedLessons = useProgressStore(s => s.completedLessons.length)
+  const getPathProgress = useProgressStore(s => s.getPathProgress)
   const { userState } = useSession()
   const hasFullCurriculum = canAccessTier(userState, 'full')
   const tierCounts = useMemo(() => {
@@ -41,351 +29,20 @@ export function Modules() {
     for (const m of pathModules) out[contentTierOf({ id: m.id, phase: m.phase })] += 1
     return out
   }, [pathModules])
-
-  const filtered = useMemo(() => {
-    return pathModules.filter(m => {
-      if (filterPhase && m.phase !== filterPhase) return false
-      if (filterStatus && m.status !== filterStatus) return false
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase()
-        return m.title.toLowerCase().includes(q) || m.id.toLowerCase().includes(q) || m.description.toLowerCase().includes(q)
-      }
-      return true
-    })
-  }, [pathModules, filterPhase, filterStatus, searchQuery])
-
-  const phaseStats = [1,2,3,4,5,6].map(p => ({
-    phase: p,
-    count: pathModules.filter(m => m.phase === p).length,
-    completed: pathModules.filter(m => m.phase === p && getModuleProgress(m.id) === 100).length,
-  }))
-
-  return (
-    <div className="max-w-[1400px] mx-auto min-w-0 w-full space-y-6 md:space-y-8">
-      {pathId && (
-        <Link to={`/paths/${pathId}`} className="inline-flex items-center gap-2 text-[12px] text-slate-400 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[#0f172a]/60 border border-transparent hover:border-[#1e293b]/60">
-          <ArrowLeft className="w-4 h-4" />
-          {currentPath.title} — Path Detail
-        </Link>
-      )}
-      {/* Header — path-aware */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="flex flex-col lg:flex-row lg:items-end justify-between gap-6"
-      >
-        <div>
-          <div className="flex items-center gap-2 xs:gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/15 to-violet-500/10 border border-cyan-500/20 flex items-center justify-center">
-              <BookOpen className="w-5 h-5 text-cyan-400" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-heading font-bold text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none sc-page-title">Modules</h1>
-                <span className="text-[18px]">{currentPath.icon}</span>
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#0f172a] border border-[#1e293b] text-slate-400 font-mono">{currentPath.title}</span>
-              </div>
-              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                <span className="text-[13px] text-slate-400">{pathModules.length} modules • {currentPath.phases.length} phases • {TOTAL_LESSONS} lessons • {TOTAL_SCENARIOS} scenarios • {TOTAL_PCAPS} artifacts</span>
-                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20 font-mono">
-                  <Sparkles className="w-3 h-3" />
-                  {currentPath.status.toUpperCase()}
-                </span>
-                
-              </div>
-            </div>
-          </div>
-          
-          {/* Phase progress */}
-          <div className="mt-6 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
-            {phaseStats.map(ps => (
-              <div key={ps.phase} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#0f172a]/60 border border-[#1e293b]/40 backdrop-blur-sm shrink-0">
-                <span className="text-[11px] font-mono font-semibold text-slate-400">P{ps.phase}</span>
-                <div className="w-12 h-1 bg-[#020617] rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-cyan-400 to-violet-400 rounded-full" style={{ width: `${ps.count ? (ps.completed/ps.count)*100 : 0}%` }} />
-                </div>
-                <span className="text-[10px] font-mono text-slate-400">{ps.completed}/{ps.count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm">
-            <Target className="w-4 h-4 text-cyan-400" />
-            <span className="text-[12px] font-medium text-slate-300">Overall:</span>
-            <span className="text-[13px] font-bold text-slate-100 font-mono">{getProgress()}%</span>
-            <div className="w-16 h-1 bg-[#020617] rounded-full overflow-hidden ml-2 border border-[#1e293b]/30">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${getProgress()}%` }}
-                transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                className="h-full bg-gradient-to-r from-cyan-400 to-violet-400 rounded-full"
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm">
-            <span className="text-[11px] font-bold text-slate-200">{level.icon} {level.title} Lv.{level.level}</span>
-            <span className="w-1 h-1 rounded-full bg-slate-600" />
-            <span className="text-[11px] font-mono text-amber-400">{totalXp} XP</span>
-            <span className="w-1 h-1 rounded-full bg-slate-600" />
-            <span className="text-[11px] font-mono text-slate-400">{completedLessons}/27 lessons</span>
-          </div>
-          <div className="text-[11px] font-mono text-slate-400 px-3 py-2 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40">
-            {filtered.length} / {modules.length} modules • path total {MAX_XP} XP
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Search + Filters — sticky header + subtle animation */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-        className="space-y-4 sticky top-[64px] z-20 bg-[#020617]/90 backdrop-blur-xl p-3 -mx-3 rounded-xl border border-[#1e293b]/50 shadow-lg shadow-black/10"
-      >
-        {/* Search */}
-        <div className="relative group">
-          <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 group-hover:text-slate-400 transition-colors" />
-          <input
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search modules, e.g., WPA3, Enterprise, RADIUS, Methodology..."
-            className="w-full pl-11 pr-4 py-3 rounded-xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm text-[13px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30 focus:bg-[#0f172a] hover:border-[#334155]/60 hover:bg-[#111d33]/80 transition-all duration-200"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] transition-colors"
-            >
-              <span className="text-[12px] text-slate-400">✕</span>
-            </button>
-          )}
-        </div>
-
-        <div className="flex flex-wrap gap-3">
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-[#0f172a]/60 border border-[#1e293b]/40 backdrop-blur-sm">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold tracking-widest text-slate-400 uppercase">
-              <Layers className="w-3 h-3" />
-              Phase
-            </div>
-            <button
-              onClick={() => setFilterPhase(null)}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 ${
-                !filterPhase 
-                  ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' 
-                  : 'text-slate-400 hover:text-slate-300 hover:bg-[#1e293b]/50'
-              }`}
-            >
-              All
-            </button>
-            {[1,2,3,4,5,6].map(p => (
-              <button
-                key={p}
-                onClick={() => setFilterPhase(p)}
-                className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 flex items-center gap-1.5 ${
-                  filterPhase === p 
-                    ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' 
-                    : 'text-slate-400 hover:text-slate-300 hover:bg-[#1e293b]/50 border border-transparent'
-                }`}
-              >
-                <span>P{p}</span>
-                <span className="text-[9px] px-1 py-0 rounded bg-[#020617] border border-[#1e293b] font-mono">
-                  {modules.filter(m => m.phase === p).length}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-[#0f172a]/60 border border-[#1e293b]/40 backdrop-blur-sm">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold tracking-widest text-slate-400 uppercase">
-              <Filter className="w-3 h-3" />
-              Type
-            </div>
-            <button
-              onClick={() => setFilterStatus(null)}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 ${
-                !filterStatus ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-400 hover:text-slate-300'
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setFilterStatus('simulated')}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 flex items-center gap-1.5 ${
-                filterStatus === 'simulated' 
-                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 shadow-glow-emerald' 
-                  : 'text-slate-400 hover:text-slate-300 hover:bg-emerald-500/5'
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              SIMULATED
-            </button>
-            <button
-              onClick={() => setFilterStatus('hardware')}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 flex items-center gap-1.5 ${
-                filterStatus === 'hardware' 
-                  ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' 
-                  : 'text-slate-400 hover:text-slate-300 hover:bg-amber-500/5'
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-              HARDWARE
-            </button>
-          </div>
-
-          {(filterPhase || filterStatus || searchQuery) && (
-            <motion.button
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              onClick={() => { setFilterPhase(null); setFilterStatus(null); setSearchQuery('') }}
-              className="px-3 py-1.5 rounded-xl bg-[#1e293b]/60 border border-[#334155]/60 text-[11px] font-medium text-slate-400 hover:text-slate-200 hover:bg-[#25354f]/60 transition-all duration-200"
-            >
-              Clear filters ✕
-            </motion.button>
-          )}
-        </div>
-      </motion.div>
-
-      {/* Curriculum tier — an honest statement of what the account changes, and what it does not */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        data-tour="curriculum-tier"
-        className={`rounded-2xl border p-4 sm:p-5 ${
-          hasFullCurriculum
-            ? 'border-emerald-500/20 bg-emerald-500/[0.04]'
-            : 'border-violet-500/20 bg-violet-500/[0.04]'
-        }`}
-      >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex min-w-0 items-start gap-3">
-            <div
-              className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${
-                hasFullCurriculum
-                  ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300'
-                  : 'border-violet-500/25 bg-violet-500/10 text-violet-300'
-              }`}
-            >
-              {hasFullCurriculum ? <Target className="h-4 w-4" aria-hidden="true" /> : <Map className="h-4 w-4" aria-hidden="true" />}
-            </div>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-heading text-[15px] font-semibold text-slate-100">
-                  {hasFullCurriculum ? CONTENT_TIER_META.full.label : CONTENT_TIER_META.preview.label}
-                </h2>
-                <span className="rounded-full border border-slate-700 bg-slate-900 px-2 py-0.5 font-mono text-[10px] text-slate-400">
-                  {tierCounts.preview} preview · {tierCounts.full} full
-                </span>
-              </div>
-              <p className="mt-1 text-[12.5px] leading-relaxed text-slate-300">
-                {hasFullCurriculum ? CONTENT_TIER_META.full.blurb : CONTENT_TIER_META.preview.blurb}
-              </p>
-            </div>
-          </div>
-
-          {!hasFullCurriculum && (
-            <Link
-              to="/account"
-              className="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-xl border border-violet-500/30 bg-violet-500/10 px-3.5 text-[12px] font-semibold text-violet-200 transition-colors hover:border-violet-500/50 hover:bg-violet-500/20 focus-ring"
-            >
-              Continue with an approved account
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </Link>
-          )}
-        </div>
-
-        <p className="mt-3 border-t border-slate-800/80 pt-3 text-[11.5px] leading-relaxed text-slate-500">
-          {CONTENT_NOT_ENFORCED_NOTE}
-        </p>
-      </motion.div>
-
-      {/* Modules Grid */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.15 }}
-        className="grid grid-cols-1 xs:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5"
-      >
-        <AnimatePresence mode="popLayout">
-          {filtered.map((m, idx) => (
-            <motion.div
-              key={m.id}
-              layout
-              initial={{ opacity: 0, y: 12, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8, scale: 0.95 }}
-              transition={{ 
-                duration: 0.4, 
-                delay: idx * 0.02,
-                ease: [0.16, 1, 0.3, 1],
-                layout: { duration: 0.3, ease: [0.16, 1, 0.3, 1] }
-              }}
-            >
-              <ModuleCard
-                id={m.id}
-                title={m.title}
-                phase={m.phase}
-                difficulty={m.difficulty}
-                estimated_hours={m.estimated_hours}
-                status={m.status}
-                progress={useProgressStore.getState().getModuleProgress(m.id)}
-                description={m.description}
-                locked={false}
-                tier={contentTierOf({ id: m.id, phase: m.phase })}
-                tierIsAccountContent={!hasFullCurriculum && contentTierOf({ id: m.id, phase: m.phase }) === 'full'}
-              />
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </motion.div>
-
-      {filtered.length === 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl bg-[#0f172a]/60 border border-dashed border-[#334155]/60 p-12 text-center"
-        >
-          <div className="w-12 h-12 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center mx-auto mb-4">
-            <Search className="w-6 h-6 text-slate-400" />
-          </div>
-          <h3 className="font-heading font-semibold text-[16px] text-slate-300">No modules found</h3>
-          <p className="text-[13px] text-slate-400 mt-2">Try adjusting your filters or search query</p>
-          <button
-            onClick={() => { setFilterPhase(null); setFilterStatus(null); setSearchQuery('') }}
-            className="mt-4 px-4 py-2 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] font-medium text-slate-300 hover:bg-[#25354f] hover:text-slate-100 transition-colors"
-          >
-            Clear all filters
-          </button>
-        </motion.div>
-      )}
-
-      {/* Footer stats */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-        className="flex flex-wrap items-center justify-center gap-4 pt-6 border-t border-[#1e293b]/40 text-[11px] font-mono text-slate-400"
-      >
-        <span className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-cyan-400" />
-          {TOTAL_MODULES} modules
-        </span>
-        <span className="w-1 h-1 rounded-full bg-slate-700" />
-        <span className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-emerald-400" />
-          {TOTAL_PCAPS} verified captures
-        </span>
-        <span className="w-1 h-1 rounded-full bg-slate-700" />
-        <span className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-violet-400" />
-          {TOTAL_CHALLENGES} challenges
-        </span>
-        <span className="w-1 h-1 rounded-full bg-slate-700" />
-        <span>Zero-cost • Local-first • Offline</span>
-      </motion.div>
-    </div>
-  )
+  const filtered = pathModules.filter(m => {
+    if (filterPhase && m.phase !== filterPhase) return false
+    if (filterStatus && m.status !== filterStatus) return false
+    if (searchQuery) { const q = searchQuery.toLowerCase(); return m.title.toLowerCase().includes(q) || m.id.toLowerCase().includes(q) || m.description.toLowerCase().includes(q) }
+    return true
+  })
+  const phases = [...new Set(pathModules.map(m => m.phase))].sort((a,b) => a-b)
+  const reset = () => { setFilterPhase(null); setFilterStatus(null); setSearchQuery('') }
+  return <div className="sc-modules">
+    <nav aria-label="Breadcrumb" className="ws-breadcrumb"><Link to="/paths">Learning paths</Link><span aria-hidden="true">/</span><Link to={`/paths/${path.id}`}>{path.title}</Link><span aria-hidden="true">/</span><span aria-current="page">Modules</span></nav>
+    <header className="sc-modules-header"><div><p className="sc-library-domain">{path.category} / Curriculum</p><h1>Modules</h1><p>{path.title} · {pathModules.length} modules across {phases.length} phases. Follow the sequence or find a specific subject.</p></div><div className="sc-modules-progress"><span>Practice progress · this browser</span><strong>{getPathProgress(path.id)}%</strong><ProgressBar value={getPathProgress(path.id)} label="Path practice progress" /></div></header>
+    <section className="sc-modules-access" data-tour="curriculum-tier" aria-label="Curriculum experience"><div><strong>{hasFullCurriculum ? CONTENT_TIER_META.full.label : CONTENT_TIER_META.preview.label}</strong><p>{hasFullCurriculum ? CONTENT_TIER_META.full.blurb : CONTENT_TIER_META.preview.blurb}</p><small>{tierCounts.preview} preview modules · {tierCounts.full} full modules. {CONTENT_NOT_ENFORCED_NOTE}</small></div>{!hasFullCurriculum && <Link to="/account" className="ws-text-action">Continue with an approved account →</Link>}</section>
+    <section className="sc-modules-catalog" aria-labelledby="modules-sequence"><div className="sc-section-intro"><span>Curriculum sequence</span><h2 id="modules-sequence">Find your next unit</h2></div><div className="sc-modules-controls"><label className="sc-modules-search"><span>Search modules</span><input type="search" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search titles, subjects or identifiers" /></label><label><span>Phase</span><select value={filterPhase ?? ''} onChange={e => setFilterPhase(e.target.value ? Number(e.target.value) : null)}><option value="">All phases</option>{phases.map(phase => <option value={phase} key={phase}>{path.phases.find(item => item.id === phase)?.name ?? `Phase ${phase}`}</option>)}</select></label><label><span>Environment</span><select value={filterStatus ?? ''} onChange={e => setFilterStatus(e.target.value || null)}><option value="">All environments</option><option value="simulated">Simulation</option><option value="hardware">RF hardware</option></select></label></div><p className="sc-modules-count">Showing {filtered.length} of {pathModules.length} modules</p>
+      {filtered.length ? <div className="ws-row-list">{filtered.map(m => <ModuleCard key={m.id} id={m.id} title={m.title} phase={m.phase} difficulty={m.difficulty} estimated_hours={m.estimated_hours} status={m.status} progress={getModuleProgress(m.id)} description={m.description} locked={false} tier={contentTierOf({ id: m.id, phase: m.phase })} tierIsAccountContent={!hasFullCurriculum && contentTierOf({ id: m.id, phase: m.phase }) === 'full'} />)}</div> : <div className="sc-modules-empty"><h3>No modules match these filters</h3><p>Try another search or environment.</p><button type="button" onClick={reset}>Clear filters</button></div>}
+    </section>
+  </div>
 }

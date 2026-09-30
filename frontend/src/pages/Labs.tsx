@@ -1,9 +1,10 @@
+import { moduleOrdinal } from '@/content/module-ordinal'
 import { LoadingPanel } from '@/components/common/LoadingPanel'
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
-import { FlaskConical, Search, Filter, Radio, Wifi, FileCode, Activity, Zap, ChevronRight, Sparkles, Target, Layers, Terminal, Upload, Shield, Trophy, Clock, ArrowLeft, Map as MapIcon } from 'lucide-react'
+import { Search, Radio, FileCode, Layers, Terminal, Upload, Shield, Trophy, Clock, ArrowLeft } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { LABS } from '@/content/labs'
-import { getModulesForPath, getStatsForPath, TOTAL_PCAPS } from '@/content/stats'
+import { getModulesForPath, getStatsForPath } from '@/content/stats'
 import artifacts from '@/content/lab-artifacts.json'
 import learningPaths from '@/content/learning-paths.json'
 import platform from '@/content/platform.json'
@@ -33,6 +34,7 @@ export function Labs() {
   const { pathId } = useParams()
   const [searchParams] = useSearchParams()
   const currentPathId = useProgressStore(s => s.currentLearningPathId) || 'wireless-pentesting'
+  const completedLabs = useProgressStore(s => s.completedLabs)
   const queryPath = searchParams.get('path')
   const effectivePathId = queryPath || pathId || currentPathId || 'wireless-pentesting'
   const currentPath = learningPaths.find(p => p.id === effectivePathId) || learningPaths[0]
@@ -108,7 +110,7 @@ export function Labs() {
 
   // For wireless path, show pcaps; for other paths, show empty (architecture ready)
   const filteredPcaps = useMemo(() => {
-    if (currentPath.status !== 'available') return []
+    if (currentPath.status !== 'available' || currentPath.id !== 'wireless-pentesting') return []
     // If path is wireless, show all; otherwise filter by pathModules groups (currently none)
     return pcaps.filter(p => {
       if (searchQuery) {
@@ -122,74 +124,24 @@ export function Labs() {
   const typeFilters = [...new Set(labsForPath.map(l => l.type))]
 
   return (
-    <div className="max-w-[1400px] mx-auto min-w-0 w-full space-y-4 xs:space-y-6 md:space-y-8">
-      {/* Path-aware header */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2">
-          <Link to={`/paths/${effectivePathId}`} className="inline-flex items-center gap-2 text-[12px] text-slate-400 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[#0f172a]/60 border border-transparent hover:border-[#1e293b]/60">
-            <ArrowLeft className="w-4 h-4" />
-            {currentPath.title} — Path Detail
-          </Link>
-          <span className="text-[11px] px-2 py-1 rounded-full bg-[#0f172a] border border-[#1e293b] text-slate-400 font-mono flex items-center gap-1.5">
-            <MapIcon className="w-3 h-3" /> {currentPath.icon} {currentPath.title} • {currentPath.status.toUpperCase()}
-          </span>
-        </div>
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 xs:gap-6 min-w-0"
-        >
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 xs:gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/15 to-cyan-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                <FlaskConical className="w-5 h-5 text-emerald-400" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="font-heading font-bold text-[22px] xs:text-[28px] md:text-[32px] text-slate-100 tracking-tight leading-none truncate flex items-center gap-2 sc-page-title">
-                  Labs <span className="text-[18px]">{currentPath.icon}</span>
-                </h1>
-                <p className="text-[12px] xs:text-[13px] text-slate-400 mt-1.5 flex flex-wrap items-center gap-2">
-                  <span className="hidden sm:inline">Hands-on • Artifact analysis • Config audit • Scenario • Terminal • Evidence vault • Platform-level</span>
-                  <span className="sm:hidden">{pathStats.labs} labs • {filteredPcaps.length} artifacts • Terminal • Vault</span>
-                  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
-                    <Activity className="w-3 h-3" />
-                    {currentPath.status === 'available' ? `${filteredPcaps.length} artifacts • verified` : '0 artifacts • planned • architecture ready'}
-                  </span>
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 xs:gap-2 min-w-0 shrink-0">
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="px-3 xs:px-4 py-2.5 rounded-xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm flex items-center gap-2.5"
-            >
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-glow-emerald" />
-              <span className="text-[12px] font-medium text-slate-300 hidden xs:inline">{labsForPath.length} labs • Parser:</span>
-              <span className={`text-[11px] px-2 py-0.5 rounded-full border font-mono font-medium ${parserInfo?.method === 'tshark' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'}`}>
-                {parserInfo?.method?.toUpperCase() || 'OFFLINE DATASET'}
-              </span>
-            </motion.div>
-          </div>
-        </motion.div>
-      </div>
-
+    <div className="ws-legacy ws-lab-workspace max-w-[1400px] mx-auto min-w-0 w-full space-y-4 xs:space-y-6 md:space-y-8">
+      <nav className="ws-breadcrumb" aria-label="Breadcrumb"><Link to={`/paths/${effectivePathId}`}>{currentPath.title}</Link><span aria-hidden="true">/</span><span aria-current="page">Labs</span></nav>
+      <header className="sc-practice-header"><div><p className="sc-library-domain">Practice / {currentPath.category}</p><h1>Security lab library</h1><p>Work through scoped objectives, supplied artifacts and local tools. Record what the evidence supports; completion is not trusted grading.</p></div><div className="sc-practice-summary"><strong>{pathStats.labs}</strong><span>labs in this path</span><small>{currentPath.id === 'android-pentesting' ? 'Original source cases · no prebuilt APK' : `${filteredPcaps.length} supplied captures`} · {currentPath.status === 'available' ? 'Available' : 'Planned'}</small></div></header>
       {/* Tabs — generic */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="w-full overflow-x-auto scrollbar-thin pb-1">
-        <div className="flex gap-1 p-1 rounded-xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm w-fit">
+        <div className="flex gap-1 p-1 rounded-xl bg-[var(--panel-bg)]/80 border border-[var(--line-normal)]/60  w-fit">
           {[
-            { id: 'artifacts', label: 'Artifact Library', icon: Radio, count: filteredPcaps.length },
+            { id: 'artifacts', label: 'Artifact Library', icon: Radio, count: currentPath.id === 'android-pentesting' ? filteredLabs.length : filteredPcaps.length },
             { id: 'upload', label: 'Upload Custom', icon: Upload, count: null },
             { id: 'terminal', label: 'Terminal', icon: Terminal, count: TERMINAL_COMMAND_COUNT },
             { id: 'vault', label: 'Evidence Vault', icon: Shield, count: null },
             { id: 'scoring', label: 'Scoring', icon: Trophy, count: null },
-          ].map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center gap-1.5 xs:gap-2 px-3 xs:px-4 py-2.5 rounded-lg text-[12px] xs:text-[13px] font-medium transition-all shrink-0 touch-manipulation min-h-[44px] xs:min-h-0 ${activeTab === tab.id ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-400 hover:text-slate-300 border border-transparent'}`}>
+          ].filter(tab => currentPath.id !== 'android-pentesting' || tab.id === 'artifacts').map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex items-center gap-1.5 xs:gap-2 px-3 xs:px-4 py-2.5 rounded-lg text-[12px] xs:text-[13px] font-medium transition-all shrink-0 touch-manipulation min-h-[44px] xs:min-h-0 ${activeTab === tab.id ? 'bg-[#1e293b] text-[var(--ink-primary)] border border-[var(--line-strong)] shadow-soft' : 'text-slate-400 hover:text-slate-300 border border-transparent'}`}>
               <tab.icon className="w-4 h-4" />
               <span className="hidden xs:inline">{tab.label}</span>
               <span className="xs:hidden">{tab.label.split(' ')[0]}</span>
-              {tab.count !== null && <span className="text-[10px] px-1.5 py-0 rounded-full bg-[#020617] border border-[#1e293b] font-mono">{tab.count}</span>}
+              {tab.count !== null && <span className="text-[10px] px-1.5 py-0 rounded-full bg-[var(--panel-inset)] border border-[var(--line-normal)] font-mono">{tab.count}</span>}
             </button>
           ))}
         </div>
@@ -201,13 +153,13 @@ export function Labs() {
       {activeTab === 'scoring' && (
         <Suspense fallback={<LoadingPanel label="Loading lab scoring…" />}>
           <div className="space-y-4">
-            <div className="sticky top-[64px] z-20 bg-[#020617]/90 backdrop-blur-xl rounded-2xl border border-[#1e293b] p-4 shadow-lg -mx-3 p-3 md:mx-0 md:p-4 xs:p-5">
+            <div className="sticky top-[64px] z-20 bg-[var(--panel-inset)]/90 backdrop-blur-xl rounded-2xl border border-[var(--line-normal)] p-4 shadow-lg -mx-3 p-3 md:mx-0 md:p-4 xs:p-5">
               <label htmlFor="scoring-lab" className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Lab to score — {currentPath.title}</label>
               <select
                 id="scoring-lab"
                 value={selectedLabId}
                 onChange={e => setSelectedLabId(e.target.value)}
-                className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none"
+                className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none"
               >
                 {labsForPath.map(lab => (
                   <option key={lab.id} value={lab.id}>{lab.id} — {lab.title}</option>
@@ -225,28 +177,32 @@ export function Labs() {
       {activeTab === 'artifacts' && (
         <>
           {currentPath.status !== 'available' ? (
-            <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-8 text-center">
-              <div className="w-12 h-12 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center mx-auto mb-3">
+            <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-8 text-center">
+              <div className="w-12 h-12 rounded-xl bg-[#1e293b] border border-[var(--line-strong)] flex items-center justify-center mx-auto mb-3">
                 <Clock className="w-6 h-6 text-slate-400" />
               </div>
               <div className="text-[14px] font-semibold text-slate-200">This learning path is planned</div>
               <p className="mt-2 text-[12.5px] text-slate-400 max-w-[600px] mx-auto leading-relaxed">
-                Architecture is ready — labs will reuse same engine (artifact analysis, config audit, scenario) as Wireless path.
-                Wireless Pentesting (16 checked captures, 15 local self-review challenges) serves as the current reference implementation.
+                No labs are available in this planned path yet. Explore an available path to work with its supplied artifacts.
               </p>
-              <Link to={`/paths/${effectivePathId}`} className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] text-slate-300 hover:bg-[#25354f] transition-colors">
+              <Link to={`/paths/${effectivePathId}`} className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1e293b] border border-[var(--line-strong)] text-[12px] text-slate-300 hover:bg-[#25354f] transition-colors">
                 <ArrowLeft className="w-4 h-4" /> Back to {currentPath.title}
-              </Link>
+              </Link> <Link to="/paths" className="mt-4 inline-flex items-center px-4 py-2 text-cyan-300 underline">Explore available paths →</Link>
             </div>
           ) : (
             <>
+              {currentPath.id === 'android-pentesting' ? <section className="rounded-2xl border border-[var(--line-normal)] bg-[var(--panel-bg)] p-5 text-sm text-slate-300 space-y-2" aria-label="Android source pack">
+                <h2 className="font-heading font-bold text-[var(--ink-primary)]">Android source-case library</h2>
+                <p>Nine original synthetic source cases provide independent questions and model feedback. They are not APKs or measured device outcomes. The separate Notes Boundary project is buildable source for optional owned-emulator work; no compiled APK is supplied or graded.</p>
+                <p><a className="text-cyan-400 underline" href={`${import.meta.env.BASE_URL}android-cases/cases.json`}>Download case pack</a> · <a className="text-cyan-400 underline" href={`${import.meta.env.BASE_URL}android-cases/SHA256SUMS`}>Verify hash</a> · <a className="text-cyan-400 underline" href={`${import.meta.env.BASE_URL}android-demos/notes-boundary-source.zip`}>Download demo source (not APK)</a></p>
+              </section> : (
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-                className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 sm:p-6 relative overflow-hidden group hover:border-[#334155]/60 transition-all duration-300 min-w-0 w-full"
+                className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-4 xs:p-5 sm:p-6 relative overflow-hidden group hover:border-[var(--line-strong)]/60 transition-all duration-300 min-w-0 w-full"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.03] via-transparent to-cyan-500/[0.03] opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
+
                 <div className="relative">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 xs:gap-4 mb-5 min-w-0">
                     <div className="flex items-center gap-2 xs:gap-3 min-w-0">
@@ -254,16 +210,16 @@ export function Labs() {
                         <Radio className="w-4 h-4 text-emerald-400" />
                       </div>
                       <div className="min-w-0">
-                        <h3 className="font-heading font-bold text-[13px] xs:text-[14px] text-slate-100 truncate">Artifact library — {currentPath.title} • {platform.name} generic engine</h3>
+                        <h3 className="font-heading font-bold text-[13px] xs:text-[14px] text-[var(--ink-primary)] truncate">Artifact library — {currentPath.title} • {platform.name} generic engine</h3>
                         <p className="text-[11px] text-slate-400 font-mono truncate">generated structure + decoded offline • verified by scripts/verify-lab-artifacts.py • {platform.tagline}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 xs:gap-2 min-w-0 shrink-0">
-                      <span className="text-[11px] px-2.5 py-1 rounded-full bg-[#020617] border border-[#1e293b] text-slate-400 font-mono shrink-0">{filteredPcaps.length} shown • {currentPath.legacyBrand ? `legacy ${currentPath.legacyBrand}` : currentPath.id}</span>
+                      <span className="text-[11px] px-2.5 py-1 rounded-full bg-[var(--panel-inset)] border border-[var(--line-normal)] text-slate-400 font-mono shrink-0">{filteredPcaps.length} shown • {currentPath.legacyBrand ? `legacy ${currentPath.legacyBrand}` : currentPath.id}</span>
                       <span className="text-[11px] px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-mono shrink-0">Offline dataset • {parserInfo?.method || 'platform-labkit'}</span>
                     </div>
                   </div>
-                  <div className="lab-artifact-index grid grid-cols-1 sm:grid-cols-2 gap-2 xs:gap-3 min-w-0">
+                  <div className="lab-artifact-index sc-artifact-index grid grid-cols-1 gap-0 min-w-0">
                     <AnimatePresence>
                       {filteredPcaps.map((p, idx) => (
                         <motion.div
@@ -273,24 +229,23 @@ export function Labs() {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: -8, scale: 0.95 }}
                           transition={{ duration: 0.3, delay: idx * 0.02, ease: [0.16, 1, 0.3, 1] }}
-                          whileHover={{ y: -2, scale: 1.02 }}
-                          className="lab-artifact-row group/pcap p-3.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/60 hover:bg-[#020617]/80 hover:border-[#334155]/60 backdrop-blur-sm transition-all duration-200 cursor-pointer relative overflow-hidden min-w-0"
+                          className="lab-artifact-row group/pcap p-3.5 border-b border-[var(--line-normal)]/60 hover:bg-[var(--panel-raised)] transition-colors relative overflow-hidden min-w-0"
                         >
-                          <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover/pcap:opacity-100 transition-opacity duration-300" />
+
                           <div className="relative flex items-start justify-between gap-3 min-w-0">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
                                 <FileCode className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                                <span className="text-[12px] font-mono font-medium text-slate-200 truncate group-hover/pcap:text-slate-100 transition-colors">{p.filename}</span>
+                                <span className="text-[12px] font-mono font-medium text-slate-200 truncate group-hover/pcap:text-[var(--ink-primary)] transition-colors">{p.filename}</span>
                               </div>
                               <div className="mt-1.5 flex items-center gap-2 text-[10px] font-mono flex-wrap">
-                                <span className="px-1.5 py-0.5 rounded bg-[#1e293b] border border-[#334155]/60 text-slate-400 truncate">{p.module}</span>
+                                <span className="px-1.5 py-0.5 rounded bg-[#1e293b] border border-[var(--line-strong)]/60 text-slate-400 truncate">{p.module}</span>
                                 <span className="text-slate-400 hidden xs:inline">•</span>
                                 <span className="text-slate-400">{p.size ? `${(p.size/1024).toFixed(1)}KB` : `${p.frames || '?'}f`}</span>
                                 {p.type && (<><span className="text-slate-400">•</span><span className="text-cyan-400/70">{p.type}</span></>)}
                               </div>
                             </div>
-                            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-glow-emerald shrink-0 mt-1" />
+                            <div className="w-2 h-2 rounded-full bg-[var(--learning)] shrink-0 mt-1" />
                           </div>
                         </motion.div>
                       ))}
@@ -298,6 +253,7 @@ export function Labs() {
                   </div>
                 </div>
               </motion.div>
+              )}
 
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
@@ -308,78 +264,42 @@ export function Labs() {
                 <div className="flex-1 relative group min-w-0">
                   <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 group-hover:text-slate-400 transition-colors" />
                   <input
+                    aria-label="Search labs"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     placeholder={`Search labs in ${currentPath.title}, e.g., beacon, handshake, deauth, rogue, captive, Enterprise, EAP...`}
-                    className="w-full pl-11 pr-4 py-3 rounded-xl bg-[#0f172a]/80 border border-[#1e293b]/60 backdrop-blur-sm text-[13px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30 focus:bg-[#0f172a] hover:border-[#334155]/60 hover:bg-[#111d33]/80 transition-all duration-200 min-w-0"
+                    className="w-full pl-11 pr-4 py-3 rounded-xl bg-[var(--panel-bg)]/80 border border-[var(--line-normal)]/60  text-[13px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30 focus:bg-[var(--panel-bg)] hover:border-[var(--line-strong)]/60 hover:bg-[#111d33]/80 transition-all duration-200 min-w-0"
                   />
                 </div>
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin shrink-0">
-                  <div className="flex items-center gap-1 p-1 rounded-xl bg-[#0f172a]/60 border border-[#1e293b]/40 backdrop-blur-sm shrink-0">
+                  <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--panel-bg)]/60 border border-[var(--line-normal)]/40  shrink-0">
                     <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold tracking-widest text-slate-400 uppercase shrink-0">
                       <Layers className="w-3 h-3" />Type
                     </div>
-                    <button onClick={() => setFilterType(null)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 shrink-0 ${!filterType ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-400 hover:text-slate-300'}`}>All</button>
+                    <button onClick={() => setFilterType(null)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 shrink-0 ${!filterType ? 'bg-[#1e293b] text-[var(--ink-primary)] border border-[var(--line-strong)] shadow-soft' : 'text-slate-400 hover:text-slate-300'}`}>All</button>
                     {typeFilters.slice(0, 6).map(type => (
-                      <button key={type} onClick={() => setFilterType(type)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 whitespace-nowrap shrink-0 ${filterType === type ? 'bg-[#1e293b] text-slate-100 border border-[#334155] shadow-soft' : 'text-slate-400 hover:text-slate-300 hover:bg-[#1e293b]/50'}`}>{type.split(' ')[0]}</button>
+                      <button key={type} onClick={() => setFilterType(type)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-200 whitespace-nowrap shrink-0 ${filterType === type ? 'bg-[#1e293b] text-[var(--ink-primary)] border border-[var(--line-strong)] shadow-soft' : 'text-slate-400 hover:text-slate-300 hover:bg-[#1e293b]/50'}`}>{type.split(' ')[0]}</button>
                     ))}
                   </div>
-                  <button className="w-9 h-9 rounded-xl bg-[#0f172a]/60 border border-[#1e293b]/40 flex items-center justify-center hover:bg-[#1e293b]/60 hover:border-[#334155]/60 transition-all duration-200 shrink-0 touch-manipulation">
-                    <Filter className="w-4 h-4 text-slate-400" />
-                  </button>
                 </div>
               </motion.div>
 
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }} className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 min-w-0">
-                <AnimatePresence mode="popLayout">
-                  {filteredLabs.map((lab, idx) => (
-                    <motion.div
-                      key={lab.id}
-                      layout
-                      initial={{ opacity: 0, y: 12, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                      transition={{ duration: 0.4, delay: idx * 0.02, ease: [0.16, 1, 0.3, 1] }}
-                      whileHover={{ y: -3, scale: 1.01 }}
-                      className="min-w-0"
-                    >
-                      <Link to={`/paths/${effectivePathId}/modules/${lab.module}`} aria-disabled={lab.status === 'PLANNED'} onClick={event => { if (lab.status === 'PLANNED') event.preventDefault() }} className={`group relative rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 hover:border-[#334155] hover:bg-[#111d33] hover:shadow-medium transition-all duration-300 ease-smooth block overflow-hidden min-w-0 ${lab.status === 'PLANNED' ? 'cursor-not-allowed opacity-80' : ''}`}>
-                        <div className={`absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${lab.color === 'cyan' ? 'from-cyan-500/5 to-transparent' : lab.color === 'emerald' ? 'from-emerald-500/5 to-transparent' : lab.color === 'violet' ? 'from-violet-500/5 to-transparent' : lab.color === 'amber' ? 'from-amber-500/5 to-transparent' : lab.color === 'red' ? 'from-red-500/5 to-transparent' : lab.color === 'pink' ? 'from-pink-500/5 to-transparent' : 'from-slate-500/5 to-transparent'}`} />
-                        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        <div className="relative min-w-0">
-                          <div className="flex items-start justify-between mb-4 gap-2 min-w-0">
-                            <div className="flex items-center gap-2 xs:gap-3 min-w-0 flex-1">
-                              <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-1 shrink-0 ${lab.color === 'cyan' ? 'bg-cyan-500/10 border-cyan-500/20 group-hover:bg-cyan-500/15' : lab.color === 'emerald' ? 'bg-emerald-500/10 border-emerald-500/20 group-hover:bg-emerald-500/15' : lab.color === 'violet' ? 'bg-violet-500/10 border-violet-500/20 group-hover:bg-violet-500/15' : lab.color === 'amber' ? 'bg-amber-500/10 border-amber-500/20 group-hover:bg-amber-500/15' : lab.color === 'red' ? 'bg-red-500/10 border-red-500/20 group-hover:bg-red-500/15' : lab.color === 'pink' ? 'bg-pink-500/10 border-pink-500/20 group-hover:bg-pink-500/15' : 'bg-slate-500/10 border-slate-500/20 group-hover:bg-slate-500/15'}`}>
-                                <FlaskConical className={`w-5 h-5 ${lab.color === 'cyan' ? 'text-cyan-400' : lab.color === 'emerald' ? 'text-emerald-400' : lab.color === 'violet' ? 'text-violet-400' : lab.color === 'amber' ? 'text-amber-400' : lab.color === 'red' ? 'text-red-400' : lab.color === 'pink' ? 'text-pink-400' : 'text-slate-400'}`} />
-                              </div>
-                              <div className="min-w-0">
-                                <div className="text-[11px] font-mono text-slate-400 tracking-wide truncate">{lab.module} • {currentPath.shortTitle}</div>
-                                <div className="text-[12px] font-semibold text-slate-200 group-hover:text-slate-100 transition-colors truncate">{lab.type}</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1.5 xs:gap-2 min-w-0 shrink-0">
-                              <TierBadge tier={tierByModule.get(lab.module) ?? lab.status} size="xs" />
-                            </div>
-                          </div>
-                          <h3 className="font-heading font-bold text-[15px] text-slate-100 mb-3 leading-tight group-hover:text-white transition-colors duration-200 line-clamp-2">{lab.title}</h3>
-                          <div className="flex flex-wrap items-center gap-2 min-w-0">
-                            <span className="px-2.5 py-1 rounded-full bg-[#1e293b]/80 border border-[#334155]/60 text-[11px] font-medium text-slate-400 group-hover:bg-[#25354f]/80 group-hover:text-slate-300 transition-all duration-200 shrink-0">{lab.difficulty}</span>
-                            <span className={`px-2.5 py-1 rounded-full border text-[10px] font-mono shrink-0 ${lab.status === 'PLANNED' ? 'bg-amber-500/10 border-amber-500/20 text-amber-300' : lab.grading === 'verified' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' : 'bg-slate-500/10 border-slate-500/20 text-slate-300'}`}>{lab.status === 'PLANNED' ? 'PLANNED' : lab.grading === 'verified' ? 'ANSWER-CHECKED' : 'SELF-REVIEW'}</span>
-                            <span className="text-[11px] text-slate-400 hidden xs:inline">•</span>
-                            <span className="text-[11px] font-mono text-slate-400 truncate">{lab.id}</span>
-                            {lab.pcap && (<><span className="text-[11px] text-slate-400 hidden xs:inline">•</span><span className="flex items-center gap-1 text-[11px] font-mono text-cyan-400/80 group-hover:text-cyan-400 transition-colors shrink-0"><FileCode className="w-3 h-3" />{lab.pcap}.pcapng</span></>)}
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all duration-200 ml-auto shrink-0" />
-                          </div>
-                        </div>
-                      </Link>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </motion.div>
+              <div className="ws-row-list" aria-label="Labs">
+                {filteredLabs.map(lab => <article className="ws-catalog-row" key={lab.id}>
+                  <span className="ws-row-number">{moduleOrdinal(lab.module)}</span>
+                  <div className="ws-row-main">
+                    <div className="ws-row-meta">{currentPath.shortTitle} · {lab.type} · {lab.difficulty} · {lab.status === 'PLANNED' ? 'Planned' : lab.grading === 'verified' ? 'Answer-checked local practice' : 'Self-review'} </div>
+                    <h3>{lab.title}</h3><p>{lab.description}</p><p className="sc-lab-context"><strong>Target:</strong> {lab.pcap ? `supplied ${lab.pcap}.pcapng capture` : currentPath.id === 'android-pentesting' ? 'supplied source case' : 'written or configuration exercise'} · <strong>Mode:</strong> {lab.grading === 'verified' ? 'local answer-check' : 'guided self-review'} · <strong>Environment:</strong> {currentPath.id === 'android-pentesting' ? 'offline source review; owned emulator optional' : lab.status === 'SIMULATED' ? 'offline simulation' : 'authorized equipment if required'}</p><div className="ws-row-meta">{lab.module} · {lab.id}{lab.pcap ? ` · ${lab.pcap}.pcapng` : ' · No capture required'}</div>
+                  </div>
+                  <div className="ws-row-side"><TierBadge tier={tierByModule.get(lab.module) ?? lab.status} size="xs" /><span className="ws-label">{completedLabs.some(record => record.labId === lab.id && record.moduleId === lab.module) ? 'Completed locally' : lab.status === 'PLANNED' ? 'Planned' : 'Not completed'}</span>
+                    {lab.status === 'PLANNED' ? <span className="ws-muted">Not available</span> : <Link to={`/paths/${effectivePathId}/modules/${lab.module}`} className="ws-row-link">Open lab →</Link>}
+                  </div>
+                </article>)}
+              </div>
 
               {filteredLabs.length === 0 && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl bg-[#0f172a]/60 border border-dashed border-[#334155]/60 p-12 text-center">
-                  <div className="w-12 h-12 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center mx-auto mb-4"><Search className="w-6 h-6 text-slate-400" /></div>
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl bg-[var(--panel-bg)]/60 border border-dashed border-[var(--line-strong)]/60 p-12 text-center">
+                  <div className="w-12 h-12 rounded-xl bg-[#1e293b] border border-[var(--line-strong)] flex items-center justify-center mx-auto mb-4"><Search className="w-6 h-6 text-slate-400" /></div>
                   <h3 className="font-heading font-semibold text-[16px] text-slate-300">No labs found in {currentPath.title}</h3>
                   <p className="text-[13px] text-slate-400 mt-2">Try adjusting your search or filters — {labsForPath.length} labs total in this path</p>
                 </motion.div>
@@ -389,17 +309,7 @@ export function Labs() {
         </>
       )}
 
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="rounded-2xl bg-[#020617]/60 border border-[#1e293b]/40 p-4 xs:p-5 backdrop-blur-sm min-w-0 w-full">
-        <div className="flex items-start gap-3 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0"><Sparkles className="w-4 h-4 text-emerald-400" /></div>
-          <div className="text-[11px] xs:text-[12px] leading-relaxed min-w-0">
-            <div className="font-semibold text-slate-300 mb-1">How these labs work — platform-level • {platform.tagline}</div>
-            <div className="text-slate-400 font-mono leading-relaxed break-words">
-              <span className="text-emerald-400 font-medium">SIMULATION</span> bundled offline dataset — zero-cost • <span className="text-cyan-400 font-medium">HYBRID</span> config audit + offline • <span className="text-violet-400 font-medium">REAL</span> requires authorized environment (alias RF_REQUIRED for wireless) • <span className="text-amber-400 font-medium">Vault</span> hash + claim + filter + frames • <span className="text-pink-400 font-medium">{TOTAL_PCAPS} artifacts</span> verified • <span className="text-slate-300">{platform.name} generic lab engine</span> supports PCAP, HTTP, APK, config, logs, IAM, Terraform
-            </div>
-          </div>
-        </div>
-      </motion.div>
+      <p className="sc-practice-footnote">{currentPath.id === 'android-pentesting' ? 'Android source labs are self-review only (0 graded XP). An optional learner-built APK on an owned emulator is not verified by this platform; no dynamic proficiency is certified.' : 'Simulation uses a bundled offline dataset; hybrid and RF-required work needs an authorized environment. Answer-checked local exercises and self-review are not trusted server grading. Evidence tools accept the supported artifact formats shown in the workspace.'}</p>
     </div>
   )
 }

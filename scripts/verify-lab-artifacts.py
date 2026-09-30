@@ -106,6 +106,8 @@ def verify_rsn_and_filters() -> None:
     print("\n[2] RSNE decoding and curriculum display filters")
     records = frames_of("wpa3-only")
     rsns = [r for r in records if r.get("rsn")]
+    check(RSNCAP_MFPR == 0x0040 and RSNCAP_MFPC == 0x0080,
+          "RSN constants use IEEE MFPR bit 6 and MFPC bit 7")
     check(bool(rsns), "wpa3-only: RSNE present in beacons")
     if rsns:
         caps = rsns[0]["rsn"]["caps"]  # type: ignore[index]
@@ -117,6 +119,25 @@ def verify_rsn_and_filters() -> None:
           "wpa3-transition: AKM list is [2 (PSK), 8 (SAE)]")
     check(bool(trans) and trans[0]["rsn"]["mfpr"] is False,  # type: ignore[index]
           "wpa3-transition: MFPR not set (transition mode is not PMF-required)")
+
+    before = frames_of("capstone-baseline")
+    after = frames_of("capstone-retest")
+    def policy(rows: List[Dict[str, object]], address: str) -> Dict[str, object]:
+        matches = [r for r in rows if r.get("bssid") == address and r.get("type") == 0 and r.get("subtype") == 8]
+        check(len(matches) == 1, f"capstone: exactly one beacon for {address}")
+        return matches[0]["rsn"] if matches else {}  # type: ignore[return-value]
+    owned = "02:aa:10:00:00:01"
+    other = "02:aa:10:00:00:09"
+    baseline = policy(before, owned)
+    retest = policy(after, owned)
+    check(baseline.get("akm") == [2] and baseline.get("caps") == 0x0080,
+          "capstone baseline: owned BSS PSK, MFPC only (0x0080)")
+    check(retest.get("akm") == [8] and retest.get("caps") == 0x00c0,
+          "capstone retest: same owned BSS SAE only, MFPC+MFPR (0x00c0)")
+    check(policy(after, other).get("akm") == [2],
+          "capstone retest: distinct same-name PSK BSS persists; owner unknown")
+    check(len(eapol_key_frames(before)) == 4 and not eapol_key_frames(after),
+          "capstone: baseline has four EAPOL-Key frames; retest has no client handshake")
 
     records = frames_of("deauth")
     check(sum(1 for r in records if r.get("subtype") == 12) >= 15, "deauth: deauthentication frames present")
@@ -160,6 +181,7 @@ def verify_eapol_mics(inventory: Dict[str, Dict[str, object]]) -> None:
         ("traffic-analysis", credentials["lab_psk"], "LAB-WIFI"),
         ("rogue-ap", credentials["lab_psk_weak"], "Corp-WLAN"),
         ("methodology", credentials["lab_psk_weak"], "LAB-WEAK-PSK"),
+        ("capstone-baseline", credentials["lab_psk_weak"], "CASE-OPS"),
     ]
     for pcap_id, psk, ssid in audits:
         records = frames_of(pcap_id)
@@ -339,7 +361,7 @@ def verify_challenge_answers() -> None:
     print("\n[8] Challenge answers match the captures")
     path = os.path.join(REPO, "frontend", "src", "content", "challenges.json")
     challenges = json.load(open(path))
-    check(len(challenges) >= 15, f"{len(challenges)} challenges present")
+    check(len(challenges) == 22, f"{len(challenges)} challenges present")
     ids = [c["id"] for c in challenges]
     check(len(ids) == len(set(ids)), "challenge ids unique")
     learning_paths = json.load(open(os.path.join(REPO, "frontend", "src", "content", "learning-paths.json")))

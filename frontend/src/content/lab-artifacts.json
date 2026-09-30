@@ -11,7 +11,7 @@
   "beacon-only": {
    "group": "wifi-fundamentals",
    "frames": 4,
-   "sha256": "e30dc7e89b38c6f918e088337147d062fae0c9aae9305382f8a4485e0ae3b562",
+   "sha256": "019c11ea8086a5cf96ea3b55809dcca073e28e480d59becaeaa8bb00c7e04b8b",
    "path": "wifi-fundamentals/beacon-only.pcapng",
    "bytes": 844,
    "real": "Beacon/probe fixed fields, IEs, RSNE (AKM, ciphers, MFPC/MFPR bits), country/VHT/HE/capability IEs",
@@ -20,7 +20,7 @@
   "recon-lab": {
    "group": "recon",
    "frames": 17,
-   "sha256": "9a4e2f9aa1ca7298bb1e67fba9004f66dafc87900a2ca2b1e4925aa5ed69a098",
+   "sha256": "ef6494d90f36a149855752a29074efda9ef8a1862a73e95307f485d3415a0eda",
    "path": "recon/recon-lab.pcapng",
    "bytes": 2552,
    "real": "6 BSSs incl. an ESS, a hidden BSS revealed in the probe response, directed probes leaking a PNL, randomised client MAC",
@@ -29,7 +29,7 @@
   "traffic-analysis": {
    "group": "traffic",
    "frames": 21,
-   "sha256": "5d954994bb4b7155234c6fb930bc45fe8e772a67b2084227404a929166b41d6d",
+   "sha256": "dd6fd5cfd01ebf22022541af83b32799a8187cda9e2cd24dbaab1cd5f52e9c55",
    "path": "traffic/traffic-analysis.pcapng",
    "bytes": 4032,
    "real": "Full association state machine, EAPOL-Key M1\u2013M4 with MICs computed from the lab PSK, DHCP/ARP/ICMP/DNS/HTTP payloads",
@@ -38,7 +38,7 @@
   "wpa2-handshake": {
    "group": "wpa2",
    "frames": 13,
-   "sha256": "74d4519e42c7a9602751cd2548d392dbca9e23a3c2c93db1ffaa13c7fa228a2b",
+   "sha256": "a16d9417b6a6802753196fe5dae54e41195b8ca8e187069a890f9b68a2fc38bd",
    "path": "wpa2/wpa2-handshake.pcapng",
    "bytes": 2012,
    "real": "M1\u2013M4 for one client and M1\u2013M2 for a second; MICs, nonces and replay counters consistent with the lab PSK",
@@ -47,7 +47,7 @@
   "pmkid": {
    "group": "wpa2",
    "frames": 6,
-   "sha256": "244e97380866ef7cecb915c2b3164add1bda79fb51b050c2b58790980315e436",
+   "sha256": "df90a15055e93ca9225a57d5de7e60a5fd9f861ad7639126f5d68d54040677b4",
    "path": "wpa2/pmkid.pcapng",
    "bytes": 872,
    "real": "PMKID = HMAC-SHA1-128(PMK, \"PMK Name\" | AA | SPA) inside a real EAPOL-Key M1 header",
@@ -56,7 +56,7 @@
   "wps-beacon": {
    "group": "wps",
    "frames": 9,
-   "sha256": "c754b83f1423503f135ea1e4c8c796605dc0d169e7c5e59990f4ba0a0b7cdf7c",
+   "sha256": "5edbae8a709500739ed8271821e6d0487e528dc83d10cf9d410354009a602b71",
    "path": "wps/wps-beacon.pcapng",
    "bytes": 1336,
    "real": "WPS IE attributes (version, config methods, AP setup locked, selected registrar, device password id) for an unlocked and a locked AP; EAP-WSC identity/M1 framing",
@@ -65,7 +65,7 @@
   "wpa3-transition": {
    "group": "wpa3",
    "frames": 11,
-   "sha256": "795ede86f8ecab0b5dc0b16a44da4cc84e5fb3678221a3a5fef82c46b211b26d",
+   "sha256": "17c499301acc98e2c73575c7a83435bf54cdfbb70a518d5ae9f63e628989b4ff",
    "path": "wpa3/wpa3-transition.pcapng",
    "bytes": 1928,
    "real": "RSNE with AKM PSK+SAE and MFPC-only; a PSK 4-way handshake is present against that BSS, but the capture does not show an attacker-induced downgrade",
@@ -74,7 +74,7 @@
   "wpa3-only": {
    "group": "wpa3",
    "frames": 6,
-   "sha256": "2fa55e74519d7ada1e3b1f9c8478d63a1607950cd9406cc890a2a5901cb7d0d2",
+   "sha256": "7bfa0a97339e254c38ad013c2b555d8ceb65dd5e8119cee9db8c7886e478818d",
    "path": "wpa3/wpa3-only.pcapng",
    "bytes": 1048,
    "real": "RSNE with AKM SAE and MFPR set; no PSK handshake exists in the capture",
@@ -83,7 +83,7 @@
   "deauth": {
    "group": "deauth",
    "frames": 22,
-   "sha256": "ba94f50f890c55eb659a329837be53684185bcc4f09ff7438aa890e227129b92",
+   "sha256": "2824b5ab0f19e8aa08a7f3e21e16063707af6342d4ced945f5feb48fd68c3922",
    "path": "deauth/deauth.pcapng",
    "bytes": 2144,
    "real": "Deauthentication/disassociation frames with reason codes 1/7/8/15, broadcast and directed floods, SA Query action frames",
@@ -92,7 +92,7 @@
   "rogue-ap": {
    "group": "rogue",
    "frames": 20,
-   "sha256": "3817eb21f6bcae2e526d1aabf9abc02ead4a2b638bf02ab8080135c0a70d15ab",
+   "sha256": "3895a3ca1016755c918b0243564fbf58d07da4f28f654ddc31b124133ae8f1c8",
    "path": "rogue/rogue-ap.pcapng",
    "bytes": 4112,
    "real": "Same-SSID look-alike fixture with a locally administered BSSID, different AKM/IE profile and 50 TU beacon interval; scripted client association, lab PSK handshake and synthetic DHCP/HTTP sequence. Capture alone does not establish unauthorized ownership or deauthentication causality.",
@@ -110,7 +110,7 @@
   "radius": {
    "group": "radius",
    "frames": 9,
-   "sha256": "972e45d6f124d7d27c249bbc98e008d7ba7598e92b0f096cf588fae30eda4af8",
+   "sha256": "20d9d4bdab37830e626e8a3641705f0a88191b9c05710187421c95025354cc18",
    "path": "radius/radius.pcapng",
    "bytes": 2116,
    "real": "RADIUS over IPv4/UDP 1812-1813 with verifiable Message-Authenticator (Access-Request) and Response Authenticator (Accept/Challenge/Accounting), Tunnel-Private-Group-Id VLAN 100, MS-MPPE keys, a rogue NAS with a wrong Message-Authenticator, and real MS-CHAPv2 challenge/response material",
@@ -119,7 +119,7 @@
   "enterprise": {
    "group": "enterprise",
    "frames": 11,
-   "sha256": "6c2f955827f4999fd15359c846e0d8cfc425989aa16305b251250e292698c76c",
+   "sha256": "22413267710bfa1d96b994893570f730e176a7e3af58b4fa1ee514d99e25d523",
    "path": "enterprise/enterprise.pcapng",
    "bytes": 1844,
    "real": "Synthetic EAPOL/EAP method identifiers and an illustrative handshake with MICs consistent with a documented lab MSK; not evidence of a complete PEAP/TLS negotiation or deployed 802.1X policy",
@@ -128,7 +128,7 @@
   "eap": {
    "group": "eap",
    "frames": 12,
-   "sha256": "9d15e7f0f47ed62059b64f2a4a96b9546be4d80162602067cc8109f2f3234f8d",
+   "sha256": "2335e82041c3bbb5ad8e0184e0af5be8a7d6b711b0f524ebc9c3d13599a3f9ed",
    "path": "eap/eap.pcapng",
    "bytes": 1660,
    "real": "EAP method identifiers and direct MS-CHAPv2 challenge/response/success fixture values; this is not a complete PEAP inner exchange or EAP-TLS/TTLS session",
@@ -137,7 +137,7 @@
   "corporate-attacks": {
    "group": "corporate",
    "frames": 19,
-   "sha256": "eb65c6fb55edccd8094d29576a2533728dcf9dc0155b4e1df2ecf04245f2491b",
+   "sha256": "58410217c6d4c3b858aecf3b784cb1c10c761024e0a8a35dd11cc45d5fb1e2de",
    "path": "corporate/corporate-attacks.pcapng",
    "bytes": 3104,
    "real": "Synthetic 19-frame collection with management frames, a look-alike/weak-PSK practice exchange, direct EAP-MSCHAPv2 packets and an ICMP pair; does not demonstrate successful deauth, PEAP, RADIUS or production segmentation",
@@ -146,11 +146,29 @@
   "methodology": {
    "group": "methodology",
    "frames": 29,
-   "sha256": "c197f2090e3568e528fe3a40ab8e70d29ca0cf186edbc9df89568e4d1ed3a857",
+   "sha256": "6a9a8ac8171f48476da250302942dee6ffd6efb6b068572ab1c44c2e15092c7d",
    "path": "methodology/methodology.pcapng",
    "bytes": 4792,
    "real": "Multi-BSS teaching capture: beacons/probes, weak-PSK exercise handshake, deauthentication frame, look-alike, abbreviated EAP and synthetic ICMP examples; not a real engagement or validated segmentation/isolation test",
    "synthetic": "EAP/TLS and SAE payloads are abbreviated structural examples; no complete PEAP negotiation, RADIUS policy, client certificate-validation result, or real segmentation/isolation test"
+  },
+  "capstone-baseline": {
+   "group": "capstone",
+   "frames": 11,
+   "sha256": "a0cdcff50453f50aff7295b887f91e4e86bcbb0e17a4a6e312a1583c552813fa",
+   "path": "capstone/capstone-baseline.pcapng",
+   "bytes": 1896,
+   "real": "Fictional case beacons and a PSK 4-way handshake with reproducible lab MICs; not Northwind or an RF observation",
+   "synthetic": "No real ownership, client impact or applied segmentation is represented"
+  },
+  "capstone-retest": {
+   "group": "capstone",
+   "frames": 3,
+   "sha256": "9d15b7ec9141619cceed5121dfb9adabf346130f05ab72a158f9a1db341a54fa",
+   "path": "capstone/capstone-retest.pcapng",
+   "bytes": 704,
+   "real": "Fictional same-BSSID before/after comparison: owned BSS advertises SAE-only and MFPR; same-name PSK BSS remains",
+   "synthetic": "No SAE client association, enforced PMF, asset ownership or executed on-site retest is demonstrated"
   }
  }
 }

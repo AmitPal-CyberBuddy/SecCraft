@@ -34,13 +34,25 @@ What that means in practice:
 
 A professional test considers all four surfaces, then states which were in scope, which were tested, and what each evidence source can actually support.
 
-## 3. What stays the same as a wired test
+## 3. Wi-Fi is not every kind of wireless
+
+802.11 Wi-Fi is a local-area network protocol: stations associate with APs (or use other 802.11
+modes) and exchange MAC frames on channels. Bluetooth pairing, cellular attach and RFID reads
+use different roles, security mechanisms and test permissions. RF proximity alone is common to
+these technologies; a Wi-Fi beacon/RSNE audit cannot assess a cellular or Bluetooth deployment.
+
+**Try this:** your client says “the warehouse radios are encrypted.” Ask which technology, owned
+transmitters, devices, test window and data-handling rules are in scope before selecting a tool.
+For an 802.11 AP, write one testable claim from a beacon (advertised AKM) and one claim a beacon
+cannot establish (whether a specific client validated an Enterprise server certificate).
+
+## 4. What stays the same as a wired test
 
 The engagement discipline does not change: written authorisation, defined scope, evidence, impact,
 remediation, retest. What changes is *where the evidence lives*: frames and RF facts rather than
 HTTP requests.
 
-## 4. The loop every module uses
+## 5. The loop every module uses
 
 ```
 Authorisation → Observation → Interpretation → Hypothesis → Next test
@@ -50,7 +62,7 @@ Authorisation → Observation → Interpretation → Hypothesis → Next test
 Each module is a variation of that loop, with the same evidence standard: **a claim without a
 reproducible artefact is an opinion**.
 
-## 5. Legal and ethical boundary (read this twice)
+## 6. Legal and ethical boundary (read this twice)
 
 * Test only infrastructure you own, or that a client has authorised in writing for a defined window.
 * Do not capture or inject on networks outside the written scope. Wireless interception, disruption and
@@ -60,7 +72,7 @@ reproducible artefact is an opinion**.
 * If a test could disrupt production (deauth, rogue AP, RF flooding), it needs explicit written
   approval in the Rules of Engagement — and a rollback plan.
 
-## 6. Decision practice
+## 7. Decision practice
 
 Open module 01 in the academy and work through **`scn-01-scope-gap`** (Decision Practice). It puts you in
 front of a scope document with a gap and asks what you do *before* touching the radio.

@@ -28,7 +28,7 @@ Legacy identifiers remain where changing them could strand user data or break ge
 
 ## Current content snapshot
 
-The content catalogues currently contain 8 paths (1 available, 7 planned). The available Wireless Pentesting path has 20 modules, 27 lessons, 20 labs, 16 verified capture artifacts, 15 challenges (45 tasks), 35 scenarios, 42 checklist items, and `ENG-01`. Counts shown in the UI are derived from `frontend/src/content/`; update this snapshot when the catalogues change.
+The content catalogues currently contain 8 paths (1 available, 7 planned). The available Wireless Pentesting path has 20 modules, 30 lessons, 20 labs, 18 integrity-checked synthetic capture artifacts, 22 self-review challenges (66 tasks), 35 scenarios, 42 checklist items, and `ENG-01`. Counts shown in the UI are derived from `frontend/src/content/`; update this snapshot when the catalogues change.
 
 ## Verification
 

@@ -1,6 +1,5 @@
 import { useMemo, useState, type ChangeEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, CloudDownload, FileDown, FileUp, LoaderCircle, RefreshCw, ShieldAlert, UploadCloud } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import modules from '@/content/modules.json'
 import { useProgressStore } from '@/store/useProgressStore'
@@ -147,6 +146,8 @@ export function ProgressSyncPanel() {
     anchor.download = `seccraft-local-progress-${new Date().toISOString().slice(0, 10)}.json`
     anchor.click()
     URL.revokeObjectURL(url)
+    setError('')
+    setMessage(`Download requested: ${anchor.download}. Your browser chooses where to save it. The file contains browser-local, unverified practice.`)
   }
 
   async function refreshServerProgress() {
@@ -184,6 +185,8 @@ export function ProgressSyncPanel() {
     anchor.download = `seccraft-account-progress-${new Date().toISOString().slice(0, 10)}.json`
     anchor.click()
     URL.revokeObjectURL(url)
+    setError('')
+    setMessage(`Download requested: ${anchor.download}. Your browser chooses where to save it. Re-imported account records remain unverified.`)
   }
 
   async function requestPreview() {
@@ -221,24 +224,25 @@ export function ProgressSyncPanel() {
     finally { setBusy(false) }
   }
 
-  return (
-    <section className="rounded-2xl border border-slate-800 bg-[#0f172a] p-4 sm:p-5">
-      <div className="flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-cyan-300/20 bg-cyan-300/10"><UploadCloud className="h-4 w-4 text-cyan-200" /></span><div><h3 className="text-sm font-semibold text-slate-100">Sync or import local progress</h3><p className="mt-1 text-xs leading-5 text-slate-400">Preview first, then merge. Imported records are always marked unverified and never overwrite verified server records.</p></div></div>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" onClick={() => { setFileRecords(null); setFileName(''); setPreviewState(null); setError(''); setMessage('') }} className={`min-h-9 rounded-lg border px-3 text-xs ${!fileRecords ? 'border-cyan-300/30 bg-cyan-300/10 text-cyan-100' : 'border-slate-700 text-slate-300'}`}>This browser</button>
-        <label className="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-lg border border-slate-700 px-3 text-xs text-slate-300 hover:bg-slate-800"><FileUp className="h-3.5 w-3.5" />{fileName || 'Choose progress JSON'}<input type="file" accept="application/json,.json" onChange={readFile} className="sr-only" /></label>
-        <button type="button" onClick={() => void downloadLocalExport()} className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-700 px-3 text-xs text-slate-300 hover:bg-slate-800"><FileDown className="h-3.5 w-3.5" />Export local progress</button>
-      </div>
-      <div className="mt-3 text-xs text-slate-500">{records.length} local item(s) selected{fileName ? ` from ${fileName}` : ''}. Local XP, scores, and achievements are not imported as verified rewards.</div>
-      <div className="mt-3 flex flex-wrap items-center gap-2"><button type="button" onClick={() => void refreshServerProgress()} disabled={serverBusy} className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-700 px-3 text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-50"><CloudDownload className={`h-3.5 w-3.5 ${serverBusy ? 'animate-pulse' : ''}`} />Fetch account progress</button>{serverProgress && <button type="button" onClick={downloadServerExport} className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-700 px-3 text-xs text-slate-300 hover:bg-slate-800"><FileDown className="h-3.5 w-3.5" />Export synced snapshot</button>}</div>
-      {serverProgress && <div role="status" className="mt-3 rounded-lg border border-slate-800 bg-slate-950/50 p-3 text-xs text-slate-400">Account snapshot at {serverProgress.checkedAt}: {serverProgress.records.length} progress item(s) ({serverProgress.verifiedRecords} verified, {serverProgress.unverifiedRecords} unverified), {serverProgress.xp} server XP, {serverProgress.achievements.length} achievement(s). Exported snapshots remain unverified if imported again.</div>}
-      {error && <div role="alert" className="mt-3 flex items-start gap-2 rounded-lg border border-rose-300/20 bg-rose-300/[0.06] p-3 text-xs text-rose-100"><ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />{error}{error.includes('pending') || error.includes('active') || error.includes('token') ? <Link to="/login" className="ml-auto underline">Sign in</Link> : null}</div>}
-      {message && <div role="status" className="mt-3 rounded-lg border border-emerald-300/20 bg-emerald-300/[0.06] p-3 text-xs text-emerald-100">{message}</div>}
-      {preview && <div className="mt-4 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.04] p-4"><div className="flex items-center gap-2 text-sm font-semibold text-cyan-100"><Check className="h-4 w-4" />Import preview</div><div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">{[
+  return <section className="ws-sync-panel ws-panel" aria-labelledby="sync-actions-title">
+    <div className="ws-panel-heading"><div><h2 id="sync-actions-title">Move progress</h2><p className="ws-muted">Preview first, then merge. Imported records remain unverified and never replace verified server records.</p></div></div>
+    <div className="ws-sync-group"><h3>Source · practice data</h3><div className="ws-sync-actions">
+      <button type="button" onClick={() => { setFileRecords(null); setFileName(''); setPreviewState(null); setError(''); setMessage('') }} aria-pressed={!fileRecords}>This browser</button>
+      <label className="ws-file-picker">Choose progress JSON<input type="file" accept="application/json,.json" onChange={readFile} className="sr-only" /></label>
+      <button type="button" onClick={() => void downloadLocalExport()}>Export local progress</button>
+    </div><p className="ws-muted">{records.length} item(s) selected{fileName ? ` from ${fileName}` : ' from this browser'}. Scores, XP and achievements cannot become verified through import.</p></div>
+    <div className="ws-sync-group"><h3>Account record</h3><div className="ws-sync-actions"><button type="button" onClick={() => void refreshServerProgress()} disabled={serverBusy}>{serverBusy ? 'Reading account record…' : 'Fetch account progress'}</button>{serverProgress && <button type="button" onClick={downloadServerExport}>Export account snapshot</button>}</div>
+      {serverProgress && <p role="status" className="ws-muted">Read at {serverProgress.checkedAt}: {serverProgress.records.length} record(s) · {serverProgress.verifiedRecords} verified · {serverProgress.unverifiedRecords} unverified · {serverProgress.xp} server XP · {serverProgress.achievements.length} achievement(s). Exported records remain unverified if re-imported.</p>}
+    </div>
+    {error && <div role="alert" className="ws-sync-error">{error}{error.includes('pending') || error.includes('active') || error.includes('token') ? <Link to="/login">Sign in →</Link> : null}</div>}
+    {message && <div role="status" className="ws-sync-success">{message}</div>}
+    <div className="ws-sync-group"><h3>Preview and merge</h3>
+      {preview && <div className="ws-sync-preview" role="status"><div className="ws-row-meta">Import preview · unverified</div><dl>{[
         ['New', preview.would_insert], ['Advance unverified', preview.would_upgrade_unverified_progress], ['Verified preserved', preview.verified_server_records_preserved], ['Unchanged', preview.unchanged],
-      ].map(([label, value]) => <div key={label} className="rounded-lg border border-slate-800 bg-slate-950/60 p-2"><div className="font-mono text-base text-slate-100">{value}</div><div className="text-[10px] text-slate-500">{label}</div></div>)}</div><p className="mt-3 text-xs text-slate-400">These records remain unverified. This merge awards 0 XP and does not create certificates.</p></div>}
-      {records.length > 500 && <p className="mt-2 text-xs text-amber-200">The API accepts at most 500 records per preview. Export and select a smaller batch before importing.</p>}
-      <div className="mt-4 flex flex-wrap gap-2"><button type="button" onClick={() => void requestPreview()} disabled={busy || records.length === 0 || records.length > 500} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-700 px-3 text-xs font-semibold text-slate-200 hover:bg-slate-800 disabled:opacity-50"><RefreshCw className={`h-3.5 w-3.5 ${busy ? 'animate-spin' : ''}`} />Preview merge</button>{preview && <button type="button" onClick={() => void merge()} disabled={busy} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-cyan-300 px-3 text-xs font-bold text-slate-950 hover:bg-cyan-200 disabled:opacity-50"><Check className="h-3.5 w-3.5" />Confirm merge</button>}{busy && <span className="inline-flex items-center gap-1.5 text-xs text-slate-500"><LoaderCircle className="h-3.5 w-3.5 animate-spin" />Contacting the account API</span>}</div>
-    </section>
-  )
+      ].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl><p>Merge awards 0 verified XP and does not create certificates.</p></div>}
+      {records.length > 500 && <p className="ws-sync-error">The API accepts at most 500 records per preview. Select a smaller batch.</p>}
+      <div className="ws-sync-actions"><button type="button" onClick={() => void requestPreview()} disabled={busy || records.length === 0 || records.length > 500}>{busy ? 'Working…' : 'Preview merge'}</button>{preview && <button type="button" className="ws-action" onClick={() => void merge()} disabled={busy}>Confirm merge</button>}</div>
+      {busy && <p role="status" className="ws-muted">Contacting the account API…</p>}
+    </div>
+  </section>
 }

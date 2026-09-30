@@ -287,18 +287,18 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="search-backdrop absolute inset-0 bg-[#020617]/74 backdrop-blur-lg"
+          className="search-backdrop absolute inset-0 bg-black/65"
           onClick={closeSearch}
         />
         <motion.div
           role="dialog"
           aria-modal="true"
           aria-label={`${platform.name} search`}
-          initial={{ opacity: 0, y: -20, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -10, scale: 0.98 }}
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className="search-dialog relative w-full max-w-[680px] rounded-[22px] bg-[#0f172a] border border-[#334155]/80 shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_28px_90px_rgba(0,0,0,0.72),0_0_48px_rgba(34,211,238,0.08)] overflow-hidden max-h-[min(80vh,760px)] flex flex-col"
+          className="search-dialog relative w-full max-w-[680px] rounded-xl bg-[var(--overlay-bg)] border border-[var(--line-normal)] shadow-lg overflow-hidden max-h-[min(80vh,760px)] flex flex-col"
         >
           {/* Search Input — platform-level */}
           <div className="relative flex items-center gap-3 p-4 border-b border-[#1e293b]/60">

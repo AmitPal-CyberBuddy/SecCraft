@@ -132,7 +132,8 @@ export function deriveUserState({ hasSession, account }: DeriveStateInput): User
       return 'suspended'
     case 'pending':
     default:
-      // A verified session whose profile the API has not returned yet is still pending approval.
+      // Legacy fallback only. UI must show account-status loading until the API returns an
+      // actual record; null by itself is not evidence of pending approval.
       return 'pending'
   }
 }
