@@ -234,8 +234,8 @@ export function CertificationPayoff() {
               <Trophy className="w-5 h-5 text-emerald-400" />
             </div>
             <div className="flex-1">
-              <div className="text-[13px] font-bold text-emerald-300">Local progress record unlocked — activities recorded</div>
-              <div className="text-[11px] text-emerald-400/80 mt-1">Print or save it from Reports → Certificate. It documents your own practice; no third party issues or validates it.</div>
+              <div className="text-[13px] font-bold text-emerald-300">Practice milestone reached — activities recorded</div>
+              <div className="text-[11px] text-emerald-400/80 mt-1">This is a personal practice milestone kept in this browser. No certificate is issued, and no third party issues or validates it.</div>
             </div>
           </motion.div>
         ) : (

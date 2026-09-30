@@ -6,12 +6,17 @@ import './styles/refinement.css'
 import App from './App.tsx'
 import { ThemeProvider } from '@/components/theme/ThemeProvider'
 import { LocalProfileProvider } from '@/components/profile/LocalProfile'
+import { SessionProvider } from '@/lib/session'
 
 createRoot(document.getElementById('root')!).render(
   <MotionConfig reducedMotion="user">
     <ThemeProvider>
       <LocalProfileProvider>
-        <App />
+        {/* Session state is presentation only: it decides what to render, never what is permitted.
+            The API remains the authorization boundary on every request. */}
+        <SessionProvider>
+          <App />
+        </SessionProvider>
       </LocalProfileProvider>
     </ThemeProvider>
   </MotionConfig>,

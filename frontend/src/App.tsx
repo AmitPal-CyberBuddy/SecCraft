@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, lazy, Suspense } from 'react'
 import type { ReactNode } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Shell } from '@/components/layout/Shell'
+import { AdminShell } from '@/components/layout/AdminShell'
 import { ScrollToTop } from '@/components/layout/ScrollToTop'
 import { PointsToast } from '@/components/gamification/PointsToast'
 import { GlobalSearch } from '@/components/search/GlobalSearch'
@@ -13,7 +14,6 @@ import { Dashboard } from '@/pages/Dashboard'
 import { PublicHome } from '@/pages/PublicHome'
 import { AboutPage, HowItWorksPage } from '@/pages/PublicInfo'
 import { LoginPage, SignupPage, AccountStatusPage, ResetPasswordPage, UpdatePasswordPage } from '@/pages/Account'
-import { AdminPage } from '@/pages/Admin'
 import { LearningPath } from '@/pages/LearningPath'
 import { LearningPaths } from '@/pages/LearningPaths'
 import { PathDetail } from '@/pages/PathDetail'
@@ -33,8 +33,31 @@ import { NotFound } from '@/pages/NotFound'
 
 const GuidedTour = lazy(() => import('@/components/tour/GuidedTour').then(m => ({ default: m.GuidedTour })))
 
+// Account surfaces are route-split: most sessions are guests and never open them, and the owner
+// console is a separate experience that no learner needs to download.
+const AdminPage = lazy(() => import('@/pages/Admin').then(m => ({ default: m.AdminPage })))
+const Profile = lazy(() => import('@/pages/Profile').then(m => ({ default: m.Profile })))
+const Sync = lazy(() => import('@/pages/Sync').then(m => ({ default: m.Sync })))
+
 const workspace = (page: ReactNode) => <Shell>{page}</Shell>
+const ownerConsole = (page: ReactNode) => <AdminShell><Suspense fallback={<AdminRouteFallback />}>{page}</Suspense></AdminShell>
 const publicRoutes = new Set(['/', '/about', '/how-it-works', '/login', '/signup', '/account', '/reset-password', '/update-password'])
+
+function AdminRouteFallback() {
+  return (
+    <div className="flex min-h-[40vh] items-center justify-center text-sm text-slate-400" role="status" aria-live="polite">
+      <span className="mr-2.5 h-2 w-2 animate-pulse rounded-full bg-violet-300" aria-hidden="true" /> Loading the owner console…
+    </div>
+  )
+}
+
+function RouteFallback() {
+  return (
+    <div className="flex min-h-[40vh] items-center justify-center text-sm text-slate-400" role="status" aria-live="polite">
+      <span className="mr-2.5 h-2 w-2 animate-pulse rounded-full bg-cyan-300" aria-hidden="true" /> Loading…
+    </div>
+  )
+}
 
 function ApplicationRoutes() {
   const [searchOpen, setSearchOpen] = useState(false)
@@ -84,7 +107,8 @@ function ApplicationRoutes() {
         {/* The former dashboard remains available to guests at /app; / stays a public homepage. */}
         <Route path="/app" element={workspace(<Dashboard />)} />
         <Route path="/dashboard" element={<Navigate to="/app" replace />} />
-        <Route path="/admin" element={workspace(<AdminPage />)} />
+        {/* Owner controls live in their own chrome, separate from every learner surface. */}
+        <Route path="/admin" element={ownerConsole(<AdminPage />)} />
 
         {/* Existing learning routes remain intact and usable without an account. */}
         <Route path="/paths" element={workspace(<LearningPaths />)} />
@@ -111,6 +135,9 @@ function ApplicationRoutes() {
         <Route path="/paths/:pathId/engagements/:id" element={workspace(<Engagement />)} />
         <Route path="/reports" element={workspace(<Reports />)} />
         <Route path="/settings" element={workspace(<Settings />)} />
+        <Route path="/profile" element={workspace(<Suspense fallback={<RouteFallback />}><Profile /></Suspense>)} />
+        <Route path="/sync" element={workspace(<Suspense fallback={<RouteFallback />}><Sync /></Suspense>)} />
+        <Route path="/progress/sync" element={<Navigate to="/sync" replace />} />
         <Route path="/analytics" element={workspace(<Analytics />)} />
         <Route path="/progress" element={workspace(<Analytics />)} />
         <Route path="/achievements" element={workspace(<Achievements />)} />

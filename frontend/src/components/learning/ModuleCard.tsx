@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import modules from '@/content/modules.json'
 import { AVAILABLE_LABS } from '@/content/labs'
 import { POINTS } from '@/store/useProgressStore'
+import type { ContentTier } from '@/lib/contentAccess'
 
 interface Props {
   id: string
@@ -15,6 +16,13 @@ interface Props {
   progress?: number
   description?: string
   locked?: boolean
+  /**
+   * Curriculum tier. Drives a marker only — never a lock and never a blocked navigation.
+   * The content is public on this site, so presenting it as unreachable would be false.
+   */
+  tier?: ContentTier
+  /** True when the viewer's account does not carry the record benefits of the full tier. */
+  tierIsAccountContent?: boolean
 }
 
 const phaseConfig: Record<number, { gradient: string, border: string, text: string, glow: string, label: string }> = {
@@ -33,7 +41,7 @@ const difficultyConfig: Record<string, { bg: string, text: string, border: strin
   'Professional': { bg: 'bg-violet-500/10', text: 'text-violet-400', border: 'border-violet-500/20', dot: 'bg-violet-400' },
 }
 
-export function ModuleCard({ id, title, phase, difficulty, estimated_hours, status, progress = 0, description, locked }: Props) {
+export function ModuleCard({ id, title, phase, difficulty, estimated_hours, status, progress = 0, description, locked, tier = 'preview', tierIsAccountContent = false }: Props) {
   // Counts come from the module definition itself, so a card can never advertise lessons or labs
   // that the module does not ship.
   const moduleDef = (modules as any[]).find(m => m.id === id)
@@ -66,6 +74,35 @@ export function ModuleCard({ id, title, phase, difficulty, estimated_hours, stat
       
       {/* Top accent line */}
       <div className={`absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-${phaseStyle.text.split('-')[1]}-500/30 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-300`} />
+
+      {tier === 'full' && (
+        <div className="absolute right-3 top-3 z-10">
+          <span
+            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-semibold tracking-widest backdrop-blur-sm ${
+              tierIsAccountContent
+                ? 'border-violet-500/30 bg-violet-500/10 text-violet-300'
+                : 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300'
+            }`}
+            title={
+              tierIsAccountContent
+                ? 'Full Curriculum — part of the account learning experience'
+                : 'Full Curriculum — included in your account'
+            }
+          >
+            {tierIsAccountContent ? 'FULL CURRICULUM' : 'FULL'}
+          </span>
+        </div>
+      )}
+      {tier === 'preview' && (
+        <div className="absolute right-3 top-3 z-10">
+          <span
+            className="inline-flex items-center gap-1 rounded-full border border-cyan-500/25 bg-cyan-500/10 px-2 py-0.5 text-[9px] font-semibold tracking-widest text-cyan-300 backdrop-blur-sm"
+            title="Preview Curriculum — open to everyone"
+          >
+            PREVIEW
+          </span>
+        </div>
+      )}
 
       {locked && (
         <div className="absolute inset-0 bg-[#020617]/70 backdrop-blur-[1px] z-20 flex items-center justify-center">

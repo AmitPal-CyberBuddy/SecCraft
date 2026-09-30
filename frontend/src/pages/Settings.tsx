@@ -2,14 +2,17 @@ import { LoadingPanel } from '@/components/common/LoadingPanel'
 import { useProgressStore, LEVELS } from '@/store/useProgressStore'
 import { TOTAL_LABS, TOTAL_LESSONS, TOTAL_MODULES, TOTAL_PCAPS, TOTAL_SCENARIOS } from '@/content/stats'
 import { motion } from 'framer-motion'
-import { Settings as SettingsIcon, Download, Trash2, FlaskConical, Award, Target, Trophy, Star, Moon, Sun, LogOut, Users, Lock, BarChart3, Keyboard } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Settings as SettingsIcon, Download, Trash2, Award, Trophy, Star, Moon, Sun, UserRound, CloudUpload, KeyRound, LogOut, BarChart3, Keyboard, ArrowRight, ShieldCheck, Target, FlaskConical } from 'lucide-react'
 import { LevelBadge, CertificationPayoff } from '@/components/gamification/LevelBadge'
 import { useTheme } from '@/components/theme/ThemeProvider'
-import { useLocalProfile } from '@/components/profile/LocalProfile'
+import { useMemo } from 'react'
 import { LocalDataPanel } from '@/components/security/LocalDataPanel'
-import { ProgressSyncPanel } from '@/components/progress/ProgressSyncPanel'
 import { SecurityPosture } from '@/components/security/SecurityPosture'
-import { useState, lazy, Suspense } from 'react'
+import { useSession } from '@/lib/session'
+import { ACCOUNT_SYNC_NOTE, isSignedIn, STATE_META } from '@/lib/access'
+import { ProvenanceChip, StateChip } from '@/components/account/StateChip'
+import { lazy, Suspense } from 'react'
 const AccessibilityPanel = lazy(() => import('@/components/accessibility/AccessibilityPanel').then(m => ({ default: m.AccessibilityPanel })))
 
 export function Settings() {
@@ -20,10 +23,21 @@ export function Settings() {
   const totalXp = useProgressStore(s => s.getTotalXp())
   const level = useProgressStore(s => s.getLevel())
   const achievements = useProgressStore(s => s.achievements)
-  const xpToNext = useProgressStore(s => s.getXpToNextLevel())
+  // getXpToNextLevel() builds a fresh object on every call, so it must not be used as a store
+  // selector — Zustand compares snapshots by identity and that causes an endless re-render.
+  // Derive it from the two stable primitives instead (same approach as the Topbar).
+  const xpToNext = useMemo(() => {
+    const currentLevel = level
+    const nextLevel = LEVELS.find(l => l.level === currentLevel.level + 1) || null
+    if (!nextLevel) return { current: totalXp, needed: 0, nextLevel: null, percent: 100 }
+    const needed = nextLevel.minXp - totalXp
+    const range = nextLevel.minXp - currentLevel.minXp
+    const progressInLevel = totalXp - currentLevel.minXp
+    return { current: totalXp, needed: Math.max(0, needed), nextLevel, percent: Math.min(Math.max((progressInLevel / range) * 100, 0), 100) }
+  }, [totalXp, level])
   const { theme, resolved, setTheme } = useTheme()
-  const { profile, hasProfile, save, clear } = useLocalProfile()
-  const [profileForm, setProfileForm] = useState<{ displayName: string }>({ displayName: '' })
+  const { userState, account, can } = useSession()
+  const signedIn = isSignedIn(userState)
 
   return (
     <div className="max-w-[800px] mx-auto space-y-4 xs:space-y-6 md:space-y-8 min-w-0 w-full">
@@ -38,48 +52,57 @@ export function Settings() {
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 sm:p-6 min-w-0">
-        <h3 className="font-heading font-bold text-[14px] text-slate-100 mb-4 flex items-center gap-2">
-          <Lock className="w-4 h-4 text-violet-400" />Guest profile — local display name
-          {hasProfile && <span className="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono">saved locally</span>}
+        <h3 className="font-heading font-bold text-[14px] text-slate-100 mb-4 flex flex-wrap items-center gap-2">
+          <UserRound className="w-4 h-4 text-violet-400" />Where you are signed in
+          <StateChip state={userState} size="sm" className="ml-auto" />
         </h3>
         <p className="text-[11.5px] text-slate-400 leading-relaxed mb-4">
-          This display name is stored only in this browser and does not control account access. Optional hosted accounts
-          use Supabase Auth and require email verification followed by owner approval; user-selectable roles and classrooms
-          are not part of SecCraft. You can keep using the learning workspace as a guest.
+          Settings covers how the product behaves. Your identity, account status, and display name live on the{' '}
+          <Link to="/profile" className="text-cyan-300 hover:text-cyan-200 underline decoration-cyan-400/30 underline-offset-4">Profile</Link>{' '}
+          page, and moving progress between devices lives on{' '}
+          <Link to="/sync" className="text-cyan-300 hover:text-cyan-200 underline decoration-cyan-400/30 underline-offset-4">Progress sync</Link>.
         </p>
-        {!hasProfile ? (
+        {signedIn ? (
           <div className="space-y-3">
-            <input
-              value={profileForm.displayName}
-              onChange={e => setProfileForm({ displayName: e.target.value })}
-              placeholder="Display name (optional)"
-              maxLength={64}
-              className="w-full px-4 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-violet-500/30"
-            />
-            <button
-              onClick={() => save({ displayName: profileForm.displayName || 'Guest learner' })}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-[13px] flex items-center justify-center gap-2 touch-manipulation min-h-[44px]"
-            >
-              <Users className="w-4 h-4" />Save local profile
-            </button>
-          </div>
-        ) : (
-          <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                  <Users className="w-5 h-5 text-emerald-400" />
-                </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#1e293b] bg-[#020617]/60 p-3.5">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-cyan-500/20 bg-cyan-500/10">
+                  <ShieldCheck className="h-4 w-4 text-cyan-300" aria-hidden="true" />
+                </span>
                 <div className="min-w-0">
-                  <div className="text-[14px] font-bold text-slate-100 truncate">{profile?.displayName}</div>
-                  <div className="text-[11px] font-mono text-slate-400 truncate">
-                    Guest profile • {achievements.length} local achievements • {totalXp} local XP • stored in this browser only
-                  </div>
+                  <div className="truncate text-[13px] font-semibold text-slate-100">{account?.email ?? 'Signed-in account'}</div>
+                  <div className="truncate text-[11px] text-slate-400">{STATE_META[userState].nextAction}</div>
                 </div>
               </div>
-              <button onClick={clear} className="px-4 py-2 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] text-slate-300 flex items-center gap-2 hover:bg-[#25354f] transition-colors shrink-0 touch-manipulation min-h-[36px]">
-                <LogOut className="w-4 h-4" />Clear
-              </button>
+              <ProvenanceChip provenance="server" />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link to="/account" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#334155] px-3 text-[12px] text-slate-200 transition-colors hover:bg-[#1e293b]">
+                Account status <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </Link>
+              <Link to="/reset-password" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#334155] px-3 text-[12px] text-slate-200 transition-colors hover:bg-[#1e293b]">
+                <KeyRound className="h-3.5 w-3.5" aria-hidden="true" /> Change password
+              </Link>
+              <SignOutButton />
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-[12.5px] leading-relaxed text-slate-400">
+              You are using SecCraft as a guest. Everything works, and your record stays in this browser. An account adds an
+              approval state and a platform-side copy of your progress — it does not unlock new material.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {can('request-account') && (
+                <>
+                  <Link to="/login" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#334155] px-3 text-[12px] text-slate-200 transition-colors hover:bg-[#1e293b]">
+                    Log in
+                  </Link>
+                  <Link to="/signup" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-cyan-500 px-3 text-[12px] font-bold text-slate-950 transition-colors hover:bg-cyan-400">
+                    Request an account
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -112,7 +135,18 @@ export function Settings() {
 
       <LocalDataPanel />
 
-      <ProgressSyncPanel />
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.07 }} className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 sm:p-6 min-w-0">
+        <h3 className="font-heading font-bold text-[14px] text-slate-100 mb-4 flex items-center gap-2">
+          <CloudUpload className="w-4 h-4 text-emerald-400" />Progress synchronization
+        </h3>
+        <p className="text-[11.5px] text-slate-400 leading-relaxed mb-4">{ACCOUNT_SYNC_NOTE}</p>
+        <Link
+          to="/sync"
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 text-[13px] font-semibold text-emerald-100 transition-colors hover:bg-emerald-500/15 sm:w-auto"
+        >
+          Open progress sync <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
+      </motion.div>
 
       <Suspense fallback={<LoadingPanel label="Loading Accessibility…" />}>
         <AccessibilityPanel />
@@ -212,8 +246,22 @@ export function Settings() {
       </motion.div>
 
       <div className="text-[11px] text-slate-400 font-mono text-center pb-4">
-        SecCraft — guest-first, offline-capable • {totalXp} local XP (unverified) • Lv.{level.level} {level.title} • {TOTAL_MODULES} modules • {TOTAL_LESSONS} lessons • {TOTAL_PCAPS} supplied capture artifacts • {TOTAL_SCENARIOS} decision scenarios • account sync is optional and requires hosted services
+        SecCraft — guest-first, offline-capable • {totalXp} local XP (unverified) • Lv.{level.level} {level.title} • {TOTAL_MODULES} modules • {TOTAL_LESSONS} lessons • {TOTAL_PCAPS} supplied capture artifacts • {TOTAL_SCENARIOS} decision scenarios • browser-local record, not a server-confirmed result
       </div>
     </div>
+  )
+}
+
+/** Sign out from Settings without needing to leave the page first. */
+function SignOutButton() {
+  const { signOut } = useSession()
+  return (
+    <button
+      type="button"
+      onClick={() => void signOut()}
+      className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#334155] px-3 text-[12px] text-slate-300 transition-colors hover:bg-[#1e293b] hover:text-slate-100"
+    >
+      <LogOut className="h-3.5 w-3.5" aria-hidden="true" /> Sign out
+    </button>
   )
 }
