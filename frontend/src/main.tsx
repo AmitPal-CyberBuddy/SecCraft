@@ -1,15 +1,24 @@
+import { restoreReadingPreferences } from './lib/readingPreferences'
 import { createRoot } from 'react-dom/client'
-import { MotionConfig } from 'framer-motion'
+import { MotionPreferences } from '@/components/animations/MotionPreferences'
 import './index.css'
 import './styles/workspace.css'
 import './styles/public-home.css'
+import './styles/controls.css'
+import './styles/technical-tools.css'
+import './styles/secondary-pages.css'
+import './styles/feedback.css'
+import './styles/color-system.css'
+import './styles/motion.css'
 import App from './App.tsx'
 import { ThemeProvider } from '@/components/theme/ThemeProvider'
 import { LocalProfileProvider } from '@/components/profile/LocalProfile'
 import { SessionProvider } from '@/lib/session'
 
+restoreReadingPreferences()
+
 createRoot(document.getElementById('root')!).render(
-  <MotionConfig reducedMotion="user">
+  <MotionPreferences>
     <ThemeProvider>
       <LocalProfileProvider>
         {/* Session state is presentation only: it decides what to render, never what is permitted.
@@ -19,7 +28,7 @@ createRoot(document.getElementById('root')!).render(
         </SessionProvider>
       </LocalProfileProvider>
     </ThemeProvider>
-  </MotionConfig>,
+  </MotionPreferences>,
 )
 
 // Offline shell — registered from the build base so it also works from a

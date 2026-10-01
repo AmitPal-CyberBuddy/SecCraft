@@ -47,9 +47,9 @@ shared. This is why you see both EAP frames *and* EAPOL-Key M1–M4 after a succ
 
 ## 4. Design properties that make enterprise Wi-Fi *good*
 
-* **Per-user credentials** with no shared secret among users; disabling an account removes access.
+* **Per-user credentials** with no shared secret among users; account disablement affects authorization under the configured policy; existing sessions/resumption also need an explicit termination and renewal policy.
 * **Server certificate validation** on the client (`ca_cert`, `domain_suffix_match`) so the network must
-  prove its identity before the client reveals anything.
+  prove the expected identity before protected inner-credential exchange; outer identity and other metadata can be visible earlier.
 * **EAP-TLS** (mutual certificates) where the fleet supports it — no password to capture or crack.
 * **PMF required** for management-frame protection, independent of the EAP method.
 * **Dynamic VLAN + ACL** from RADIUS, enforced by the AP and the wired switch, not merely logged.

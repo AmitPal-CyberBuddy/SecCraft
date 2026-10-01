@@ -44,11 +44,28 @@ jobs:
       - name: Verify learning journey content contracts
         run: node scripts/verify-learning-data.mjs
 
+      - name: Verify Wireless foundations artifacts and curriculum
+        run: python3 scripts/verify-wireless-foundations.py
+
+      - name: Verify Wireless tester workflow and capture interoperability
+        run: |
+          python3 scripts/verify-labkit-interop.py
+          python3 scripts/verify-wireless-phase2.py
+          python3 scripts/verify-wireless-phase3.py --openssl
+          python3 scripts/verify-wireless-phase4.py
+          python3 scripts/verify-wireless-phase5.py
+          python3 scripts/verify-wireless-phase6.py
+          python3 scripts/verify-wireless-phase7.py
+          python3 scripts/verify-wireless-curriculum.py
+          npm ci --prefix tools/wireless-qa --ignore-scripts
+          node scripts/verify-wireless-wireshark.mjs
+
       - name: Verify Android source-only exercises and downloads
         run: |
           python3 scripts/verify-android-foundations.py
           python3 scripts/verify-android-demo.py
           python3 scripts/verify-android-cases.py
+          python3 scripts/verify-android-curriculum.py
 
       - name: Test guest API outage and timeout fallback
         run: npm test
@@ -85,6 +102,15 @@ jobs:
 
       - name: Install
         run: pip install -r backend/requirements.txt
+
+      - name: Install certificate-generation QA dependency
+        run: python -m pip install cryptography==46.0.5
+
+      - name: Independently decode all teaching captures
+        run: |
+          python scripts/verify-labkit-interop.py --scapy
+          python scripts/verify-wireless-phase4.py --scapy
+          python scripts/verify-wireless-phase5.py --scapy --cert-generator
 
       - name: Import check
         run: python -c "from app.main import app; print('app imports:', app.title)"
@@ -125,3 +151,110 @@ jobs:
             exit 1
           fi
           echo "No tracked .env files."
+
+  browser-qa:
+    name: Browser — responsive, accessibility and keyboard smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 85
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            tools/browser-qa/package-lock.json
+      - run: npm ci --prefix frontend && npm ci --prefix tools/browser-qa
+      - run: tools/browser-qa/node_modules/.bin/playwright install --with-deps chromium
+      - name: Start frontend and await readiness
+        run: |
+          VITE_BASE=/ npm run dev --prefix frontend -- --host 0.0.0.0 --port 3000 > /tmp/seccraft-vite.log 2>&1 &
+          tools/browser-qa/node_modules/.bin/wait-on --timeout 60000 http://127.0.0.1:3000
+      - name: Layout and axe checks (offline service fixture)
+        env:
+          UI_AUDIT_MODULES: ${{ github.workspace }}/tools/browser-qa/node_modules
+          UI_AUDIT_ROUTES: /,/login,/app,/modules,/modules/08-wpa-wpa2?tab=theory,/modules/08-wpa-wpa2?tab=lab&lab=lab-08-rsn,/reports,/settings,/feedback,/admin/feedback
+          UI_AUDIT_WIDTHS: 320,1440
+          UI_AUDIT_AXE: '1'
+        run: node scripts/ui-responsive-audit.mjs
+      - name: Keyboard, themes and short-screen interactions
+        env:
+          UI_AUDIT_MODULES: ${{ github.workspace }}/tools/browser-qa/node_modules
+        run: node scripts/ui-keyboard-smoke.mjs
+      - name: Feedback, color and motion interactions
+        env:
+          UI_AUDIT_MODULES: ${{ github.workspace }}/tools/browser-qa/node_modules
+        run: |
+          node scripts/ui-feedback-smoke.mjs
+          node scripts/ui-feedback-owner-smoke.mjs
+          node scripts/ui-color-states-smoke.mjs
+          node scripts/ui-color-components-smoke.mjs
+          node scripts/ui-motion-smoke.mjs
+          node scripts/ui-learning-motion-smoke.mjs
+          node scripts/ui-technical-motion-smoke.mjs
+          node scripts/ui-secondary-motion-smoke.mjs
+          node scripts/ui-product-polish-smoke.mjs
+          node scripts/ui-path-scope-smoke.mjs
+          node scripts/ui-motion-contract-smoke.mjs
+          node scripts/ui-wireless-foundations-smoke.mjs
+          node scripts/ui-wireless-phase2-smoke.mjs
+          node scripts/ui-wireless-phase3-smoke.mjs
+          node scripts/ui-wireless-phase4-smoke.mjs
+          node scripts/ui-wireless-phase5-smoke.mjs
+          node scripts/ui-wireless-phase6-smoke.mjs
+          node scripts/ui-wireless-phase7-smoke.mjs
+          node scripts/ui-wireless-curriculum-smoke.mjs
+          node scripts/ui-android-curriculum-smoke.mjs
+      - name: Wireless practice production subpath and offline downloads
+        env:
+          UI_AUDIT_MODULES: ${{ github.workspace }}/tools/browser-qa/node_modules
+          UI_AUDIT_URL: http://localhost:4173/SecCraft
+          UI_AUDIT_PRODUCTION: '1'
+        run: |
+          npm run build --prefix frontend
+          node scripts/serve-pages-preview.mjs --port 4173 --base /SecCraft/ > /tmp/seccraft-pages.log 2>&1 &
+          tools/browser-qa/node_modules/.bin/wait-on --timeout 60000 http://127.0.0.1:4173/SecCraft/
+          node scripts/ui-wireless-foundations-smoke.mjs
+          node scripts/ui-wireless-phase2-smoke.mjs
+          node scripts/ui-wireless-phase3-smoke.mjs
+          node scripts/ui-wireless-phase4-smoke.mjs
+          node scripts/ui-wireless-phase5-smoke.mjs
+          node scripts/ui-wireless-phase6-smoke.mjs
+          node scripts/ui-wireless-phase7-smoke.mjs
+          node scripts/ui-wireless-curriculum-smoke.mjs
+          node scripts/ui-android-curriculum-smoke.mjs
+      - name: Retain reports and screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: browser-qa
+          path: .cache/ui-audit
+          retention-days: 7
+
+  postgres-concurrency:
+    name: PostgreSQL — migrations, RLS and concurrent quotas
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: disposable-ci-only
+          POSTGRES_DB: seccraft_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d seccraft_test"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: '3.11'
+      - run: pip install -r backend/requirements.txt
+      - name: Check isolated-schema migrations and races
+        env:
+          PLATFORM_TEST_POSTGRES_URL: postgresql+psycopg://postgres:disposable-ci-only@localhost:5432/seccraft_test
+        run: python backend/tests/postgres_concurrency_smoke.py

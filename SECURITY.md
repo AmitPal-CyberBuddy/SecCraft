@@ -24,3 +24,12 @@ The API uses `nosniff`, frame denial, no-referrer, permissions policy and no-sto
 - Re-run dependency audits, backend and frontend tests, content checks and build before deployment.
 
 See [account deployment](docs/ACCOUNT_SYNC_PLATFORM.md) for the owner and deployment workflow. These are engineering boundaries, not a claim that the system is fully secure or penetration tested.
+
+## Feedback boundary
+
+Optional contact intake uses database-backed account/network quotas and server-side owner authorization.
+The existing per-process signup limiter is unchanged. Feedback does not fingerprint devices; ephemeral
+quota keys use a dedicated HMAC secret and IPv6 /64 grouping. Never trust arbitrary forwarded IP
+headers or treat quotas as DDoS protection. Configure the ingress and schedule the supplied retention
+job before enabling intake. Messages/reply addresses/internal notes are private plaintext DB records,
+not encrypted evidence storage. See [feedback deployment and privacy](docs/FEEDBACK.md).

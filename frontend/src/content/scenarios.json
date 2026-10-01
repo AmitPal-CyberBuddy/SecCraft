@@ -1,942 +1,1326 @@
 [
- {
-  "id": "scn-01-scope-gap",
-  "module": "01-intro-wireless",
-  "type": "choice",
-  "title": "What is missing from this authorisation?",
-  "situation": "The RoE authorises: SSIDs Corp-WLAN and Corp-Guest, RF testing on site, deauth tests on test clients only, 09:00\u201317:00 on weekdays. The signature block is signed by the IT helpdesk supervisor. The document says nothing about capturing traffic.",
-  "question": "You are about to start passive capture. What do you do first?",
-  "options": [
-   {
-    "id": "a",
-    "text": "Start capturing \u2014 passive capture is harmless and the RoE covers RF testing.",
-    "analysis": "Passive capture records third parties' traffic and personal data. Even passive collection needs explicit authorisation and data-handling terms.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "Ask for a data-handling clause and confirm the signatory's authority before capturing.",
-    "analysis": "Two gaps: (1) no capture/data-handling authorisation, and (2) an IT helpdesk supervisor is unlikely to be the accountable signatory for a security engagement. Both are escalation items, not things to assume.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "Capture only the SSIDs listed, nothing else, and continue.",
-    "analysis": "Better than blanket capture, but the authorisation gap and the signatory question remain \u2014 you would still be collecting traffic without a data-handling agreement.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Authorisation is a precondition, not paperwork. Missing capture/data-handling terms and an unclear signatory are both stop-and-ask findings. In a real engagement you would also confirm the deauth window and get a named emergency contact.",
-  "evidence_note": "Reusable output: a scope-gap list you can hand back to the client with the specific clauses to add.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-02-ess-or-rogue",
-  "module": "02-wifi-fundamentals",
-  "type": "evidence",
-  "title": "One SSID, two BSSIDs \u2014 which evidence separates them?",
-  "situation": "You see SSID 'Corp-WLAN' from BSSID A (OUI Cisco, channel 36, AKM 1, MFPR set, beacon interval 100 TU) and from BSSID B (locally administered MAC, channel 6, AKM 2, MFPC only, beacon interval 50 TU).",
-  "question": "Which single artefact is the strongest support for calling B a look-alike?",
-  "options": [
-   {
-    "id": "a",
-    "text": "The SSID string is identical.",
-    "analysis": "An SSID is a name; legitimate ESS members share it by design. This is the weakest possible evidence.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "The RSNE differs (PSK where the ESS is 802.1X) plus the locally administered BSSID.",
-    "analysis": "Policy mismatch + a locally administered MAC + an off-plan channel/band and beacon interval make a strong, multi-signal case. Each alone is weak; together they are defensible.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "B's signal is stronger near the shop window.",
-    "analysis": "Signal strength depends on distance and transmit power; it supports an argument about proximity, not identity.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Build look-alike findings from multiple independent signals: address administration, policy, RF/planning parameters and later client behaviour. One signal is never proof.",
-  "evidence_note": "Deliverable: a two-column IE/policy diff with frame numbers, plus what would falsify the conclusion.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-02-randomised-client",
-  "module": "02-wifi-fundamentals",
-  "type": "choice",
-  "title": "The client MAC keeps changing",
-  "situation": "A 30-minute capture contains probes for 'Corp-WLAN' and 'HomeNet' from three different locally administered MAC addresses. There are no device logs, stable identifiers or corroborated client fingerprints.",
-  "question": "What do you record?",
-  "options": [
-   {
-    "id": "a",
-    "text": "Exactly three physical devices.",
-    "analysis": "Three observed addresses are not necessarily three physical devices; one device can use multiple addresses. Count addresses, not people or hardware.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "Exactly one device using MAC randomisation, identified by its probe SSIDs.",
-    "analysis": "Shared probe targets and the local bit do not prove either a single device or the mechanism that assigned its MACs.",
-    "correct": false
-   },
-   {
-    "id": "c",
-    "text": "Three observed client addresses with similar probes; physical device count and address-assignment mechanism are unconfirmed.",
-    "analysis": "Record the frame/time/address/SSID evidence and locally administered bit; seek authorized device-side logs or corroboration before linking addresses or asserting randomisation.",
-    "correct": true
-   }
-  ],
-  "best": "c",
-  "rationale": "Do not collapse multiple locally administered addresses into a single device profile or equate them with three devices. Probe similarity is a lead, not identity proof.",
-  "evidence_note": "List each observed address and cited probes separately; label possible correlation as a hypothesis, not a finding about one device.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-03-rsn-decode",
-  "module": "03-80211-architecture",
-  "type": "free",
-  "title": "Classify this deployment from raw RSNE bytes",
-  "situation": "RSNE (element 48), hex: 30 18 01 00 00 0f ac 04 01 00 00 0f ac 04 02 00 00 0f ac 02 00 0f ac 08 80 00",
-  "question": "Decode it: version, group cipher, pairwise, AKM list, and RSN capabilities. What policy does it advertise, and what must be checked per client?",
-  "model_answer": "Version 1. Group cipher: OUI 00-0F-AC type 4 = CCMP-128. Pairwise list: CCMP-128 (count 1). AKM list (count 2): type 2 = PSK and type 8 = SAE, indicating a transition-mode advertisement. RSN capabilities = 0x0080: MFPC (bit 7) set, MFPR (bit 6) clear, so PMF is capable/optional at the BSS level, not required for every association. Inspect each association\u2019s negotiated AKM and PMF state; do not assume every PSK client lacks PMF or that every client negotiated SAE. If credentials are reused, a weak PSK passphrase can be tested offline from a suitable PSK handshake.",
-  "rationale": "Read the AKM list and RSN capability bits from the bytes, not the product name. Transition mode is an advertised compatibility surface, not automatically a downgrade finding; verify actual client negotiation, credentials/configuration, and scope.",
-  "evidence_note": "Cite the frames where this RSNE appears (beacon and association request) and quote the capability byte.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-03-pmf-bits",
-  "module": "03-80211-architecture",
-  "type": "choice",
-  "title": "MFPC without MFPR",
-  "situation": "A BSS advertises MFPC set and MFPR clear. Some clients in the capture negotiate PMF in the association request; others do not.",
-  "question": "What is the security consequence?",
-  "options": [
-   {
-    "id": "a",
-    "text": "PMF is enforced for all clients.",
-    "analysis": "MFPR is RSN capabilities bit 6 (0x0040); MFPC is bit 7 (0x0080). Without MFPR, the BSS does not require PMF for every association; clients may still negotiate it individually.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "PMF-capable clients are protected individually; clients that do not negotiate it remain exposed to spoofed deauth.",
-    "analysis": "Correct: protection is per-association. Mixed ESSs are common and you must state the client mix as part of the finding.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "MFPC always implies MFPR for WPA3.",
-    "analysis": "WPA3-Personal does require PMF, but this BSS is not necessarily WPA3 \u2014 check the AKM list. MFPC alone never implies MFPR.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Robust management frame protection is negotiated per association. A PMF-capable AP with a legacy client is still exposed for that client.",
-  "evidence_note": "Evidence: RSNE from the beacon plus the association requests showing which clients negotiated PMF.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-04-tool-choice",
-  "module": "04-kali-wireless-setup",
-  "type": "choice",
-  "title": "Which tool answers the question?",
-  "situation": "The question is: 'can an unauthorised client complete the 4-way handshake with this BSS?'. You have a laptop with an integrated card and a USB adapter with a supported chipset.",
-  "question": "What is the correct approach?",
-  "options": [
-   {
-    "id": "a",
-    "text": "Run airodump-ng on the integrated card in managed mode and look for EAPOL frames.",
-    "analysis": "Managed mode sees only the client's own BSS traffic and only after association \u2014 it cannot be used as an observer for an arbitrary BSS.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "Put the adapter in monitor mode on the BSS's channel, capture a client association, and verify M1\u2013M4 in the capture.",
-    "analysis": "Monitor mode on the correct channel is the minimum capability; the capture is the evidence. Injection is only needed if you must force a reconnection.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "Use hashcat against the SSID with a wordlist.",
-    "analysis": "hashcat has nothing to work with until a handshake or PMKID has been captured.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Tool choice follows capability: observer (monitor) vs. transmitter (injection). State the capability you actually verified, not the capability of the product's datasheet.",
-  "evidence_note": "If the adapter cannot do monitor mode, that is a documented limitation \u2014 several labs are marked RF_REQUIRED for exactly this reason.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-05-hidden-ssid",
-  "module": "05-wireless-recon",
-  "type": "evidence",
-  "title": "The hidden network claim",
-  "situation": "A BSS beacon has an SSID IE of length 0. Later, a client probes and then associates; the association request and a probe response contain an SSID.",
-  "question": "Which frames support the statement 'hidden SSID provides no confidentiality'?",
-  "options": [
-   {
-    "id": "a",
-    "text": "The beacon with the zero-length SSID IE.",
-    "analysis": "This only establishes that the network hides its name \u2014 it is the premise, not the proof.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "The probe response and the client's association request, both carrying the SSID in clear.",
-    "analysis": "These frames show the name being disclosed to anyone in range, i.e. the control protects nothing. Cite frame numbers and the SSID bytes.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "A screenshot of the AP's web interface showing 'Hide SSID' enabled.",
-    "analysis": "Configuration evidence supports a configuration finding, but it does not show what an observer learns on the air.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "The finding is a disclosure claim: prove it with the frames that disclose the value. Configuration evidence explains intent; radio evidence proves exposure.",
-  "evidence_note": "Record the SSID bytes and frame numbers, and state that the AP's configuration was inferred from behaviour.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-05-clone-or-ess",
-  "module": "05-wireless-recon",
-  "type": "choice",
-  "title": "Legitimate ESS member or evil twin?",
-  "situation": "Two BSSIDs share SSID 'Guest-Net'. Both are open, neither has an RSNE. One has a vendor OUI with HT and VHT IEs; the other has no HT/VHT IEs, a locally administered MAC and a Country IE for a different country.",
-  "question": "What does the evidence support?",
-  "options": [
-   {
-    "id": "a",
-    "text": "Report an evil twin immediately.",
-    "analysis": "To call it a twin you need to compare against the authorised baseline (documented BSSID list or the client's known-good infrastructure). The differences are suspicious but the conclusion needs that baseline \u2014 and ideally client behaviour.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "Flag it as an unauthorised BSS conflicting with the ESS fingerprint and confirm against the authorised inventory before asserting intent.",
-    "analysis": "Correct: state what the capture shows (fingerprint mismatch), then do the verification step. Intent is a conclusion that needs corroboration.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "Ignore it \u2014 both are open, so there is nothing to compare.",
-    "analysis": "Open networks have no RSNE, so the IE/capability fingerprint and OUI are exactly what you compare.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Separate observation from conclusion. 'Unauthorised BSS with a conflicting fingerprint' is defensible from the capture; 'evil twin attacker' requires the baseline plus behaviour.",
-  "evidence_note": "Deliverable: fingerprint diff table with frame numbers, plus the list of further checks (authorised inventory, client association, DHCP source).",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-06-which-frames",
-  "module": "06-traffic-analysis",
-  "type": "evidence",
-  "title": "Minimal evidence sets",
-  "situation": "You have a 40 000-frame capture of one BSS. Three claims are candidates: (1) a client completed a 4-way handshake; (2) the BSS is in WPA2/WPA3 transition mode; (3) the client leaked its preferred network list.",
-  "question": "Which artefact set is correct for all three claims?",
-  "options": [
-   {
-    "id": "a",
-    "text": "The whole capture, 'it's all there'.",
-    "analysis": "Not an evidence set \u2014 it makes the reviewer do the analysis and hides which frames you relied on.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "EAPOL-Key M1\u2013M4 frame numbers; the RSNE bytes from beacon/assoc; probe request frames with SSID IEs.",
-    "analysis": "One minimal, reproducible set per claim. Each item maps to exactly one claim and can be re-extracted with a stated filter.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "Screenshots of Wireshark showing each of the three.",
-    "analysis": "Screenshots are illustrative at best; they cannot be re-analysed or hash-verified and often miss frame numbers.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Evidence granularity: the smallest reproducible artefact per claim, with the filter that produces it.",
-  "evidence_note": "Write the three filters you would give a reviewer: eapol.type==3, wlan.tag.number==48, wlan.fc.type_subtype==4.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-06-encrypted-or-not",
-  "module": "06-traffic-analysis",
-  "type": "choice",
-  "title": "Is this frame readable?",
-  "situation": "A data frame after the 4-way handshake has the Protected Frame bit set. It carries an IPv4-looking payload in the capture, and Wireshark shows only LLC/encrypted data.",
-  "question": "What can you claim from the capture alone?",
-  "options": [
-   {
-    "id": "a",
-    "text": "The client sent HTTP traffic.",
-    "analysis": "You cannot see inside a CCMP-protected frame without the PTK. Guessing the protocol from frame size is not evidence.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "A protected data frame from client to AP exists; its content is not determinable without the key.",
-    "analysis": "Precise and defensible. If the lab provides the PSK you can decrypt and then state the payload \u2014 with the decryption noted as a method.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "The payload is encrypted, therefore the network is secure.",
-    "analysis": "Encryption of payload does not validate configuration, authentication or management-frame protection.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "State the boundary of the evidence. If you decrypt using the lab PSK, record the key source and the fact that decryption is a separate analytical step.",
-  "evidence_note": "For decrypted payloads: note the key source (lab PSK) and that the raw capture still cannot be read without it.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-07-wep-report",
-  "module": "07-wep-legacy",
-  "type": "free",
-  "title": "Severity for an isolated WEP segment",
-  "situation": "A WEP-enabled BSS serves legacy POS handhelds on an isolated VLAN. The VLAN has no route to corporate systems and outbound access is limited to a payment gateway. IV reuse is abundant in a 10-minute capture.",
-  "question": "Write the finding severity justification, and say what would change it.",
-  "model_answer": "The design failure is certain (IV reuse, CRC32 ICV, key recovery is a matter of traffic volume), so the finding itself is not in question. Severity depends on the environment: the segment is isolated and outbound-restricted, so the confidentiality of the WEP-protected traffic is largely limited to POS transactions to the gateway (still sensitive), and integrity/availability on that segment are exposed. That places it in the medium range rather than critical \u2014 with a hard caveat: if the isolation claim is unverified, or if the handhelds hold credentials/keys usable elsewhere, the impact rises sharply. CVSS should be expressed as an example vector derived from these facts, with the isolation assumption stated; and the remediation must be migration, because no compensating control fixes the cipher.",
-  "rationale": "'WEP is critical' is a technique label. Severity comes from what the attacker gains in this environment, plus which assumptions you verified.",
-  "evidence_note": "Evidence: beacon without RSNE, protected data frames with visible IVs, frame count/IV reuse statistics, and the isolation test result (or the statement that isolation was not tested).",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-08-handshake-completeness",
-  "module": "08-wpa-wpa2",
-  "type": "choice",
-  "title": "M1+M2 only \u2014 enough?",
-  "situation": "Your capture contains M1 and M2 with matching replay counters and no M3/M4. The client never received the AP's key installation.",
-  "question": "What can you do, and what does the client-side failure tell you?",
-  "options": [
-   {
-    "id": "a",
-    "text": "Nothing \u2014 without M4 there is no handshake.",
-    "analysis": "M2 carries a MIC computed with the KCK, so a candidate passphrase can be verified offline. M3/M4 add the GTK and confirmation, not crackability.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "Run the offline audit from M1+M2, and report the interrupted handshake separately as a client/AP interoperability observation.",
-    "analysis": "Correct on both counts: crackability comes from M2's MIC; the missing M3 is a different (and usually non-security) observation.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "Report a denial-of-service attack in progress.",
-    "analysis": "One interrupted handshake is not an attack; it is a data point that needs corroboration (repeated attempts, reason codes, timing).",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Separate crackability (MIC availability) from protocol completion. Do not conflate an operational anomaly with a security finding.",
-  "evidence_note": "Record replay counters, the MIC value, and the exact hashcat line you produced.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-08-psk-compromise",
-  "module": "08-wpa-wpa2",
-  "type": "choice",
-  "title": "What does the recovered PSK actually grant?",
-  "situation": "You recovered the shared PSK of Corp-WLAN from a captured handshake. The SSID is used by staff laptops; the corporate network also has 802.1X on a different SSID.",
-  "question": "Which claim set is defensible?",
-  "options": [
-   {
-    "id": "a",
-    "text": "The PSK grants domain admin, because network access was obtained.",
-    "analysis": "L2 access is not a privilege level. This is the classic impact overstatement.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "The PSK grants association to that BSS and decryption of other users' WPA2 traffic on it; with a shared PSK there is no user attribution; impact depends on what that L2 can reach.",
-    "analysis": "Exactly the three defensible consequences. Anything further needs its own evidence.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "The PSK only affects the user who was captured.",
-    "analysis": "A shared PSK is not per-user: every user of that SSID uses the same key.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "State consequences at the level the protocol supports, then test (or exclude) what comes next.",
-  "evidence_note": "Evidence: handshake frames + crack output + the segmentation/reachability test that establishes the L2's value.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-09-pmkid-vs-handshake",
-  "module": "08-wpa-wpa2",
-  "type": "choice",
-  "title": "Which collection method is appropriate?",
-  "situation": "The client requests a low-noise assessment during trading hours. The AP supports PMK caching. You need PSK-crackable material.",
-  "question": "What do you do?",
-  "options": [
-   {
-    "id": "a",
-    "text": "Deauth a client to force a handshake capture \u2014 it is quick.",
-    "analysis": "Active disruption during trading hours contradicts the requirement (and may breach the RoE). Efficiency does not override impact constraints.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "Attempt passive capture of an M1 with a PMKID KDE first; only escalate to a controlled reconnection test if necessary and authorised.",
-    "analysis": "Correct: the least intrusive method that can yield the same evidence, with an escalation path that needs authorisation.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "Skip the capture and ask the client for the PSK.",
-    "analysis": "If the client supplies the PSK, you can test decryption \u2014 but that is a different (and weaker) evidence path: it does not demonstrate the observation/audit chain. Note it as an alternative, not a substitute.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Method choice is a risk decision: least intrusive first, with the impact of escalation stated before it is taken.",
-  "evidence_note": "Record both the collection method and the noise level, so the client can audit what happened on their network.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-09-cracked-not-owned",
-  "module": "08-wpa-wpa2",
-  "type": "free",
-  "title": "Cracked PSK, reused as the AP admin password",
-  "situation": "The recovered PSK is also the password that logs into the AP's web administration interface (confirmed by the client during the debrief).",
-  "question": "What are the findings, what is the impact, and what must you not claim?",
-  "model_answer": "Two findings with different owners. (1) The PSK is guessable: offenders = passphrase policy and rotation; impact = L2 access/decryption of that SSID, blast radius = all users of the shared key. (2) Credential reuse on a management interface: the same secret protects the control plane of the AP, so a wireless-only attacker obtains administrative control of the infrastructure if the interface is reachable on any path the attacker has \u2014 the interface's reachability must be tested or explicitly excluded, and that is the impact-limiting fact. Do not claim you compromised the AP unless you logged into it in scope; do not claim the reuse was exploited if it was only observed; and do not extend impact to other systems without testing credential reuse there (with authorisation).",
-  "rationale": "Credential reuse converts a wireless finding into a management-plane finding \u2014 but only if reachability is demonstrated.",
-  "evidence_note": "Evidence: crack output; AP web interface login page/response reached from the wireless client (or the exclusion note); the reuse confirmed by the client in writing.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-10-wps-locked",
-  "module": "10-wps",
-  "type": "evidence",
-  "title": "Setup-locked \u2014 is the WPS risk gone?",
-  "situation": "The beacon's WPS IE shows AP Setup Locked = 1, PIN method advertised, WPS version 2.0.",
-  "question": "Which reasoning is correct?",
-  "options": [
-   {
-    "id": "a",
-    "text": "Locked means no WPS risk; close the finding.",
-    "analysis": "Setup-locked is a state, not a permanent control: lockout can be reset (physically, by a firmware default, or by a restart on some devices) and the lockout behaviour may not be enforced for every method.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "Record the locked state, verify the enforcement (lockout counters/reset conditions), and report the WPS configuration as a risk-reduction item rather than an exploitable condition.",
-    "analysis": "Correct: distinguish configuration exposure ('WPS enabled with PIN method') from demonstrable exploitability ('lockout absent, PIN reachable, attempt succeeded').",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "Attempt the PIN attack anyway to see if lockout works.",
-    "analysis": "That is a live test with real impact (bricked WPS state, lockouts) requiring explicit authorisation; it is the escalation path, not the first step.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Configuration findings and exploitability findings are different deliverables. State which one you have evidence for.",
-  "evidence_note": "Evidence: the WPS IE bytes (setup locked, config methods, version) plus the documented reset/enforcement behaviour from the vendor or a lab test.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-11-transition-downgrade",
-  "module": "11-wpa3",
-  "type": "choice",
-  "title": "Transition mode: how do you prove the downgrade?",
-  "situation": "The BSS advertises AKM 2 + 8 with MFPC only. You claim WPA2 clients can be attacked with PSK techniques.",
-  "question": "Which test proves it?",
-  "options": [
-   {
-    "id": "a",
-    "text": "State that transition mode is insecure by definition.",
-    "analysis": "Transition mode is a documented deployment option, not an automatic exploit. The finding is that *this* deployment still admits the weaker path and *this* client mix uses it.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "Capture a PSK-AKM client's complete 4-way handshake and audit it offline with the lab wordlist.",
-    "analysis": "Correct: the artefact shows the weaker AKM in use and yields the crackable material, so the danger is demonstrated with frames rather than asserted.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "Try to force a client to use SAE and log the failure.",
-    "analysis": "Forcing SAE is the fix direction, not the proof of the weakness.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Demonstrate the weaker path with the artefact it produces. The remediation statement follows: remove PSK AKM, require PMF, monitor for PSK associations.",
-  "evidence_note": "Evidence: RSNE (AKM list), the PSK client's association request and handshake, the hashcat result, and the WPA3-only client's SAE exchange for contrast.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-11-owe",
-  "module": "11-wpa3",
-  "type": "free",
-  "title": "Open or OWE?",
-  "situation": "Two guest BSSs: 'Guest-Open' beacons with no RSNE at all; 'Guest-OWE' beacons with RSNE AKM 18, MFPC+MFPR, CCMP.",
-  "question": "Explain the difference in risk and what you would test on each.",
-  "model_answer": "'Guest-Open' has no link-layer protection: every frame including payloads is readable by anyone in range, and clients are trivially subject to rogue-AP impersonation. Test: capture an association and show cleartext payload; test whether the portal credentials are sent over cleartext HTTP; check for client isolation. 'Guest-OWE' encrypts the link per client with mandatory PMF, so content is not readable and deauth spoofing is blocked; the residual risks are the portal itself (still HTTP-over-OWE, so credentials are protected in transit from other guests but not end-to-end), rogue-AP association (OWE gives no server authentication \u2014 a rogue can present its own OWE BSS), and any unauthenticated L3 exposure. Test: portal flow and token handling, client isolation, and whether the rogue OWE twin can capture anything (it can capture association metadata, not other clients' traffic).",
-  "rationale": "Match the control set to the threat: confidentiality from the link layer, authentication of the network, portal hygiene, isolation. Say which threat each control removes.",
-  "evidence_note": "Evidence: RSNE for both, a protected/cleartext frame comparison, portal HTTP frames, isolation test result.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-12-pmf-value",
-  "module": "12-deauth-disassoc",
-  "type": "choice",
-  "title": "MFPC-only: what does it actually allow?",
-  "situation": "A BSS has MFPC set, MFPR clear. Half the client population negotiates PMF in the association request; the rest do not.",
-  "question": "What is the defensible finding?",
-  "options": [
-   {
-    "id": "a",
-    "text": "PMF is not enforced, so any client can be deauthenticated.",
-    "analysis": "Overstated: PMF-capable clients that negotiated protection are not affected by plain spoofed deauth.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "For clients that did not negotiate PMF, spoofed deauthentication is possible; the ESS should require PMF once the legacy client population is removed.",
-    "analysis": "Correct and scoped to the evidence: the client mix is part of the finding, and the remediation is phased.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "Nothing to report \u2014 PMF is enabled.",
-    "analysis": "MFPC alone does not protect the clients that skip it, which is exactly the population an attacker targets.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Scope the impact to the affected population, quantified from the capture. Include the reason you cannot simply force MFPR (clients that would not associate).",
-  "evidence_note": "Evidence: RSNE capability byte, and association requests showing PMF negotiated for some clients and not others; a deauth test only if authorised.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-12-evidence-for-dos",
-  "module": "12-deauth-disassoc",
-  "type": "evidence",
-  "title": "What proves an availability impact?",
-  "situation": "You are asked to evidence a deauthentication availability finding.",
-  "question": "Which set is sufficient and defensible?",
-  "options": [
-   {
-    "id": "a",
-    "text": "The captured deauth frames and their count.",
-    "analysis": "Shows transmission, not effect. Frames in the air could be ignored, filtered, or blocked by PMF.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "Deauth frames plus a client-side disconnection log and the re-association timeline, in one clock reference.",
-    "analysis": "Transmission + effect + timing is the minimum: it proves the client actually left. Add the business impact statement (which users, how long).",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "A Wireshark screenshot of a large number of deauth packets.",
-    "analysis": "Screenshots cannot be re-analysed, and volume alone still omits effect.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Attack evidence is not impact evidence. Correlate the stimulus with the observed effect using timestamps from one source.",
-  "evidence_note": "Record clocks (capture timestamp vs. device log) because time skew is a common reason a finding is rejected.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-13-twin-detection",
-  "module": "12-deauth-disassoc",
-  "type": "evidence",
-  "title": "Three BSSIDs, one SSID",
-  "situation": "Three BSSIDs advertise 'Corp-WLAN': two with consistent vendor OUIs, AKM 1, MFPR, channel plan 36/44; one with a locally administered MAC, AKM 2, MFPC only, channel 6, beacon interval 50 TU, and clients associating to it after deauth frames from it.",
-  "question": "Which evidence chain supports 'rogue infrastructure impersonating the ESS'?",
-  "options": [
-   {
-    "id": "a",
-    "text": "The mismatched RSNE alone.",
-    "analysis": "Strong but circumstantial: some legitimate networks run mixed policy on purpose (guest portal, IoT). It becomes conclusive with the baseline and behaviour.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "Mismatched policy + off-plan channel/band + locally administered BSSID + the client-association sequence after its deauth frames.",
-    "analysis": "Independent signals that corroborate each other, anchored by observed effect on a client. This is the defensible chain.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "The SSID is the same, so it must be an evil twin.",
-    "analysis": "Shared SSIDs are how ESSs work; this is the weakest signal.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Corroborate identity, policy and behaviour. State which single piece of evidence would falsify the claim (e.g. the BSSID appears in the client's authorised inventory).",
-  "evidence_note": "Deliverable: timeline (deauth \u2192 probe \u2192 association \u2192 DHCP source) with frame numbers, plus the authorised-inventory comparison.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-13-enterprise-rogue",
-  "module": "12-deauth-disassoc",
-  "type": "choice",
-  "title": "Does the enterprise client validate?",
-  "situation": "A lab client is configured with `ca_cert` and `domain_suffix_match='radius.corp.example'`. Your rogue authenticator presents a certificate for 'radius-lab.local' signed by a lab CA.",
-  "question": "What happens, and what do you record?",
-  "options": [
-   {
-    "id": "a",
-    "text": "The client completes PEAP and you capture MS-CHAPv2.",
-    "analysis": "With validation enforced, the TLS handshake fails before any inner method runs.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "The TLS handshake fails; record it as verified control (with the supplicant log and TLS alert) and note the residual risks of PEAP-MSCHAPv2 where validation is absent.",
-    "analysis": "Correct: a failed attack that demonstrates a control working is a deliverable \u2014 it belongs in the report as verified remediation/control evidence.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "Delete the test \u2014 no finding means no report content.",
-    "analysis": "'No finding' must still be documented with the test that was performed; otherwise the client cannot distinguish untested from tested-safe.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Negative results are evidence. Record the test, the artefact, and the control that caused the failure.",
-  "evidence_note": "Evidence: supplicant log line, TLS alert in the capture, the profile showing ca_cert + domain_suffix_match.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-14-isolation-vs-segmentation",
-  "module": "14-captive-portals",
-  "type": "evidence",
-  "title": "Isolated guests with corporate reach",
-  "situation": "Two guest clients cannot reach each other (earlier ARP test), but a guest client can reach a corporate server by IP.",
-  "question": "Which framing is correct, and which evidence matters?",
-  "options": [
-   {
-    "id": "a",
-    "text": "Client isolation works; no finding.",
-    "analysis": "Isolation between guests is a different control from segmentation to corporate. Both must be tested and reported separately.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "Two separate findings: client isolation is enforced (verified), inter-VLAN access to the corporate server is permitted (not verified as intended) \u2014 evidence is the ARP test and the IP-level reachability capture.",
-    "analysis": "Correct: separate controls, separate statements, separate owners. Include the protocol-level path (what ports/protocols answered) rather than a generic ping success.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "Report 'network segmentation is broken'.",
-    "analysis": "Imprecise: which boundary, which direction, which protocol, and is it a deliberate policy (e.g. a shared print server) or an oversight?",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Isolation \u2260 segmentation \u2260 ACL enforcement. Test and report each independently, with the protocol-level evidence for the permitted path.",
-  "evidence_note": "Evidence: ARP test capture (isolation) and the TCP/UDP reachability capture to the corporate host with ports listed.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-15-which-component",
-  "module": "15-enterprise-fundamentals",
-  "type": "choice",
-  "title": "A client cannot authenticate \u2014 where do you look?",
-  "situation": "One device fails 802.1X authentication; other devices succeed on the same AP. The client sees 'authentication failed', the RADIUS server logs an Access-Reject for that username.",
-  "question": "What is your first discriminator?",
-  "options": [
-   {
-    "id": "a",
-    "text": "Compare the RADIUS Access-Reject's attributes and reason with the successful requests for that user, and check the client-side supplicant log at the same timestamp.",
-    "analysis": "Correct: one rejected identity + successful others points to the identity/policy path (credentials, account state, certificate) rather than the AP/RADIUS transport. The supplicant log distinguishes a TLS/certificate failure from a credential rejection.",
-    "correct": true
-   },
-   {
-    "id": "b",
-    "text": "Restart the AP \u2014 the authenticator is probably at fault.",
-    "analysis": "Other clients authenticate through the same AP, so the transport is working. Restarting infrastructure during a test is also an avoidable risk.",
-    "correct": false
-   },
-   {
-    "id": "c",
-    "text": "Change the RADIUS shared secret to test.",
-    "analysis": "A secret mismatch would break every client, not one. Never change production infrastructure during a test.",
-    "correct": false
-   }
-  ],
-  "best": "a",
-  "rationale": "Discriminate by scope of failure: one identity vs. all clients vs. one AP. Then read the protocol-level reason codes in RADIUS and the supplicant.",
-  "evidence_note": "Evidence: RADIUS log lines (timestamp, username, reason), supplicant log excerpt, and the AP the client associated to.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-15-msk-to-pmk",
-  "module": "15-enterprise-fundamentals",
-  "type": "free",
-  "title": "Why the 4-way handshake after EAP?",
-  "situation": "A capture shows a complete EAP/PEAP exchange then the EAPOL-Key M1\u2013M4 exchange.",
-  "question": "Explain the relationship, and what its absence would indicate.",
-  "model_answer": "EAP authenticates the client and the network (if the client validates), and both sides derive the MSK; the PMK is the first 256 bits of the MSK (per association, per user). The 4-way handshake then proves both parties hold that PMK, derives the PTK (KCK/KEK/TK) bound to the MAC addresses and nonces, and installs keys including the GTK to the client. Its absence would mean either the EAP conversation did not actually succeed (check the RADIUS Access-Accept and EAP-Success), the client aborted after authentication (supplicant or profile error), or the capture missed frames/channel changes \u2014 so the diagnostic order is: RADIUS decision \u2192 EAP-Success \u2192 association state \u2192 keys.",
-  "rationale": "The MSK\u2192PMK\u2192PTK chain explains why you see two different exchanges and why a RADIUS accept alone does not imply the client has working keys.",
-  "evidence_note": "Evidence: RADIUS Access-Accept, EAP-Success frame, EAPOL-Key frames, and the client's association state.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-16-method-identification",
-  "module": "15-enterprise-fundamentals",
-  "type": "choice",
-  "title": "PEAP then an immediate TLS alert",
-  "situation": "You capture an EAP-Request/Identity, a PEAP start, a ClientHello, then a TLS alert from the client. Nothing else follows.",
-  "question": "What happened?",
-  "options": [
-   {
-    "id": "a",
-    "text": "The credentials were wrong.",
-    "analysis": "Credential failure happens inside the tunnel after the TLS handshake completes. An alert before any inner exchange is a tunnel-establishment failure.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "The client rejected the server's certificate (validation enforced), and the TLS session was aborted before any inner method ran.",
-    "analysis": "Correct: the outer identity and a ClientHello were sent, so PEAP began; the alert indicates validation failure. Confirm with the supplicant log and the certificate the authenticator presented.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "The RADIUS server was down.",
-    "analysis": "A dead RADIUS server produces no EAP conversation at all (or a timeout), not a TLS alert from the client.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Read failures at the layer they occur. An aborted TLS handshake is a distinct, evidence-rich event \u2014 and, in a rogue-authenticator test, it is the control working.",
-  "evidence_note": "Evidence: the capture up to the alert, the presented certificate chain/names, and the supplicant log line.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-16-cert-validation",
-  "module": "15-enterprise-fundamentals",
-  "type": "choice",
-  "title": "ca_cert only \u2014 still exploitable?",
-  "situation": "Client profile: `ca_cert=/etc/corp-root.pem`, no `domain_suffix_match`, no `subject_match`. Your rogue authenticator presents a certificate signed by the same corporate root but with CN 'lab-radius.local'.",
-  "question": "What is the residual risk?",
-  "options": [
-   {
-    "id": "a",
-    "text": "None \u2014 the CA is validated, so any certificate from it is trusted.",
-    "analysis": "Chain validation answers 'who signed this', not 'which server is this'. Any certificate issued by the same CA (another server, a compromised or mis-issued cert) satisfies it.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "The client accepts any certificate signed by that CA, so another internal server's certificate (or a mis-issued one) can complete the tunnel; bind the expected identity with domain_suffix_match/subject_match.",
-    "analysis": "Correct: identity binding is a separate control from chain validation. Record it as a hardening finding with the test that demonstrates it.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "The tunnel is weaker, but MS-CHAPv2 cannot be captured unless the attacker has the CA key.",
-    "analysis": "False: the attacker only needs *a* valid leaf certificate from the trusted CA, not the CA key.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Defence in depth on the client side: chain of trust, then identity, then method, then PMF.",
-  "evidence_note": "Evidence: the profile setting, the presented certificate (names, issuer), and the captured inner exchange demonstrating the outcome.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-17-secret-rotation",
-  "module": "15-enterprise-fundamentals",
-  "type": "evidence",
-  "title": "What does a leaked shared secret let an attacker do?",
-  "situation": "The RADIUS shared secret was found in a 2019 configuration backup. It is still in use by all 40 APs.",
-  "question": "Which capabilities belong to the finding, and what evidence distinguishes them?",
-  "options": [
-   {
-    "id": "a",
-    "text": "The secret lets the attacker read all future Wi-Fi traffic.",
-    "analysis": "The secret protects RADIUS packets, not the 802.11 air interface. Traffic capture remains an RF problem.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "With the secret an attacker can verify/forge RADIUS packets (Message-Authenticator/Response Authenticator), decrypt User-Password attributes in captured requests, and \u2014 if the server accepts requests from anywhere \u2014 act as a NAS; the evidence is the captured request/response pair plus recomputation with the secret.",
-    "analysis": "Correct and demonstrable offline with the capture; the 'act as NAS' step depends on source restriction and must be verified, not assumed.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "Nothing without also compromising an AP.",
-    "analysis": "False: the secret enables offline verification/forgery of captured packets without touching any AP.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Enumerate the capabilities the key material actually provides, then test the environmental preconditions (source restriction, tunnel, requirement for Message-Authenticator).",
-  "evidence_note": "Evidence: capture with Message-Authenticator, the recomputation, and the server's configuration (or a lab replica) for the precondition test.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-17-radius-log-reading",
-  "module": "15-enterprise-fundamentals",
-  "type": "free",
-  "title": "What can a RADIUS log prove?",
-  "situation": "A RADIUS auth log shows, for username `svc-backup`, 4 312 Access-Rejects in 12 minutes from the same NAS, then one Access-Accept.",
-  "question": "What can you conclude, and what can you not conclude?",
-  "model_answer": "You can conclude: an online credential-guessing sequence against that identity occurred through that NAS (volume, timing, same source); the account was not locked (or lockout was ineffective) for at least 4 312 attempts; the credential was eventually valid, so the account is compromised (rotation and investigation are required); and the absence of previous successful logins for that identity should be checked. You cannot conclude from the log alone: who performed it (IP/MAC spoofing is possible), whether the attacker also logged in elsewhere (correlate with other systems), which credential was guessed (the log normally does not show the password), or whether an exploited client leaked the credential several days earlier (check the WLAN logs and the client's behaviour).",
-  "rationale": "Logs prove events on the logging system. Attribution and lateral impact need correlation with other evidence sources.",
-  "evidence_note": "Evidence: the log excerpt with timestamps, the NAS identifier, and the correlated WLAN/client records.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-18-chain-order",
-  "module": "18-corporate-attacks",
-  "type": "choice",
-  "title": "Ordering the chain",
-  "situation": "You have authorisation for passive capture, offline audits, a rogue authenticator on a guest SSID, and targeted deauth on two test clients. You want to demonstrate a full enterprise chain.",
-  "question": "What order minimises risk of losing evidence?",
-  "options": [
-   {
-    "id": "a",
-    "text": "Deauth first to force handshakes and get material quickly.",
-    "analysis": "Disruption before recon means you do not yet know which client is authorised as a test target, and you may fail to capture the state you needed.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "Passive recon (inventory, client map, EAP methods) \u2192 non-intrusive policy review \u2192 targeted intrusive tests on the authorised clients \u2192 offline audits \u2192 reachability tests.",
-    "analysis": "Correct: passive first makes the intrusive steps targeted and predictable; each stage produces artefacts that inform the next.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "Run everything at once to save time.",
-    "analysis": "Uncontrolled concurrency makes attribution of effects impossible and increases the chance of an out-of-scope impact.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Sequencing is a risk and evidence decision, not a stylistic preference.",
-  "evidence_note": "Deliverable: the plan you submitted before testing, with each test mapped to its authorising clause.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-18-segmentation-evidence",
-  "module": "18-corporate-attacks",
-  "type": "evidence",
-  "title": "Which item is evidence of a segmentation gap?",
-  "situation": "From a guest client you: (1) have a screenshot of `ip addr`; (2) pinged a corporate server successfully; (3) captured the ICMP request/reply with frame numbers; (4) were shown the switch configuration by the client's engineer.",
-  "question": "Which is the strongest single piece of evidence, and what else do you need?",
-  "options": [
-   {
-    "id": "a",
-    "text": "The screenshot.",
-    "analysis": "Illustrative, not verifiable: no timestamps, no frame numbers, easy to alter.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "The ICMP capture with frame numbers and timestamps.",
-    "analysis": "Correct as the primary artefact \u2014 it is reproducible and analysable. The screenshot and switch config are supporting context (and the config, if obtained, is authoritative for intent). Note that ICMP alone is weak for impact: the client needs to know which services are reachable, so extend the test to TCP/UDP ports that matter.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "The switch configuration.",
-    "analysis": "Authoritative for policy intent, but says nothing about enforcement or reachability from the attacker's position.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Prefer reproducible network artefacts over screenshots; use configuration to explain policy, not to prove reachability. Extend beyond ICMP to the services that carry risk.",
-  "evidence_note": "Add the port-level test results to the finding, and state which boundary the traffic crossed.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-19-severity-context",
-  "module": "20-final-assessment",
-  "type": "free",
-  "title": "One finding, three environments",
-  "situation": "Finding: WPS is enabled with the PIN method advertised, and lockout is not enforced. Environments: (A) home router for a remote worker; (B) store guest AP reachable from the car park; (C) corporate AP in a locked comms room.",
-  "question": "Assign and justify severity for each.",
-  "model_answer": "The same configuration has different exposure in each environment, so severity differs. (C) Physical access is required to the comms room, which is a substantial precondition: privileged/physical access, so the practical severity is low \u2014 report it as a hardening item with an initial-access caveat. (B) Attacker is within RF range with no credentials and no physical access: online PIN attempts, but lockout absence means the ~11 000-guess window is open and each attempt is observable/noisy; severity medium-to-high depending on what the guest VLAN reaches, and the WPS-enabled BSS may also be a path to a PSP/PSK that is reused. (A) The remote worker's home network is not the client's asset, so it is typically out of scope for the client's risk register but relevant to the remote-access control set: report as an advisory to the remote-access programme, not as an organisational finding. In all three, express CVSS as an example vector derived from these preconditions (AV:A for B, AV:P for C).",
-  "rationale": "Severity is environment-dependent: same misconfiguration, different attack vector and different impact. Making the reasoning explicit is more useful to a client than a fixed number.",
-  "evidence_note": "For each environment: the attack vector justification, the exposed assets, and the precondition an attacker must satisfy.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-19-retest-fail",
-  "module": "20-final-assessment",
-  "type": "free",
-  "title": "The fix did not hold",
-  "situation": "Original finding: PMF not required, spoofed deauth works. Remediation applied: `ieee80211w=1` (capable). Retest: the deauth test still works against the legacy client population.",
-  "question": "Rewrite the retest section and the recommendation.",
-  "model_answer": "Retest result: FAIL (control not effective for all clients). Evidence: the same deauth test with the same tool and duration against the same BSS; the client still disassociates (frames X\u2013Y); capture shows the client negotiated no PMF in the association request (RSNE/assoc frame). Root cause: `ieee80211w=1` makes the AP PMF-capable, not PMF-required (`ieee80211w=2`), so clients that do not negotiate PMF remain exposed. Recommendation: (1) enforce `ieee80211w=2` where the client population supports it; (2) for the remaining legacy clients, document an exception with compensating controls (segment isolation, WIDS alerting on deauth floods) and a dated migration plan; (3) re-run this retest script and require the association-request evidence to show PMF negotiated for all clients. The retest section must state the original test repeated, the observed difference (or its absence), and the new criteria for pass.",
-  "rationale": "A retest that fails is valuable: it proves the test is real and gives the client a testable next step. Never soften a failed retest into 'partial remediation' without evidence.",
-  "evidence_note": "Retest packages need: identical method, before/after artefacts, and the newly identified root cause.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-20-triage",
-  "module": "20-final-assessment",
-  "type": "choice",
-  "title": "First five minutes",
-  "situation": "The engagement pack gives you four SSIDs, one 20-minute capture per SSID, RADIUS logs, configs and two test accounts. Your time budget is limited.",
-  "question": "What do you examine first?",
-  "options": [
-   {
-    "id": "a",
-    "text": "The corporate PEAP SSID's capture in depth \u2014 it is the most interesting.",
-    "analysis": "Depth before coverage means you may miss the trivially exploitable legacy SSID, and you will not have prioritised the highest-value test order.",
-    "correct": false
-   },
-   {
-    "id": "b",
-    "text": "Beacon/inventory pass over all four captures, then prioritise by exposed policy and the objectives.",
-    "analysis": "Correct: a fast policy inventory establishes the attack surface and lets you spend the remaining time where the impact is likely \u2014 which is exactly what an assessor expects from a professional.",
-    "correct": true
-   },
-   {
-    "id": "c",
-    "text": "The RADIUS logs, because authentication is where the risk is.",
-    "analysis": "Logs matter, but without the inventory you cannot connect an authentication anomaly to an SSID or a client, and you may anchor on noise.",
-    "correct": false
-   }
-  ],
-  "best": "b",
-  "rationale": "Breadth first, then depth by risk. State the prioritisation explicitly in your plan \u2014 it is part of the deliverable.",
-  "evidence_note": "Output of this phase: inventory table + prioritised test plan with time boxes and the authorising RoE clause for each test.",
-  "learningPathId": "wireless-pentesting"
- },
- {
-  "id": "scn-20-no-finding",
-  "module": "20-final-assessment",
-  "type": "free",
-  "title": "Documenting a clean result",
-  "situation": "`NW-Corp` (WPA2/WPA3-Enterprise, PEAP with certificate validation enforced, PMF required) yields no exploitable weakness in your testing.",
-  "question": "Write the report section.",
-  "model_answer": "State the scope of testing performed and its limits, then the negative results with the evidence that supports them: (1) policy reviewed from the beacon RSNE \u2014 AKMs, PMF required (evidence: frames); (2) EAP method identification \u2014 PEAP with a TLS tunnel; (3) certificate validation test \u2014 a rogue authenticator presenting a non-corporate certificate was rejected; evidence: TLS alert in the capture plus the client supplicant log; (4) PMF test \u2014 spoofed deauthentication did not disconnect the test client; evidence: capture plus client association state; (5) credential audit attempt \u2014 no MS-CHAPv2 material was obtainable because the tunnel was never established; (6) management-plane checks \u2014 no insecure EAP methods offered in the tested profile. Then the limitations: only two test accounts and one client platform were sampled; no RF-level jamming/rogue-AP testing was performed (out of scope); the identity store's lockout policy was not tested. The section must make the reviewer's next question easy to answer \u2014 what was not tested and why.",
-  "rationale": "Negative results, documented with the tests and their limits, are what allow a client to rely on the report's coverage claims.",
-  "evidence_note": "Include: test list, artefacts per test, and an explicit 'not tested' list with reasons.",
-  "learningPathId": "wireless-pentesting"
- }
+  {
+    "id": "scn-01-scope-gap",
+    "module": "01-intro-wireless",
+    "type": "choice",
+    "title": "What is missing from this authorisation?",
+    "situation": "The RoE authorises: SSIDs Corp-WLAN and Corp-Guest, RF testing on site, deauth tests on test clients only, 09:00\u201317:00 on weekdays. The signature block is signed by the IT helpdesk supervisor. The document says nothing about capturing traffic.",
+    "question": "You are about to start passive capture. What do you do first?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Start capturing \u2014 passive capture is harmless and the RoE covers RF testing.",
+        "analysis": "Passive capture records third parties' traffic and personal data. Even passive collection needs explicit authorisation and data-handling terms.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Ask for a data-handling clause and confirm the signatory's authority before capturing.",
+        "analysis": "Two gaps: (1) no capture/data-handling authorisation, and (2) an IT helpdesk supervisor is unlikely to be the accountable signatory for a security engagement. Both are escalation items, not things to assume.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "Capture only the SSIDs listed, nothing else, and continue.",
+        "analysis": "Better than blanket capture, but the authorisation gap and the signatory question remain \u2014 you would still be collecting traffic without a data-handling agreement.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Authorisation is a precondition, not paperwork. Missing capture/data-handling terms and an unclear signatory are both stop-and-ask findings. In a real engagement you would also confirm the deauth window and get a named emergency contact.",
+    "evidence_note": "Reusable output: a scope-gap list you can hand back to the client with the specific clauses to add.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-02-ess-or-rogue",
+    "module": "02-wifi-fundamentals",
+    "type": "evidence",
+    "title": "One SSID, two BSSIDs \u2014 which evidence separates them?",
+    "situation": "You see SSID 'Corp-WLAN' from BSSID A (OUI Cisco, channel 36, AKM 1, MFPR set, beacon interval 100 TU) and from BSSID B (locally administered MAC, channel 6, AKM 2, MFPC only, beacon interval 50 TU).",
+    "question": "Which single artefact is the strongest support for calling B a look-alike?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The SSID string is identical.",
+        "analysis": "An SSID is a name; legitimate ESS members share it by design. This is the weakest possible evidence.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "The RSNE differs (PSK where the ESS is 802.1X) plus the locally administered BSSID.",
+        "analysis": "Policy mismatch + a locally administered MAC + an off-plan channel/band and beacon interval make a strong, multi-signal case. Each alone is weak; together they are defensible.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "B's signal is stronger near the shop window.",
+        "analysis": "Signal strength depends on distance and transmit power; it supports an argument about proximity, not identity.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Build look-alike findings from multiple independent signals: address administration, policy, RF/planning parameters and later client behaviour. One signal is never proof.",
+    "evidence_note": "Deliverable: a two-column IE/policy diff with frame numbers, plus what would falsify the conclusion.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-02-randomised-client",
+    "module": "02-wifi-fundamentals",
+    "type": "choice",
+    "title": "The client MAC keeps changing",
+    "situation": "A 30-minute capture contains probes for 'Corp-WLAN' and 'HomeNet' from three different locally administered MAC addresses. There are no device logs, stable identifiers or corroborated client fingerprints.",
+    "question": "What do you record?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Exactly three physical devices.",
+        "analysis": "Three observed addresses are not necessarily three physical devices; one device can use multiple addresses. Count addresses, not people or hardware.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Exactly one device using MAC randomisation, identified by its probe SSIDs.",
+        "analysis": "Shared probe targets and the local bit do not prove either a single device or the mechanism that assigned its MACs.",
+        "correct": false
+      },
+      {
+        "id": "c",
+        "text": "Three observed client addresses with similar probes; physical device count and address-assignment mechanism are unconfirmed.",
+        "analysis": "Record the frame/time/address/SSID evidence and locally administered bit; seek authorized device-side logs or corroboration before linking addresses or asserting randomisation.",
+        "correct": true
+      }
+    ],
+    "best": "c",
+    "rationale": "Do not collapse multiple locally administered addresses into a single device profile or equate them with three devices. Probe similarity is a lead, not identity proof.",
+    "evidence_note": "List each observed address and cited probes separately; label possible correlation as a hypothesis, not a finding about one device.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-03-rsn-decode",
+    "module": "03-80211-architecture",
+    "type": "free",
+    "title": "Classify this deployment from raw RSNE bytes",
+    "situation": "RSNE (element 48), hex: 30 18 01 00 00 0f ac 04 01 00 00 0f ac 04 02 00 00 0f ac 02 00 0f ac 08 80 00",
+    "question": "Decode it: version, group cipher, pairwise, AKM list, and RSN capabilities. What policy does it advertise, and what must be checked per client?",
+    "model_answer": "Version 1. Group cipher: OUI 00-0F-AC type 4 = CCMP-128. Pairwise list: CCMP-128 (count 1). AKM list (count 2): type 2 = PSK and type 8 = SAE, indicating a transition-mode advertisement. RSN capabilities = 0x0080: MFPC (bit 7) set, MFPR (bit 6) clear, so PMF is capable/optional at the BSS level, not required for every association. Inspect each association\u2019s negotiated AKM and PMF state; do not assume every PSK client lacks PMF or that every client negotiated SAE. If credentials are reused, a weak PSK passphrase can be tested offline from a suitable PSK handshake.",
+    "rationale": "Read the AKM list and RSN capability bits from the bytes, not the product name. Transition mode is an advertised compatibility surface, not automatically a downgrade finding; verify actual client negotiation, credentials/configuration, and scope.",
+    "evidence_note": "Cite the frames where this RSNE appears (beacon and association request) and quote the capability byte.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-03-pmf-bits",
+    "module": "03-80211-architecture",
+    "type": "choice",
+    "title": "MFPC without MFPR",
+    "situation": "A BSS advertises MFPC set and MFPR clear. Some clients in the capture negotiate PMF in the association request; others do not.",
+    "question": "What is the security consequence?",
+    "options": [
+      {
+        "id": "a",
+        "text": "PMF is enforced for all clients.",
+        "analysis": "MFPR is RSN capabilities bit 6 (0x0040); MFPC is bit 7 (0x0080). Without MFPR, the BSS does not require PMF for every association; clients may still negotiate it individually.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "PMF-capable clients are protected individually; clients that do not negotiate it remain exposed to spoofed deauth.",
+        "analysis": "Correct: protection is per-association. Mixed ESSs are common and you must state the client mix as part of the finding.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "MFPC always implies MFPR for WPA3.",
+        "analysis": "WPA3-Personal does require PMF, but this BSS is not necessarily WPA3 \u2014 check the AKM list. MFPC alone never implies MFPR.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Robust management frame protection is negotiated per association. A PMF-capable AP with a legacy client is still exposed for that client.",
+    "evidence_note": "Evidence: RSNE from the beacon plus the association requests showing which clients negotiated PMF.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-04-tool-choice",
+    "module": "04-kali-wireless-setup",
+    "type": "choice",
+    "title": "Which tool answers the question?",
+    "situation": "The question is: 'can an unauthorised client complete the 4-way handshake with this BSS?'. You have a laptop with an integrated card and a USB adapter with a supported chipset.",
+    "question": "What is the correct approach?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Run airodump-ng on the integrated card in managed mode and look for EAPOL frames.",
+        "analysis": "Managed mode sees only the client's own BSS traffic and only after association \u2014 it cannot be used as an observer for an arbitrary BSS.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Put the adapter in monitor mode on the BSS's channel, capture a client association, and verify M1\u2013M4 in the capture.",
+        "analysis": "Monitor mode on the correct channel is the minimum capability; the capture is the evidence. Injection is only needed if you must force a reconnection.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "Use hashcat against the SSID with a wordlist.",
+        "analysis": "hashcat has nothing to work with until a handshake or PMKID has been captured.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Tool choice follows capability: observer (monitor) vs. transmitter (injection). State the capability you actually verified, not the capability of the product's datasheet.",
+    "evidence_note": "If the adapter cannot do monitor mode, that is a documented limitation \u2014 several labs are marked RF_REQUIRED for exactly this reason.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-05-hidden-ssid",
+    "module": "05-wireless-recon",
+    "type": "evidence",
+    "title": "The hidden network claim",
+    "situation": "A BSS beacon has an SSID IE of length 0. Later, a client probes and then associates; the association request and a probe response contain an SSID.",
+    "question": "Which frames support the statement 'hidden SSID provides no confidentiality'?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The beacon with the zero-length SSID IE.",
+        "analysis": "This only establishes that the network hides its name \u2014 it is the premise, not the proof.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "The probe response and the client's association request, both carrying the SSID in clear.",
+        "analysis": "These frames show the name being disclosed to anyone in range, i.e. the control protects nothing. Cite frame numbers and the SSID bytes.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "A screenshot of the AP's web interface showing 'Hide SSID' enabled.",
+        "analysis": "Configuration evidence supports a configuration finding, but it does not show what an observer learns on the air.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "The finding is a disclosure claim: prove it with the frames that disclose the value. Configuration evidence explains intent; radio evidence proves exposure.",
+    "evidence_note": "Record the SSID bytes and frame numbers, and state that the AP's configuration was inferred from behaviour.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-05-clone-or-ess",
+    "module": "05-wireless-recon",
+    "type": "choice",
+    "title": "Legitimate ESS member or evil twin?",
+    "situation": "Two BSSIDs share SSID 'Guest-Net'. Both are open, neither has an RSNE. One has a vendor OUI with HT and VHT IEs; the other has no HT/VHT IEs, a locally administered MAC and a Country IE for a different country.",
+    "question": "What does the evidence support?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Report an evil twin immediately.",
+        "analysis": "To call it a twin you need to compare against the authorised baseline (documented BSSID list or the client's known-good infrastructure). The differences are suspicious but the conclusion needs that baseline \u2014 and ideally client behaviour.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Flag it as an unauthorised BSS conflicting with the ESS fingerprint and confirm against the authorised inventory before asserting intent.",
+        "analysis": "Correct: state what the capture shows (fingerprint mismatch), then do the verification step. Intent is a conclusion that needs corroboration.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "Ignore it \u2014 both are open, so there is nothing to compare.",
+        "analysis": "Open networks have no RSNE, so the IE/capability fingerprint and OUI are exactly what you compare.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Separate observation from conclusion. 'Unauthorised BSS with a conflicting fingerprint' is defensible from the capture; 'evil twin attacker' requires the baseline plus behaviour.",
+    "evidence_note": "Deliverable: fingerprint diff table with frame numbers, plus the list of further checks (authorised inventory, client association, DHCP source).",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-06-which-frames",
+    "module": "06-traffic-analysis",
+    "type": "evidence",
+    "title": "Minimal evidence sets",
+    "situation": "You have a 40 000-frame capture of one BSS. Three claims are candidates: (1) a client completed a 4-way handshake; (2) the BSS is in WPA2/WPA3 transition mode; (3) the client leaked its preferred network list.",
+    "question": "Which artefact set is correct for all three claims?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The whole capture, 'it's all there'.",
+        "analysis": "Not an evidence set \u2014 it makes the reviewer do the analysis and hides which frames you relied on.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "EAPOL-Key M1\u2013M4 frame numbers; the RSNE bytes from beacon/assoc; probe request frames with SSID IEs.",
+        "analysis": "One minimal, reproducible set per claim. Each item maps to exactly one claim and can be re-extracted with a stated filter.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "Screenshots of Wireshark showing each of the three.",
+        "analysis": "Screenshots are illustrative at best; they cannot be re-analysed or hash-verified and often miss frame numbers.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Evidence granularity: the smallest reproducible artefact per claim, with the filter that produces it.",
+    "evidence_note": "Write the three filters you would give a reviewer: eapol.type==3, wlan.tag.number==48, wlan.fc.type_subtype==4.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-06-encrypted-or-not",
+    "module": "06-traffic-analysis",
+    "type": "choice",
+    "title": "Is this frame readable?",
+    "situation": "A data frame after the 4-way handshake has the Protected Frame bit set. It carries an IPv4-looking payload in the capture, and Wireshark shows only LLC/encrypted data.",
+    "question": "What can you claim from the capture alone?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The client sent HTTP traffic.",
+        "analysis": "You cannot see inside a CCMP-protected frame without the PTK. Guessing the protocol from frame size is not evidence.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "A protected data frame from client to AP exists; its content is not determinable without the key.",
+        "analysis": "Precise and defensible. If the lab provides the PSK you can decrypt and then state the payload \u2014 with the decryption noted as a method.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "The payload is encrypted, therefore the network is secure.",
+        "analysis": "Encryption of payload does not validate configuration, authentication or management-frame protection.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "State the boundary of the evidence. If you decrypt using the lab PSK, record the key source and the fact that decryption is a separate analytical step.",
+    "evidence_note": "For decrypted payloads: note the key source (lab PSK) and that the raw capture still cannot be read without it.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-07-wep-report",
+    "module": "07-wep-legacy",
+    "type": "free",
+    "title": "Severity for an isolated WEP segment",
+    "situation": "A WEP-enabled BSS serves legacy POS handhelds on an isolated VLAN. The VLAN has no route to corporate systems and outbound access is limited to a payment gateway. IV reuse is abundant in a 10-minute capture.",
+    "question": "Write the finding severity justification, and say what would change it.",
+    "model_answer": "The design failure is certain (IV reuse, CRC32 ICV, key recovery is a matter of traffic volume), so the finding itself is not in question. Severity depends on the environment: the segment is isolated and outbound-restricted, so the confidentiality of the WEP-protected traffic is largely limited to POS transactions to the gateway (still sensitive), and integrity/availability on that segment are exposed. That places it in the medium range rather than critical \u2014 with a hard caveat: if the isolation claim is unverified, or if the handhelds hold credentials/keys usable elsewhere, the impact rises sharply. CVSS should be expressed as an example vector derived from these facts, with the isolation assumption stated; and the remediation must be migration, because no compensating control fixes the cipher.",
+    "rationale": "'WEP is critical' is a technique label. Severity comes from what the attacker gains in this environment, plus which assumptions you verified.",
+    "evidence_note": "Evidence: beacon without RSNE, protected data frames with visible IVs, frame count/IV reuse statistics, and the isolation test result (or the statement that isolation was not tested).",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-08-handshake-completeness",
+    "module": "08-wpa-wpa2",
+    "type": "choice",
+    "title": "M1+M2 only \u2014 enough?",
+    "situation": "Your capture contains M1 and M2 with matching replay counters and no M3/M4. The client never received the AP's key installation.",
+    "question": "What can you do, and what does the client-side failure tell you?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Nothing \u2014 without M4 there is no handshake.",
+        "analysis": "M2 carries a MIC computed with the KCK, so a candidate passphrase can be verified offline. M3/M4 add the GTK and confirmation, not crackability.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Run the offline audit from M1+M2, and report the interrupted handshake separately as a client/AP interoperability observation.",
+        "analysis": "Correct on both counts: crackability comes from M2's MIC; the missing M3 is a different (and usually non-security) observation.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "Report a denial-of-service attack in progress.",
+        "analysis": "One interrupted handshake is not an attack; it is a data point that needs corroboration (repeated attempts, reason codes, timing).",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Separate crackability (MIC availability) from protocol completion. Do not conflate an operational anomaly with a security finding.",
+    "evidence_note": "Record replay counters, the MIC value, and the exact hashcat line you produced.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-08-psk-compromise",
+    "module": "08-wpa-wpa2",
+    "type": "choice",
+    "title": "What does the recovered PSK actually grant?",
+    "situation": "You recovered the shared PSK of Corp-WLAN from a captured handshake. The SSID is used by staff laptops; the corporate network also has 802.1X on a different SSID.",
+    "question": "Which claim set is defensible?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The PSK grants domain admin, because network access was obtained.",
+        "analysis": "L2 access is not a privilege level. This is the classic impact overstatement.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "The PSK grants association to that BSS and decryption of other users' WPA2 traffic on it; with a shared PSK there is no user attribution; impact depends on what that L2 can reach.",
+        "analysis": "Exactly the three defensible consequences. Anything further needs its own evidence.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "The PSK only affects the user who was captured.",
+        "analysis": "A shared PSK is not per-user: every user of that SSID uses the same key.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "State consequences at the level the protocol supports, then test (or exclude) what comes next.",
+    "evidence_note": "Evidence: handshake frames + crack output + the segmentation/reachability test that establishes the L2's value.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-09-pmkid-vs-handshake",
+    "module": "08-wpa-wpa2",
+    "type": "choice",
+    "title": "Which collection method is appropriate?",
+    "situation": "The client requests a low-noise assessment during trading hours. The AP supports PMK caching. You need PSK-crackable material.",
+    "question": "What do you do?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Deauth a client to force a handshake capture \u2014 it is quick.",
+        "analysis": "Active disruption during trading hours contradicts the requirement (and may breach the RoE). Efficiency does not override impact constraints.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Attempt passive capture of an M1 with a PMKID KDE first; only escalate to a controlled reconnection test if necessary and authorised.",
+        "analysis": "Correct: the least intrusive method that can yield the same evidence, with an escalation path that needs authorisation.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "Skip the capture and ask the client for the PSK.",
+        "analysis": "If the client supplies the PSK, you can test decryption \u2014 but that is a different (and weaker) evidence path: it does not demonstrate the observation/audit chain. Note it as an alternative, not a substitute.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Method choice is a risk decision: least intrusive first, with the impact of escalation stated before it is taken.",
+    "evidence_note": "Record both the collection method and the noise level, so the client can audit what happened on their network.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-09-cracked-not-owned",
+    "module": "08-wpa-wpa2",
+    "type": "free",
+    "title": "Cracked PSK, reused as the AP admin password",
+    "situation": "The recovered PSK is also the password that logs into the AP's web administration interface (confirmed by the client during the debrief).",
+    "question": "What are the findings, what is the impact, and what must you not claim?",
+    "model_answer": "Two findings with different owners. (1) The PSK is guessable: offenders = passphrase policy and rotation; impact = L2 access/decryption of that SSID, blast radius = all users of the shared key. (2) Credential reuse on a management interface: the same secret protects the control plane of the AP, so a wireless-only attacker obtains administrative control of the infrastructure if the interface is reachable on any path the attacker has \u2014 the interface's reachability must be tested or explicitly excluded, and that is the impact-limiting fact. Do not claim you compromised the AP unless you logged into it in scope; do not claim the reuse was exploited if it was only observed; and do not extend impact to other systems without testing credential reuse there (with authorisation).",
+    "rationale": "Credential reuse converts a wireless finding into a management-plane finding \u2014 but only if reachability is demonstrated.",
+    "evidence_note": "Evidence: crack output; AP web interface login page/response reached from the wireless client (or the exclusion note); the reuse confirmed by the client in writing.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-10-wps-locked",
+    "module": "10-wps",
+    "type": "evidence",
+    "title": "Setup-locked \u2014 is the WPS risk gone?",
+    "situation": "The beacon's WPS IE shows AP Setup Locked = 1, PIN method advertised, WPS version 2.0.",
+    "question": "Which reasoning is correct?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Locked means no WPS risk; close the finding.",
+        "analysis": "Setup-locked is a state, not a permanent control: lockout can be reset (physically, by a firmware default, or by a restart on some devices) and the lockout behaviour may not be enforced for every method.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Record the locked state, verify the enforcement (lockout counters/reset conditions), and report the WPS configuration as a risk-reduction item rather than an exploitable condition.",
+        "analysis": "Correct: distinguish configuration exposure ('WPS enabled with PIN method') from demonstrable exploitability ('lockout absent, PIN reachable, attempt succeeded').",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "Attempt the PIN attack anyway to see if lockout works.",
+        "analysis": "That is a live test with real impact (bricked WPS state, lockouts) requiring explicit authorisation; it is the escalation path, not the first step.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Configuration findings and exploitability findings are different deliverables. State which one you have evidence for.",
+    "evidence_note": "Evidence: the WPS IE bytes (setup locked, config methods, version) plus the documented reset/enforcement behaviour from the vendor or a lab test.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-11-transition-downgrade",
+    "module": "11-wpa3",
+    "type": "choice",
+    "title": "Transition mode: how do you prove the downgrade?",
+    "situation": "The BSS advertises AKM 2 + 8 with MFPC only. You claim WPA2 clients can be attacked with PSK techniques.",
+    "question": "Which test proves it?",
+    "options": [
+      {
+        "id": "a",
+        "text": "State that transition mode is insecure by definition.",
+        "analysis": "Transition mode is a documented deployment option, not an automatic exploit. The finding is that *this* deployment still admits the weaker path and *this* client mix uses it.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Capture a PSK-AKM client's complete 4-way handshake and audit it offline with the lab wordlist.",
+        "analysis": "Correct: the artefact shows the weaker AKM in use and yields the crackable material, so the danger is demonstrated with frames rather than asserted.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "Try to force a client to use SAE and log the failure.",
+        "analysis": "Forcing SAE is the fix direction, not the proof of the weakness.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Demonstrate the weaker path with the artefact it produces. The remediation statement follows: remove PSK AKM, require PMF, monitor for PSK associations.",
+    "evidence_note": "Evidence: RSNE (AKM list), the PSK client's association request and handshake, the hashcat result, and the WPA3-only client's SAE exchange for contrast.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-11-owe",
+    "module": "11-wpa3",
+    "type": "free",
+    "title": "Open or OWE?",
+    "situation": "Two guest BSSs: 'Guest-Open' beacons with no RSNE at all; 'Guest-OWE' beacons with RSNE AKM 18, MFPC+MFPR, CCMP.",
+    "question": "Explain the difference in risk and what you would test on each.",
+    "model_answer": "'Guest-Open' has no link-layer protection: every frame including payloads is readable by anyone in range, and clients are trivially subject to rogue-AP impersonation. Test: capture an association and show cleartext payload; test whether the portal credentials are sent over cleartext HTTP; check for client isolation. 'Guest-OWE' encrypts the link per client with mandatory PMF, so content is not readable and deauth spoofing is blocked; the residual risks are the portal itself (still HTTP-over-OWE, so credentials are protected in transit from other guests but not end-to-end), rogue-AP association (OWE gives no server authentication \u2014 a rogue can present its own OWE BSS), and any unauthenticated L3 exposure. Test: portal flow and token handling, client isolation, and whether the rogue OWE twin can capture anything (it can capture association metadata, not other clients' traffic).",
+    "rationale": "Match the control set to the threat: confidentiality from the link layer, authentication of the network, portal hygiene, isolation. Say which threat each control removes.",
+    "evidence_note": "Evidence: RSNE for both, a protected/cleartext frame comparison, portal HTTP frames, isolation test result.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-12-pmf-value",
+    "module": "12-deauth-disassoc",
+    "type": "choice",
+    "title": "MFPC-only: what does it actually allow?",
+    "situation": "A BSS has MFPC set, MFPR clear. Half the client population negotiates PMF in the association request; the rest do not.",
+    "question": "What is the defensible finding?",
+    "options": [
+      {
+        "id": "a",
+        "text": "PMF is not enforced, so any client can be deauthenticated.",
+        "analysis": "Overstated: PMF-capable clients that negotiated protection are not affected by plain spoofed deauth.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "For clients that did not negotiate PMF, spoofed deauthentication is possible; the ESS should require PMF once the legacy client population is removed.",
+        "analysis": "Correct and scoped to the evidence: the client mix is part of the finding, and the remediation is phased.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "Nothing to report \u2014 PMF is enabled.",
+        "analysis": "MFPC alone does not protect the clients that skip it, which is exactly the population an attacker targets.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Scope the impact to the affected population, quantified from the capture. Include the reason you cannot simply force MFPR (clients that would not associate).",
+    "evidence_note": "Evidence: RSNE capability byte, and association requests showing PMF negotiated for some clients and not others; a deauth test only if authorised.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-12-evidence-for-dos",
+    "module": "12-deauth-disassoc",
+    "type": "evidence",
+    "title": "What proves an availability impact?",
+    "situation": "You are asked to evidence a deauthentication availability finding.",
+    "question": "Which set is sufficient and defensible?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The captured deauth frames and their count.",
+        "analysis": "Shows transmission, not effect. Frames in the air could be ignored, filtered, or blocked by PMF.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Deauth frames plus a client-side disconnection log and the re-association timeline, in one clock reference.",
+        "analysis": "Transmission + effect + timing is the minimum: it proves the client actually left. Add the business impact statement (which users, how long).",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "A Wireshark screenshot of a large number of deauth packets.",
+        "analysis": "Screenshots cannot be re-analysed, and volume alone still omits effect.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Attack evidence is not impact evidence. Correlate the stimulus with the observed effect using timestamps from one source.",
+    "evidence_note": "Record clocks (capture timestamp vs. device log) because time skew is a common reason a finding is rejected.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-13-twin-detection",
+    "module": "12-deauth-disassoc",
+    "type": "evidence",
+    "title": "Three BSSIDs, one SSID",
+    "situation": "Three BSSIDs advertise 'Corp-WLAN': two with consistent vendor OUIs, AKM 1, MFPR, channel plan 36/44; one with a locally administered MAC, AKM 2, MFPC only, channel 6, beacon interval 50 TU, and clients associating to it after deauth frames from it.",
+    "question": "Which evidence chain supports 'rogue infrastructure impersonating the ESS'?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The mismatched RSNE alone.",
+        "analysis": "Strong but circumstantial: some legitimate networks run mixed policy on purpose (guest portal, IoT). It becomes conclusive with the baseline and behaviour.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Mismatched policy + off-plan channel/band + locally administered BSSID + the client-association sequence after its deauth frames.",
+        "analysis": "Independent signals that corroborate each other, anchored by observed effect on a client. This is the defensible chain.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "The SSID is the same, so it must be an evil twin.",
+        "analysis": "Shared SSIDs are how ESSs work; this is the weakest signal.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Corroborate identity, policy and behaviour. State which single piece of evidence would falsify the claim (e.g. the BSSID appears in the client's authorised inventory).",
+    "evidence_note": "Deliverable: timeline (deauth \u2192 probe \u2192 association \u2192 DHCP source) with frame numbers, plus the authorised-inventory comparison.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-13-enterprise-rogue",
+    "module": "12-deauth-disassoc",
+    "type": "choice",
+    "title": "Does the enterprise client validate?",
+    "situation": "A lab client is configured with `ca_cert` and `domain_suffix_match='radius.corp.example'`. Your rogue authenticator presents a certificate for 'radius-lab.local' signed by a lab CA.",
+    "question": "What happens, and what do you record?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The client completes PEAP and you capture MS-CHAPv2.",
+        "analysis": "With validation enforced, the TLS handshake fails before any inner method runs.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "The TLS handshake fails; record it as verified control (with the supplicant log and TLS alert) and note the residual risks of PEAP-MSCHAPv2 where validation is absent.",
+        "analysis": "Correct: a failed attack that demonstrates a control working is a deliverable \u2014 it belongs in the report as verified remediation/control evidence.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "Delete the test \u2014 no finding means no report content.",
+        "analysis": "'No finding' must still be documented with the test that was performed; otherwise the client cannot distinguish untested from tested-safe.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Negative results are evidence. Record the test, the artefact, and the control that caused the failure.",
+    "evidence_note": "Evidence: supplicant log line, TLS alert in the capture, the profile showing ca_cert + domain_suffix_match.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-14-isolation-vs-segmentation",
+    "module": "14-captive-portals",
+    "type": "evidence",
+    "title": "Isolated guests with corporate reach",
+    "situation": "An ARP check between two guest clients receives no response; endpoint health and AP forwarding logs were not recorded. A separate authorized test receives a response from one corporate service.",
+    "question": "Which framing is correct, and which evidence matters?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Client isolation works; no finding.",
+        "analysis": "Isolation between guests is a different control from segmentation to corporate. Both must be tested and reported separately.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Separate statements: no peer response was observed, while one corporate service path responded. Confirm endpoint health, forwarding/ACL evidence and intended policy before crediting isolation or reporting a segmentation failure.",
+        "analysis": "Correct: a missing ARP response alone does not verify isolation. Record the tested direction and service, health controls, policy and enforcement evidence; do not collapse two different boundaries into one finding.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "Report 'network segmentation is broken'.",
+        "analysis": "Imprecise: which boundary, which direction, which protocol, and is it a deliberate policy (e.g. a shared print server) or an oversight?",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Isolation \u2260 segmentation \u2260 ACL enforcement. Test and report each independently, with the protocol-level evidence for the permitted path.",
+    "evidence_note": "Evidence needed: controlled peer captures and endpoint health, AP forwarding/configuration, exact allowed service response and route/VLAN/ACL policy. No response alone is inconclusive.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-15-which-component",
+    "module": "15-enterprise-fundamentals",
+    "type": "choice",
+    "title": "A client cannot authenticate \u2014 where do you look?",
+    "situation": "One device fails 802.1X authentication; other devices succeed on the same AP. The client sees 'authentication failed', the RADIUS server logs an Access-Reject for that username.",
+    "question": "What is your first discriminator?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Compare the RADIUS Access-Reject's attributes and reason with the successful requests for that user, and check the client-side supplicant log at the same timestamp.",
+        "analysis": "Correct: one rejected identity + successful others points to the identity/policy path (credentials, account state, certificate) rather than the AP/RADIUS transport. The supplicant log distinguishes a TLS/certificate failure from a credential rejection.",
+        "correct": true
+      },
+      {
+        "id": "b",
+        "text": "Restart the AP \u2014 the authenticator is probably at fault.",
+        "analysis": "Other clients authenticate through the same AP, so the transport is working. Restarting infrastructure during a test is also an avoidable risk.",
+        "correct": false
+      },
+      {
+        "id": "c",
+        "text": "Change the RADIUS shared secret to test.",
+        "analysis": "A secret mismatch would break every client, not one. Never change production infrastructure during a test.",
+        "correct": false
+      }
+    ],
+    "best": "a",
+    "rationale": "Discriminate by scope of failure: one identity vs. all clients vs. one AP. Then read the protocol-level reason codes in RADIUS and the supplicant.",
+    "evidence_note": "Evidence: RADIUS log lines (timestamp, username, reason), supplicant log excerpt, and the AP the client associated to.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-15-msk-to-pmk",
+    "module": "15-enterprise-fundamentals",
+    "type": "free",
+    "title": "Why the 4-way handshake after EAP?",
+    "situation": "A capture shows a complete EAP/PEAP exchange then the EAPOL-Key M1\u2013M4 exchange.",
+    "question": "Explain the relationship, and what its absence would indicate.",
+    "model_answer": "EAP authenticates the client and the network (if the client validates), and both sides derive the MSK; the PMK is the first 256 bits of the MSK (per association, per user). The 4-way handshake then proves both parties hold that PMK, derives the PTK (KCK/KEK/TK) bound to the MAC addresses and nonces, and installs keys including the GTK to the client. Its absence would mean either the EAP conversation did not actually succeed (check the RADIUS Access-Accept and EAP-Success), the client aborted after authentication (supplicant or profile error), or the capture missed frames/channel changes \u2014 so the diagnostic order is: RADIUS decision \u2192 EAP-Success \u2192 association state \u2192 keys.",
+    "rationale": "The MSK\u2192PMK\u2192PTK chain explains why you see two different exchanges and why a RADIUS accept alone does not imply the client has working keys.",
+    "evidence_note": "Evidence: RADIUS Access-Accept, EAP-Success frame, EAPOL-Key frames, and the client's association state.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-16-method-identification",
+    "module": "15-enterprise-fundamentals",
+    "type": "choice",
+    "title": "PEAP then an immediate TLS alert",
+    "situation": "You capture an EAP-Request/Identity, a PEAP start, a ClientHello, then a TLS alert from the client. Nothing else follows.",
+    "question": "What happened?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The credentials were wrong.",
+        "analysis": "Credential failure happens inside the tunnel after the TLS handshake completes. An alert before any inner exchange is a tunnel-establishment failure.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "The client rejected the server's certificate (validation enforced), and the TLS session was aborted before any inner method ran.",
+        "analysis": "Correct: the outer identity and a ClientHello were sent, so PEAP began; the alert indicates validation failure. Confirm with the supplicant log and the certificate the authenticator presented.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "The RADIUS server was down.",
+        "analysis": "A dead RADIUS server produces no EAP conversation at all (or a timeout), not a TLS alert from the client.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Read failures at the layer they occur. An aborted TLS handshake is a distinct, evidence-rich event \u2014 and, in a rogue-authenticator test, it is the control working.",
+    "evidence_note": "Evidence: the capture up to the alert, the presented certificate chain/names, and the supplicant log line.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-16-cert-validation",
+    "module": "15-enterprise-fundamentals",
+    "type": "choice",
+    "title": "ca_cert only \u2014 still exploitable?",
+    "situation": "Effective test-client policy trusts corp-root.pem but has no expected DNS-name constraint (no domain_match/domain_suffix_match or managed equivalent). The controlled test server has an otherwise-valid server certificate for lab-radius.local signed by that CA and its matching private key. Actual client behavior still needs a controlled test.",
+    "question": "What is the residual risk?",
+    "options": [
+      {
+        "id": "a",
+        "text": "None \u2014 the CA is validated, so any certificate from it is trusted.",
+        "analysis": "A valid chain does not establish the intended server identity. Validity, purpose, algorithm and effective profile checks still apply; not every CA-signed certificate is acceptable.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "A same-CA server with an otherwise-acceptable certificate and its private key may be accepted without the intended-name constraint; use domain_match or a deliberately scoped domain_suffix_match and verify client rejection.",
+        "analysis": "Identity validation is separate from chain validation. subject_match is a substring test, not equivalent DNS-name validation. Verify the effective profile and controlled acceptance/rejection before claiming actual exposure.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "The tunnel is weaker, but MS-CHAPv2 cannot be captured unless the attacker has the CA key.",
+        "analysis": "The CA private key is not required. A compatible rogue server needs an otherwise-accepted leaf certificate and its matching private key; client method/profile behavior determines whether inner material is exposed.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Defence in depth on the client side: chain of trust, then identity, then method, then PMF.",
+    "evidence_note": "Evidence: effective trust/name profile, certificate chain/names/purpose, supplicant reason and controlled test outcome. Any inner-material exposure needs its own correlated evidence.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-17-secret-rotation",
+    "module": "15-enterprise-fundamentals",
+    "type": "evidence",
+    "title": "What does a leaked shared secret let an attacker do?",
+    "situation": "The RADIUS shared secret was found in a 2019 configuration backup. It is still in use by all 40 APs.",
+    "question": "Which capabilities belong to the finding, and what evidence distinguishes them?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The secret lets the attacker read all future Wi-Fi traffic.",
+        "analysis": "The secret protects RADIUS packets, not the 802.11 air interface. Traffic capture remains an RF problem.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "With the secret an attacker can verify/forge RADIUS packets (Message-Authenticator/Response Authenticator), decrypt User-Password attributes in captured requests, and \u2014 if the server accepts requests from anywhere \u2014 act as a NAS; the evidence is the captured request/response pair plus recomputation with the secret.",
+        "analysis": "Correct and demonstrable offline with the capture; the 'act as NAS' step depends on source restriction and must be verified, not assumed.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "Nothing without also compromising an AP.",
+        "analysis": "False: the secret enables offline verification/forgery of captured packets without touching any AP.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Enumerate the capabilities the key material actually provides, then test the environmental preconditions (source restriction, tunnel, requirement for Message-Authenticator).",
+    "evidence_note": "Evidence: capture with Message-Authenticator, the recomputation, and the server's configuration (or a lab replica) for the precondition test.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-17-radius-log-reading",
+    "module": "15-enterprise-fundamentals",
+    "type": "free",
+    "title": "What can a RADIUS log prove?",
+    "situation": "A RADIUS auth log shows, for username `svc-backup`, 4 312 Access-Rejects in 12 minutes from the same NAS, then one Access-Accept.",
+    "question": "What can you conclude, and what can you not conclude?",
+    "model_answer": "You can conclude: an online credential-guessing sequence against that identity occurred through that NAS (volume, timing, same source); the account was not locked (or lockout was ineffective) for at least 4 312 attempts; the credential was eventually valid, so the account is compromised (rotation and investigation are required); and the absence of previous successful logins for that identity should be checked. You cannot conclude from the log alone: who performed it (IP/MAC spoofing is possible), whether the attacker also logged in elsewhere (correlate with other systems), which credential was guessed (the log normally does not show the password), or whether an exploited client leaked the credential several days earlier (check the WLAN logs and the client's behaviour).",
+    "rationale": "Logs prove events on the logging system. Attribution and lateral impact need correlation with other evidence sources.",
+    "evidence_note": "Evidence: the log excerpt with timestamps, the NAS identifier, and the correlated WLAN/client records.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-18-chain-order",
+    "module": "18-corporate-attacks",
+    "type": "choice",
+    "title": "Ordering the chain",
+    "situation": "You have authorisation for passive capture, offline audits, a rogue authenticator on a guest SSID, and targeted deauth on two test clients. You want to demonstrate a full enterprise chain.",
+    "question": "What order minimises risk of losing evidence?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Deauth first to force handshakes and get material quickly.",
+        "analysis": "Disruption before recon means you do not yet know which client is authorised as a test target, and you may fail to capture the state you needed.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Passive inventory and scope review \u2192 non-intrusive policy review \u2192 only justified, bounded tests on approved clients \u2192 offline review \u2192 separately authorized exact service checks.",
+        "analysis": "Correct: collect a baseline first, verify the permission for each step, and stop if evidence or authority is missing. A planned chain need not be completed; passive preparation does not guarantee an intrusive outcome.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "Run everything at once to save time.",
+        "analysis": "Uncontrolled concurrency makes attribution of effects impossible and increases the chance of an out-of-scope impact.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Sequencing is a risk and evidence decision, not a stylistic preference.",
+    "evidence_note": "Deliverable: the plan you submitted before testing, with each test mapped to its authorising clause.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-18-segmentation-evidence",
+    "module": "18-corporate-attacks",
+    "type": "evidence",
+    "title": "Reachability evidence is not yet a segmentation finding",
+    "situation": "From a guest client you: (1) have a screenshot of `ip addr`; (2) pinged a corporate server successfully; (3) captured the ICMP request/reply with frame numbers; (4) were shown the switch configuration by the client's engineer.",
+    "question": "Which packet evidence supports the observed reachability, and what remains missing before a segmentation finding?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The screenshot.",
+        "analysis": "Illustrative, not verifiable: no timestamps, no frame numbers, easy to alter.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "The ICMP capture with frame numbers and timestamps.",
+        "analysis": "The source-cited ICMP capture supports the observed request/reply, not application access or a policy violation. Confirm scope, intended policy, effective placement/routes and enforcement evidence. Any service-level extension requires its own explicit approval.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "The switch configuration.",
+        "analysis": "Configuration is supporting evidence of configured policy, not necessarily owner intent, effective path or observed enforcement.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Packet observations, owner intent, effective configuration and application impact answer different questions. Preserve each and obtain exact authorization before any additional service test.",
+    "evidence_note": "Record capture/hash/frame IDs, source and destination, owner-approved intended policy, effective route/placement and limits. A ping alone is not a general segmentation failure.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-19-severity-context",
+    "module": "20-final-assessment",
+    "type": "free",
+    "title": "One finding, three environments",
+    "situation": "Finding: WPS is enabled with the PIN method advertised, and lockout is not enforced. Environments: (A) home router for a remote worker; (B) store guest AP reachable from the car park; (C) corporate AP in a locked comms room.",
+    "question": "Assign and justify severity for each.",
+    "model_answer": "The same configuration has different exposure in each environment, so severity differs. (C) Physical access is required to the comms room, which is a substantial precondition: privileged/physical access, so the practical severity is low \u2014 report it as a hardening item with an initial-access caveat. (B) Attacker is within RF range with no credentials and no physical access: online PIN attempts, but lockout absence means the ~11 000-guess window is open and each attempt is observable/noisy; severity medium-to-high depending on what the guest VLAN reaches, and the WPS-enabled BSS may also be a path to a PSP/PSK that is reused. (A) The remote worker's home network is not the client's asset, so it is typically out of scope for the client's risk register but relevant to the remote-access control set: report as an advisory to the remote-access programme, not as an organisational finding. In all three, express CVSS as an example vector derived from these preconditions (AV:A for B, AV:P for C).",
+    "rationale": "Severity is environment-dependent: same misconfiguration, different attack vector and different impact. Making the reasoning explicit is more useful to a client than a fixed number.",
+    "evidence_note": "For each environment: the attack vector justification, the exposed assets, and the precondition an attacker must satisfy.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-19-retest-fail",
+    "module": "20-final-assessment",
+    "type": "free",
+    "title": "The fix did not hold",
+    "situation": "Original finding: PMF not required, spoofed deauth works. Remediation applied: `ieee80211w=1` (capable). Retest: the deauth test still works against the legacy client population.",
+    "question": "Rewrite the retest section and the recommendation.",
+    "model_answer": "Retest result: FAIL (control not effective for all clients). Evidence: the same deauth test with the same tool and duration against the same BSS; the client still disassociates (frames X\u2013Y); capture shows the client negotiated no PMF in the association request (RSNE/assoc frame). Root cause: `ieee80211w=1` makes the AP PMF-capable, not PMF-required (`ieee80211w=2`), so clients that do not negotiate PMF remain exposed. Recommendation: (1) enforce `ieee80211w=2` where the client population supports it; (2) for the remaining legacy clients, document an exception with compensating controls (segment isolation, WIDS alerting on deauth floods) and a dated migration plan; (3) re-run this retest script and require the association-request evidence to show PMF negotiated for all clients. The retest section must state the original test repeated, the observed difference (or its absence), and the new criteria for pass.",
+    "rationale": "A retest that fails is valuable: it proves the test is real and gives the client a testable next step. Never soften a failed retest into 'partial remediation' without evidence.",
+    "evidence_note": "Retest packages need: identical method, before/after artefacts, and the newly identified root cause.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-20-triage",
+    "module": "20-final-assessment",
+    "type": "choice",
+    "title": "First five minutes",
+    "situation": "The engagement pack gives you four SSIDs, one 20-minute capture per SSID, RADIUS logs, configs and two test accounts. Your time budget is limited.",
+    "question": "What do you examine first?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The corporate PEAP SSID's capture in depth \u2014 it is the most interesting.",
+        "analysis": "Depth before coverage means you may miss the trivially exploitable legacy SSID, and you will not have prioritised the highest-value test order.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Beacon/inventory pass over all four captures, then prioritise by exposed policy and the objectives.",
+        "analysis": "Correct: a fast policy inventory establishes the attack surface and lets you spend the remaining time where the impact is likely \u2014 which is exactly what an assessor expects from a professional.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "The RADIUS logs, because authentication is where the risk is.",
+        "analysis": "Logs matter, but without the inventory you cannot connect an authentication anomaly to an SSID or a client, and you may anchor on noise.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Breadth first, then depth by risk. State the prioritisation explicitly in your plan \u2014 it is part of the deliverable.",
+    "evidence_note": "Output of this phase: inventory table + prioritised test plan with time boxes and the authorising RoE clause for each test.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-20-no-finding",
+    "module": "20-final-assessment",
+    "type": "free",
+    "title": "Documenting a clean result",
+    "situation": "`NW-Corp` (WPA2/WPA3-Enterprise, PEAP with certificate validation enforced, PMF required) yields no exploitable weakness in your testing.",
+    "question": "Write the report section.",
+    "model_answer": "State the scope of testing performed and its limits, then the negative results with the evidence that supports them: (1) policy reviewed from the beacon RSNE \u2014 AKMs, PMF required (evidence: frames); (2) EAP method identification \u2014 PEAP with a TLS tunnel; (3) certificate validation test \u2014 a rogue authenticator presenting a non-corporate certificate was rejected; evidence: TLS alert in the capture plus the client supplicant log; (4) PMF test \u2014 spoofed deauthentication did not disconnect the test client; evidence: capture plus client association state; (5) credential audit attempt \u2014 no MS-CHAPv2 material was obtainable because the tunnel was never established; (6) management-plane checks \u2014 no insecure EAP methods offered in the tested profile. Then the limitations: only two test accounts and one client platform were sampled; no RF-level jamming/rogue-AP testing was performed (out of scope); the identity store's lockout policy was not tested. The section must make the reviewer's next question easy to answer \u2014 what was not tested and why.",
+    "rationale": "Negative results, documented with the tests and their limits, are what allow a client to rely on the report's coverage claims.",
+    "evidence_note": "Include: test list, artefacts per test, and an explicit 'not tested' list with reasons.",
+    "learningPathId": "wireless-pentesting"
+  },
+  {
+    "id": "scn-android-01-sandbox",
+    "module": "android-01-platform",
+    "type": "choice",
+    "title": "Shared UID and Kernel Sandbox Boundary",
+    "situation": "A banking client ships two companion apps. Both manifests declare android:sharedUserId=\"com.bank.shared\" and are signed with the same developer certificate. An auditor claims this is a Critical vulnerability allowing any external attacker to steal user data.",
+    "question": "How do you evaluate the risk and technical impact of this configuration?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Agree that any third-party app can immediately steal all data from both apps without permissions.",
+        "analysis": "sharedUserId does not grant access to external apps; it only allows apps signed with the same key to share identity.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Note that sharedUserId merges the Linux UID sandbox between these two apps only, increasing blast radius if either is compromised, but does not expose data to third parties.",
+        "analysis": "Accurate platform analysis: sharedUserId combines kernel UIDs between apps with identical signing keys. Deprecated in API 29+ due to privilege aggregation, but not an external leak by itself.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "Recommend migrating to android:process=\":remote\" which provides the same file-sharing capability securely.",
+        "analysis": "android:process specifies a process name within the same package, not a mechanism to share storage across distinct applications.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Linux UID isolation is the primary security boundary on Android. sharedUserId merges this boundary between two specific apps signed by the same key, increasing collateral damage if one has a vulnerability, but does not open access to arbitrary external apps.",
+    "evidence_note": "Verify with adb shell ps -efZ | grep <package> to check UID and SELinux domain parity.",
+    "learningPathId": "android-pentesting"
+  },
+  {
+    "id": "scn-android-02-workstation-proxy",
+    "module": "android-02-workstation",
+    "type": "choice",
+    "title": "Evaluating TLS Interception and Proxy Visibility",
+    "situation": "You installed Burp CA certificate in the Android user trust store on a clean Android 14 test device. When opening the target client release APK, all HTTPS requests fail with SSLHandshakeException: Trust anchor for certification path not found.",
+    "question": "Why is traffic failing to intercept, and what does this prove?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The app uses custom native certificate pinning in OpenSSL and you must decompile the .so binary.",
+        "analysis": "Jump to conclusion without testing default platform behavior; Android 7.0+ ignores user CAs by default in release builds.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Android 7.0+ (API 24+) apps do not trust user-added CAs by default in release builds; this is standard platform behavior, not proof of custom certificate pinning.",
+        "analysis": "Standard platform security model since API 24: release apps trust system CAs only unless explicitly configured in res/xml/network_security_config.xml.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "Burp Suite listener port is misconfigured on the workstation.",
+        "analysis": "The SSLHandshakeException indicates the TLS connection reached the proxy, but certificate validation failed on the client.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Network Security Config defaults in Android 7.0+ intentionally ignore user-installed CA certs in release builds. Dissect the APK to inspect network_security_config.xml before claiming certificate pinning is implemented.",
+    "evidence_note": "Check AndroidManifest.xml for android:networkSecurityConfig and decompile the referenced XML.",
+    "learningPathId": "android-pentesting"
+  },
+  {
+    "id": "scn-android-03-manifest-exported",
+    "module": "android-03-apk-triage",
+    "type": "choice",
+    "title": "Triage of Missing android:exported on API 31+",
+    "situation": "While reviewing source code targeting API 33 (targetSdkVersion 33), you notice an Activity declaration with an <intent-filter> for android.intent.action.VIEW, but no android:exported attribute in the source file.",
+    "question": "What will happen during package installation, and how do you confirm the actual state?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The OS will silently default the component to android:exported=\"true\".",
+        "analysis": "This was pre-API 31 behavior; API 31+ strictly rejects installation if exported is missing.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Android 12+ (API 31+) mandates explicit android:exported; omitting it causes INSTALL_PARSE_FAILED_MANIFEST_MALFORMED unless a build plugin injected it, which you verify using apkanalyzer.",
+        "analysis": "API 31 strictly mandates explicit android:exported on components with intent filters. Gradle manifest merger may inject values, so inspect the final binary AXML.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "The component is automatically disabled at runtime.",
+        "analysis": "It fails at installation parse time, not as a runtime disablement.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Android 12 eliminated ambiguous intent filter defaults. Run apkanalyzer manifest print target.apk to inspect the final merged binary manifest rather than relying on raw pre-build source files.",
+    "evidence_note": "Tool command: apkanalyzer manifest print target.apk | grep -A 5 \"<activity\"",
+    "learningPathId": "android-pentesting"
+  },
+  {
+    "id": "scn-android-04-exported-receiver",
+    "module": "android-04-components",
+    "type": "choice",
+    "title": "Exported Receiver and Input Injection",
+    "situation": "You discover an exported BroadcastReceiver com.corp.app.SyncReceiver that reads intent.getStringExtra(\"auth_token\") and immediately calls AuthStore.updateToken(token). A junior tester reports Remote Code Execution via broadcast.",
+    "question": "How do you classify the finding and state its verified impact?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Confirm RCE because external input reaches an application method.",
+        "analysis": "Calling a local method with string arguments is not arbitrary code execution.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Report Local Privilege Escalation / State Manipulation: an unprivileged local app can overwrite session tokens without permissions; verify with a proof-of-concept intent.",
+        "analysis": "Accurate risk classification: unauthenticated intent allows any local app to tamper with stored account state and induce account takeover or denial of service.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "Dismiss the finding because broadcast intents cannot cross app boundaries without root.",
+        "analysis": "Exported broadcast receivers are explicitly designed for cross-app IPC and can be triggered by any unprivileged application.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Never inflate severity beyond what the evidence supports. Overwriting tokens via an unprotected receiver is a high-severity state tampering issue, not RCE.",
+    "evidence_note": "PoC command: adb shell am broadcast -a com.corp.app.ACTION_SYNC -e auth_token \"test_123\"",
+    "learningPathId": "android-pentesting"
+  },
+  {
+    "id": "scn-android-05-deeplink-hijack",
+    "module": "android-05-links",
+    "type": "choice",
+    "title": "Custom Scheme vs Android App Links Verification",
+    "situation": "An e-commerce app registers custom scheme shop://checkout?redirect_url=... Another app installed on the same device registers the identical shop:// scheme.",
+    "question": "What is the security boundary limitation of custom URI schemes compared to Android App Links?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Custom schemes cannot be intercepted by other apps on Android.",
+        "analysis": "Any app can register any custom scheme; the OS presents an ambiguous disambiguation dialog or selects whichever was installed first.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Custom URI schemes have no domain verification; any app can claim the scheme, whereas verified HTTPS App Links cryptographically bind domain ownership via Digital Asset Links.",
+        "analysis": "App Links verify domain ownership via https://domain/.well-known/assetlinks.json, preventing scheme squatting and hijacking.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "App Links only work on rooted devices.",
+        "analysis": "App Links are standard Android OS features built into all consumer devices since Android 6.0.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Custom URI schemes (e.g. shop://) lack namespace governance on Android. Malicious apps can register duplicate filters. Verified HTTPS Android App Links resolve directly without app chooser ambiguity.",
+    "evidence_note": "Verify domain verification state with adb shell pm get-app-links com.corp.app",
+    "learningPathId": "android-pentesting"
+  },
+  {
+    "id": "scn-android-06-insecure-storage",
+    "module": "android-06-storage",
+    "type": "choice",
+    "title": "Scoped Storage and World-Readable Claims",
+    "situation": "An automated scanner flags that the app writes user profiles to /data/data/com.corp.app/shared_prefs/user.xml and claims \"Sensitive data is exposed to all other applications on the phone\". The target app targets API 34.",
+    "question": "Why is this scanner claim inaccurate under the modern Android platform model?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Any app with READ_EXTERNAL_STORAGE can read /data/data/.",
+        "analysis": "READ_EXTERNAL_STORAGE grants access to shared public storage, never /data/data/ private sandboxes.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "/data/data/com.corp.app/ is private internal storage isolated by Linux kernel UID and SELinux permissions (0700); other unprivileged apps cannot read it unless the app is debuggable or rooted.",
+        "analysis": "Core Android sandbox principle: internal app files are restricted to the application UID (u0_a...) with POSIX permissions 0700.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "shared_prefs is automatically encrypted by Android at hardware level with per-user biometric keys.",
+        "analysis": "Standard SharedPreferences stores XML in plaintext; it is not encrypted unless EncryptedSharedPreferences is used.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Automated SAST scanners frequently misreport private sandbox storage as world-readable. Unless MODE_WORLD_READABLE (deprecated and throwing SecurityException in modern Android) is used, sandbox isolation holds.",
+    "evidence_note": "Verify POSIX permissions via adb shell ls -la /data/data/com.corp.app/",
+    "learningPathId": "android-pentesting"
+  },
+  {
+    "id": "scn-android-07-pinning-bypass",
+    "module": "android-07-network",
+    "type": "choice",
+    "title": "Distinguishing Hook Success from Application Vulnerability",
+    "situation": "You used Frida to hook javax.net.ssl.TrustManager.checkServerTrusted and successfully observed encrypted API calls in Burp Suite. You are preparing your audit report.",
+    "question": "How should this observation be documented in the final report?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Report a High severity finding: Certificate Pinning is Broken.",
+        "analysis": "Bypassing pinning with root/Frida on an owned device does not prove a defect in the app; the device owner always controls their own memory space.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Document that client-side hooking enabled runtime testing on an authorized device, but is NOT a vulnerability; the actual test is whether an unmodified release build accepts an invalid certificate.",
+        "analysis": "Professional assessment rigor: Frida is a testing technique, not an exploit. Vulnerability exists only if an untrusted network attacker can intercept an unmodified client.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "Report that the backend API is insecure because the mobile app was hooked.",
+        "analysis": "Mobile client hooking does not reflect backend API security posture.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Principle 6: Frida/Objection is a testing methodology, not proof of an app vulnerability. The security question is whether the unmodified production client enforces TLS validation against untrusted CAs.",
+    "evidence_note": "Record unmodified build test with wrong-CA proxy vs instrumented session.",
+    "learningPathId": "android-pentesting"
+  },
+  {
+    "id": "scn-android-08-webview-bridge",
+    "module": "android-08-webview",
+    "type": "choice",
+    "title": "WebView Bridge Origin Boundaries",
+    "situation": "A hybrid app uses webView.addJavascriptInterface(new AndroidBridge(), \"Native\") where the bridge contains @JavascriptInterface public void executeTransfer(String amount). The WebView loads https://partner.example.com which includes third-party ad scripts.",
+    "question": "What is the primary attack vector and remediation?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The bridge is automatically safe because @JavascriptInterface prevents reflection in API 17+.",
+        "analysis": "@JavascriptInterface prevents arbitrary class reflection, but explicitly annotated methods remain callable by any executing JS.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Any JavaScript executing in the WebView (including ad scripts or XSS) can invoke window.Native.executeTransfer(); restrict the bridge to dedicated trusted origins and validate caller context.",
+        "analysis": "Crucial WebView security principle: all frames and scripts within the WebView share access to the injected JavaScript interface.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "WebViews cannot call native Android methods under any circumstances.",
+        "analysis": "addJavascriptInterface specifically exposes Java methods to JavaScript.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Native bridges break the web-to-native sandbox boundary. If an untrusted page or injected third-party script runs in the WebView, it inherits all bridge privileges.",
+    "evidence_note": "Verify shouldOverrideUrlLoading and onPageStarted origin enforcement.",
+    "learningPathId": "android-pentesting"
+  },
+  {
+    "id": "scn-android-09-runtime-frida",
+    "module": "android-09-runtime",
+    "type": "choice",
+    "title": "Root Detection and Integrity Attestation Claims",
+    "situation": "An application checks new File(\"/system/xbin/su\").exists() and exits if found. A tester uses Objection to disable the check and reports Client-side root detection completely bypassed, allowing total compromise of banking servers.",
+    "question": "What is the fundamental flaw in the tester's impact conclusion?",
+    "options": [
+      {
+        "id": "a",
+        "text": "The tester should have used Magisk DenyList instead of Objection.",
+        "analysis": "Focuses on tool choice rather than the conceptual flaw in trust boundaries.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Client-side root detection is an anti-tamper speed bump on an adversary's device; client checks can never protect server resources, and backend security must rely on server-side authorization.",
+        "analysis": "Fundamental architectural principle: the server cannot trust client assertions. Bypassing local checks does not compromise secure server APIs.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "The app should have added which su check to make it impossible to bypass.",
+        "analysis": "No client-side check is impossible to bypass on a device controlled by the attacker.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "Client integrity checks (root detection, emulator detection, integrity attestation) raise the cost of analysis but cannot replace robust backend authentication and business logic authorization.",
+    "evidence_note": "Distinguish local client speed bumps from backend privilege boundaries in assessment reports.",
+    "learningPathId": "android-pentesting"
+  },
+  {
+    "id": "scn-android-10-crypto-misuse",
+    "module": "android-10-crypto",
+    "type": "choice",
+    "title": "AES-GCM Nonce Reuse Analysis",
+    "situation": "During code review, you find an encryption function using Cipher.getInstance(\"AES/GCM/NoPadding\") with a constant IV: byte[] iv = new byte[12]. The app uses this to encrypt cached customer records with a local key.",
+    "question": "What is the cryptographic impact of this implementation?",
+    "options": [
+      {
+        "id": "a",
+        "text": "AES-GCM requires a 16-byte IV, so encryption will fail with an exception.",
+        "analysis": "GCM standard nonce size is 12 bytes (96 bits); 12 bytes is the recommended length, not an error.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Reusing a static IV/nonce with the same key in GCM mode allows an attacker who captures two ciphertexts to recover the authentication key (GHASH) and decrypt or forge messages.",
+        "analysis": "Catastrophic failure of AES-GCM under nonce reuse (the two-time pad flaw + GHASH key recovery). Fresh IVs must be generated for each operation.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "GCM mode is secure against nonce reuse as long as the key is 256 bits.",
+        "analysis": "Key length does not prevent nonce reuse vulnerabilities in Galois/Counter Mode.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "In AES-GCM, the nonce must NEVER repeat for a given key. Reusing a nonce exposes the XOR of plaintexts and enables algebraic recovery of the authentication subkey (H = E_K(0)).",
+    "evidence_note": "Static sink: GCMParameterSpec(128, static_iv). Remediation: cipher.init(Cipher.ENCRYPT_MODE, key) with auto-generated IV.",
+    "learningPathId": "android-pentesting"
+  },
+  {
+    "id": "scn-android-11-obfuscation-limits",
+    "module": "android-11-release",
+    "type": "choice",
+    "title": "Decompilation and Hardcoded API Secrets",
+    "situation": "An app was compiled with R8/ProGuard enabled (minifyEnabled true). All class names are renamed to a.b.c. However, in res/values/strings.xml, you find <string name=\"aws_secret_key\">AKIAIOSFODNN7EXAMPLE...</string>.",
+    "question": "Why did ProGuard/R8 fail to protect this secret?",
+    "options": [
+      {
+        "id": "a",
+        "text": "ProGuard was configured with -keep class **.",
+        "analysis": "Class obfuscation succeeded (classes are a.b.c); the issue is with resources, not code shrinker flags.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "ProGuard/R8 obfuscates Java/Kotlin bytecode identifiers; it does not encrypt or protect string resources in strings.xml or compiled binary XML assets (resources.arsc).",
+        "analysis": "R8 and ProGuard are bytecode transformers. Resources in res/ are compiled into resources.arsc by AAPT2 and remain trivially readable with apktool or aapt.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "The APK was signed with debug certificates.",
+        "analysis": "Signing certificates do not affect resource compilation or obfuscation.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "ProGuard and R8 operate on DEX bytecode, renaming classes and stripping unused methods. Resource files, asset files, and strings.xml are completely untouched by bytecode obfuscators.",
+    "evidence_note": "Triage tool: apktool d target.apk && cat res/values/strings.xml",
+    "learningPathId": "android-pentesting"
+  },
+  {
+    "id": "scn-android-12-capstone-chain",
+    "module": "android-12-case",
+    "type": "choice",
+    "title": "Multi-Step Exploit Chain Validation",
+    "situation": "You identify two issues in NoteVault Pro: (1) an exported DeepLinkActivity that accepts a redirection URL without validation, and (2) an internal WebActivity that exposes sensitive session tokens via a JavaScript interface.",
+    "question": "How do you validate whether these two candidate issues form an exploitable attack chain?",
+    "options": [
+      {
+        "id": "a",
+        "text": "Report both immediately as a Critical chain based on static review alone.",
+        "analysis": "Static hypotheses must be verified dynamically; intermediate intent filters or permission checks may break the chain.",
+        "correct": false
+      },
+      {
+        "id": "b",
+        "text": "Chain them by crafting a malicious deep link that instructs DeepLinkActivity to route the user to an attacker-controlled page loaded inside the privileged WebActivity; verify token delivery on an authorized test device.",
+        "analysis": "Professional proof of chain: demonstrate end-to-end execution across the component boundary on an authorized test device with explicit positive and negative controls.",
+        "correct": true
+      },
+      {
+        "id": "c",
+        "text": "Assume they cannot be chained because Android prevents Activities from starting each other.",
+        "analysis": "Activities routinely start other Activities via Intents.",
+        "correct": false
+      }
+    ],
+    "best": "b",
+    "rationale": "A vulnerability chain links multiple low/medium findings into a high-impact outcome. Validate with a benign proof-of-concept on an authorized test device, verifying every link in the chain.",
+    "evidence_note": "Deliverable: Multi-step evidence matrix pairing vulnerable PoC with confirmed fixed build retest.",
+    "learningPathId": "android-pentesting"
+  }
 ]

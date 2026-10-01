@@ -28,7 +28,7 @@ The sequence shows that the client later associates with the look-alike; timing 
 tshark -r rogue-ap.pcapng -Y 'wlan.ssid == "Corp-WLAN"' \
   -T fields -e frame.number -e wlan.bssid -e wlan.ds.current_channel \
   -e wlan.rsn.akms.type -e wlan.rsn.capabilities.mfpr
-tshark -r rogue-ap.pcapng -Y 'bootp' -T fields -e frame.number -e bootp.option.dhcp
+tshark -r rogue-ap.pcapng -Y 'dhcp' -T fields -e frame.number -e dhcp.option.dhcp
 tshark -r rogue-ap.pcapng -Y 'http' -T fields -e frame.number -e http.request.method -e http.response.code
 ```
 

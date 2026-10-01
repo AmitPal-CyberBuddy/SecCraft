@@ -19,8 +19,8 @@ bit 7 ACK, bit 8 MIC, bit 9 secure, bit 12 encrypted key data.
 
 ```bash
 tshark -r wpa2-handshake.pcapng -Y 'eapol.type == 3' \
-  -T fields -e frame.number -e wlan.sa -e wlan.da -e eapol.keydes.key_info \
-  -e eapol.keydes.replay_counter -e eapol.keydes.nonce -e eapol.keydes.key_mic
+  -T fields -e frame.number -e wlan.sa -e wlan.da -e wlan_rsna_eapol.keydes.key_info \
+  -e eapol.keydes.replay_counter -e wlan_rsna_eapol.keydes.nonce -e wlan_rsna_eapol.keydes.mic
 ```
 
 Tasks:
@@ -49,3 +49,7 @@ Tasks:
 
 **`scn-08-handshake-completeness`** — you have M1+M2 only. Is that enough for the audit? What if you have
 M2+M3 but the replay counters do not line up?
+
+## Worked row, then a separate attempt
+
+In this fixture, frames 6–9 are the first station's M1–M4. Frame 6 is AP→STA with ACK and no MIC; frame 7 is STA→AP with SNonce and MIC; frames 8/9 add Install/Secure and acknowledgement context. Match addresses and replay counters before treating them as an exchange. The follow-on [decision checkpoint](/paths/wireless-pentesting/modules/08-wpa-wpa2?tab=theory&lesson=03-handshake-decision-clinic) asks you to assess the other station without another walkthrough.

@@ -1,0 +1,62 @@
+{
+  "case": "WF-REVIEW-07",
+  "mode": "Public supplied-result review, not independent grading",
+  "live_runtime": "NOT TESTED",
+  "claims": [
+    {
+      "id": "R1",
+      "status": "SUPPORTED",
+      "claim": "OPS-A advertises the intended AKM/PMF change in the staged files; not a live client retest.",
+      "sources": [
+        {
+          "file": "capstone-baseline.json",
+          "frame": 1
+        },
+        {
+          "file": "capstone-retest.json",
+          "frame": 1
+        }
+      ],
+      "missing": "Negotiated client/AP evidence and controlled rejection tests."
+    },
+    {
+      "id": "R2",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "claim": "Ownership or malicious intent of the unlisted same-name BSSID is unresolved.",
+      "sources": [
+        {
+          "file": "capstone-baseline.json",
+          "frame": 3
+        },
+        {
+          "file": "capstone-retest.json",
+          "frame": 3
+        }
+      ],
+      "missing": "Owner inventory and authorized wired/AP correlation."
+    },
+    {
+      "id": "R3",
+      "status": "SUPPORTED",
+      "claim": "No advertised-policy deviation from the stated CORP-A plan in the supplied beacon frames; not an Enterprise security audit.",
+      "sources": [
+        {
+          "file": "capstone-baseline.json",
+          "frame": 2
+        },
+        {
+          "file": "capstone-retest.json",
+          "frame": 2
+        }
+      ],
+      "missing": "Actual EAP/certificate/client and enforcement evidence."
+    },
+    {
+      "id": "R4",
+      "status": "NOT_TESTED",
+      "claim": "Live SAE negotiation, installed PMF, passphrase retirement and application access were not tested.",
+      "sources": [],
+      "missing": "A separately authorized isolated execution environment and collected client/AP/service evidence."
+    }
+  ]
+}

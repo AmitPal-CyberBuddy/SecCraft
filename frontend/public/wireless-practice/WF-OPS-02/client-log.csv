@@ -1,0 +1,4 @@
+event_id,client_clock_utc,client_alias,event,provenance
+L1,2023-11-14T22:13:21.510000Z,CLIENT-A,association_started,authored fictional sidecar
+L2,2023-11-14T22:13:21.530000Z,CLIENT-A,connected_state_reported,authored fictional sidecar
+L3,2023-11-14T22:13:21.550000Z,CLIENT-A,application_probe_not_performed,authored fictional sidecar

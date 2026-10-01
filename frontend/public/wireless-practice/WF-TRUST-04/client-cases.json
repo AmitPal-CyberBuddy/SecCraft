@@ -1,0 +1,10 @@
+{
+  "provenance": "Authored profile hypotheses, not actual client configuration exports or connection results",
+  "runtime": "NOT TESTED",
+  "cases": [
+    {"id":"C1","saved_name":"Corp-WLAN","saved_security":"Enterprise only","candidate_security":"PSK","autojoin":true,"question":"Does the matching name establish profile compatibility?"},
+    {"id":"C2","saved_name":"Cafe-Example","saved_security":"open","candidate_security":"open","autojoin":false,"question":"Does a directed probe override the profile's autojoin policy?"},
+    {"id":"C3","saved_name":"Personal-Example","saved_security":"PSK","candidate_security":"PSK","autojoin":true,"candidate_has_correct_psk":false,"question":"Can a cloned name alone complete a valid PSK key exchange?"},
+    {"id":"C4","saved_name":"Personal-Example","saved_security":"PSK","candidate_security":"PSK","autojoin":true,"candidate_has_correct_psk":true,"question":"Even if selection/authentication is possible, what is still missing before claiming actual selection or application access?"}
+  ]
+}

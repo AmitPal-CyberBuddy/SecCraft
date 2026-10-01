@@ -1,0 +1,72 @@
+{
+  "provenance": "Authored desired policy for a separate fictional model, not deployed ACLs or portal code",
+  "runtime": "NOT TESTED",
+  "subjects": [
+    "guest-A",
+    "guest-B"
+  ],
+  "service_allowlist_for_future_owner_approval": [
+    "portal-login",
+    "guest-web-check",
+    "internal-demo"
+  ],
+  "rules": [
+    {
+      "id": "P1",
+      "source": "guest-A",
+      "session": "none",
+      "destination": "portal-login",
+      "expected": "allow",
+      "layer": "service access"
+    },
+    {
+      "id": "P2",
+      "source": "guest-A",
+      "session": "none",
+      "destination": "guest-web-check",
+      "expected": "deny",
+      "layer": "service access"
+    },
+    {
+      "id": "P3",
+      "source": "guest-A",
+      "session": "valid-A",
+      "destination": "guest-web-check",
+      "expected": "allow",
+      "layer": "service access"
+    },
+    {
+      "id": "P4",
+      "source": "guest-A",
+      "session": "expired-A",
+      "destination": "guest-web-check",
+      "expected": "deny",
+      "layer": "service access"
+    },
+    {
+      "id": "P5",
+      "source": "guest-B",
+      "session": "copied-A",
+      "destination": "guest-web-check",
+      "expected": "deny",
+      "layer": "service access"
+    },
+    {
+      "id": "P6",
+      "source": "guest-A",
+      "session": "valid-A",
+      "destination": "internal-demo",
+      "expected": "deny",
+      "layer": "service access"
+    },
+    {
+      "id": "P7",
+      "source": "guest-A",
+      "session": "valid-A",
+      "destination": "guest-B",
+      "expected": "deny",
+      "layer": "L2 forwarding"
+    }
+  ],
+  "limits": "Service aliases are planning labels, not network destinations. No approval or account is created by this file. DNS/DHCP reachability must be separately defined when implementing the lab."
+}

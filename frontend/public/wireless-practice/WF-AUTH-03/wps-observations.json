@@ -1,0 +1,15 @@
+{
+  "provenance": "Authored hypothetical log, not collected from hardware or from wps-beacon.pcapng",
+  "case": "W2",
+  "authorized_window_seconds": 600,
+  "maximum_attempts": 3,
+  "stop_on_lock_or_service_impact": true,
+  "assumed_cooldown_seconds_for_planning_only": 900,
+  "events": [
+    {"elapsed_seconds":0,"event":"attempt 1 rejected"},
+    {"elapsed_seconds":40,"event":"attempt 2 rejected"},
+    {"elapsed_seconds":80,"event":"attempt 3 rejected; setup locked reported"},
+    {"elapsed_seconds":81,"event":"operator stops; no further requests"}
+  ],
+  "missing": ["real endpoint logs", "actual cooldown measurement", "firmware version", "persistence across restart", "alternate registrar interfaces", "client impact measurement"]
+}

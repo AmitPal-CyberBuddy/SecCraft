@@ -1,0 +1,3 @@
+record_id,bssid,ssid,role,administrative_status,provenance
+O1,de:ad:be:ef:00:01,Corp-WLAN,reference Enterprise advertisement,listed intended infrastructure,fictional owner record only
+O2,02:11:22:33:44:55,Corp-WLAN,isolated training look-alike using PSK,listed approved training scene not corporate access,fictional owner record only

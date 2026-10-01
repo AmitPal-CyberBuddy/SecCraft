@@ -1,6 +1,6 @@
+import { CopyButton } from '@/components/common/TechnicalContent'
 import { useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Terminal, Copy, Check, Zap, Shield, Wifi, Radio } from 'lucide-react'
+import { Terminal, Zap, Shield, Wifi, Radio } from 'lucide-react'
 
 interface Command {
   input: string
@@ -217,12 +217,12 @@ export function TerminalEmulator({ className = '' }: { className?: string }) {
     { input: 'help', output: COMMANDS['help'].output, type: 'info' }
   ])
   const [input, setInput] = useState('')
-  const [copied, setCopied] = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const outputRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const output = outputRef.current
+    if (output) output.scrollTop = output.scrollHeight
   }, [history])
 
   const execute = (cmd: string) => {
@@ -253,83 +253,80 @@ export function TerminalEmulator({ className = '' }: { className?: string }) {
     setInput('')
   }
 
-  const copyAll = () => {
-    const text = history.map(h => `$ ${h.input}\n${h.output}`).join('\n\n')
-    navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
 
   return (
-    <div className={`rounded-2xl bg-[#080d18] border border-[#1e293b] overflow-hidden shadow-soft flex flex-col min-w-0 w-full ${className}`}>
+    <div className={`ws-terminal rounded-2xl bg-[var(--panel-inset)] border border-[var(--line-normal)] overflow-hidden shadow-soft flex flex-col min-w-0 w-full ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-[#0a1020] border-b border-[#1e293b]/60 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 bg-[var(--panel-inset)] border-b border-[var(--line-normal)] shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-red-500/80 border border-red-500/50" />
-            <div className="w-3 h-3 rounded-full bg-amber-500/80 border border-amber-500/50" />
-            <div className="w-3 h-3 rounded-full bg-emerald-500/80 border border-emerald-500/50" />
+            <div className="w-3 h-3 rounded-full bg-[var(--danger-bg)] border border-[var(--danger-border)]" />
+            <div className="w-3 h-3 rounded-full bg-[var(--warning-bg)] border border-[var(--warning-border)]" />
+            <div className="w-3 h-3 rounded-full bg-[var(--success-bg)] border border-[var(--success-border)]" />
           </div>
           <div className="hidden xs:flex items-center gap-2 min-w-0">
-            <Terminal className="w-4 h-4 text-slate-500 shrink-0" />
-            <span className="text-[12px] font-mono text-slate-400 truncate">operator@seccraft: ~/labs • simulated shell</span>
+            <Terminal className="w-4 h-4 text-[var(--ink-muted)] shrink-0" />
+            <span className="text-[12px] font-mono text-[var(--ink-secondary)] truncate">Simulated shell · no commands execute on your device</span>
           </div>
-          <div className="flex xs:hidden items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[10px] font-mono text-emerald-400">SIM</span>
+          <div className="flex xs:hidden items-center gap-1.5 px-2 py-1 rounded-full bg-[var(--success-bg)] border border-[var(--success-border)]">
+            <div className="w-1.5 h-1.5 rounded-full bg-[var(--success)] " />
+            <span className="text-[10px] font-mono text-[var(--success)]">Simulation</span>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="hidden sm:inline-flex text-[10px] px-2 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono">SIMULATED • ZERO-COST</span>
-          <button onClick={copyAll} className="w-8 h-8 rounded-lg bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] transition-colors touch-manipulation">
-            {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
-          </button>
+          <span className="hidden sm:inline-flex text-[10px] px-2 py-1 rounded-full bg-[var(--accent-bg)] text-[var(--learning)] border border-[var(--accent-border)] font-mono">SIMULATED • ZERO-COST</span>
+          <CopyButton text={history.map(command => `$ ${command.input}\n${command.output}`).join('\n\n')} label="Copy output" />
         </div>
       </div>
 
+      <p className="px-4 py-2 text-[12px] leading-relaxed text-[var(--ink-secondary)] border-b border-[var(--line-normal)]">Scripted command practice, not a live shell. No commands execute on your device or a cloud VM.</p>
       {/* Output — responsive */}
-      <div className="flex-1 overflow-y-auto p-3 xs:p-4 font-mono text-[12px] xs:text-[13px] leading-[1.6] max-h-[400px] xs:max-h-[500px] min-h-[300px] scrollbar-thin bg-[#080d18]">
-        <AnimatePresence>
+      <div ref={outputRef} className="ws-terminal-output" role="region" aria-label="Simulated command transcript" tabIndex={0}>
+        <>
           {history.map((cmd, idx) => (
-            <motion.div key={idx} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="mb-4 min-w-0">
-              <div className="flex items-center gap-2 text-slate-500 mb-1 min-w-0">
-                <span className="text-emerald-400 shrink-0">➜</span>
-                <span className="text-cyan-400 truncate">{cmd.input}</span>
-                <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-[#1e293b] border border-[#334155] shrink-0">{cmd.type.toUpperCase()}</span>
+            <div key={idx} className="mb-4 min-w-0">
+              <div className="ws-terminal-command-line">
+                <span className="text-[var(--success)] shrink-0">➜</span>
+                <span className="ws-terminal-command">{cmd.input}</span>
+                <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-[var(--panel-raised)] border border-[var(--line-strong)] shrink-0">{cmd.type.toUpperCase()}</span>
               </div>
-              <pre className="whitespace-pre-wrap break-words text-slate-300 bg-[#0a1020]/60 border border-[#1e293b]/40 rounded-lg p-3 overflow-x-auto max-w-full text-[11px] xs:text-[12px] leading-[1.5]">{cmd.output}</pre>
-            </motion.div>
+              <pre className="ws-terminal-command-output">{cmd.output}</pre>
+            </div>
           ))}
-        </AnimatePresence>
-        <div ref={bottomRef} />
+        </>
+
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="flex items-center gap-2 p-3 bg-[#0a1020] border-t border-[#1e293b]/60 shrink-0">
-        <span className="text-emerald-400 font-mono text-[13px] shrink-0 hidden xs:inline">operator@seccraft:~$</span>
-        <span className="text-emerald-400 font-mono text-[13px] shrink-0 xs:hidden">$</span>
+      <form onSubmit={handleSubmit} className="flex items-center gap-2 p-3 bg-[var(--panel-inset)] border-t border-[var(--line-normal)] shrink-0">
+        <span className="text-[var(--success)] font-mono text-[13px] shrink-0 hidden xs:inline">operator@seccraft:~$</span>
+        <span className="text-[var(--success)] font-mono text-[13px] shrink-0 xs:hidden">$</span>
         <input
+          aria-label="Simulated command"
+          autoCapitalize="none"
+          autoComplete="off"
+          spellCheck={false}
           ref={inputRef}
           value={input}
           onChange={e => setInput(e.target.value)}
           placeholder="Type command (help, iw dev, airodump-ng wlan0mon, tshark -r ...)"
-          className="flex-1 bg-[#020617] border border-[#1e293b] rounded-xl px-3 py-2.5 text-[13px] font-mono text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30 focus:bg-[#0a1020] min-w-0"
+          className="flex-1 bg-[var(--panel-inset)] border border-[var(--line-normal)] rounded-xl px-3 py-2.5 text-[13px] font-mono text-[var(--ink-primary)] placeholder:text-[var(--ink-secondary)] focus:outline-none focus:border-[var(--accent-border)] focus:bg-[var(--panel-inset)] min-w-0"
         />
-        <button type="submit" className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-[#020617] font-semibold text-[12px] transition-colors shrink-0 touch-manipulation min-h-[44px] sm:min-h-0">
+        <button type="submit" className="px-4 py-2.5 rounded-xl sc-learning-action   font-semibold text-[12px] transition-colors shrink-0 touch-manipulation min-h-[44px] sm:min-h-0">
           Run
         </button>
       </form>
 
       {/* Footer hints — responsive */}
-      <div className="px-4 py-2 bg-[#020617]/60 border-t border-[#1e293b]/40 flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2 text-[10px] font-mono text-slate-500">
+      <div className="px-4 py-2 bg-[var(--panel-inset)] border-t border-[var(--line-normal)] flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2 text-[10px] font-mono text-[var(--ink-muted)]">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="flex items-center gap-1"><Zap className="w-3 h-3 text-amber-400" /> {Object.keys(COMMANDS).length} cmds</span>
-          <span className="w-1 h-1 rounded-full bg-slate-700 hidden xs:block" />
+          <span className="flex items-center gap-1"><Zap className="w-3 h-3 text-[var(--attention)]" /> {Object.keys(COMMANDS).length} cmds</span>
+          <span className="w-1 h-1 rounded-full bg-[var(--panel-raised)] hidden xs:block" />
           <span className="hidden xs:inline">Tab complete • ↑↓ history • Real RF marked RF_REQUIRED</span>
           <span className="xs:hidden">Simulated • Zero-cost</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <Wifi className="w-3 h-3 text-cyan-400" />
+          <Wifi className="w-3 h-3 text-[var(--learning)]" />
           <span>Simulated terminal</span>
         </div>
       </div>

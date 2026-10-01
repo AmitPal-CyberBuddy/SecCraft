@@ -1,3 +1,4 @@
+import learningPaths from '@/content/learning-paths.json'
 import { Link } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { ArrowRight, BadgeCheck, BookOpen, CloudUpload, FileCheck2, HardDrive, ShieldCheck, Wifi, CircleSlash, Fingerprint } from 'lucide-react'
@@ -10,20 +11,20 @@ function PublicPage({ eyebrow, title, intro, children }: { eyebrow: string; titl
   const signedIn = ready && isSignedIn(userState)
   return (
     <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
-      <p className="text-xs font-bold uppercase tracking-[.2em] text-cyan-300">{eyebrow}</p>
-      <h1 className="mt-3 max-w-4xl text-3xl font-bold tracking-tight text-white sm:text-5xl">{title}</h1>
-      <p className="mt-5 max-w-3xl text-base leading-7 text-slate-300">{intro}</p>
-      <div className="mt-10 space-y-5 text-sm leading-7 text-slate-400">{children}</div>
+      <p className="text-xs font-bold uppercase tracking-[.2em] text-[var(--learning)]">{eyebrow}</p>
+      <h1 className="mt-3 max-w-4xl text-3xl font-bold tracking-tight text-[var(--ink-primary)] sm:text-5xl">{title}</h1>
+      <p className="mt-5 max-w-3xl text-base leading-7 text-[var(--ink-secondary)]">{intro}</p>
+      <div className="mt-10 space-y-5 text-sm leading-7 text-[var(--ink-secondary)]">{children}</div>
       <div className="mt-10 flex flex-wrap gap-3">
         <Link
           to="/app"
-          className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-cyan-300 px-4 text-sm font-bold text-slate-950 transition-colors hover:bg-cyan-200"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl sc-learning-action px-4 text-sm font-bold  transition-colors "
         >
           {signedIn ? 'Open your workspace' : 'Start the preview'} <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
         {!signedIn && (
-          <Link to="/signup" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-200 transition-colors hover:bg-slate-800">
-            <Fingerprint className="h-4 w-4 text-violet-300" aria-hidden="true" /> Request an account
+          <Link to="/signup" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--line-normal)] px-4 text-sm font-semibold text-[var(--ink-primary)] transition-colors hover:bg-[var(--panel-raised)]">
+            <Fingerprint className="h-4 w-4 text-[var(--owner)]" aria-hidden="true" /> Request an account
           </Link>
         )}
       </div>
@@ -36,25 +37,25 @@ export function AboutPage() {
     <PublicPage
       eyebrow="About SecCraft"
       title="A practice platform, not a video library."
-      intro="SecCraft is a static-first learning platform built around understanding, investigation, and defensible evidence — not collecting commands or badges. It ships one complete path today and is honest about what it does not ship."
+      intro={`SecCraft is a static-first learning platform built around understanding, investigation, and defensible evidence — not collecting commands or badges. Explore ${learningPaths.filter(path => path.status === 'available').map(path => path.title).join(' and ')}, available now.`}
     >
       <div className="grid gap-4 sm:grid-cols-3">
         {[
           { icon: BookOpen, title: 'Authored content', text: 'Lessons, knowledge checks, module metadata, and lab artifacts are version-controlled alongside the application, so the material and the app never drift apart.' },
-          { icon: Wifi, title: 'Wireless first', text: 'Wireless Pentesting is the first available path. Other catalogue entries are listed as planned and are not presented as ready before their content exists.' },
+          { icon: Wifi, title: 'Available curriculum', text: `${learningPaths.filter(path => path.status === 'available').map(path => path.title).join(' and ')} are available now. Roadmap entries are clearly marked as planned.` },
           { icon: ShieldCheck, title: 'Preview by default', text: `You can work through ${PREVIEW_MODULE_COUNT} modules with no account. Practice progress stays in your browser and is always shown as distinct from anything the platform has confirmed.` },
         ].map(({ icon: Icon, title, text }) => (
-          <article key={title} className="rounded-2xl border border-slate-800 bg-[#081120] p-5">
-            <Icon className="h-5 w-5 text-cyan-300" aria-hidden="true" />
-            <h2 className="mt-3 text-base font-semibold text-slate-100">{title}</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-400">{text}</p>
+          <article key={title} className="rounded-2xl border border-[var(--line-normal)] bg-[var(--panel-bg)] p-5">
+            <Icon className="h-5 w-5 text-[var(--learning)]" aria-hidden="true" />
+            <h2 className="mt-3 text-base font-semibold text-[var(--ink-primary)]">{title}</h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--ink-secondary)]">{text}</p>
           </article>
         ))}
       </div>
 
-      <div className="rounded-2xl border border-slate-800 bg-[#081120] p-5 sm:p-6">
-        <h2 className="flex items-center gap-2 text-base font-semibold text-slate-100">
-          <BadgeCheck className="h-4 w-4 text-cyan-300" aria-hidden="true" /> What SecCraft is honest about
+      <div className="rounded-2xl border border-[var(--line-normal)] bg-[var(--panel-bg)] p-5 sm:p-6">
+        <h2 className="flex items-center gap-2 text-base font-semibold text-[var(--ink-primary)]">
+          <BadgeCheck className="h-4 w-4 text-[var(--learning)]" aria-hidden="true" /> What SecCraft is honest about
         </h2>
         <ul className="mt-4 grid gap-2.5 sm:grid-cols-2">
           {[
@@ -65,8 +66,8 @@ export function AboutPage() {
             'No certificate is issued. Certificates would need verified XP and a completion record, and the platform issues neither yet.',
             CONTENT_NOT_ENFORCED_NOTE,
           ].map(item => (
-            <li key={item} className="flex items-start gap-2.5 rounded-xl border border-slate-800/80 bg-slate-950/40 p-3 text-[13px] leading-6 text-slate-400">
-              <CircleSlash className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-600" aria-hidden="true" />
+            <li key={item} className="flex items-start gap-2.5 rounded-xl border border-[var(--line-normal)] bg-[var(--panel-inset)] p-3 text-sm leading-6 text-[var(--ink-secondary)]">
+              <CircleSlash className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--ink-muted)]" aria-hidden="true" />
               {item}
             </li>
           ))}
@@ -91,19 +92,19 @@ export function HowItWorksPage() {
           { number: '02', title: 'Practise with context', text: 'Use the bundled labs and captures to connect protocol behaviour to something you can actually observe in the frames.' },
           { number: '03', title: 'Record the work', text: 'Your progress, notes, and evidence stay in this browser. Nothing is transmitted unless you deliberately export and import a file.' },
         ].map(item => (
-          <li key={item.number} className="rounded-2xl border border-slate-800 bg-[#081120] p-5">
-            <span className="font-mono text-xs text-cyan-300">{item.number}</span>
-            <h2 className="mt-2 text-base font-semibold text-slate-100">{item.title}</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-400">{item.text}</p>
+          <li key={item.number} className="rounded-2xl border border-[var(--line-normal)] bg-[var(--panel-bg)] p-5">
+            <span className="font-mono text-xs text-[var(--learning)]">{item.number}</span>
+            <h2 className="mt-2 text-base font-semibold text-[var(--ink-primary)]">{item.title}</h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--ink-secondary)]">{item.text}</p>
           </li>
         ))}
       </ol>
 
-      <div className="rounded-2xl border border-slate-800 bg-[#081120] p-5 sm:p-6">
-        <h2 className="flex items-center gap-2 text-base font-semibold text-slate-100">
-          <CloudUpload className="h-4 w-4 text-emerald-300" aria-hidden="true" /> The three kinds of record
+      <div className="rounded-2xl border border-[var(--line-normal)] bg-[var(--panel-bg)] p-5 sm:p-6">
+        <h2 className="flex items-center gap-2 text-base font-semibold text-[var(--ink-primary)]">
+          <CloudUpload className="h-4 w-4 text-[var(--success)]" aria-hidden="true" /> The three kinds of record
         </h2>
-        <p className="mt-2 text-sm leading-6 text-slate-400">
+        <p className="mt-2 text-sm leading-6 text-[var(--ink-secondary)]">
           SecCraft never blurs these three, and every screen labels which one it is showing.
         </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -112,19 +113,19 @@ export function HowItWorksPage() {
             { icon: BadgeCheck, label: 'Account record', text: 'Held on the platform for your account, split into verified rows. Requires an approved account.' },
             { icon: CloudUpload, label: 'Imported', text: 'Transferred from a file. Permanently unverified, and awards nothing.' },
           ].map(item => (
-            <div key={item.label} className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
+            <div key={item.label} className="rounded-xl border border-[var(--line-normal)] bg-[var(--panel-inset)] p-4">
               <div className="flex items-center gap-2">
-                <item.icon className="h-3.5 w-3.5 text-cyan-300" aria-hidden="true" />
-                <span className="text-[13px] font-semibold text-slate-100">{item.label}</span>
+                <item.icon className="h-3.5 w-3.5 text-[var(--learning)]" aria-hidden="true" />
+                <span className="text-sm font-semibold text-[var(--ink-primary)]">{item.label}</span>
               </div>
-              <p className="mt-2 text-[12.5px] leading-6 text-slate-400">{item.text}</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--ink-secondary)]">{item.text}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="flex items-start gap-3 rounded-2xl border border-amber-300/20 bg-amber-300/[0.06] p-5 text-amber-100/90">
-        <FileCheck2 className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" aria-hidden="true" />
+      <div className="flex items-start gap-3 rounded-2xl border border-[var(--warning-border)] bg-[var(--warning-bg)] p-5 text-[var(--attention)]">
+        <FileCheck2 className="mt-0.5 h-5 w-5 shrink-0 text-[var(--attention)]" aria-hidden="true" />
         <p className="m-0 text-sm leading-6">
           Local progress, imported progress, and platform-confirmed records are different things. A browser import never
           becomes proof of mastery, never grants XP, and never produces a certificate.

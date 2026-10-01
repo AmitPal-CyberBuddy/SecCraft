@@ -1,0 +1,9 @@
+{
+  "provenance": "Authored diagnostic excerpts, not commands executed by SecCraft. Omitted output is not an observation.",
+  "task": "Choose a safe next diagnostic and record NOT TESTED where physical reception or injection is unverified.",
+  "profiles": [
+    {"id":"A", "context":"VM sees a virtual Ethernet connection; intended USB wireless adapter not yet attached to guest", "observations":{"ip_link":"lo, eth0", "iw_dev":"no wireless interfaces", "usb_passthrough":"not confirmed"}},
+    {"id":"B", "context":"Owned adapter visible in guest", "observations":{"iw_dev":"phy#0, Interface wlan1, type managed", "iw_phy":"Supported modes: managed, monitor; 2412–2472 MHz advertised (regulatory restrictions not shown)", "rfkill":"Wireless LAN: Soft blocked: yes; Hard blocked: no", "requested_channel":6}},
+    {"id":"C", "context":"Adapter reports monitor mode", "observations":{"iw_dev":"phy#1, Interface wlan2, type monitor", "iw_phy":"Supported frequencies excerpt: 5180, 5200, 5220, 5240 MHz only", "rfkill":"Soft blocked: no; Hard blocked: no", "requested_channel":6, "capture_result":"0 frames in this supplied diagnostic record; actual channel setting not supplied"}}
+  ]
+}

@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { ArrowRight, Clock, Compass, Fingerprint, Info, LogOut, ShieldAlert, UserCheck, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { useSession } from '@/lib/session'
@@ -20,6 +19,8 @@ export function AccountBanner() {
   if (!ready || accountLoading) return null
 
   const unverified = accountError.kind === 'unverified'
+  // Account availability belongs on sign-in screens, not every guest lesson.
+  if (userState === 'guest' && !hasSession && !unverified) return null
   const transient = accountError.kind === 'unavailable' || accountError.kind === 'unknown'
   const isAccountState = userState === 'pending' || userState === 'rejected' || userState === 'suspended'
 
@@ -28,52 +29,49 @@ export function AccountBanner() {
   if (!unverified && !transient && !(isAccountState && !dismissed)) return null
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+    <div
       role="status"
       className="mb-4 min-w-0"
     >
-      <div className="relative overflow-hidden rounded-2xl border border-slate-700/70 bg-[#081120]/90 p-4 sm:p-5">
+      <div className="relative overflow-hidden rounded-2xl border border-[var(--line-normal)] bg-[var(--panel-bg)] p-4 sm:p-5">
         <div
           aria-hidden="true"
           className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${
             unverified || userState === 'pending'
-              ? 'from-amber-400/[0.07] via-transparent to-transparent'
+              ? 'from-[var(--warning-bg)] via-transparent to-transparent'
               : userState === 'rejected' || userState === 'suspended'
-              ? 'from-rose-400/[0.07] via-transparent to-transparent'
-              : 'from-slate-500/[0.06] via-transparent to-transparent'
+              ? 'from-[var(--danger-bg)] via-transparent to-transparent'
+              : 'from-[var(--panel-raised)] via-transparent to-transparent'
           }`}
         />
         <div className="relative flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 gap-3">
-            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-700 bg-[#020617]">
+            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--line-normal)] bg-[var(--panel-inset)]">
               {unverified ? (
-                <Fingerprint className="h-4 w-4 text-amber-300" aria-hidden="true" />
+                <Fingerprint className="h-4 w-4 text-[var(--attention)]" aria-hidden="true" />
               ) : userState === 'rejected' || userState === 'suspended' ? (
-                <ShieldAlert className="h-4 w-4 text-rose-300" aria-hidden="true" />
+                <ShieldAlert className="h-4 w-4 text-[var(--danger)]" aria-hidden="true" />
               ) : userState === 'pending' ? (
-                <Clock className="h-4 w-4 text-amber-300" aria-hidden="true" />
+                <Clock className="h-4 w-4 text-[var(--attention)]" aria-hidden="true" />
               ) : (
-                <Info className="h-4 w-4 text-slate-300" aria-hidden="true" />
+                <Info className="h-4 w-4 text-[var(--ink-secondary)]" aria-hidden="true" />
               )}
             </span>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-heading text-[14px] font-bold text-slate-100">
+                <h2 className="font-heading text-[14px] font-bold text-[var(--ink-primary)]">
                   {unverified ? 'Confirm your email address' : transient ? hasSession ? 'Signed in · account status unavailable' : 'Account services unavailable' : STATE_META[userState as Exclude<UserState, 'public' | 'guest'>].label}
                 </h2>
                 {!transient && <StateChip state={userState} size="sm" />}
               </div>
-              <p className="mt-1.5 text-[12.5px] leading-relaxed text-slate-300">
+              <p className="mt-1.5 text-sm leading-relaxed text-[var(--ink-secondary)]">
                 {unverified
                   ? 'Open the verification message sent to your inbox, then come back. Until then, account features stay unavailable — guest learning does not.'
                   : transient
                   ? `${accountError.message} ${hasSession ? 'Your approval and owner access cannot be confirmed right now. This is not a pending-approval decision.' : 'Your account status cannot be checked right now.'} Preview learning and browser-local practice remain available.`
                   : STATE_META[userState as Exclude<UserState, 'public' | 'guest'>].summary}
               </p>
-              <p className="mt-2 text-[11.5px] leading-relaxed text-slate-400">
+              <p className="mt-2 text-sm leading-relaxed text-[var(--ink-secondary)]">
                 <Compass className="mr-1 inline h-3 w-3 align-[-1px]" aria-hidden="true" />
                 {allows(userState, 'full-curriculum')
                   ? 'The Full Curriculum and your account records are both available.'
@@ -84,19 +82,19 @@ export function AccountBanner() {
 
           <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
             {transient && hasSession && (
-              <button type="button" onClick={() => void refreshAccount()} className="inline-flex min-h-9 items-center rounded-lg border border-cyan-300/25 px-3 text-[12px] font-semibold text-cyan-100 hover:bg-cyan-300/10">Re-check status</button>
+              <button type="button" onClick={() => void refreshAccount()} className="inline-flex min-h-11 items-center rounded-lg border border-[var(--accent-border)] px-3 text-[12px] font-semibold text-[var(--learning)] hover:bg-[var(--accent-bg)]">Re-check status</button>
             )}
             {userState === 'rejected' || userState === 'suspended' ? (
               <Link
                 to="/profile"
-                className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-600 bg-[#020617]/60 px-3 text-[12px] font-medium text-slate-200 transition-colors hover:border-slate-500 hover:bg-slate-800"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-[var(--line-strong)] bg-[var(--panel-inset)] px-3 text-[12px] font-medium text-[var(--ink-primary)] transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--panel-raised)]"
               >
                 Account details <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
             ) : (
               <Link
                 to="/paths"
-                className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-cyan-300/25 bg-cyan-300/10 px-3 text-[12px] font-semibold text-cyan-100 transition-colors hover:border-cyan-200/50 hover:bg-cyan-300/15"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-[var(--accent-border)] bg-[var(--accent-bg)] px-3 text-[12px] font-semibold text-[var(--learning)] transition-colors hover:border-[var(--accent-border)] hover:bg-[var(--accent-bg)]"
               >
                 Keep learning <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
@@ -104,7 +102,7 @@ export function AccountBanner() {
             <button
               type="button"
               onClick={() => void signOut()}
-              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-700 px-3 text-[12px] text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-800"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-[var(--line-normal)] px-3 text-[12px] text-[var(--ink-secondary)] transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--panel-raised)]"
             >
               <LogOut className="h-3.5 w-3.5" aria-hidden="true" /> Sign out
             </button>
@@ -113,7 +111,7 @@ export function AccountBanner() {
                 type="button"
                 onClick={() => setDismissedFor(userState)}
                 aria-label="Dismiss this account notice"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700 text-slate-400 transition-colors hover:border-slate-600 hover:bg-slate-800 hover:text-slate-200"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--line-normal)] text-[var(--ink-secondary)] transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--panel-raised)] hover:text-[var(--ink-primary)]"
               >
                 <X className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
@@ -121,7 +119,7 @@ export function AccountBanner() {
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }
 
@@ -129,12 +127,12 @@ export function AccountBanner() {
 export function StateExplainer({ state, children }: { state: UserState; children?: ReactNode }) {
   const meta = STATE_META[state]
   return (
-    <div className="rounded-xl border border-slate-800 bg-[#020617]/60 p-3.5">
+    <div className="rounded-xl border border-[var(--line-normal)] bg-[var(--panel-inset)] p-3.5">
       <div className="flex flex-wrap items-center gap-2">
         <StateChip state={state} size="sm" />
-        <span className="text-[11.5px] font-medium text-slate-300">{meta.nextAction}</span>
+        <span className="text-sm font-medium text-[var(--ink-secondary)]">{meta.nextAction}</span>
       </div>
-      <p className="mt-2 text-[12px] leading-relaxed text-slate-400">{children ?? meta.summary}</p>
+      <p className="mt-2 text-[12px] leading-relaxed text-[var(--ink-secondary)]">{children ?? meta.summary}</p>
     </div>
   )
 }
@@ -144,25 +142,22 @@ export function OwnerNotice() {
   const { userState } = useSession()
   if (userState !== 'owner') return null
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-violet-300/20 bg-violet-300/[0.06] px-4 py-3"
+    <div
+      className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--owner-border)] bg-[var(--owner-bg)] px-4 py-3"
     >
       <div className="flex min-w-0 items-center gap-2.5">
-        <UserCheck className="h-4 w-4 shrink-0 text-violet-200" aria-hidden="true" />
-        <p className="min-w-0 text-[12.5px] leading-relaxed text-violet-100/90">
+        <UserCheck className="h-4 w-4 shrink-0 text-[var(--owner)]" aria-hidden="true" />
+        <p className="min-w-0 text-sm leading-relaxed text-[var(--owner)]">
           You are signed in as the platform owner. Learner tools and owner controls are separate — approvals and policy
           live in the owner console.
         </p>
       </div>
       <Link
         to="/admin"
-        className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg border border-violet-200/30 bg-violet-300/15 px-3 text-[12px] font-semibold text-violet-100 transition-colors hover:bg-violet-300/25"
+        className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--owner-border)] bg-[var(--owner-bg)] px-3 text-[12px] font-semibold text-[var(--owner)] transition-colors hover:bg-[var(--owner-bg)]"
       >
         Open owner console <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
       </Link>
-    </motion.div>
+    </div>
   )
 }

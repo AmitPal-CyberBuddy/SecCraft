@@ -10,7 +10,7 @@ export function NotFound() {
       <div className="not-found-code" aria-hidden="true">404</div>
       <div className="not-found-icon"><Compass className="w-5 h-5" /></div>
       <p className="not-found-kicker">ROUTE NOT FOUND</p>
-      <h1 id="not-found-title">This path doesn’t resolve to a workspace.</h1>
+      <h1 id="not-found-title">Page not found.</h1>
       <p className="not-found-copy">The address may be out of date, or the destination may have moved. Your learning data is unchanged.</p>
       <code className="not-found-route">{route}</code>
       <div className="not-found-actions">

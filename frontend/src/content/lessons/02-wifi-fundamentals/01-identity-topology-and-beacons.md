@@ -11,8 +11,8 @@ frame number that supports each field.
 | Term | What it identifies | Where you see it |
 | --- | --- | --- |
 | SSID | the network *name* (0–32 arbitrary bytes; not necessarily UTF-8 or printable) | SSID IE (ID 0) in beacon/probe response |
-| BSSID | one radio interface (MAC of the AP's radio) | address 3 of a beacon; in data frames identify it using To DS/From DS direction and address roles, not a fixed field |
-| BSS | one AP's coverage cell, identified by its BSSID | beacon + its clients |
+| BSSID | one infrastructure BSS; a physical AP/radio can advertise several BSSIDs | address 3 of a beacon; in data frames identify it using To DS/From DS direction and address roles, not a fixed field |
+| BSS | an infrastructure service set (AP and associated stations), identified by its BSSID | beacon + its clients |
 | ESS | one extended service set comprising coordinated BSSs, commonly sharing an SSID | confirm with authorized inventory/configuration and network context; SSID equality alone does not establish ESS membership |
 | Hidden SSID | a BSS whose beacons carry a zero-length SSID IE | SSID IE length 0 |
 
@@ -21,8 +21,8 @@ Two facts worth internalising:
 * **A hidden SSID is not a security control.** A directed probe or association request can expose the SSID
   in clear when a client attempts to use it; a zero-length beacon/probe response does not hide it reliably.
   Hiding it can also encourage client-side directed probes and privacy leakage.
-* **Same SSID ≠ same network.** An ESS and an evil twin look identical at the SSID level. Separate them
-  with BSSID/OUI, channel, RSNE, IE fingerprint and RF behaviour — never with the name alone.
+* **Same SSID ≠ same network.** An ESS and an evil twin look identical at the SSID level. Compare them
+  with BSSID, channel, RSNE and IE fingerprints, then confirm ownership against authorized records; those indicators alone do not prove a twin.
 
 ## 2. Reading a beacon
 
@@ -36,8 +36,7 @@ IE: SSID(0) · Supported Rates(1) · DS Parameter(3) · TIM(5) · Country(7)
 
 Practical decoding notes:
 
-* **DS Parameter (3)** gives the channel for 2.4 GHz; on 5/6 GHz read the channel from HT Operation
-  and radiotap/PHY information.
+* **DS Parameter (3)** gives the channel for 2.4 GHz; on 5 GHz correlate HT/VHT operation where present; on 6 GHz use HE operation and receiver frequency metadata. Do not infer 6 GHz channel information from HT alone.
 * **RSN (48)** is the security policy. Fields in order: version, group cipher, pairwise cipher list,
   AKM list, RSN capabilities, optional PMKID list.
 * **RSN capabilities bit 6 (`0x0040`) = MFPR; bit 7 (`0x0080`) = MFPC.** MFPC means PMF is supported;
@@ -48,20 +47,20 @@ Practical decoding notes:
   5 = 802.1X-SHA256, 6 = PSK-SHA256, 8 = SAE, 9 = FT-SAE, 18 = OWE, 24 = SAE-EXT-KEY.
   WEP is **not** an RSN AKM — a WEP network has no RSNE at all.
 * **Cipher suites**: 1 = WEP-40, 2 = TKIP, 4 = CCMP-128, 8 = GCMP-128, 9 = GCMP-256, 6/11/12 = BIP variants.
-* **Capability field bit 4 (Privacy)** only says "encryption is in use", never *which*.
+* **Capability field bit 4 (Privacy)** advertises a privacy requirement, not which cipher was negotiated or whether a particular payload was actually encrypted.
 
 ## 3. Bands, channels, width
 
 * **2.4 GHz**: channels 1–13 in most regions; channel 14 is a special Japan-only legacy channel and is not part of a general 1/6/11/14 plan. Common non-overlapping 20 MHz planning uses 1/6/11 (local rules and deployment density still matter); 40 MHz operation is usually harmful in this crowded band.
 * **5 GHz**: UNII-1/2/2A/2C/3; channel numbers 36–177; DFS channels require radar detection and can cause
   data-carrying APs to move channel unexpectedly mid-test.
-* **6 GHz (Wi-Fi 6E)**: channel numbers are defined within the 1–233 range with channelization/regulatory availability depending on region; HE operation and WPA3-family security with PMF are required. Do not assume every channel is available in every country or device.
+* **6 GHz (Wi-Fi 6E)**: channel numbers are defined within the 1–233 range with channelization/regulatory availability depending on region; applicable 6 GHz profiles require modern security (WPA3-Personal/Enterprise or Enhanced Open/OWE) and PMF, not legacy WPA2 transition modes. Do not assume every channel is available in every country or device.
 * Channel width is in **HT/VHT/HE** elements, not in the DS parameter.
 
 ## 4. Clients: what they leak
 
 A probe request reveals intent: a **wildcard** probe (empty SSID IE) means "is anything there?", while a
-directed probe carries an SSID the device has stored — the Preferred Network List. Modern devices also
+directed probe names an SSID of interest at that moment; it does not prove a complete stored Preferred Network List or a future association. Modern devices also
 **randomise their MAC**. The locally administered bit is bit 1 (`0x02`) of the first octet: `92:…` has it set (`0x92 & 0x02 != 0`). Check the bit, not the parity of a hexadecimal digit. A locally administered address is only a clue, not proof of randomisation or one physical device. Probe SSIDs may still leak despite address changes.
 
 ## 5. Lab

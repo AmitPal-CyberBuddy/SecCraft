@@ -71,6 +71,24 @@ http
       res.writeHead(302, { Location: BASE })
       return res.end()
     }
+    if (url.pathname.startsWith('/api/')) {
+      const proxyReq = http.request({
+        hostname: '127.0.0.1',
+        port: 8000,
+        path: req.url,
+        method: req.method,
+        headers: req.headers,
+      }, (proxyRes) => {
+        res.writeHead(proxyRes.statusCode || 500, proxyRes.headers)
+        proxyRes.pipe(res)
+      })
+      proxyReq.on('error', () => {
+        res.writeHead(502, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'Backend unreachable' }))
+      })
+      req.pipe(proxyReq)
+      return
+    }
     if (!url.pathname.startsWith(BASE)) {
       return send(res, 404, path.join(DIST, '404.html'))
     }

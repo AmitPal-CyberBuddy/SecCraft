@@ -1,6 +1,8 @@
+import { FeedbackPage } from '@/pages/Feedback'
+import { AdminFeedback } from '@/pages/AdminFeedback'
 import { useCallback, useEffect, useState, lazy, Suspense } from 'react'
 import type { ReactNode } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Shell } from '@/components/layout/Shell'
 import { AdminShell } from '@/components/layout/AdminShell'
 import { ScrollToTop } from '@/components/layout/ScrollToTop'
@@ -14,7 +16,6 @@ import { PublicLayout } from '@/components/public/PublicLayout'
 import { Dashboard } from '@/pages/Dashboard'
 import { PublicHome } from '@/pages/PublicHome'
 import { AboutPage, HowItWorksPage } from '@/pages/PublicInfo'
-import { LoginPage, SignupPage, AccountStatusPage, ResetPasswordPage, UpdatePasswordPage } from '@/pages/Account'
 import { LearningPaths } from '@/pages/LearningPaths'
 import { PathDetail } from '@/pages/PathDetail'
 import { Modules } from '@/pages/Modules'
@@ -35,26 +36,31 @@ const GuidedTour = lazy(() => import('@/components/tour/GuidedTour').then(m => (
 
 // Account surfaces are route-split: most sessions are guests and never open them, and the owner
 // console is a separate experience that no learner needs to download.
+const LoginPage = lazy(() => import('@/pages/Account').then(m => ({ default: m.LoginPage })))
+const SignupPage = lazy(() => import('@/pages/Account').then(m => ({ default: m.SignupPage })))
+const AccountStatusPage = lazy(() => import('@/pages/Account').then(m => ({ default: m.AccountStatusPage })))
+const ResetPasswordPage = lazy(() => import('@/pages/Account').then(m => ({ default: m.ResetPasswordPage })))
+const UpdatePasswordPage = lazy(() => import('@/pages/Account').then(m => ({ default: m.UpdatePasswordPage })))
 const AdminPage = lazy(() => import('@/pages/Admin').then(m => ({ default: m.AdminPage })))
 const Profile = lazy(() => import('@/pages/Profile').then(m => ({ default: m.Profile })))
 const Sync = lazy(() => import('@/pages/Sync').then(m => ({ default: m.Sync })))
 
 const workspace = (page: ReactNode) => <Shell>{page}</Shell>
 const ownerConsole = (page: ReactNode) => <AdminShell><Suspense fallback={<AdminRouteFallback />}>{page}</Suspense></AdminShell>
-const publicRoutes = new Set(['/', '/about', '/how-it-works', '/login', '/signup', '/account', '/reset-password', '/update-password'])
+const publicRoutes = new Set(['/feedback', '/', '/about', '/how-it-works', '/login', '/signup', '/account', '/reset-password', '/update-password'])
 
 function AdminRouteFallback() {
   return (
-    <div className="flex min-h-[40vh] items-center justify-center text-sm text-slate-400" role="status" aria-live="polite">
-      <span className="mr-2.5 h-2 w-2 animate-pulse rounded-full bg-violet-300" aria-hidden="true" /> Loading the owner console…
+    <div className="flex min-h-[40vh] items-center justify-center text-sm text-[var(--ink-secondary)]" role="status" aria-live="polite">
+      <span className="mr-2.5 h-2 w-2 rounded-full bg-[var(--owner)]" aria-hidden="true" /> Loading the owner console…
     </div>
   )
 }
 
 function RouteFallback() {
   return (
-    <div className="flex min-h-[40vh] items-center justify-center text-sm text-slate-400" role="status" aria-live="polite">
-      <span className="mr-2.5 h-2 w-2 animate-pulse rounded-full bg-cyan-300" aria-hidden="true" /> Loading…
+    <div className="flex min-h-[40vh] items-center justify-center text-sm text-[var(--ink-secondary)]" role="status" aria-live="polite">
+      <span className="mr-2.5 h-2 w-2 rounded-full bg-[var(--action-fill)]" aria-hidden="true" /> Loading…
     </div>
   )
 }
@@ -91,24 +97,26 @@ function ApplicationRoutes() {
         <PointsToast />
         <GlobalSearch open={searchOpen} onClose={closeSearch} />
         <KeyboardShortcuts />
-        {location.pathname !== '/admin' && <Suspense fallback={null}><GuidedTour /></Suspense>}
+        {!location.pathname.startsWith('/admin') && <Suspense fallback={null}><GuidedTour /></Suspense>}
       </>}
       <Routes>
         <Route path="/" element={<PublicLayout />}>
           <Route index element={<PublicHome />} />
+          <Route path="feedback" element={<FeedbackPage />} />
           <Route path="about" element={<AboutPage />} />
           <Route path="how-it-works" element={<HowItWorksPage />} />
-          <Route path="login" element={<LoginPage />} />
-          <Route path="signup" element={<SignupPage />} />
-          <Route path="account" element={<AccountStatusPage />} />
-          <Route path="reset-password" element={<ResetPasswordPage />} />
-          <Route path="update-password" element={<UpdatePasswordPage />} />
+          <Route path="login" element={<Suspense fallback={<RouteFallback />}><LoginPage /></Suspense>} />
+          <Route path="signup" element={<Suspense fallback={<RouteFallback />}><SignupPage /></Suspense>} />
+          <Route path="account" element={<Suspense fallback={<RouteFallback />}><AccountStatusPage /></Suspense>} />
+          <Route path="reset-password" element={<Suspense fallback={<RouteFallback />}><ResetPasswordPage /></Suspense>} />
+          <Route path="update-password" element={<Suspense fallback={<RouteFallback />}><UpdatePasswordPage /></Suspense>} />
         </Route>
 
         {/* The former dashboard remains available to guests at /app; / stays a public homepage. */}
         <Route path="/app" element={workspace(<Dashboard />)} />
         <Route path="/dashboard" element={<Navigate to="/app" replace />} />
         {/* Owner controls live in their own chrome, separate from every learner surface. */}
+        <Route path="/admin/feedback" element={ownerConsole(<AdminFeedback />)} />
         <Route path="/admin" element={ownerConsole(<AdminPage />)} />
 
         {/* Existing learning routes remain intact and usable without an account. */}
@@ -152,12 +160,11 @@ function ApplicationRoutes() {
   )
 }
 
+// A data router provides supported navigation blocking for unsaved drafts, including POP history.
+const router = createBrowserRouter([{ path: '*', element: <ErrorBoundary><ApplicationRoutes /></ErrorBoundary> }], { basename: import.meta.env.BASE_URL })
+
 function App() {
-  return (
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <ErrorBoundary><ApplicationRoutes /></ErrorBoundary>
-    </BrowserRouter>
-  )
+  return <RouterProvider router={router} />
 }
 
 export default App

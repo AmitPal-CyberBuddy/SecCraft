@@ -33,12 +33,15 @@ Both can support offline PSK guessing. The PMKID method changes the capture requ
 
 ## 3. Lab
 
+From a local checkout, enter `frontend/public/pcaps/wpa2/`; tools are optional and not bundled. `--show` only displays previously recovered values; it does not run an audit.
+
 ```bash
 tshark -r pmkid.pcapng -Y 'eapol.type == 3' \
-  -T fields -e frame.number -e wlan.sa -e eapol.keydes.key_info -e eapol.keydes.key_data_len -e eapol.keydes.key_data
+  -T fields -e frame.number -e wlan.sa -e wlan_rsna_eapol.keydes.key_info -e wlan_rsna_eapol.keydes.data_len -e wlan_rsna_eapol.keydes.data
 
 hcxpcapngtool -o pmkid.hc22000 pmkid.pcapng
-hashcat -m 22000 pmkid.hc22000 wordlists/wififorge-lab-psk.txt --show
+hashcat -m 22000 pmkid.hc22000 ../../wordlists/wififorge-lab-psk.txt
+hashcat -m 22000 pmkid.hc22000 --show
 ```
 
 Use these commands only with the bundled lab artifact or an explicitly authorized capture.

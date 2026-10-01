@@ -1,6 +1,6 @@
 # Independent Capture Case C-20
 
-> This is an **offline-first practice case**, not a professional credential or a live RF test. `ENG-01` remains a separate optional Northwind *planning brief* with missing attachments; none of its results can be inferred from this case. The final activity tests technical decisions, not formal report writing.
+> This is an **offline-first practice case**, not a professional credential or a live RF test. `ENG-01` remains a separate optional Northwind *planning brief* with missing attachments; none of its results can be inferred from this case. Start with technical decisions; the later WF-REVIEW-07 lessons add source-cited reporting and public review.
 
 ## Your evidence pack
 

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Brain, RotateCcw, CheckCircle, X, Zap, Award, Clock, Target } from 'lucide-react'
+import { useState, useEffect, useRef, useId } from 'react'
+import { LearningProgress } from './LearningProgress'
+import { Brain, RotateCcw, CheckCircle, X, Zap } from 'lucide-react'
 
 interface Card {
   id: string
@@ -25,6 +25,10 @@ const initialCards: Card[] = [
 export const INITIAL_CARD_COUNT = initialCards.length
 
 export function Flashcards({ className = '' }: { className?: string }) {
+  const faceId = useId()
+  const flipRef = useRef<HTMLButtonElement>(null)
+  const revealedRef = useRef(false)
+  const [feedback, setFeedback] = useState('')
   const [cards, setCards] = useState<Card[]>(() => {
     try { const saved = JSON.parse((localStorage.getItem('platform-flashcards') || localStorage.getItem('wififorge-flashcards') || 'null')); return saved || initialCards } catch { return initialCards }
   })
@@ -38,6 +42,8 @@ export function Flashcards({ className = '' }: { className?: string }) {
   if (!card) return null
 
   const handleAnswer = (correct: boolean) => {
+    if (!revealedRef.current) return
+    revealedRef.current = false
     const updated = [...cards]
     if (correct) {
       updated[current] = { ...card, difficulty: Math.min(card.difficulty + 1, 5), nextReview: new Date(Date.now() + (card.difficulty + 1) * 24 * 60 * 60 * 1000).toISOString() }
@@ -49,53 +55,50 @@ export function Flashcards({ className = '' }: { className?: string }) {
     setCards(updated)
     setFlipped(false)
     setCurrent((current + 1) % cards.length)
+    setFeedback(`${correct ? 'Marked correct.' : 'Marked for review.'} Card ${(current + 1) % cards.length + 1} of ${cards.length}. Local practice only.`)
+    flipRef.current?.focus({ preventScroll: true })
   }
 
   return (
-    <div className={`rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 sm:p-6 min-w-0 w-full ${className}`}>
+    <div className={`rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-4 xs:p-5 sm:p-6 min-w-0 w-full ${className}`}>
       <div className="flex items-center gap-3 mb-5">
-        <div className="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
-          <Brain className="w-5 h-5 text-violet-400" />
+        <div className="w-9 h-9 rounded-xl bg-[var(--owner-bg)] border border-[var(--owner-border)] flex items-center justify-center shrink-0">
+          <Brain className="w-5 h-5 text-[var(--owner)]" />
         </div>
         <div className="min-w-0">
-          <h3 className="font-heading font-bold text-[14px] xs:text-[15px] text-slate-100">Flashcards — spaced repetition</h3>
-          <p className="text-[11px] text-slate-500 font-mono">{cards.length} cards • {stats.correct} correct • {stats.wrong} wrong • {Math.round((stats.correct/(stats.correct+stats.wrong||1))*100)}% accuracy</p>
+          <h3 className="font-heading font-bold text-[14px] xs:text-[15px] text-[var(--ink-primary)]">Flashcards — spaced repetition</h3>
+          <p className="text-[11px] text-[var(--ink-muted)] font-mono">{cards.length} cards • {stats.correct} correct • {stats.wrong} wrong • {Math.round((stats.correct/(stats.correct+stats.wrong||1))*100)}% accuracy</p>
         </div>
         <div className="ml-auto flex items-center gap-2 shrink-0">
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 font-mono">SM-2</span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--owner-bg)] border border-[var(--owner-border)] text-[var(--owner)] font-mono">SM-2</span>
         </div>
       </div>
 
-      <div className="relative h-[220px] xs:h-[240px] mb-4">
-        <AnimatePresence mode="wait">
-          <motion.div key={`${card.id}-${flipped}`} initial={{ rotateY: flipped ? -90 : 90, opacity: 0 }} animate={{ rotateY: 0, opacity: 1 }} exit={{ rotateY: flipped ? 90 : -90, opacity: 0 }} transition={{ duration: 0.3 }} onClick={() => setFlipped(!flipped)} className="absolute inset-0 p-6 rounded-xl bg-[#020617]/80 border border-[#334155]/60 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-[#020617]/90 hover:border-[#475569]/60 transition-colors group">
-            <div className={`absolute top-3 left-3 text-[10px] px-2 py-0.5 rounded-full border font-mono ${card.category === 'term' ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400' : card.category === 'command' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>{card.category.toUpperCase()}</div>
-            <div className="absolute top-3 right-3 text-[10px] px-2 py-0.5 rounded-full bg-[#1e293b] border border-[#334155] text-slate-500 font-mono">Difficulty {card.difficulty}/5</div>
-            <div className="text-[16px] xs:text-[18px] font-bold text-slate-100 leading-tight">{flipped ? card.back : card.front}</div>
-            <div className="mt-4 text-[11px] text-slate-500 flex items-center gap-1.5"><RotateCcw className="w-3 h-3" />Click to flip • {flipped ? 'Answer' : 'Question'}</div>
-          </motion.div>
-        </AnimatePresence>
+      <button ref={flipRef} type="button" className="sc-flashcard-face" data-face={flipped ? 'answer' : 'question'} aria-label={flipped ? 'Flip to question' : 'Flip to answer'} aria-describedby={faceId} onClick={() => {
+        revealedRef.current = !revealedRef.current
+        setFlipped(revealedRef.current)
+      }}>
+        <span className="sc-flashcard-meta"><span>{card.category.toUpperCase()}</span><span>Difficulty {card.difficulty}/5</span></span>
+        <span id={faceId} className="sc-flashcard-copy" aria-live="polite" aria-atomic="true">{flipped ? card.back : card.front}</span>
+        <span className="sc-flashcard-caption"><RotateCcw size={14} aria-hidden="true" />{flipped ? 'Answer · activate to return to question' : 'Question · activate to reveal answer'}</span>
+      </button>
+
+      <div className="sc-flashcard-ratings flex gap-3">
+          <button type="button" disabled={!flipped} onClick={() => handleAnswer(false)} className="flex-1 py-3 rounded-xl bg-[var(--danger-bg)] border border-[var(--danger-border)] text-[var(--danger)] font-medium text-[13px] flex items-center justify-center gap-2 hover:bg-[var(--danger-bg)] transition-colors touch-manipulation min-h-[44px]"><X className="w-4 h-4" />Wrong — Again</button>
+          <button type="button" disabled={!flipped} onClick={() => handleAnswer(true)} className="flex-1 py-3 rounded-xl bg-[var(--success-bg)] border border-[var(--success-border)] text-[var(--success)] font-medium text-[13px] flex items-center justify-center gap-2 hover:bg-[var(--success-bg)] transition-colors touch-manipulation min-h-[44px]"><CheckCircle className="w-4 h-4" />Correct — Easy</button>
       </div>
+      <p className="sc-learning-feedback" role="status" aria-live="polite">{feedback}</p>
 
-      {flipped && (
-        <div className="flex gap-3">
-          <button onClick={() => handleAnswer(false)} className="flex-1 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 font-medium text-[13px] flex items-center justify-center gap-2 hover:bg-red-500/15 transition-colors touch-manipulation min-h-[44px]"><X className="w-4 h-4" />Wrong — Again</button>
-          <button onClick={() => handleAnswer(true)} className="flex-1 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium text-[13px] flex items-center justify-center gap-2 hover:bg-emerald-500/15 transition-colors touch-manipulation min-h-[44px]"><CheckCircle className="w-4 h-4" />Correct — Easy</button>
-        </div>
-      )}
-
-      {!flipped && (
-        <div className="p-3 rounded-xl bg-cyan-500/[0.03] border border-cyan-500/10 flex items-center gap-2 text-[11px] text-slate-500">
-          <Zap className="w-4 h-4 text-cyan-400 shrink-0" />
+      <div className="p-3 rounded-xl bg-[var(--accent-bg)] border border-[var(--accent-border)] flex items-center gap-2 text-[11px] text-[var(--ink-muted)]">
+          <Zap className="w-4 h-4 text-[var(--learning)] shrink-0" />
           <span>{INITIAL_CARD_COUNT} cards drawn from the shipped terms, commands and filters — difficulty 0–5, next review auto-scheduled from your own answers. Your deck is stored in this browser.</span>
-        </div>
-      )}
+      </div>
 
       <div className="mt-4 flex items-center justify-between text-[11px] font-mono">
-        <span className="text-slate-500">{current + 1}/{cards.length} • Next review: {new Date(card.nextReview).toLocaleDateString()}</span>
+        <span className="text-[var(--ink-muted)]">{current + 1}/{cards.length} • Next review: {new Date(card.nextReview).toLocaleDateString()}</span>
         <div className="flex items-center gap-2">
-          <span className="text-slate-400">{stats.correct}✓ {stats.wrong}✗</span>
-          <div className="w-20 h-1.5 bg-[#020617] rounded-full overflow-hidden border border-[#1e293b]/40"><div className="h-full bg-gradient-to-r from-violet-400 to-cyan-400 rounded-full" style={{ width: `${((current+1)/cards.length)*100}%` }} /></div>
+          <span className="text-[var(--ink-secondary)]">{stats.correct}✓ {stats.wrong}✗</span>
+          <div className="w-20 h-1.5 bg-[var(--panel-inset)] rounded-full overflow-hidden border border-[var(--line-normal)]"><LearningProgress value={((current + 1) / cards.length) * 100} label="Position in flashcard deck" /></div>
         </div>
       </div>
     </div>

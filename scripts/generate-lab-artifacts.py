@@ -382,9 +382,9 @@ def build_traffic_analysis() -> Lab:
     lab.data(mac(STA_1), mac(AP_ESS_1), mac(AP_ESS_1),
              llc_snap(0x0806, arp_ipv4(2, mac(AP_ESS_1), "10.20.30.10", mac(STA_1), "10.20.30.51")), from_ds=1)  # ARP reply
     lab.ip_from_sta(mac(STA_1), mac(AP_ESS_1), "10.20.30.51", "10.20.30.10",
-                    b"\x08\x00\x00\x00", proto=1)
+                    b"\x08\x00\xf7\xfd\x00\x01\x00\x01", proto=1)
     lab.ip_from_ap(mac(STA_1), mac(AP_ESS_1), "10.20.30.10", "10.20.30.51",
-                   b"\x00\x00\x00\x00", proto=1)
+                   b"\x00\x00\xff\xfd\x00\x01\x00\x01", proto=1)
     dns_query = b"\x12\x34\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00" + b"\x03lab\x07example\x00" + b"\x00\x01\x00\x01"
     lab.ip_from_sta(mac(STA_1), mac(AP_ESS_1), "10.20.30.51", "10.20.30.1",
                     udp(51423, 53, dns_query))
@@ -460,9 +460,10 @@ def build_wps_beacon() -> Lab:
     lab.mgmt(SUBTYPE_ASSOC_RESP, sta, ap, ap,
              struct.pack("<HHH", 0x0411, 0, 1 | 0xC000) + ie_supported_rates())
     lab.eapol_over_wifi(sta, ap, eapol_eap(eap(EAP_RESPONSE, 1, EAP_TYPE_IDENTITY, b"WFA-SimpleConfig-Enrollee-1-0")))
-    lab.eapol_from_ap(sta, ap, eapol_eap(eap(EAP_REQUEST, 1, EAP_TYPE_WSC, b"\x01")))
-    lab.eapol_over_wifi(sta, ap, eapol_eap(eap(EAP_RESPONSE, 1, EAP_TYPE_WSC,
-        struct.pack("!HH", 0x104A, 2) + b"\x10\x4a" + struct.pack("!HH", 0x1022, 2) + struct.pack("!H", 0x0004))))
+    wsc_ext = b"\x00\x37\x2a\x00\x00\x00\x01"
+    lab.eapol_from_ap(sta, ap, eapol_eap(eap(EAP_REQUEST, 2, EAP_TYPE_WSC, wsc_ext + b"\x01\x00")))
+    lab.eapol_over_wifi(sta, ap, eapol_eap(eap(EAP_RESPONSE, 2, EAP_TYPE_WSC,
+        wsc_ext + b"\x04\x00" + struct.pack("!HH", 0x104A, 1) + b"\x10" + struct.pack("!HH", 0x1022, 1) + b"\x01" + struct.pack("!HH", 0x1012, 2) + struct.pack("!H", 0x0004))))
     return lab
 
 
@@ -473,8 +474,8 @@ def build_wpa3_transition() -> Lab:
     bss_beacon(lab, SSID_WPA3, AP_WPA3, 36, beacon_ies(rsn=rsn, band_5=True, he=True))
     # Synthetic SAE-labeled authentication frames (commit/confirm-shaped, not a valid DH exchange).
     sta, ap = mac(STA_2), mac(AP_WPA3)
-    sae_commit = bytes([19]) + b"\x01" + b"\x00" * 96   # synthetic scalar/element (documented)
-    sae_confirm = bytes([19]) + b"\x02" + b"\x00" * 32
+    sae_commit = struct.pack("<H", 19) + b"\x01" * 32 + b"\x02" * 64   # synthetic scalar/element (documented)
+    sae_confirm = struct.pack("<H", 1) + b"\x03" * 32
     lab.mgmt(SUBTYPE_AUTH, ap, sta, ap, struct.pack("<HHH", 3, 1, 0) + sae_commit, channel=36)
     lab.mgmt(SUBTYPE_AUTH, sta, ap, ap, struct.pack("<HHH", 3, 1, 0) + sae_commit, channel=36)
     lab.mgmt(SUBTYPE_AUTH, ap, sta, ap, struct.pack("<HHH", 3, 2, 0) + sae_confirm, channel=36)
@@ -495,8 +496,8 @@ def build_wpa3_only() -> Lab:
     rsn = ie_rsn(akm=[AKM_SAE], caps=RSNCAP_MFPC | RSNCAP_MFPR)
     bss_beacon(lab, SSID_WPA3_ONLY, AP_WPA3_ONLY, 36, beacon_ies(rsn=rsn, band_5=True, he=True))
     sta, ap = mac(STA_2), mac(AP_WPA3_ONLY)
-    sae_commit = bytes([19]) + b"\x01" + b"\x00" * 96
-    sae_confirm = bytes([19]) + b"\x02" + b"\x00" * 32
+    sae_commit = struct.pack("<H", 19) + b"\x01" * 32 + b"\x02" * 64
+    sae_confirm = struct.pack("<H", 1) + b"\x03" * 32
     lab.mgmt(SUBTYPE_AUTH, ap, sta, ap, struct.pack("<HHH", 3, 1, 0) + sae_commit, channel=36)
     lab.mgmt(SUBTYPE_AUTH, sta, ap, ap, struct.pack("<HHH", 3, 1, 0) + sae_commit, channel=36)
     lab.mgmt(SUBTYPE_AUTH, ap, sta, ap, struct.pack("<HHH", 3, 2, 0) + sae_confirm, channel=36)
@@ -589,7 +590,7 @@ def build_rogue_ap() -> Lab:
     http_get = b"GET /portal HTTP/1.1\r\nHost: 192.168.66.1\r\n\r\n"
     lab.data(mac(AP_ROGUE), mac(STA_1), mac(AP_ROGUE),
              llc_snap(0x0800, ipv4("192.168.66.50", "192.168.66.1", tcp(49152, 80, http_get), 6)), to_ds=1)
-    portal = (b"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"
+    portal = (b"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 91\r\n\r\n"
               b"<form action='/login' method='POST'><input name='u'><input name='p' type='password'></form>")
     lab.data(mac(STA_1), mac(AP_ROGUE), mac(AP_ROGUE),
              llc_snap(0x0800, ipv4("192.168.66.1", "192.168.66.50", tcp(80, 49152, portal, seq=1), 6)), from_ds=1)
@@ -624,16 +625,16 @@ def build_captive_portal() -> Lab:
                 b"Content-Length: 0\r\n\r\n")
     lab.data(sta, ap, ap, llc_snap(0x0800, ipv4("1.1.1.1", "10.0.0.87", tcp(80, 49152, redirect), 6)), from_ds=1)
     post = (b"POST /login HTTP/1.1\r\nHost: portal.guest.example\r\n"
-            b"Content-Type: application/x-www-form-urlencoded\r\n\r\n"
+            b"Content-Type: application/x-www-form-urlencoded\r\nContent-Length: 68\r\n\r\n"
             b"username=guest1&password=Welcome2025&mac=12%3A34%3A56%3A78%3A9a%3Abc")
     lab.data(ap, sta, ap, llc_snap(0x0800, ipv4("10.0.0.87", "10.0.0.10", tcp(49152, 80, post, seq=100), 6)), to_ds=1)
-    ok = b"HTTP/1.1 200 OK\r\nSet-Cookie: session=8f14e45fceea167a5a36dedd4bea2543; Path=/\r\n\r\nWelcome"
+    ok = b"HTTP/1.1 200 OK\r\nSet-Cookie: session=8f14e45fceea167a5a36dedd4bea2543; Path=/\r\nContent-Length: 7\r\n\r\nWelcome"
     lab.data(sta, ap, ap, llc_snap(0x0800, ipv4("10.0.0.10", "10.0.0.87", tcp(80, 49152, ok, seq=100), 6)), from_ds=1)
     # A complete ARP request/reply is forwarded between two guest stations by the simulated AP.
-    sta2 = mac(STA_5)
+    sta2 = mac("02:66:77:88:99:aa")  # unicast, locally administered test station
     arp_req = llc_snap(0x0806, arp_ipv4(1, sta, "10.0.0.87", bytes(6), "10.0.0.88"))
     arp_reply = llc_snap(0x0806, arp_ipv4(2, sta2, "10.0.0.88", sta, "10.0.0.87"))
-    lab.data(b"\xff" * 6, sta, ap, arp_req, to_ds=1)
+    lab.data(ap, sta, b"\xff" * 6, arp_req, to_ds=1)
     lab.data(sta2, ap, sta, arp_req, from_ds=1)
     lab.data(ap, sta2, sta, arp_reply, to_ds=1)
     lab.data(sta, ap, sta2, arp_reply, from_ds=1)
@@ -641,23 +642,29 @@ def build_captive_portal() -> Lab:
 
 
 def radius_request(identifier: int, attrs: bytes, secret: bytes) -> bytes:
-    """Access-Request / Accounting-Request with a correct Message-Authenticator (RFC 3579).
-
-    The Request Authenticator is zero on the wire, so the attribute is computed over
-    the packet exactly as a NAS would compute it.
-    """
-    placeholder = radius_attr(ATTR_MESSAGE_AUTHENTICATOR, b"\x00" * 16)
-    packet = radius_packet(RADIUS_ACCESS_REQUEST, identifier, attrs + placeholder, bytes(16))
+    """Deterministic teaching Access-Request; a production nonce must be unpredictable."""
+    nonce = hashlib.sha256(b"fixture-radius:" + bytes([identifier]) + attrs).digest()[:16]
+    placeholder = radius_attr(ATTR_MESSAGE_AUTHENTICATOR, bytes(16))
+    packet = radius_packet(RADIUS_ACCESS_REQUEST, identifier, attrs + placeholder, nonce)
     ma = radius_message_authenticator(packet, secret)
     return radius_packet(RADIUS_ACCESS_REQUEST, identifier,
-                         attrs + radius_attr(ATTR_MESSAGE_AUTHENTICATOR, ma), bytes(16))
+                         attrs + radius_attr(ATTR_MESSAGE_AUTHENTICATOR, ma), nonce)
 
 
 def radius_response(identifier: int, code: int, attrs: bytes, secret: bytes,
                     request_authenticator: bytes) -> bytes:
-    """Server reply with the Response Authenticator of RFC 2865 §3."""
-    length = 20 + len(attrs)
-    authenticator = radius_response_authenticator(code, identifier, length,
+    # EAP-bearing responses include a Message-Authenticator. For its HMAC the
+    # header contains the REQUEST authenticator; compute Response Authenticator last.
+    offset = 0
+    has_eap = False
+    while offset < len(attrs):
+        has_eap |= attrs[offset] == ATTR_EAP_MESSAGE
+        offset += attrs[offset + 1]
+    if has_eap:
+        zeroed = attrs + radius_attr(ATTR_MESSAGE_AUTHENTICATOR, bytes(16))
+        ma = radius_message_authenticator(radius_packet(code, identifier, zeroed, request_authenticator), secret)
+        attrs += radius_attr(ATTR_MESSAGE_AUTHENTICATOR, ma)
+    authenticator = radius_response_authenticator(code, identifier, 20 + len(attrs),
                                                   request_authenticator, attrs, secret)
     return radius_packet(code, identifier, attrs, authenticator)
 
@@ -693,12 +700,6 @@ def build_radius() -> Lab:
              + radius_attr(ATTR_EAP_MESSAGE, eap_identity))
     req1 = radius_request(1, attrs, LAB_RADIUS_SECRET_WEAK)
     to_radius(nas_ip, radius_ip, req1, 49152, 1812)
-    # Access-Challenge includes a PEAP method identifier only; no TLS tunnel is constructed.
-    challenge_attrs = (radius_attr(ATTR_STATE, b"\x8f\x1c\x22\x0a")
-                       + radius_attr(ATTR_EAP_MESSAGE, _eap_expanded(EAP_TYPE_PEAP, b"\x01", EAP_REQUEST, 2)))
-    resp1 = radius_response(2, RADIUS_ACCESS_CHALLENGE, challenge_attrs,
-                            LAB_RADIUS_SECRET_WEAK, req1[4:20])
-    from_radius(radius_ip, nas_ip, resp1, 1812, 49152)
     # Direct EAP-MSCHAPv2 attributes are included as an intentionally visible teaching fixture.
     # They are not an inner exchange carried inside a complete PEAP/TLS tunnel.
     peer_challenge = hashlib.sha256(b"peer:" + sta).digest()[:16]
@@ -708,39 +709,44 @@ def build_radius() -> Lab:
     chap_challenge = mschapv2_challenge(auth_challenge, "corp-lab", identifier=3)
     chap_response = mschapv2_response(peer_challenge, nt_response,
                                       LAB_EAP_USER.encode("utf-16-le"), identifier=3)
-    inner_request = eap(EAP_REQUEST, 3, EAP_TYPE_MSCHAPV2, chap_challenge)
-    inner_response = eap(EAP_RESPONSE, 3, EAP_TYPE_MSCHAPV2, chap_response)
-    to_radius(nas_ip, radius_ip,
-              radius_request(2, radius_attr(ATTR_USER_NAME, identity)
-                             + radius_attr(ATTR_EAP_MESSAGE, inner_request), LAB_RADIUS_SECRET_WEAK),
-              49152, 1812)
-    from_radius(radius_ip, nas_ip,
-                radius_response(3, RADIUS_ACCESS_CHALLENGE,
-                                radius_attr(ATTR_STATE, b"\x8f\x1c\x22\x0a")
-                                + radius_attr(ATTR_EAP_MESSAGE, inner_response),
-                                LAB_RADIUS_SECRET_WEAK, req1[4:20]),
-                1812, 49152)
-    # Access-Accept — VLAN assignment + MS-MPPE keys, Response Authenticator verifiable.
+    # These embedded method bytes remain illustrative direct MS-CHAPv2 values,
+    # not a PEAP tunnel or a validated EAP client/server implementation.
+    state = radius_attr(ATTR_STATE, b"lab-state-01")
+    challenge = radius_response(1, RADIUS_ACCESS_CHALLENGE,
+        state + radius_attr(ATTR_EAP_MESSAGE, eap(EAP_REQUEST, 3, EAP_TYPE_MSCHAPV2, chap_challenge)),
+        LAB_RADIUS_SECRET_WEAK, req1[4:20])
+    from_radius(radius_ip, nas_ip, challenge, 1812, 49152)
+    req2 = radius_request(2, radius_attr(ATTR_USER_NAME, identity) + state
+        + radius_attr(ATTR_EAP_MESSAGE, eap(EAP_RESPONSE, 3, EAP_TYPE_MSCHAPV2, chap_response)), LAB_RADIUS_SECRET_WEAK)
+    to_radius(nas_ip, radius_ip, req2, 49152, 1812)
+    from wififorge_labkit import _md4
+    digest = hashlib.sha1(_md4(nt_hash) + nt_response + b"Magic server to client signing constant").digest()
+    proof = hashlib.sha1(digest + chap_hash + b"Pad to make it do more than one iteration").hexdigest().upper()
+    result = mschapv2_result(3, "S=" + proof, identifier=3)
+    from_radius(radius_ip, nas_ip, radius_response(2, RADIUS_ACCESS_CHALLENGE,
+        state + radius_attr(ATTR_EAP_MESSAGE, eap(EAP_REQUEST, 4, EAP_TYPE_MSCHAPV2, result)),
+        LAB_RADIUS_SECRET_WEAK, req2[4:20]), 1812, 49152)
+    req3 = radius_request(3, radius_attr(ATTR_USER_NAME, identity) + state
+        + radius_attr(ATTR_EAP_MESSAGE, eap(EAP_RESPONSE, 4, EAP_TYPE_MSCHAPV2, b"\x03")), LAB_RADIUS_SECRET_WEAK)
+    to_radius(nas_ip, radius_ip, req3, 49152, 1812)
+    # EAP Success has only Code, Identifier and Length. No Type or method payload.
+    # No real MSK/key transport or AP policy enforcement is represented here.
     accept_attrs = (radius_attr(ATTR_USER_NAME, identity)
-                    + radius_attr(ATTR_TUNNEL_TYPE, struct.pack("!I", 13))
-                    + radius_attr(ATTR_TUNNEL_MEDIUM_TYPE, struct.pack("!I", 6))
-                    + radius_attr(ATTR_TUNNEL_PRIVATE_GROUP_ID, b"100")
-                    + radius_attr(ATTR_EAP_MESSAGE, eap(EAP_SUCCESS, 4, EAP_TYPE_MSCHAPV2,
-                                                        mschapv2_result(3, "S=1E7A2C9F4B6D0E83A1C5F7B9D2E4A6C8B0D3F5A7", utf16_message=True)))
-                    + radius_vsa(MS_VENDOR_ID, MS_ATTR_MPPE_SEND_KEY, b"\x1c\x2a\xf3\x91" + b"\x00" * 30)
-                    + radius_vsa(MS_VENDOR_ID, MS_ATTR_MPPE_RECV_KEY, b"\x5b\x77\x02\xe4" + b"\x00" * 30))
-    accept = radius_response(4, RADIUS_ACCESS_ACCEPT, accept_attrs,
-                             LAB_RADIUS_SECRET_WEAK, req1[4:20])
-    from_radius(radius_ip, nas_ip, accept, 1812, 49152)
-    # Accounting-Request Start / Response.
+        + radius_attr(ATTR_TUNNEL_TYPE, struct.pack("!I", 13))
+        + radius_attr(ATTR_TUNNEL_MEDIUM_TYPE, struct.pack("!I", 6))
+        + radius_attr(ATTR_TUNNEL_PRIVATE_GROUP_ID, b"100")
+        + radius_attr(ATTR_EAP_MESSAGE, struct.pack("!BBH", EAP_SUCCESS, 4, 4)))
+    from_radius(radius_ip, nas_ip, radius_response(3, RADIUS_ACCESS_ACCEPT, accept_attrs,
+        LAB_RADIUS_SECRET_WEAK, req3[4:20]), 1812, 49152)
     acct_attrs = (radius_attr(ATTR_USER_NAME, identity)
-                  + radius_attr(ATTR_NAS_IP, bytes([10, 20, 30, 1]))
-                  + radius_attr(40, struct.pack("!I", 1))
-                  + radius_attr(44, b"session-0001"))
-    to_radius(nas_ip, radius_ip, radius_request(5, acct_attrs, LAB_RADIUS_SECRET_WEAK),
-              49153, 1813)
+        + radius_attr(ATTR_NAS_IP, bytes([10, 20, 30, 1]))
+        + radius_attr(40, struct.pack("!I", 1)) + radius_attr(44, b"session-0001"))
+    acct_zero = radius_packet(RADIUS_ACCOUNTING_REQUEST, 5, acct_attrs, bytes(16))
+    acct = radius_packet(RADIUS_ACCOUNTING_REQUEST, 5, acct_attrs,
+        hashlib.md5(acct_zero + LAB_RADIUS_SECRET_WEAK).digest())
+    to_radius(nas_ip, radius_ip, acct, 49153, 1813)
     from_radius(radius_ip, nas_ip, radius_response(5, RADIUS_ACCOUNTING_RESPONSE, b"",
-                                                   LAB_RADIUS_SECRET_WEAK, req1[4:20]), 1813, 49153)
+        LAB_RADIUS_SECRET_WEAK, acct[4:20]), 1813, 49153)
     # A *rogue* NAS that guessed the shared secret: Message-Authenticator is wrong.
     bad = radius_request(3, attrs, LAB_RADIUS_SECRET_STRONG)
     to_radius("10.20.30.99", radius_ip, bad, 49154, 1812)
@@ -763,10 +769,11 @@ def build_enterprise() -> Lab:
     lab.eapol_from_ap(sta, ap, eapol_eap(eap(EAP_REQUEST, 1, EAP_TYPE_IDENTITY, b"corp.example")))
     lab.eapol_over_wifi(sta, ap, eapol_eap(eap(EAP_RESPONSE, 1, EAP_TYPE_IDENTITY, b"anonymous@corp.example")))
     # Illustrative PEAP identifiers and abbreviated TLS-like bytes; no full TLS negotiation or inner identity is present.
-    tls_record = b"\x16\x03\x01\x00\x2e" + b"\x01" + b"\x00" * 45      # synthetic TLS ClientHello
-    lab.eapol_over_wifi(sta, ap, eapol_eap(eap(EAP_RESPONSE, 2, EAP_TYPE_PEAP, b"\x00" + tls_record)))
-    lab.eapol_from_ap(sta, ap, eapol_eap(eap(EAP_REQUEST, 3, EAP_TYPE_PEAP, b"\x02" + tls_record)))
-    lab.eapol_over_wifi(sta, ap, eapol_eap(eap(EAP_RESPONSE, 3, EAP_TYPE_PEAP, b"\x00" + tls_record)))
+    tls_client_hello = b"\x16\x03\x01\x00\x2d\x01\x00\x00\x29\x03\x03" + b"\x11" * 32 + b"\x00\x00\x02\x00\x2f\x01\x00"
+    tls_server_hello = b"\x16\x03\x01\x00\x2a\x02\x00\x00\x26\x03\x03" + b"\x22" * 32 + b"\x00\x00\x2f\x00"
+    lab.eapol_over_wifi(sta, ap, eapol_eap(eap(EAP_RESPONSE, 2, EAP_TYPE_PEAP, b"\x00" + tls_client_hello)))
+    lab.eapol_from_ap(sta, ap, eapol_eap(eap(EAP_REQUEST, 3, EAP_TYPE_PEAP, b"\x00" + tls_server_hello)))
+    lab.eapol_over_wifi(sta, ap, eapol_eap(eap(EAP_RESPONSE, 3, EAP_TYPE_PEAP, b"\x00")))
     # MSK → PMK: the 802.1X authentication produces the MSK; PMK = first 256 bits of MSK.
     msk = hashlib.sha256(b"wififorge-lab-msk:" + sta + ap).digest() + b"\x00" * 32
     pmk = msk[:32]
@@ -875,9 +882,9 @@ def build_corporate_attacks() -> Lab:
     # 4) Add an ICMP request/reply pair as synthetic packet examples. These do not test
     #    real VLAN routing, ACLs, guest access, or client isolation.
     guest, guest_ap = mac(STA_5), mac(AP_CORP_2)
-    lab.data(guest_ap, guest, mac(AP_CORP_1), llc_snap(0x0800, ipv4("10.0.0.87", "10.20.30.10", b"\x08\x00\x00\x00", 1)),
+    lab.data(guest_ap, guest, mac(AP_CORP_1), llc_snap(0x0800, ipv4("10.0.0.87", "10.20.30.10", b"\x08\x00\xf7\xfd\x00\x01\x00\x01", 1)),
              to_ds=1, channel=6)
-    lab.data(guest, guest_ap, mac(AP_CORP_1), llc_snap(0x0800, ipv4("10.20.30.10", "10.0.0.87", b"\x00\x00\x00\x00", 1)),
+    lab.data(guest, guest_ap, mac(AP_CORP_1), llc_snap(0x0800, ipv4("10.20.30.10", "10.0.0.87", b"\x00\x00\xff\xfd\x00\x01\x00\x01", 1)),
              from_ds=1, channel=6)
     lab.meta = {  # type: ignore[attr-defined]
         "lab_psk": LAB_PSK,
@@ -948,9 +955,9 @@ def build_methodology() -> Lab:
     # Guest isolation missing + segmentation bypass.
     guest, guest_ap = mac(STA_5), mac(AP_CORP_2)
     lab.data(guest_ap, guest, corp_ap, llc_snap(0x0800, ipv4("10.0.0.87", "10.20.30.10",
-             b"\x08\x00\x00\x00", 1)), to_ds=1, channel=6)
+             b"\x08\x00\xf7\xfd\x00\x01\x00\x01", 1)), to_ds=1, channel=6)
     lab.data(guest, guest_ap, corp_ap, llc_snap(0x0800, ipv4("10.20.30.10", "10.0.0.87",
-             b"\x00\x00\x00\x00", 1)), from_ds=1, channel=6)
+             b"\x00\x00\xff\xfd\x00\x01\x00\x01", 1)), from_ds=1, channel=6)
     lab.meta = {  # type: ignore[attr-defined]
         "weak_psk": LAB_PSK_WEAK,
         "mschapv2": {"user": LAB_EAP_USER, "password": LAB_EAP_PASSWORD,
@@ -1019,9 +1026,9 @@ BUILDERS = [
 # Per-artifact documentation of what is cryptographically real (goes into MANIFEST.md)
 ARTIFACT_NOTES: Dict[str, Dict[str, str]] = {
     "beacon-only": {"real": "Beacon/probe fixed fields, IEs, RSNE (AKM, ciphers, MFPC/MFPR bits), country/VHT/HE/capability IEs",
-                    "synthetic": "nothing cryptographic — passive capture"},
-    "recon-lab": {"real": "6 BSSs incl. an ESS, a hidden BSS revealed in the probe response, directed probes leaking a PNL, randomised client MAC",
-                  "synthetic": "nothing cryptographic — passive capture"},
+                    "synthetic": "all frames and radio metadata are generated teaching evidence, not a live passive capture"},
+    "recon-lab": {"real": "Encoded six-BSS teaching inventory, hidden-name response and directed probes; locally administered address does not prove device identity or randomization",
+                  "synthetic": "all frames and radio metadata are generated teaching evidence, not a live passive capture"},
     "traffic-analysis": {"real": "Full association state machine, EAPOL-Key M1–M4 with MICs computed from the lab PSK, DHCP/ARP/ICMP/DNS/HTTP payloads",
                          "synthetic": "DHCP option bytes are minimal (fixed-size); HTTP/DNS bodies are lab strings"},
     "wpa2-handshake": {"real": "M1–M4 for one client and M1–M2 for a second; MICs, nonces and replay counters consistent with the lab PSK",
@@ -1040,8 +1047,8 @@ ARTIFACT_NOTES: Dict[str, Dict[str, str]] = {
                  "synthetic": "captive portal HTML payload is a lab string"},
     "captive-portal": {"real": "Open BSS, DHCP, HTTP 302 redirect to the portal, cleartext POST credentials, session cookie, client-to-client ARP (no isolation)",
                        "synthetic": "portal HTML/HTTP bodies are lab strings"},
-    "radius": {"real": "RADIUS over IPv4/UDP 1812-1813 with verifiable Message-Authenticator (Access-Request) and Response Authenticator (Accept/Challenge/Accounting), Tunnel-Private-Group-Id VLAN 100, MS-MPPE keys, a rogue NAS with a wrong Message-Authenticator, and real MS-CHAPv2 challenge/response material",
-               "synthetic": "MS-MPPE key material is a lab value (the real keys are encrypted with the shared secret)"},
+    "radius": {"real": "Paired RADIUS requests/replies with verifiable Message-Authenticators and Response/Accounting authenticators, VLAN attribute 100, direct MS-CHAPv2 teaching values and a deliberately invalid request",
+               "synthetic": "No PEAP/TLS session, real EAP peer, key transport or enforced VLAN; nonces are deterministic teaching values"},
     "enterprise": {"real": "Synthetic EAPOL/EAP method identifiers and an illustrative handshake with MICs consistent with a documented lab MSK; not evidence of a complete PEAP/TLS negotiation or deployed 802.1X policy",
                    "synthetic": "TLS records are abbreviated structural bytes; the MSK is an inserted lab value, not derived from a TLS master secret or PEAP exchange"},
     "eap": {"real": "EAP method identifiers and direct MS-CHAPv2 challenge/response/success fixture values; this is not a complete PEAP inner exchange or EAP-TLS/TTLS session",
@@ -1091,6 +1098,10 @@ def main() -> int:
         # Offline data for the web app (no backend required, works on GitHub Pages).
         data = analyze([f.data for f in lab.frames], lab.pcap_id)
         data["module"] = lab.group
+        data["provenance"] = "Generated offline teaching capture; not a hosted environment or live RF observation"
+        for record, frame in zip(data["frames"], lab.frames):
+            record["capture_timestamp_us"] = frame.timestamp_us
+            record["relative_time_ms"] = (frame.timestamp_us - lab.frames[0].timestamp_us) / 1000
         with open(os.path.join(DATA_ROOT, f"{lab.pcap_id}.json"), "w") as fh:
             json.dump(data, fh, indent=1, default=lambda o: o.hex() if isinstance(o, (bytes, bytearray)) else str(o))
         digest = hashlib.sha256(open(path, "rb").read()).hexdigest()

@@ -13,7 +13,7 @@ WEP = **RC4** stream cipher + **24-bit IV** + **CRC-32 (ICV)** integrity check, 
 (40 or 104 bits) used by every station.
 
 ```
-ciphertext = RC4(K ‖ IV) ⊕ (plaintext ‖ CRC32(plaintext))
+ciphertext = RC4(IV ‖ K) ⊕ (plaintext ‖ CRC32(plaintext))
 ```
 
 Three independent design failures:
@@ -32,19 +32,18 @@ Three independent design failures:
 
 ## 2. What a WEP finding must evidence
 
-* BSS in scope: BSSID/SSID, channel, frame number of a beacon with the WEP capability bit set (bit 4 of the
-  capability field) — *there is no RSNE on a WEP network*. Absence of an RSNE is not by itself proof of WEP: distinguish open, legacy WPA vendor IE and WEP using the Privacy bit, security IEs, configuration and authorized client evidence.
-* Data frames with the protected bit set and the IV visible (WEP exposes the IV in the frame header;
-  WPA2/CCMP does not).
+* BSS in scope: BSSID/SSID, channel, frame number of a beacon with the Privacy capability bit set (bit 4 of the
+  capability field; not a WEP-specific bit) — *there is no RSNE on a WEP network*. Absence of an RSNE is not by itself proof of WEP: distinguish open, legacy WPA vendor IE and WEP using the Privacy bit, security IEs, configuration and authorized client evidence.
+* Data frames with the protected bit set and the IV visible (WEP exposes a 24-bit IV;
+  CCMP exposes a packet number used in nonce construction, not a secret IV).
 * The recovery result: frames consumed, attack used, tool output, and time.
 * Impact in context: what is reachable on that L2, and whether the WEP segment is isolated.
-* A statement that the key is **shared**, so attribution of traffic to a user is impossible.
+* A statement that the key is **shared**, so the key alone provides no individual user attribution; separate endpoint/access records may provide additional evidence.
 
 ## 3. Remediation (there is only one correct answer)
 
 Migrate. Replacing a WEP key, "rotating" it, or adding MAC filtering changes nothing about the design:
-MAC filtering is bypassable (MACs are in every frame and in monitor-mode captures) and key rotation only
-resets the IV space. The migration path is:
+MAC filtering is bypassable (MACs are in every frame and in monitor-mode captures) and key rotation does not repair the small IV space or integrity design. The migration path is:
 
 ```
 WEP  →  WPA2-PSK (CCMP) with a strong, unique passphrase  →  WPA3-SAE (PMF required) where clients allow
@@ -77,3 +76,7 @@ recovery result is bundled; the self-review config lab is conceptual.
 
 **`scn-07-wep-report`** — write the finding and pick a defensible severity for a WEP segment that is
 isolated from internal systems but carries POS traffic.
+
+## 7. Bounded legacy decision
+
+No WEP recovery environment is supplied, and hosted live labs are unavailable. Do not collect more IVs or inject traffic merely to turn a known legacy design problem into a theatrical exploit. For an owner-confirmed WEP configuration, document the exposure and migration requirement; distinguish protocol risk from demonstrated access. A protected-segment claim needs segmentation evidence. Your proposed migration retest must include supported-client connectivity, rejection of the legacy configuration and application continuity, with rollback and stop conditions. Without actual execution, record those outcomes **NOT TESTED**. This short legacy unit remains a reasoning exercise, not a key-recovery practicum.

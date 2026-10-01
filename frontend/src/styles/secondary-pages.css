@@ -1,0 +1,55 @@
+/* Secondary surfaces follow the same readable, semantic workspace scale. */
+.sc-account-layout .sc-account-form { grid-column:2; grid-row:1; }
+.sc-account-layout .sc-account-context { grid-column:1; grid-row:1; }
+.sc-account-form :is(input,select,textarea) { font-size:1rem; }
+.sc-account-form button { min-height:44px; }
+.sc-account-context { font-size:.875rem; }
+.sc-account-form .ws-view-switcher { margin:12px 0; }
+.sc-settings-sections { display:flex; flex-wrap:wrap; gap:8px; }
+.sc-settings-sections a { display:inline-flex; align-items:center; min-height:44px; padding:8px 12px; border:1px solid var(--line-normal); border-radius:var(--radius-control); font-size:.875rem; color:var(--learning); }
+.sc-settings-heading { margin-bottom:16px; font-size:1.2rem; font-weight:700; }
+.sc-danger-zone { border:1px solid var(--danger); border-radius:var(--radius-panel); padding:20px; display:grid; gap:16px; }
+.sc-danger-zone h2 { font-size:1.15rem; font-weight:700; }
+.sc-danger-zone > p { font-size:1rem; line-height:1.65; color:var(--ink-secondary); }
+.sc-danger-zone > div { margin:0; }
+.sc-profile-section { min-width:0; overflow-wrap:anywhere; }
+.sc-profile-section :is(input,select) { font-size:1rem; min-height:44px; }
+.sc-profile-destinations a { min-height:44px; display:inline-flex; align-items:center; }
+.sc-owner-page .ws-field { max-width:650px; margin:16px 0; }
+.sc-owner-actions button,.sc-owner-confirm button { min-height:44px; }
+.sc-badges { display:grid; gap:28px; min-width:0; }
+.sc-badges h3 { font-size:1.1rem; font-weight:700; margin-bottom:16px; display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.sc-badges h3 > span { color:var(--ink-muted); font-size:.875rem; }
+.sc-badge-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.sc-badge-grid article { min-width:0; display:flex; align-items:start; gap:12px; padding:16px; border:1px solid var(--line-normal); border-radius:var(--radius-panel); background:var(--panel-inset); }
+.sc-badge-grid article.is-earned { border-top:2px solid var(--success); }
+.sc-badge-symbol { font-size:1.6rem; flex:none; }
+.sc-badge-grid h4 { font-size:1rem; font-weight:650; line-height:1.4; }
+.sc-badge-grid p { font-size:.875rem; color:var(--ink-secondary); line-height:1.6; margin:8px 0; }
+.sc-badge-grid small { font-size:.75rem; color:var(--ink-muted); line-height:1.6; display:block; }
+.sc-week-chart { display:flex; gap:8px; height:160px; align-items:end; }
+.sc-week-bar { flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:4px; min-width:0; height:100%; }
+.sc-week-value { font-size:.7rem; color:var(--ink-secondary); white-space:nowrap; }
+@media(max-width:767px) {
+  .sc-account-layout .sc-account-context { border-top:1px solid var(--line-normal); border-bottom:0; }
+  .ws-account-frame { padding-top:24px; }
+  .sc-account-form { padding:20px; }
+  .sc-account-form > a { margin-bottom:20px; }
+}
+@media(max-width:479px) {
+  .sc-badge-grid { grid-template-columns:1fr; }
+  .not-found-actions > * { width:100%; justify-content:center; }
+  .sc-account-form ul[aria-label="Suggested password checks"] { grid-template-columns:1fr; }
+  .sc-week-chart { gap:4px; }
+}
+.sc-daily-summary dd small { display:block; font-size:.75rem; font-weight:400; }
+.sc-owner-disabled-reason { flex-basis:100%; font-size:.875rem; color:var(--ink-secondary); }
+:root { font-size:var(--a11y-font-size,16px); }
+.dyslexia body { font-family:Georgia, 'Times New Roman', serif; }
+.high-contrast { --ink-muted:var(--ink-primary); --ink-secondary:var(--ink-primary); --line-normal:var(--ink-primary); }
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation-duration:.01ms !important; transition-duration:.01ms !important; scroll-behavior:auto !important; }
+.markdown :not(pre) > code,
+.light .markdown :not(pre) > code,
+[data-theme="light"] .markdown :not(pre) > code { color:var(--learning); background:var(--panel-inset); }
+.light .markdown pre code,
+[data-theme="light"] .markdown pre code { color:var(--ink-primary); background:transparent; border:0; }

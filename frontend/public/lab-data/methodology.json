@@ -32,7 +32,7 @@
    "ds_channel": 36,
    "rsn": {
     "version": 1,
-    "group": 172,
+    "group": 4,
     "pairwise": [
      4
     ],
@@ -57,7 +57,9 @@
    "bssid": "de:ad:be:ef:00:01",
    "sa": "de:ad:be:ef:00:01",
    "da": "ff:ff:ff:ff:ff:ff",
-   "number": 1
+   "number": 1,
+   "capture_timestamp_us": 1700000000002000,
+   "relative_time_ms": 0.0
   },
   {
    "frame_type": "mgmt",
@@ -87,7 +89,7 @@
    "ds_channel": 6,
    "rsn": {
     "version": 1,
-    "group": 172,
+    "group": 4,
     "pairwise": [
      4
     ],
@@ -110,7 +112,9 @@
    "bssid": "de:ad:be:ef:00:01",
    "sa": "de:ad:be:ef:00:01",
    "da": "ff:ff:ff:ff:ff:ff",
-   "number": 2
+   "number": 2,
+   "capture_timestamp_us": 1700000000004000,
+   "relative_time_ms": 2.0
   },
   {
    "frame_type": "mgmt",
@@ -142,7 +146,9 @@
    "bssid": "de:ad:be:ef:00:02",
    "sa": "de:ad:be:ef:00:02",
    "da": "ff:ff:ff:ff:ff:ff",
-   "number": 3
+   "number": 3,
+   "capture_timestamp_us": 1700000000006000,
+   "relative_time_ms": 4.0
   },
   {
    "frame_type": "mgmt",
@@ -172,7 +178,7 @@
    "ds_channel": 1,
    "rsn": {
     "version": 1,
-    "group": 172,
+    "group": 4,
     "pairwise": [
      4
     ],
@@ -193,7 +199,7 @@
    "mfpr": false,
    "wps": true,
    "wps_attrs": {
-    "version": "104a",
+    "version": "10",
     "config_methods": {
      "label": true,
      "display": true,
@@ -201,13 +207,16 @@
     },
     "device_password_id": 4,
     "selected_registrar": true,
+    "setup_locked": false,
     "device_name": "LAB-DIRECT-AP"
    },
    "ht": true,
    "bssid": "cc:dd:ee:ff:00:11",
    "sa": "cc:dd:ee:ff:00:11",
    "da": "ff:ff:ff:ff:ff:ff",
-   "number": 4
+   "number": 4,
+   "capture_timestamp_us": 1700000000008000,
+   "relative_time_ms": 6.0
   },
   {
    "frame_type": "mgmt",
@@ -237,7 +246,7 @@
    "ds_channel": 6,
    "rsn": {
     "version": 1,
-    "group": 172,
+    "group": 4,
     "pairwise": [
      4
     ],
@@ -260,7 +269,9 @@
    "bssid": "aa:bb:cc:11:22:33",
    "sa": "aa:bb:cc:11:22:33",
    "da": "ff:ff:ff:ff:ff:ff",
-   "number": 5
+   "number": 5,
+   "capture_timestamp_us": 1700000000010000,
+   "relative_time_ms": 8.0
   },
   {
    "frame_type": "mgmt",
@@ -290,7 +301,7 @@
    "ds_channel": 36,
    "rsn": {
     "version": 1,
-    "group": 172,
+    "group": 4,
     "pairwise": [
      4
     ],
@@ -316,7 +327,9 @@
    "bssid": "ee:ff:00:11:22:33",
    "sa": "ee:ff:00:11:22:33",
    "da": "ff:ff:ff:ff:ff:ff",
-   "number": 6
+   "number": 6,
+   "capture_timestamp_us": 1700000000012000,
+   "relative_time_ms": 10.0
   },
   {
    "frame_type": "mgmt",
@@ -346,7 +359,7 @@
    "ds_channel": 6,
    "rsn": {
     "version": 1,
-    "group": 172,
+    "group": 4,
     "pairwise": [
      4
     ],
@@ -367,7 +380,7 @@
    "mfpr": false,
    "wps": true,
    "wps_attrs": {
-    "version": "104a",
+    "version": "10",
     "config_methods": {
      "label": true,
      "display": true,
@@ -375,13 +388,16 @@
     },
     "device_password_id": 4,
     "selected_registrar": true,
+    "setup_locked": false,
     "device_name": "LAB-DIRECT-AP"
    },
    "ht": true,
    "bssid": "ff:00:11:22:33:44",
    "sa": "ff:00:11:22:33:44",
    "da": "ff:ff:ff:ff:ff:ff",
-   "number": 7
+   "number": 7,
+   "capture_timestamp_us": 1700000000014000,
+   "relative_time_ms": 12.0
   },
   {
    "frame_type": "mgmt",
@@ -408,7 +424,9 @@
    "bssid": "ff:ff:ff:ff:ff:ff",
    "sa": "22:33:44:55:66:77",
    "da": "ff:ff:ff:ff:ff:ff",
-   "number": 8
+   "number": 8,
+   "capture_timestamp_us": 1700000000016000,
+   "relative_time_ms": 14.0
   },
   {
    "frame_type": "mgmt",
@@ -438,7 +456,7 @@
    "ds_channel": 6,
    "rsn": {
     "version": 1,
-    "group": 172,
+    "group": 4,
     "pairwise": [
      4
     ],
@@ -461,7 +479,9 @@
    "bssid": "aa:bb:cc:11:22:33",
    "sa": "aa:bb:cc:11:22:33",
    "da": "22:33:44:55:66:77",
-   "number": 9
+   "number": 9,
+   "capture_timestamp_us": 1700000000018000,
+   "relative_time_ms": 16.0
   },
   {
    "frame_type": "mgmt",
@@ -491,7 +511,7 @@
    "ds_channel": 6,
    "rsn": {
     "version": 1,
-    "group": 172,
+    "group": 4,
     "pairwise": [
      4
     ],
@@ -514,7 +534,9 @@
    "bssid": "aa:bb:cc:dd:ee:01",
    "sa": "aa:bb:cc:dd:ee:01",
    "da": "ff:ff:ff:ff:ff:ff",
-   "number": 10
+   "number": 10,
+   "capture_timestamp_us": 1700000000020000,
+   "relative_time_ms": 18.0
   },
   {
    "frame_type": "mgmt",
@@ -543,7 +565,9 @@
    "bssid": "aa:bb:cc:dd:ee:01",
    "sa": "12:34:56:78:9a:bc",
    "da": "aa:bb:cc:dd:ee:01",
-   "number": 11
+   "number": 11,
+   "capture_timestamp_us": 1700000000022000,
+   "relative_time_ms": 20.0
   },
   {
    "frame_type": "mgmt",
@@ -572,7 +596,9 @@
    "bssid": "aa:bb:cc:dd:ee:01",
    "sa": "aa:bb:cc:dd:ee:01",
    "da": "12:34:56:78:9a:bc",
-   "number": 12
+   "number": 12,
+   "capture_timestamp_us": 1700000000024000,
+   "relative_time_ms": 22.0
   },
   {
    "frame_type": "mgmt",
@@ -600,7 +626,7 @@
    "ssid_len": 12,
    "rsn": {
     "version": 1,
-    "group": 172,
+    "group": 4,
     "pairwise": [
      4
     ],
@@ -622,7 +648,9 @@
    "bssid": "aa:bb:cc:dd:ee:01",
    "sa": "12:34:56:78:9a:bc",
    "da": "aa:bb:cc:dd:ee:01",
-   "number": 13
+   "number": 13,
+   "capture_timestamp_us": 1700000000026000,
+   "relative_time_ms": 24.0
   },
   {
    "frame_type": "mgmt",
@@ -650,7 +678,9 @@
    "bssid": "aa:bb:cc:dd:ee:01",
    "sa": "aa:bb:cc:dd:ee:01",
    "da": "12:34:56:78:9a:bc",
-   "number": 14
+   "number": 14,
+   "capture_timestamp_us": 1700000000028000,
+   "relative_time_ms": 26.0
   },
   {
    "frame_type": "data",
@@ -688,7 +718,9 @@
    "bssid": "aa:bb:cc:dd:ee:01",
    "sa": "aa:bb:cc:dd:ee:01",
    "da": "12:34:56:78:9a:bc",
-   "number": 15
+   "number": 15,
+   "capture_timestamp_us": 1700000000030000,
+   "relative_time_ms": 28.0
   },
   {
    "frame_type": "data",
@@ -726,7 +758,9 @@
    "bssid": "aa:bb:cc:dd:ee:01",
    "sa": "12:34:56:78:9a:bc",
    "da": "aa:bb:cc:dd:ee:01",
-   "number": 16
+   "number": 16,
+   "capture_timestamp_us": 1700000000032000,
+   "relative_time_ms": 30.0
   },
   {
    "frame_type": "data",
@@ -765,7 +799,9 @@
    "bssid": "aa:bb:cc:dd:ee:01",
    "sa": "aa:bb:cc:dd:ee:01",
    "da": "12:34:56:78:9a:bc",
-   "number": 17
+   "number": 17,
+   "capture_timestamp_us": 1700000000034000,
+   "relative_time_ms": 32.0
   },
   {
    "frame_type": "data",
@@ -803,7 +839,9 @@
    "bssid": "aa:bb:cc:dd:ee:01",
    "sa": "12:34:56:78:9a:bc",
    "da": "aa:bb:cc:dd:ee:01",
-   "number": 18
+   "number": 18,
+   "capture_timestamp_us": 1700000000036000,
+   "relative_time_ms": 34.0
   },
   {
    "frame_type": "mgmt",
@@ -830,7 +868,9 @@
    "bssid": "00:11:22:33:44:55",
    "sa": "00:11:22:33:44:55",
    "da": "ff:ff:ff:ff:ff:ff",
-   "number": 19
+   "number": 19,
+   "capture_timestamp_us": 1700000000038000,
+   "relative_time_ms": 36.0
   },
   {
    "frame_type": "mgmt",
@@ -860,7 +900,7 @@
    "ds_channel": 6,
    "rsn": {
     "version": 1,
-    "group": 172,
+    "group": 4,
     "pairwise": [
      4
     ],
@@ -883,7 +923,9 @@
    "bssid": "02:11:22:33:44:55",
    "sa": "02:11:22:33:44:55",
    "da": "ff:ff:ff:ff:ff:ff",
-   "number": 20
+   "number": 20,
+   "capture_timestamp_us": 1700000000040000,
+   "relative_time_ms": 38.0
   },
   {
    "frame_type": "data",
@@ -913,7 +955,9 @@
    "bssid": "de:ad:be:ef:00:01",
    "sa": "44:55:66:77:88:99",
    "da": "de:ad:be:ef:00:01",
-   "number": 21
+   "number": 21,
+   "capture_timestamp_us": 1700000000042000,
+   "relative_time_ms": 40.0
   },
   {
    "frame_type": "data",
@@ -943,7 +987,7 @@
    "eap": true,
    "eap_code": 1,
    "eap_identifier": 1,
-   "eap_length": 16,
+   "eap_length": 17,
    "eap_type": 1,
    "eap_code_name": "Request",
    "eap_type_name": "Identity",
@@ -951,7 +995,9 @@
    "bssid": "de:ad:be:ef:00:01",
    "sa": "de:ad:be:ef:00:01",
    "da": "44:55:66:77:88:99",
-   "number": 22
+   "number": 22,
+   "capture_timestamp_us": 1700000000044000,
+   "relative_time_ms": 42.0
   },
   {
    "frame_type": "data",
@@ -981,7 +1027,7 @@
    "eap": true,
    "eap_code": 2,
    "eap_identifier": 1,
-   "eap_length": 26,
+   "eap_length": 27,
    "eap_type": 1,
    "eap_code_name": "Response",
    "eap_type_name": "Identity",
@@ -989,7 +1035,9 @@
    "bssid": "de:ad:be:ef:00:01",
    "sa": "44:55:66:77:88:99",
    "da": "de:ad:be:ef:00:01",
-   "number": 23
+   "number": 23,
+   "capture_timestamp_us": 1700000000046000,
+   "relative_time_ms": 44.0
   },
   {
    "frame_type": "data",
@@ -1019,7 +1067,7 @@
    "eap": true,
    "eap_code": 1,
    "eap_identifier": 2,
-   "eap_length": 5,
+   "eap_length": 6,
    "eap_type": 25,
    "eap_code_name": "Request",
    "eap_type_name": "PEAP",
@@ -1027,7 +1075,9 @@
    "bssid": "de:ad:be:ef:00:01",
    "sa": "de:ad:be:ef:00:01",
    "da": "44:55:66:77:88:99",
-   "number": 24
+   "number": 24,
+   "capture_timestamp_us": 1700000000048000,
+   "relative_time_ms": 46.0
   },
   {
    "frame_type": "data",
@@ -1057,7 +1107,7 @@
    "eap": true,
    "eap_code": 2,
    "eap_identifier": 2,
-   "eap_length": 10,
+   "eap_length": 11,
    "eap_type": 25,
    "eap_code_name": "Response",
    "eap_type_name": "PEAP",
@@ -1070,7 +1120,9 @@
    "bssid": "de:ad:be:ef:00:01",
    "sa": "44:55:66:77:88:99",
    "da": "de:ad:be:ef:00:01",
-   "number": 25
+   "number": 25,
+   "capture_timestamp_us": 1700000000050000,
+   "relative_time_ms": 48.0
   },
   {
    "frame_type": "data",
@@ -1100,20 +1152,22 @@
    "eap": true,
    "eap_code": 1,
    "eap_identifier": 5,
-   "eap_length": 32,
+   "eap_length": 34,
    "eap_type": 26,
    "eap_code_name": "Request",
    "eap_type_name": "MS-CHAPv2",
    "mschapv2_opcode": 1,
    "mschapv2_opcode_name": "Challenge",
    "mschapv2_id": 5,
-   "mschapv2_message_length": 28,
+   "mschapv2_message_length": 29,
    "mschapv2_challenge": "4d875fbd15343432c8631b635c40ab87",
    "mschapv2_name": "corp-lab",
    "bssid": "de:ad:be:ef:00:01",
    "sa": "de:ad:be:ef:00:01",
    "da": "44:55:66:77:88:99",
-   "number": 26
+   "number": 26,
+   "capture_timestamp_us": 1700000000052000,
+   "relative_time_ms": 50.0
   },
   {
    "frame_type": "data",
@@ -1143,23 +1197,25 @@
    "eap": true,
    "eap_code": 2,
    "eap_identifier": 5,
-   "eap_length": 81,
+   "eap_length": 71,
    "eap_type": 26,
    "eap_code_name": "Response",
    "eap_type_name": "MS-CHAPv2",
    "mschapv2_opcode": 2,
    "mschapv2_opcode_name": "Response",
    "mschapv2_id": 5,
-   "mschapv2_message_length": 77,
+   "mschapv2_message_length": 66,
    "mschapv2_peer_challenge": "39c01407d8742d7f2cdaacf84aa35c69",
    "mschapv2_reserved": "0000000000000000",
-   "mschapv2_nt_response": "bacfe06284570db109d15f6baaa9a17346b195d052fe71da",
+   "mschapv2_nt_response": "74664f976ac382e97dab5b372096e7a4b7e883c950bad7d9",
    "mschapv2_flags": 0,
    "mschapv2_username": "corp\\a.patel",
    "bssid": "de:ad:be:ef:00:01",
    "sa": "44:55:66:77:88:99",
    "da": "de:ad:be:ef:00:01",
-   "number": 27
+   "number": 27,
+   "capture_timestamp_us": 1700000000054000,
+   "relative_time_ms": 52.0
   },
   {
    "frame_type": "data",
@@ -1187,10 +1243,12 @@
    "ip_dst": "10.20.30.10",
    "ip_proto": 1,
    "icmp_type": 8,
-   "bssid": "de:ad:be:ef:00:01",
+   "bssid": "de:ad:be:ef:00:02",
    "sa": "55:66:77:88:99:aa",
-   "da": "de:ad:be:ef:00:02",
-   "number": 28
+   "da": "de:ad:be:ef:00:01",
+   "number": 28,
+   "capture_timestamp_us": 1700000000056000,
+   "relative_time_ms": 54.0
   },
   {
    "frame_type": "data",
@@ -1218,10 +1276,12 @@
    "ip_dst": "10.0.0.87",
    "ip_proto": 1,
    "icmp_type": 0,
-   "bssid": "de:ad:be:ef:00:01",
-   "sa": "de:ad:be:ef:00:02",
+   "bssid": "de:ad:be:ef:00:02",
+   "sa": "de:ad:be:ef:00:01",
    "da": "55:66:77:88:99:aa",
-   "number": 29
+   "number": 29,
+   "capture_timestamp_us": 1700000000058000,
+   "relative_time_ms": 56.0
   }
  ],
  "summary": {
@@ -1263,5 +1323,6 @@
   "assoc": 2,
   "wps": 2
  },
- "module": "methodology"
+ "module": "methodology",
+ "provenance": "Generated offline teaching capture; not a hosted environment or live RF observation"
 }

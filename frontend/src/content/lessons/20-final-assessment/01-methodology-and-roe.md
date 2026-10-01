@@ -11,7 +11,7 @@ A scope document says what is in bounds; a test plan says what you will *do*. Co
 | "SSIDs `Corp-WLAN`, `Corp-Guest`, `Corp-IoT` on site X" | enumerate only these ESSs; other SSIDs in range are out of scope and must be listed in the exclusions |
 | "No disruption of production during business hours" | no deauth/dissociation tests, no rogue infrastructure, no channel interference 08:00–18:00 |
 | "Physical: lobbies and meeting rooms only" | no RF testing in restricted areas; document the coverage actually tested |
-| "RADIUS server in scope for configuration review only" | no live authentication attempts against production identity stores beyond the test accounts |
+| "RADIUS server in scope for configuration review only" | no live authentication attempts; test accounts do not extend configuration-review permission |
 | "Credentials provided for the IoT segment" | any controlled result on the IoT VLAN does not extend to corporate |
 
 The plan must state: objectives, in-scope artefacts, out-of-scope artefacts, test windows, authorised
@@ -53,8 +53,7 @@ The case pack authorizes offline analysis only. Which steps above can you actual
 Classify the owned BSSID's advertised policy in each file, compare the training handshake
 and reconcile the partial inventory. Do not run any intrusive step, call the unlisted BSSID
 malicious, or declare a client-policy fix. List the client/AP and wired evidence that a
-separate authorized test would need. This is a technical investigation decision, not a
-formal report-writing exercise.
+separate authorized test would need. Start with the technical investigation; the later WF-REVIEW-07 lessons add a bounded professional handoff.
 
 ## 5. Decision practice
 

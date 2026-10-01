@@ -2,17 +2,9 @@
 
 > Use the 13-frame synthetic `frontend/public/pcaps/wpa2/wpa2-handshake.pcapng`. The published training passphrase is deliberately known. This exercise needs no radio or real password guessing.
 
-## Worked pass: one client
+## Prepare without repeating the walkthrough
 
-Frames 1–5 introduce the AP and the first station's authentication/association. Filter `eapol.type == 3`; frames 6–9 are the first station's four EAPOL-Key messages. Identify **M1** by AP→STA, ACK set and no MIC; **M2** by STA→AP, SNonce and MIC; **M3** by AP→STA, MIC/Install/Secure; **M4** by STA→AP, MIC/Secure. Check addresses and replay counters before accepting the sequence. The MIC on M2 can test a candidate PMK derived from *both* the passphrase and exact SSID. No captured frame by itself proves the receiver accepted it.
-
-```bash
-tshark -r frontend/public/pcaps/wpa2/wpa2-handshake.pcapng -Y 'eapol.type == 3' \
-  -T fields -e frame.number -e wlan.sa -e wlan.da \
-  -e eapol.keydes.replay_counter -e eapol.keydes.key_info
-```
-
-Use Wireshark's display filter if `tshark` is unavailable. Cite the **current** manifest SHA-256 (the fixtures were regenerated when PMF bits were corrected), not an older hash from a screenshot.
+Complete [Reading the 4-way handshake](/paths/wireless-pentesting/modules/08-wpa-wpa2?tab=theory&lesson=02-four-way-handshake-lab) first. It owns the message/flag explanation; this checkpoint asks you to apply it to the **other station** before consulting the answer. Cite the current capture manifest, not an old screenshot hash.
 
 ## Independent attempt: the other client
 

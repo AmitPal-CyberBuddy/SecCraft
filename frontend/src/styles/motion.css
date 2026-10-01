@@ -1,0 +1,178 @@
+@import './motion-tokens.css';
+/* Purposeful motion, phase 1. Never animate the page body, text color, focus ring,
+   intrinsic sizing or scroll position as a side effect of navigation. */
+
+:is(.ws-action,.sc-learning-action,.public-primary,.public-secondary,.sc-icon-button,.sc-all-tools,.sc-account-trigger) {
+  transition:background-color var(--motion-control) ease-out,border-color var(--motion-control) ease-out,translate var(--motion-control) var(--motion-ease);
+}
+.ws-input { transition:border-color var(--motion-control) ease-out; }
+/* Fine-pointer feedback only; coarse input never inherits sticky lifts or tilt. */
+@media(hover:hover) and (pointer:fine) and (min-width:681px) and (min-height:501px) {
+  :is(.ws-action,.sc-learning-action,.public-primary):not(:disabled):hover { translate:0 -1px; }
+  :is(.ws-action,.sc-learning-action,.public-primary):not(:disabled):active { translate:0 0; }
+}
+/* A local selection rule works even when a control group wraps onto several rows. */
+.ws-view-switcher button { position:relative; transition:background-color var(--motion-control) ease-out,border-color var(--motion-control) ease-out; }
+.ws-view-switcher button::after {
+  content:""; position:absolute; bottom:3px; left:14px; right:14px; height:2px;
+  background:var(--learning); transform:scaleX(0); transform-origin:center;
+  transition:transform var(--motion-selection) var(--motion-ease); pointer-events:none;
+}
+.ws-view-switcher button[aria-pressed="true"] { box-shadow:none; }
+.ws-view-switcher button[aria-pressed="true"]::after { transform:scaleX(1); }
+/* Shared-layout marker follows desktop destinations without moving their labels. */
+.sc-global-link { position:relative; }
+.sc-global-links .sc-global-link.is-active { border-bottom-color:transparent; }
+.sc-destination-marker { position:absolute; bottom:-2px; left:8px; right:8px; height:2px; background:var(--experience,var(--learning)); pointer-events:none; }
+/* Navigation enters from its owning edge; no bounce, stagger or full-screen travel. */
+.sc-drawer { transition:transform var(--motion-panel) var(--motion-ease),visibility var(--motion-panel); }
+.sc-drawer.is-open { transition:transform var(--motion-panel) var(--motion-ease),visibility 0s; }
+.sc-drawer-backdrop { animation:sc-backdrop-in var(--motion-control) ease-out; }
+.sc-account-dropdown { transform-origin:top right; animation:sc-menu-in var(--motion-selection) var(--motion-ease); }
+@keyframes sc-backdrop-in { from { opacity:0; } to { opacity:1; } }
+@keyframes sc-menu-in { from { transform:translateY(calc(-1 * var(--motion-distance-settle))); } to { transform:translateY(0); } }
+/* Copy feedback reinforces a completed action, never runs while waiting for it. */
+.sc-copy-feedback-mark { display:inline-flex; width:16px; flex:none; }
+.ws-copy-control[data-copy-state="copied"] button { border-color:var(--success); }
+.sc-copy-feedback-mark svg { color:var(--success); }
+.sc-copy-feedback-mark path { stroke-dasharray:24; stroke-dashoffset:0; animation:sc-check-in var(--motion-selection) var(--motion-ease); }
+@keyframes sc-check-in { from { stroke-dashoffset:24; } to { stroke-dashoffset:0; } }
+@media(max-width:680px),(max-height:500px) {
+  .sc-account-dropdown { animation:none; }
+}
+/* Both preferences apply, including instant restoration while an interaction is active. */
+@media(prefers-reduced-motion:reduce) {
+  :is(.ws-action,.sc-learning-action,.public-primary) { translate:none !important; }
+  .sc-account-dropdown,.sc-drawer-backdrop,.sc-copy-feedback-mark path { animation:none; }
+}
+:is(.reduce-motion,[data-motion="reduced"],[data-motion-paused="true"]) :is(.ws-action,.sc-learning-action,.public-primary) { translate:none !important; }
+:is(.reduce-motion,[data-motion="reduced"],[data-motion-paused="true"]) :is(.sc-account-dropdown,.sc-drawer-backdrop,.sc-copy-feedback-mark path) { animation:none; }
+[data-motion-paused="true"] *,[data-motion-paused="true"] *::before,[data-motion-paused="true"] *::after { animation-play-state:paused !important; }
+
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation-iteration-count:1 !important; }
+
+/* Phase 2: leave reading content and quiz text stationary and fully opaque. */
+.sc-learning-progress { display:block; width:100%; height:100%; overflow:hidden; border-radius:inherit; }
+.sc-learning-progress > span { display:block; width:100%; height:100%; background:var(--learning); transform-origin:left; }
+.sc-lesson-selection { position:absolute; left:0; top:20%; bottom:20%; width:3px; background:var(--learning); border-radius:3px; animation:sc-lesson-rule var(--motion-selection) var(--motion-ease); }
+@keyframes sc-lesson-rule { from { transform:scaleY(.5); } to { transform:scaleY(1); } }
+.sc-learning-feedback { min-height:1.5em; flex-basis:100%; font-size:.875rem; line-height:1.5; color:var(--ink-secondary); }
+[data-completion="new"] svg { animation:sc-completion-mark var(--motion-selection) var(--motion-ease); }
+@keyframes sc-completion-mark { from { transform:scale(.85); } to { transform:scale(1); } }
+.sc-quiz-choice { transition:background-color var(--motion-control) ease-out,border-color var(--motion-control) ease-out; }
+.sc-quiz-summary { padding:16px; border:1px solid var(--control-border); border-left:3px solid var(--learning); border-radius:var(--radius-control); color:var(--ink-primary); background:var(--panel-inset); }
+.sc-quiz-summary p { margin-top:6px; color:var(--ink-secondary); }
+.sc-flashcard-face { position:relative; width:100%; min-height:18rem; margin-bottom:16px; padding:16px; display:flex; flex-direction:column; align-items:stretch; gap:20px; border:1px solid var(--control-border); border-radius:var(--radius-panel); background:var(--panel-inset); color:var(--ink-primary); overflow-wrap:anywhere; text-align:center; transition:border-color var(--motion-control) ease-out; }
+.sc-flashcard-meta { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; color:var(--ink-muted); font: .75rem/1.5 ui-monospace,monospace; }
+.sc-flashcard-copy { flex:1; display:grid; place-items:center; font-size:1.125rem; line-height:1.5; font-weight:650; }
+.sc-flashcard-caption { display:flex; align-items:center; justify-content:center; gap:6px; font-size:.75rem; color:var(--ink-muted); }
+.sc-flashcard-face::after { content:""; position:absolute; left:16px; right:16px; bottom:5px; height:2px; background:var(--learning); transform:scaleX(0); transition:transform var(--motion-selection) var(--motion-ease); }
+.sc-flashcard-face[data-face="answer"] { border-color:var(--learning); }
+.sc-flashcard-face[data-face="answer"]::after { transform:scaleX(1); }
+.sc-flashcard-ratings button:disabled { background:var(--panel-raised); color:var(--ink-muted); border-color:var(--line-normal); cursor:not-allowed; }
+@media(max-width:680px),(max-height:500px) { .sc-flashcard-face { min-height:16rem; }.sc-lesson-selection { animation:none; } }
+@media(prefers-reduced-motion:reduce) { .sc-lesson-selection,[data-completion="new"] svg { animation:none; } }
+:is(.reduce-motion,[data-motion="reduced"],[data-motion-paused="true"]) :is(.sc-lesson-selection,[data-completion="new"] svg) { animation:none; }
+
+.sc-lesson-index button.sc-lesson-active { box-shadow:none; }
+
+.sc-quiz-summary { scroll-margin-top:var(--sticky-offset,120px); scroll-margin-bottom:24px; }
+
+.sc-learning-content #theory-content-start { scroll-margin-top:var(--sticky-offset,120px); }
+
+/* Phase 3: evidence is stationary; only selection rules acknowledge a change. */
+.sc-technical-transition { transition:background-color var(--motion-control) ease-out,border-color var(--motion-control) ease-out; }
+.sc-technical-surface :is(.ws-action,.sc-learning-action):not(:disabled) { translate:none; }
+.sc-technical-choice { position:relative; }
+.sc-technical-choice::after { content:""; position:absolute; bottom:3px; left:12px; right:12px; height:2px; background:var(--learning); transform:scaleX(0); transform-origin:left; transition:transform var(--motion-selection) var(--motion-ease); pointer-events:none; }
+.sc-technical-choice[aria-pressed="true"]::after { transform:scaleX(1); }
+.sc-technical-detail { position:relative; scroll-margin-top:var(--sticky-offset,120px); }
+.sc-evidence-change-marker { position:absolute; left:0; top:12px; bottom:12px; width:3px; border-radius:3px; background:var(--learning); transform-origin:top; animation:sc-evidence-rule var(--motion-selection) var(--motion-ease); pointer-events:none; }
+@keyframes sc-evidence-rule { from { transform:scaleY(.35); } to { transform:scaleY(1); } }
+.sc-technical-status { min-height:1.5em; color:var(--ink-secondary); font-size:.875rem; line-height:1.5; overflow-wrap:anywhere; }
+.sc-technical-surface .ws-pcap-cards details[open] { border-color:var(--learning); }
+@media(max-width:680px),(max-height:500px) { .sc-evidence-change-marker { animation:none; } }
+@media(prefers-reduced-motion:reduce) { .sc-evidence-change-marker { animation:none; } }
+:is(.reduce-motion,[data-motion="reduced"],[data-motion-paused="true"]) .sc-evidence-change-marker { animation:none; }
+
+.sc-technical-surface [hidden] { display:none; }
+.sc-technical-surface { min-width:0; }
+
+/* Phase 4: stable overview/owner content, short control feedback and one earned check. */
+.sc-surface-transition { transition:background-color var(--motion-control) ease-out,border-color var(--motion-control) ease-out; }
+:is(.sc-owner-actions,.sc-owner-confirm) button { transition:background-color var(--motion-control) ease-out,border-color var(--motion-control) ease-out; }
+:is(.public-artifact > a,.public-curriculum li a,.public-access-rows a) { text-decoration:underline; text-decoration-color:transparent; text-underline-offset:5px; transition:text-decoration-color var(--motion-control) ease-out; }
+:is(.public-artifact > a,.public-curriculum li a,.public-access-rows a):is(:hover,:focus-visible) { text-decoration-color:currentColor; }
+.sc-earned-toast { position:fixed; bottom:max(16px,env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); z-index:200; width:min(420px,calc(100vw - 24px)); display:flex; align-items:flex-start; gap:8px; pointer-events:none; }
+.sc-earned-toast:has(.sc-earned-message) { padding:14px; border:1px solid var(--accent-border); border-radius:var(--radius-panel); background:var(--panel-bg); box-shadow:var(--shadow-soft); pointer-events:auto; }
+.sc-earned-toast > [role="status"] { flex:1; min-width:0; }
+.sc-earned-message { display:flex; gap:12px; align-items:flex-start; overflow-wrap:anywhere; }
+.sc-earned-message strong { color:var(--ink-primary); font-size:.9rem; }
+.sc-earned-message p { color:var(--ink-secondary); font-size:.8rem; margin-top:4px; }
+.sc-earned-message small { display:block; color:var(--ink-muted); font-size:.75rem; margin-top:4px; }
+.sc-earned-mark { color:var(--success); flex:none; padding-top:2px; }
+.sc-earned-mark path { stroke-dasharray:30; stroke-dashoffset:0; animation:sc-earned-check var(--motion-selection) var(--motion-ease); }
+@keyframes sc-earned-check { from { stroke-dashoffset:30; } to { stroke-dashoffset:0; } }
+.sc-earned-toast button { flex:none; width:44px; height:44px; display:grid; place-items:center; border:1px solid var(--line-normal); border-radius:var(--radius-control); color:var(--ink-secondary); background:var(--panel-raised); }
+@media(max-width:680px),(max-height:500px) { .sc-earned-mark path { animation:none; } }
+@media(prefers-reduced-motion:reduce) { .sc-earned-mark path { animation:none; } }
+:is(.reduce-motion,[data-motion="reduced"],[data-motion-paused="true"]) .sc-earned-mark path { animation:none; }
+.sc-earned-toast { max-height:min(45vh,240px); overflow:auto; }
+.sc-shortcut-dialog[open] { display:flex; }
+.sc-shortcut-dialog::backdrop { background:transparent; }
+
+.sc-disclosure-cue { transition:transform var(--motion-selection) var(--motion-ease); }
+
+/* Product polish: one field boundary; a pointer click does not add a floating ring. */
+.sc-input-shell { transition:border-color var(--motion-control) ease-out,background-color var(--motion-control) ease-out; border-color:var(--control-border); }
+.sc-input-shell:focus-within { border-color:var(--learning); }
+.sc-account-form .sc-input-shell > input { border:0; box-shadow:none; outline:none; background:transparent; min-height:44px; }
+.sc-account-form .sc-input-shell:has(input:focus-visible) { outline:2px solid var(--focus-color); outline-offset:2px; }
+:root[data-input-method="pointer"] body :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="color"]),textarea,select):focus { outline:none; border-color:var(--learning); }
+:root[data-input-method="pointer"] .sc-account-form .sc-input-shell:focus-within { outline:none; }
+/* Keyboard focus is immediate, independent of the subtle pointer border transition. */
+.sc-password-feedback { display:grid; gap:8px; padding:2px 0; }
+.sc-password-feedback strong { color:var(--ink-primary); }
+.sc-password-meter { display:flex; gap:5px; }
+.sc-password-meter span { flex:1; height:3px; border-radius:2px; background:var(--line-normal); transition:background-color var(--motion-control) ease-out; }
+.sc-password-meter [data-filled="true"] { background:var(--attention); }
+.sc-password-feedback[data-strength="Weak"] .sc-password-meter [data-filled="true"] { background:var(--danger); }
+.sc-password-feedback[data-strength="Strong"] .sc-password-meter [data-filled="true"] { background:var(--success); }
+.sc-password-policy { color:var(--ink-muted); }
+.sc-accessibility-settings { min-width:0; }
+.sc-preference-row { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px 0; border-bottom:1px solid var(--line-subtle); }
+.sc-preference-row h4,.sc-preference-row > span { color:var(--ink-primary); font-size:.9rem; font-weight:550; }
+.sc-preference-row p { color:var(--ink-secondary); font-size:.85rem; line-height:1.6; margin-top:4px; }
+.sc-preference-row button { flex-shrink:0; min-width:44px; min-height:44px; }
+.sc-text-options summary { cursor:pointer; min-height:44px; padding-block:14px; color:var(--ink-secondary); font-size:.9rem; }
+.sc-text-options summary:focus-visible { outline:2px solid var(--focus-color); outline-offset:2px; }
+.sc-reading-mode-help { flex-basis:100%; font-size:.8rem; color:var(--ink-muted); line-height:1.5; }
+.sc-reading-layout[data-reading-mode="focus"] { grid-template-columns:minmax(0,1fr); }
+.sc-reading-layout[data-reading-mode="focus"] :is(.ws-lesson-nav,.sc-reading-context) { display:none; }
+.sc-reading-layout[data-reading-mode="focus"] .sc-reading-main { width:100%; max-width:74ch; margin-inline:auto; }
+.ws-lesson #lesson-markdown-content { font-size:1rem; line-height:1.8; max-width:74ch; }
+@media(hover:hover) and (pointer:fine) { :is(.ws-action,.sc-learning-action,.public-primary,.public-secondary):not(:disabled):active { scale:.99; } }
+:is(.ws-action,.sc-learning-action,.public-primary,.public-secondary) { transition:background-color var(--motion-control) ease-out,border-color var(--motion-control) ease-out,translate var(--motion-control) var(--motion-ease),scale var(--motion-control) var(--motion-ease); }
+@media(prefers-reduced-motion:reduce) { :is(.ws-action,.sc-learning-action,.public-primary,.public-secondary):active { scale:none !important; } }
+:is(.reduce-motion,[data-motion="reduced"],[data-motion-paused="true"]) :is(.ws-action,.sc-learning-action,.public-primary,.public-secondary):active { scale:none !important; }
+
+/* Persistent scope: same control across browsing pages, with no animated layout. */
+.sc-path-scope{display:flex;align-items:end;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--line-normal)}
+.sc-path-scope label{display:grid;gap:.4rem;min-width:0;max-width:100%;font-size:.75rem;color:var(--ink-secondary)}
+.sc-path-scope select{max-width:100%;min-height:44px;padding:.6rem 2rem .6rem .75rem;border:1px solid var(--line-normal);border-radius:8px;background:var(--panel-inset);color:var(--ink-primary);font:inherit;font-size:.875rem}
+.sc-path-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:1rem;margin:1.5rem 0}
+.sc-path-choices section{display:flex;flex-direction:column;align-items:start;gap:1rem}
+.sc-path-choices .ws-action{margin-top:auto}
+/* A short destination accent, not a full-page fade or a loading indicator. */
+.sc-arrival-mark{display:block;width:24px;height:2px;margin:.65rem 0;background:var(--learning);transform-origin:left;animation:sc-arrival var(--motion-selection) var(--motion-ease)}
+@keyframes sc-arrival{from{transform:scaleX(.35)}to{transform:scaleX(1)}}
+.ws-view-switcher button:not(:disabled):active{background:var(--accent-bg);border-color:var(--accent-border)}
+@media(max-width:680px),(max-height:500px),(prefers-reduced-motion:reduce){.sc-arrival-mark{animation:none}}
+:is(.reduce-motion,[data-motion="reduced"],[data-motion-paused="true"]) .sc-arrival-mark{animation:none}
+
+/* Only new notification visibility enters; replacing its text does not replay the card.
+   Dismissal is immediate so focus and actions never wait for an exit animation. */
+.sc-earned-toast:has(.sc-earned-message){animation:sc-toast-arrival var(--motion-selection) var(--motion-ease)}
+@keyframes sc-toast-arrival{from{translate:0 var(--motion-distance-settle)}to{translate:0 0}}
+@media(max-width:680px),(max-height:500px),(prefers-reduced-motion:reduce){.sc-earned-toast:has(.sc-earned-message){animation:none}}
+:is(.reduce-motion,[data-motion="reduced"],[data-motion-paused="true"]) .sc-earned-toast:has(.sc-earned-message){animation:none}

@@ -62,11 +62,11 @@ try {
     }
   }
 
-  assert.equal(lessonCount, 57, '32 wireless and 25 Android lessons are present')
+  assert.equal(lessonCount, 99, '53 wireless and 46 Android lessons are present')
   assert.equal(lessonKeys.size, lessonCount)
   assert.equal(Object.keys(quizzes).length, 27, 'all authored modules have knowledge checks')
   const totalQuestions = Object.values(quizzes).reduce((sum, list) => sum + list.length, 0)
-  assert.equal(totalQuestions, 126, 'every implemented quiz question is accounted for')
+  assert.equal(totalQuestions, 146, 'every implemented quiz question is accounted for')
   assert.ok(modules.every(module => Object.hasOwn(quizzes, module.id)), 'each module has an authored knowledge check')
   assert.ok(quizzes['20-final-assessment']?.length, 'the final-assessment module has an authored knowledge check')
   assert.deepEqual(modules.find(item => item.id === '20-final-assessment').prerequisites, ['18-corporate-attacks'], 'wireless final case follows corporate attacks')

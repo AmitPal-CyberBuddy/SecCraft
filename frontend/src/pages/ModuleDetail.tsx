@@ -1,8 +1,14 @@
+import { PracticeAvailability } from '@/components/common/PracticeAvailability'
+import { LearningProgress } from '@/components/learning/LearningProgress'
+import { resolveModuleView, updateQuery, type ModuleView } from '@/lib/learningNavigation'
+import { ViewSwitcher, Notice } from '@/components/common/Controls'
+import { scrollBehavior } from '@/lib/motion'
 import { moduleOrdinal } from '@/content/module-ordinal'
 import { AndroidCaseLab } from '@/components/learning/AndroidCaseLab'
 import { LoadingPanel } from '@/components/common/LoadingPanel'
+const AndroidComponentAnalyzer = lazy(() => import('@/components/lab/AndroidComponentAnalyzer').then(m => ({ default: m.AndroidComponentAnalyzer })))
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react'
-import { useParams, Link, Navigate } from 'react-router-dom'
+import { useParams, useSearchParams, Link, Navigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
@@ -13,7 +19,6 @@ import { ReconMap } from '@/components/lab/ReconMap'
 import { HandshakeDiagram } from '@/components/lab/HandshakeDiagram'
 import { AttackDefenseRetest } from '@/components/lab/AttackDefenseRetest'
 import { ReadingProgress, LessonReadingProgress } from '@/components/learning/ReadingProgress'
-import { motion, AnimatePresence } from 'framer-motion'
 import modules from '@/content/modules.json'
 import { LEGACY_MODULE_MAP } from '@/content/legacy-module-map'
 import { TierBadge } from '@/components/common/TierBadge'
@@ -21,21 +26,24 @@ import { DecisionPractice, getScenariosForModule } from '@/components/learning/D
 import { AVAILABLE_LABS, LABS } from '@/content/labs'
 
 const NotesBookmarks = lazy(() => import('@/components/learning/NotesBookmarks').then(m => ({ default: m.NotesBookmarks })))
-const ReadingExperience = lazy(() => import('@/components/learning/ReadingExperience').then(m => ({ default: m.ReadingExperience })))
-import { ArrowLeft, BookOpen, FlaskConical, CheckCircle, Clock, Shield, FileText, Swords, Radio, AlertTriangle, Wifi, Target, Sparkles, ChevronRight, Layers, Award, Zap, List, Eye, Type, Maximize2 } from 'lucide-react'
+import { ArrowLeft, BookOpen, FlaskConical, CheckCircle, Shield, FileText, Swords, Radio, AlertTriangle, Wifi, Target, ChevronRight, Award } from 'lucide-react'
 
 import { quizData } from '@/content/quizData'
+import { fetchLessonContent, fetchModuleQuiz } from '@/lib/api'
 
 
 export function ModuleDetail() {
   const { id, pathId } = useParams<{ id: string; pathId?: string }>()
   const module = modules.find(m => m.id === id)
-  const effectivePathId = pathId || (module as any)?.learningPathId || 'wireless-pentesting'
-  const [activeTab, setActiveTab] = useState<'overview' | 'theory' | 'lab' | 'quiz' | 'report'>('overview')
-  const [activeLesson, setActiveLesson] = useState(0)
+  const effectivePathId = (module as any)?.learningPathId || pathId || 'wireless-pentesting'
+  const [query, setQuery] = useSearchParams()
   const [lessonContent, setLessonContent] = useState<string>('')
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({})
   const [quizSubmitted, setQuizSubmitted] = useState(false)
+  const [quizError, setQuizError] = useState('')
+  const [completionNotice, setCompletionNotice] = useState('')
+  const [completionPulse, setCompletionPulse] = useState(false)
+  const quizSummaryRef = useRef<HTMLDivElement>(null)
   const [labAnswers, setLabAnswers] = useState<Record<string, string>>({})
   const completedLabs = useProgressStore(s => s.completedLabs)
   const labCompleted = useMemo(() => Object.fromEntries(completedLabs.map(l => { const catalogueEntry = LABS.find(item => item.id === l.labId && item.module === l.moduleId); return [l.labId, catalogueEntry?.grading !== 'verified' || l.score === 100] })), [completedLabs])
@@ -46,9 +54,13 @@ export function ModuleDetail() {
   const isLessonCompleted = useProgressStore(s => s.isLessonCompleted)
   const getProgress = useProgressStore(s => s.getModuleProgress)
   const setCurrentModule = useProgressStore(s => s.setCurrentModule)
+  const setCurrentLearningPath = useProgressStore(s => s.setCurrentLearningPath)
   useEffect(() => {
-    if (id && modules.some(item => item.id === id)) setCurrentModule(id)
-  }, [id, setCurrentModule])
+    if (id && modules.some(item => item.id === id)) {
+      setCurrentModule(id)
+      setCurrentLearningPath(effectivePathId)
+    }
+  }, [id, effectivePathId, setCurrentModule, setCurrentLearningPath])
 
   const moduleEntry = useMemo(
     () => (modules as Array<{ id: string; lessons?: { id: string; title: string; kind: string }[] }>).find(m => m.id === id),
@@ -94,18 +106,54 @@ export function ModuleDetail() {
     [id],
   )
   const quizzes = quizData[id || ''] || []
+  const view = resolveModuleView(query, lessons, labs.map(lab => lab.id), quizzes.length > 0, effectivePathId !== 'android-pentesting', id)
+  const activeTab = view.tab
+  const activeLesson = view.lesson
+  const setActiveTab = (tab: ModuleView) => setQuery(previous => updateQuery(previous, { tab: tab === 'overview' ? null : tab, lab: null }))
+  const setActiveLesson = (index: number) => setQuery(previous => updateQuery(previous, { tab: 'theory', lesson: lessons[index] || null, lab: null }))
+  useEffect(() => { setCompletionPulse(false); setCompletionNotice('') }, [id, activeLesson, activeTab])
+  useEffect(() => {
+    if (quizSubmitted && quizSummaryRef.current) {
+      quizSummaryRef.current.focus({ preventScroll: true })
+      quizSummaryRef.current.scrollIntoView({ block: 'nearest', behavior: 'instant' })
+    }
+  }, [quizSubmitted])
+  const markLessonComplete = () => {
+    const result = completeLesson(id!, lessons[activeLesson])
+    setCompletionPulse(result.isNew)
+    setCompletionNotice(result.isNew ? 'Lesson marked complete · local, unverified practice.' : 'Already marked complete locally · no additional practice XP.')
+  }
+  const nextSection: ModuleView = labs.length ? 'lab' : quizzes.length ? 'quiz' : 'overview'
+  const nextSectionLabel = labs.length ? 'Go to labs' : quizzes.length ? 'Check understanding' : 'Module overview'
   const [quizQuestions, setQuizQuestions] = useState<any[]>([])
   useEffect(() => {
-    setQuizQuestions(quizzes.map(q => {
+    let cancelled = false
+    const formatQuestions = (items: any[]) => items.map(q => {
       const options = q.options.map((text: string, index: number) => ({ text, index }))
       for (let i = options.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [options[i], options[j]] = [options[j], options[i]] }
       return { ...q, options: options.map((o: { text: string; index: number }) => o.text), correct: options.findIndex((o: { text: string; index: number }) => o.index === q.correct) }
-    }))
-    setActiveTab('overview'); setActiveLesson(0); setLessonContent(''); setLabAnswers({})
-    setQuizAnswers({}); setQuizSubmitted(false)
+    })
+
+    if (id) {
+      fetchModuleQuiz(id).then(res => {
+        if (!cancelled && res?.questions && res.questions.length > 0) {
+          setQuizQuestions(formatQuestions(res.questions))
+        } else if (!cancelled) {
+          setQuizQuestions(formatQuestions(quizzes))
+        }
+      }).catch(() => {
+        if (!cancelled) setQuizQuestions(formatQuestions(quizzes))
+      })
+    } else {
+      setQuizQuestions(formatQuestions(quizzes))
+    }
+
+    setLessonContent(''); setLabAnswers({})
+    setQuizAnswers({}); setQuizSubmitted(false); setQuizError('')
+    return () => { cancelled = true }
   }, [id])
   const theoryContentRef = useRef<HTMLDivElement>(null)
-  const [readingMode, setReadingMode] = useState<'default' | 'focus' | 'wide'>('default')
+  const [readingMode, setReadingMode] = useState<'default' | 'focus'>('default')
   const [showToc, setShowToc] = useState(true)
   const [lessonNavOpen, setLessonNavOpen] = useState(false)
 
@@ -115,30 +163,29 @@ export function ModuleDetail() {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior })
   }, [id])
 
+  // A single placement, not two competing smooth scrolls through the old lesson.
   useEffect(() => {
-    // Scroll theory content to top when lesson changes
-    if (activeTab === 'theory') {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-      if (theoryContentRef.current) {
-        theoryContentRef.current.scrollTo({ top: 0, behavior: 'smooth' })
-      }
-      // Scroll to theory start anchor
-      const anchor = document.getElementById('theory-content-start')
-      if (anchor) {
-        setTimeout(() => {
-          anchor.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        }, 100)
-      }
-    }
+    if (activeTab !== 'theory') return
+    const timer = setTimeout(() => document.getElementById('theory-content-start')?.scrollIntoView({ behavior: 'instant', block: 'start' }), 0)
+    return () => clearTimeout(timer)
   }, [activeLesson, activeTab])
 
   useEffect(() => {
-    if (activeTab === 'theory') {
+    let cancelled = false
+    if (activeTab === 'theory' && id && lessons[activeLesson]) {
+      setLessonContent('')
       const lessonId = lessons[activeLesson]
-      import(`../content/lessons/${id}/${lessonId}.md?raw`)
-        .then(mod => setLessonContent(mod.default))
-        .catch(() => setLessonContent(`# ${lessonId}\n\nContent coming soon for Module ${id}.`))
+      fetchLessonContent(id, lessonId)
+        .then(content => {
+          if (!cancelled) setLessonContent(content)
+        })
+        .catch(err => {
+          if (!cancelled) {
+            setLessonContent(`# ${lessonId}\n\nUnable to load lesson content. ${err?.message || ''}`)
+          }
+        })
     }
+    return () => { cancelled = true }
   }, [activeTab, activeLesson, id, lessons])
 
   // Generate TOC from lessonContent
@@ -166,11 +213,11 @@ export function ModuleDetail() {
   if (!module) {
     return (
       <div className="max-w-[800px] mx-auto p-12 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-[#1e293b] border border-[var(--line-strong)] flex items-center justify-center mx-auto mb-4">
-          <AlertTriangle className="w-8 h-8 text-slate-400" />
+        <div className="w-16 h-16 rounded-2xl bg-[var(--panel-raised)] border border-[var(--line-strong)] flex items-center justify-center mx-auto mb-4">
+          <AlertTriangle className="w-8 h-8 text-[var(--ink-secondary)]" />
         </div>
-        <div className="text-slate-400 font-heading text-[16px]">Module not found: {id}</div>
-        <Link to="/modules" className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1e293b] border border-[var(--line-strong)] text-[13px] text-slate-300 hover:bg-[#25354f] transition-colors">
+        <div className="text-[var(--ink-secondary)] font-heading text-[16px]">Module not found: {id}</div>
+        <Link to="/modules" className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--panel-raised)] border border-[var(--line-strong)] text-[13px] text-[var(--ink-secondary)] hover:bg-[var(--panel-raised)] transition-colors">
           <ArrowLeft className="w-4 h-4" />
           Back to modules
         </Link>
@@ -182,10 +229,13 @@ export function ModuleDetail() {
 
   const handleQuizSubmit = () => {
     if (quizQuestions.length === 0 || quizQuestions.some((_, idx) => quizAnswers[`q${idx}`] === undefined)) {
-      alert('Answer every question before submitting.')
+      setQuizError('Answer every question before submitting. Your current answers are kept.')
+      const firstMissing = quizQuestions.findIndex((_, idx) => quizAnswers[`q${idx}`] === undefined)
+      document.querySelector<HTMLInputElement>(`input[name="q${firstMissing}"]`)?.focus()
       return
     }
     const score = quizQuestions.reduce((n, q, idx) => n + (quizAnswers[`q${idx}`] === q.correct ? 1 : 0), 0)
+    setQuizError('')
     completeQuiz(module.id, 'quiz-01', score, quizQuestions.length)
     setQuizSubmitted(true)
   }
@@ -229,24 +279,19 @@ export function ModuleDetail() {
     <div className="ws-legacy ws-lesson max-w-[1200px] mx-auto space-y-4 xs:space-y-5 sm:space-y-6 min-w-0 w-full">
       <nav className="ws-breadcrumb" aria-label="Breadcrumb"><Link to={`/paths/${effectivePathId}`}>Learning path</Link><span aria-hidden="true">/</span><Link to={`/paths/${effectivePathId}/modules`}>Modules</Link><span aria-hidden="true">/</span><span aria-current="page">{module.title}</span></nav>
       <header className="sc-unit-header"><div><p className="sc-library-domain">Phase {module.phase} / Module {moduleOrdinal(module.id)}</p><h1>{module.title}</h1><p>{module.description}</p><div className="sc-unit-meta"><span>{module.difficulty}</span><span>{module.estimated_hours}h estimated</span><span>{lessons.length} lessons</span><span>{labs.length} labs</span>{effectivePathId === 'android-pentesting' ? <span>Offline source review · no runtime lab</span> : <TierBadge tier={(module as { lab_requirement?: string }).lab_requirement ?? module.status} />}</div></div><div className="sc-unit-progress"><span>Local practice progress</span><strong>{progress}%</strong><div role="progressbar" aria-label="Module practice progress" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} className="ws-progress"><span style={{ width: `${progress}%` }} /></div></div></header>
-      <nav className="sc-unit-tabs" aria-label="Module workspace">{[
-        { id: 'overview', label: 'Overview', count: null },
+      {effectivePathId === 'wireless-pentesting' && <PracticeAvailability />}
+      <ViewSwitcher label="Module workspace" value={activeTab} onChange={setActiveTab} options={([
+        { id: 'overview', label: 'Overview' },
         { id: 'theory', label: 'Lessons', count: lessons.length },
         { id: 'lab', label: 'Labs', count: labs.length },
         { id: 'quiz', label: 'Quiz', count: quizzes.length },
-        { id: 'report', label: 'Report', count: null },
-      ].filter(tab => (tab.id !== 'quiz' || quizzes.length > 0) && (tab.id !== 'lab' || labs.length > 0) && (tab.id !== 'report' || effectivePathId !== 'android-pentesting')).map(tab => <button type="button" key={tab.id} aria-current={activeTab === tab.id ? 'page' : undefined} onClick={() => { setActiveTab(tab.id as typeof activeTab); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>{tab.label}{tab.count !== null && <small>{tab.count}</small>}</button>)}</nav>
+        { id: 'report', label: 'Report' },
+      ] as const).filter(tab => (tab.id !== 'quiz' || quizzes.length > 0) && (tab.id !== 'lab' || labs.length > 0) && (tab.id !== 'report' || effectivePathId !== 'android-pentesting'))} />
+      {activeTab === 'lab' && view.lab && <Notice action={<button className="ws-action ws-action-secondary" type="button" onClick={() => setActiveTab('lab')}>Show all module labs</button>}>Selected lab: <strong>{labs.find(lab => lab.id === view.lab)?.title}</strong></Notice>}
+
 
       {/* Content */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          className="min-w-0 w-full"
-        >
+      <div className="sc-learning-content min-w-0 w-full">
           {/* Overview */}
           {activeTab === 'overview' && (
             <div className="sc-unit-overview"><div className="sc-unit-overview-primary"><section><h2>What you will work through</h2><ol className="sc-objective-list">{objectives.map((objective, index) => <li key={index}><span>{String(index + 1).padStart(2, '0')}</span>{objective}</li>)}</ol></section>
@@ -257,7 +302,7 @@ export function ModuleDetail() {
               {quizzes.length > 0 && <li><span>03</span><button type="button" onClick={() => setActiveTab('quiz')}>Check your understanding ({quizzes.length} local questions)</button></li>}
               {effectivePathId !== 'android-pentesting' && <li><span>04</span><button type="button" onClick={() => setActiveTab('report')}>Document your reasoning and evidence</button></li>}
               </ol><p>These are suggested steps, not verified completion requirements. Your progress is browser-local and self-reviewed.</p></section>
-              <section><h2>Lesson sequence</h2><ol className="sc-objective-list">{lessons.map((lesson, index) => <li key={lesson}><span>{isLessonCompleted(module.id, lesson) ? '✓' : String(index + 1).padStart(2,'0')}</span><button type="button" onClick={() => { setActiveLesson(index); setActiveTab('theory') }}>{lessonMeta.get(lesson)?.title || lesson.replace(/-/g,' ')}</button></li>)}</ol></section>
+              <section><h2>Lesson sequence</h2><ol className="sc-objective-list">{lessons.map((lesson, index) => <li key={lesson}><span>{isLessonCompleted(module.id, lesson) ? '✓' : String(index + 1).padStart(2,'0')}</span><button type="button" onClick={() => { setActiveLesson(index) }}>{lessonMeta.get(lesson)?.title || lesson.replace(/-/g,' ')}</button></li>)}</ol></section>
             </div><aside className="sc-unit-overview-aside"><section><h2>Module context</h2><dl><div><dt>Difficulty</dt><dd>{module.difficulty}</dd></div><div><dt>Estimated</dt><dd>{module.estimated_hours}h</dd></div><div><dt>Labs</dt><dd>{labs.length}</dd></div><div><dt>Quiz questions</dt><dd>{quizzes.length}</dd></div></dl></section><section><h2>Environment</h2><p>Use supplied artifacts for local practice. Work requiring real RF equipment needs an authorized environment; no live infrastructure is modified here.</p></section><button type="button" className="ws-action" onClick={() => setActiveTab('theory')}>Open lessons →</button></aside></div>
           )}
 
@@ -267,11 +312,11 @@ export function ModuleDetail() {
               <ReadingProgress />
               <div id="theory-content-start" className="ws-lesson-grid sc-reading-layout" data-reading-mode={readingMode}>
                 <div className="ws-lesson-nav space-y-4">
-                  <div className="sc-lesson-index rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-4 sticky top-[80px] ">
-                    <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4 px-2 flex items-center gap-2">
+                  <div className="sc-lesson-index rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-4  ">
+                    <div className="text-[11px] font-bold text-[var(--ink-secondary)] uppercase tracking-widest mb-4 px-2 flex items-center gap-2">
                       <BookOpen className="w-3 h-3" />
                       Lessons
-                      <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-[#1e293b] border border-[var(--line-strong)] font-mono">{lessons.length}</span>
+                      <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--panel-raised)] border border-[var(--line-strong)] font-mono">{lessons.length}</span>
                     </div>
                     <button type="button" className="sc-lesson-toggle" aria-expanded={lessonNavOpen} aria-controls="lesson-options" onClick={() => setLessonNavOpen(v => !v)}>Choose a lesson <span aria-hidden="true">{lessonNavOpen ? '−' : '+'}</span></button>
                     <div id="lesson-options" className={`sc-lesson-options space-y-1.5 ${lessonNavOpen ? 'is-open' : ''}`}>
@@ -282,97 +327,95 @@ export function ModuleDetail() {
                         return (
                           <button
                             key={lesson}
-                            onClick={() => { setActiveLesson(idx); setLessonNavOpen(false) }}
-                            className={`group w-full text-left p-3 rounded-xl flex items-center gap-3 transition-all duration-200 relative overflow-hidden ${isActive ? 'sc-lesson-active border text-[var(--ink-primary)]' : 'text-slate-400 hover:bg-[#1e293b]/50 hover:text-slate-200 border border-transparent'}`}
+                            aria-current={isActive ? 'step' : undefined}
+                            onClick={() => { setActiveLesson(idx); setLessonNavOpen(false); if (lessonNavOpen) theoryContentRef.current?.focus({ preventScroll: true }) }}
+                            className={`group w-full text-left p-3 rounded-xl flex items-center gap-3 sc-surface-transition relative overflow-hidden ${isActive ? 'sc-lesson-active border text-[var(--ink-primary)]' : 'text-[var(--ink-secondary)] hover:bg-[var(--panel-raised)] hover:text-[var(--ink-primary)] border border-transparent'}`}
                           >
-                            {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-cyan-400 rounded-full" />}
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 transition-all duration-200 ${completed ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : isActive ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'bg-[var(--panel-inset)] text-slate-400 group-hover:bg-[#1e293b] group-hover:text-slate-400'}`}>{completed ? '✓' : idx + 1}</div>
+                            {isActive && <span aria-hidden="true" className="sc-lesson-selection" />}
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 sc-surface-transition ${completed ? 'bg-[var(--success-bg)] text-[var(--success)] border border-[var(--success-border)]' : isActive ? 'bg-[var(--accent-bg)] text-[var(--learning)] border border-[var(--accent-border)]' : 'bg-[var(--panel-inset)] text-[var(--ink-secondary)] group-hover:bg-[var(--panel-raised)] group-hover:text-[var(--ink-secondary)]'}`}>{completed ? '✓' : idx + 1}</div>
                             <div className="flex-1 min-w-0">
-                              <span className="text-[12px] font-medium truncate block">{lesson.replace(/-/g, ' ').replace(/^\d+\s/, '')}</span>
-                              <span className="text-[10px] font-mono text-slate-400 truncate block">{completed ? 'Completed locally' : 'Not started'}</span>
+                              <span className="text-sm font-medium block">{meta?.title || lesson.replace(/-/g, ' ').replace(/^\d+\s/, '')}</span>
+                              <span className="text-[10px] font-mono text-[var(--ink-secondary)] truncate block">{completed ? 'Completed locally' : 'Not started'}</span>
                             </div>
-                            {completed && <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />}
-                            {isActive && !completed && <div className="w-2 h-2 rounded-full bg-cyan-400 shrink-0" />}
+                            {completed && <CheckCircle className="w-4 h-4 text-[var(--success)] shrink-0" />}
+                            {isActive && !completed && <div className="w-2 h-2 rounded-full bg-[var(--action-fill)] shrink-0" />}
                           </button>
                         )
                       })}
                     </div>
-                    <div className="mt-4 pt-4 border-t border-[var(--line-normal)]/60 space-y-3">
+                    <div className="mt-4 pt-4 border-t border-[var(--line-normal)] space-y-3">
                       <div className="flex items-center justify-between">
-                        <div className="text-[11px] text-slate-400 font-mono">Progress</div>
-                        <div className="text-[11px] text-cyan-400 font-mono font-bold">{lessons.filter(l => isLessonCompleted(module.id, l)).length}/{lessons.length}</div>
+                        <div className="text-[11px] text-[var(--ink-secondary)] font-mono">Progress</div>
+                        <div className="text-[11px] text-[var(--learning)] font-mono font-bold">{lessons.filter(l => isLessonCompleted(module.id, l)).length}/{lessons.length}</div>
                       </div>
-                      <div className="w-full h-2 bg-[var(--panel-inset)] rounded-full border border-[var(--line-normal)]/50 overflow-hidden">
-                        <motion.div initial={{ width: 0 }} animate={{ width: `${(lessons.filter(l => isLessonCompleted(module.id, l)).length / lessons.length) * 100}%` }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }} className="h-full bg-[var(--learning)] rounded-full" />
+                      <div className="w-full h-2 bg-[var(--panel-inset)] rounded-full border border-[var(--line-normal)] overflow-hidden">
+                        <LearningProgress value={(lessons.filter(l => isLessonCompleted(module.id, l)).length / lessons.length) * 100} label="Lessons completed locally" />
                       </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => setReadingMode(readingMode === 'focus' ? 'default' : 'focus')} className={`flex-1 px-3 py-2 rounded-xl border text-[11px] font-medium flex items-center justify-center gap-1.5 transition-all ${readingMode === 'focus' ? 'bg-violet-500/15 border-violet-500/30 text-violet-300' : 'bg-[var(--panel-inset)] border-[var(--line-normal)] text-slate-400 hover:text-slate-300'}`}>
-                          <Eye className="w-3.5 h-3.5" /> {readingMode === 'focus' ? 'Focus ON' : 'Focus'}
-                        </button>
-                        <button onClick={() => setShowToc(!showToc)} className={`flex-1 px-3 py-2 rounded-xl border text-[11px] font-medium flex items-center justify-center gap-1.5 transition-all ${showToc ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300' : 'bg-[var(--panel-inset)] border-[var(--line-normal)] text-slate-400 hover:text-slate-300'}`}>
-                          <List className="w-3.5 h-3.5" /> TOC
-                        </button>
-                      </div>
+
                     </div>
                   </div>
 
                 </div>
 
                 <div className={`sc-reading-main ${readingMode === 'focus' ? 'is-focus' : ''}`}>
-                  <div ref={theoryContentRef} id="lesson-content-area" className={`ws-reading-surface rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-6 md:p-8 lg:p-10 relative overflow-hidden group hover:border-[var(--line-strong)]/60 transition-all duration-300 ${readingMode === 'focus' ? 'shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_20px_60px_rgba(0,0,0,0.5)]' : ''}`}>
+                  <div ref={theoryContentRef} id="lesson-content-area" role="region" aria-label="Lesson reading area" tabIndex={-1} className={`ws-reading-surface rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-6 md:p-8 lg:p-10 relative overflow-hidden group hover:border-[var(--line-strong)] sc-surface-transition ${readingMode === 'focus' ? 'shadow-soft' : ''}`}>
                     <div className="hidden" />
                     <div className="relative">
                       {/* Enhanced Header with Readability Controls */}
-                      <div className="flex flex-col gap-4 mb-8 pb-6 border-b border-[var(--line-normal)]/60">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex flex-col gap-4 mb-8 pb-6 border-b border-[var(--line-normal)]">
+                        <div className="sc-reading-heading flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-                              <BookOpen className="w-5 h-5 text-cyan-400" />
+                            <div className="w-10 h-10 rounded-xl bg-[var(--accent-bg)] border border-[var(--accent-border)] flex items-center justify-center">
+                              <BookOpen className="w-5 h-5 text-[var(--learning)]" />
                             </div>
                             <div>
-                              <div className="text-[12px] font-mono text-slate-400 flex items-center gap-2">
+                              <div className="text-[12px] font-mono text-[var(--ink-secondary)] flex items-center gap-2">
                                 <span>{lessonMeta.get(lessons[activeLesson])?.title || lessons[activeLesson]}</span>
-                                <span className="w-1 h-1 rounded-full bg-slate-600" />
-                                <span className="text-emerald-400">+10 XP</span>
+                                <span className="w-1 h-1 rounded-full bg-[var(--panel-raised)]" />
+                                <span className="text-[var(--success)]">+10 XP</span>
                               </div>
                               <div className="mt-1">
                                 <LessonReadingProgress content={lessonContent} />
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="hidden sm:flex items-center gap-1 p-1 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)]">
-                              <button onClick={() => setReadingMode('default')} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${readingMode === 'default' ? 'bg-[#1e293b] text-slate-200 border border-[var(--line-strong)]' : 'text-slate-400 hover:text-slate-300'}`}><Type className="w-3 h-3 inline mr-1" />Default</button>
-                              <button onClick={() => setReadingMode('focus')} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${readingMode === 'focus' ? 'bg-violet-500/15 text-violet-300 border border-violet-500/20' : 'text-slate-400 hover:text-slate-300'}`}><Eye className="w-3 h-3 inline mr-1" />Focus</button>
-                              <button onClick={() => setReadingMode('wide')} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${readingMode === 'wide' ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/20' : 'text-slate-400 hover:text-slate-300'}`}><Maximize2 className="w-3 h-3 inline mr-1" />Wide</button>
+                          <div className="sc-reading-toolbar">
+                            <div className="sc-reading-controls">
+                              <button type="button" className="ws-action ws-action-secondary" aria-pressed={readingMode === 'focus'} aria-controls="theory-content-start" onClick={() => setReadingMode(mode => mode === 'focus' ? 'default' : 'focus')}>{readingMode === 'focus' ? 'Exit focus reading' : 'Focus reading'}</button>
+                              {readingMode !== 'focus' && <button type="button" className="ws-action ws-action-secondary" aria-pressed={showToc} onClick={() => setShowToc(value => !value)}>Contents {showToc ? 'on' : 'off'}</button>}
+                              <p className="sc-reading-mode-help">{readingMode === 'focus' ? 'Sidebars are hidden. Exit focus reading to browse lessons.' : 'Focus reading hides the lesson list and sidebar.'}</p>
                             </div>
-                            <motion.button
-                              onClick={() => completeLesson(module.id, lessons[activeLesson])}
-                              className={`px-4 py-2.5 rounded-xl text-[12px] font-semibold border transition-all duration-200 flex items-center gap-2 ${isLessonCompleted(module.id, lessons[activeLesson]) ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-[var(--learning)] border-[var(--learning)] text-[#102622] hover:brightness-110'}`}
+                            <button
+                              onClick={markLessonComplete}
+                              data-completion={completionPulse ? 'new' : undefined}
+                              className={`px-4 py-2.5 rounded-xl text-[12px] font-semibold border sc-surface-transition flex items-center gap-2 ${isLessonCompleted(module.id, lessons[activeLesson]) ? 'bg-[var(--success-bg)] border-[var(--success-border)] text-[var(--success)]' : 'sc-learning-action border-[var(--learning)]'}`}
                             >
                               {isLessonCompleted(module.id, lessons[activeLesson]) ? <><CheckCircle className="w-4 h-4" /> Completed · practice XP</> : <><Award className="w-4 h-4" /> Mark complete · practice XP</>}
-                            </motion.button>
+                            </button>
+                            <p className="sc-learning-feedback" role="status">{completionNotice}</p>
                           </div>
                         </div>
                       </div>
 
                       {/* Improved Markdown Readability */}
-                      <div id="lesson-markdown-content" className={`ws-reading-prose markdown prose prose-invert max-w-none prose-headings:font-heading prose-headings:tracking-tight ${readingMode === 'focus' ? 'prose-p:text-[15.5px] prose-p:leading-[1.85] prose-p:text-slate-200 prose-li:text-[15px] prose-li:leading-[1.75]' : 'prose-p:text-[14.5px] prose-p:leading-[1.8] prose-p:text-slate-300'} prose-strong:text-[var(--ink-primary)] prose-strong:font-semibold prose-code:text-cyan-300 prose-code:bg-[var(--panel-inset)] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:border prose-code:border-cyan-500/20 prose-code:text-[13px] prose-pre:bg-[#080d18] prose-pre:border prose-pre:border-[var(--line-normal)] prose-pre:rounded-xl prose-pre:shadow-soft prose-a:text-cyan-400 prose-a:no-underline hover:prose-a:text-cyan-300 prose-a:font-medium prose-headings:scroll-mt-24`}>
+                      <div id="lesson-markdown-content" className={`ws-reading-prose markdown prose prose-invert max-w-none prose-headings:font-heading prose-headings:tracking-tight ${readingMode === 'focus' ? 'prose-p:text-[15.5px] prose-p:leading-[1.85] prose-p:text-[var(--ink-primary)] prose-li:text-[15px] prose-li:leading-[1.75]' : 'prose-p:text-[14.5px] prose-p:leading-[1.8] prose-p:text-[var(--ink-secondary)]'} prose-strong:text-[var(--ink-primary)] prose-strong:font-semibold prose-code:text-[var(--learning)] prose-code:bg-[var(--panel-inset)] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:border prose-code:border-[var(--accent-border)] prose-code:text-[13px] prose-pre:bg-[var(--panel-inset)] prose-pre:border prose-pre:border-[var(--line-normal)] prose-pre:rounded-xl prose-pre:shadow-soft prose-a:text-[var(--learning)] prose-a:no-underline hover:prose-a:text-[var(--learning)] prose-a:font-medium prose-headings:scroll-mt-24`}>
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
                           rehypePlugins={[rehypeHighlight]}
                           components={{
-                            // Markdown asset links must honor the Pages sub-path (e.g. /SecCraft/).
-                            a: ({ href, children, ...props }) => <a href={href?.startsWith('/android-') ? `${import.meta.env.BASE_URL}${href.slice(1)}` : href} {...props}>{children}</a>,
+                            pre: ({ children }) => <pre tabIndex={0} role="region" aria-label="Lesson code sample">{children}</pre>,
+                            table: ({ children }) => <table tabIndex={0} aria-label="Lesson reference table">{children}</table>,
+                            // Router links inherit the basename; downloadable assets use the build base.
+                            a: ({ href, children, ...props }) => href?.startsWith('/paths/') ? <Link to={href} {...props}>{children}</Link> : <a href={(href?.startsWith('/android-') || href?.startsWith('/wireless-foundations/') || href?.startsWith('/wireless-practice/')) ? `${import.meta.env.BASE_URL}${href.slice(1)}` : href} download={(href?.startsWith('/wireless-foundations/') || href?.startsWith('/wireless-practice/')) ? true : undefined} {...props}>{children}</a>,
                             h1: ({children, ...props}) => {
                               const text = String(children)
                               const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-                              return <h1 id={id} className="group flex items-center gap-3 scroll-mt-24" {...props}>{children} <a href={`#${id}`} className="opacity-0 group-hover:opacity-100 text-cyan-500/50 hover:text-cyan-400 text-[16px] transition-opacity">#</a></h1>
+                              return <h1 id={id} className="group flex items-center gap-3 scroll-mt-24" {...props}>{children} <a href={`#${id}`} className="opacity-0 group-hover:opacity-100 text-[var(--learning)] hover:text-[var(--learning)] text-[16px] transition-opacity">#</a></h1>
                             },
                             h2: ({children, ...props}) => {
                               const text = String(children)
                               const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-                              return <h2 id={id} className="group flex items-center gap-3 scroll-mt-24" {...props}>{children} <a href={`#${id}`} className="opacity-0 group-hover:opacity-100 text-cyan-500/50 hover:text-cyan-400 text-[14px] transition-opacity">#</a></h2>
+                              return <h2 id={id} className="group flex items-center gap-3 scroll-mt-24" {...props}>{children} <a href={`#${id}`} className="opacity-0 group-hover:opacity-100 text-[var(--learning)] hover:text-[var(--learning)] text-[14px] transition-opacity">#</a></h2>
                             },
                             h3: ({children, ...props}) => {
                               const text = String(children)
@@ -386,41 +429,41 @@ export function ModuleDetail() {
                       </div>
 
                       {/* Enhanced Navigation with Scroll Fix */}
-                      <div className="mt-10 flex flex-col sm:flex-row justify-between gap-3 pt-8 border-t border-[var(--line-normal)]/60">
+                      <div className="mt-10 flex flex-col sm:flex-row justify-between gap-3 pt-8 border-t border-[var(--line-normal)]">
                         <button
                           disabled={activeLesson === 0}
                           onClick={() => {
                             const newLesson = Math.max(0, activeLesson - 1)
                             setActiveLesson(newLesson)
                             // Scroll fix: ensure next module starts at top
-                            setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100)
+                            setTimeout(() => window.scrollTo({ top: 0, behavior: scrollBehavior() }), 100)
                           }}
-                          className="group px-5 py-3 rounded-xl bg-[#1e293b] border border-[var(--line-strong)] text-[13px] text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#25354f] hover:text-[var(--ink-primary)] hover:border-[#475569] transition-all duration-200 flex items-center gap-2.5"
+                          className="group px-5 py-3 rounded-xl bg-[var(--panel-raised)] border border-[var(--line-strong)] text-[13px] text-[var(--ink-secondary)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--panel-raised)] hover:text-[var(--ink-primary)] hover:border-[var(--line-strong)] sc-surface-transition flex items-center gap-2.5"
                         >
-                          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+                          <ArrowLeft className="w-4 h-4 " />
                           <div className="text-left">
-                            <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wide">Previous</div>
-                            <div className="text-[12px] font-medium">{activeLesson > 0 ? lessons[activeLesson - 1].replace(/-/g, ' ').slice(0, 30) : 'Start'}</div>
+                            <div className="text-[10px] font-mono text-[var(--ink-secondary)] uppercase tracking-wide">Previous</div>
+                            <div className="text-[12px] font-medium">{activeLesson > 0 ? lessonMeta.get(lessons[activeLesson - 1])?.title || lessons[activeLesson - 1].replace(/-/g, ' ') : 'Start'}</div>
                           </div>
                         </button>
-                        <motion.button
+                        <button
                           onClick={() => {
-                            completeLesson(module.id, lessons[activeLesson]);
+                            markLessonComplete();
                             if (activeLesson < lessons.length - 1) {
                               setActiveLesson(activeLesson + 1)
                             } else {
-                              setActiveTab('lab')
-                              window.scrollTo({ top: 0, behavior: 'smooth' })
+                              setActiveTab(nextSection)
+                              window.scrollTo({ top: 0, behavior: scrollBehavior() })
                             }
                           }}
-                          className="group px-6 py-3 rounded-xl bg-[var(--learning)] text-slate-950 text-[13px] font-semibold transition-all duration-300 flex items-center gap-3"
+                          className="group px-6 py-3 rounded-xl sc-learning-action text-[13px] font-semibold sc-surface-transition flex items-center gap-3"
                         >
                           <div className="text-left">
-                            <div className="text-[10px] font-mono text-white/70 uppercase tracking-wide">{activeLesson < lessons.length - 1 ? 'Next Lesson' : 'Next Section'}</div>
-                            <div className="text-[13px] font-semibold">{activeLesson < lessons.length - 1 ? lessons[activeLesson + 1].replace(/-/g, ' ').slice(0, 30) : 'Go to labs'}</div>
+                            <div className="text-xs font-mono uppercase tracking-wide">{activeLesson < lessons.length - 1 ? 'Complete & next lesson' : 'Complete & continue'}</div>
+                            <div className="text-[13px] font-semibold">{activeLesson < lessons.length - 1 ? lessonMeta.get(lessons[activeLesson + 1])?.title || lessons[activeLesson + 1].replace(/-/g, ' ') : nextSectionLabel}</div>
                           </div>
-                          <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
-                        </motion.button>
+                          <ChevronRight className="w-5 h-5 " />
+                        </button>
                       </div>
 
                     </div>
@@ -428,7 +471,7 @@ export function ModuleDetail() {
                 </div>
                 <aside className="sc-reading-context" aria-label="Lesson context">
                   {showToc && toc.length > 0 && <section><h2>On this page</h2><nav aria-label="Lesson headings">{toc.map((heading, index) => <a key={`${heading.id}-${index}`} href={`#${heading.id}`} className={heading.level > 1 ? 'is-nested' : ''}>{heading.text}</a>)}</nav></section>}
-                  <section><h2>Up next</h2><p>{activeLesson < lessons.length - 1 ? lessonMeta.get(lessons[activeLesson + 1])?.title || lessons[activeLesson + 1].replace(/-/g, ' ') : 'Continue into lab practice'}</p><button type="button" onClick={() => { if (activeLesson < lessons.length - 1) setActiveLesson(activeLesson + 1); else setActiveTab('lab'); document.getElementById('theory-content-start')?.scrollIntoView() }}>Continue →</button></section>
+                  <section><h2>Up next</h2><p>{activeLesson < lessons.length - 1 ? lessonMeta.get(lessons[activeLesson + 1])?.title || lessons[activeLesson + 1].replace(/-/g, ' ') : nextSectionLabel}</p><button type="button" onClick={() => { if (activeLesson < lessons.length - 1) setActiveLesson(activeLesson + 1); else setActiveTab(nextSection); document.getElementById('theory-content-start')?.scrollIntoView() }}>Continue →</button></section>
                   <section><h2>Record</h2><p>Marking this lesson complete records browser-local practice. It does not certify competence.</p></section>
                 </aside>
               </div>
@@ -437,7 +480,25 @@ export function ModuleDetail() {
 
           {/* Lab */}
           {activeTab === 'lab' && effectivePathId === 'android-pentesting' && id?.startsWith('android-') && Number(id.slice(8, 10)) >= 4 && (
-            <AndroidCaseLab key={id} moduleId={id} labId={`lab-${id}`} />
+            <div className="space-y-6">
+              {getScenariosForModule(id || '').length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="font-heading font-bold text-[15px] text-[var(--ink-primary)]">Decision practice — what would you do next?</h3>
+                    <span className="text-[10.5px] font-mono text-[var(--ink-secondary)]">
+                      Observe → Interpret → Hypothesise → Choose the test → Evidence → Conclude
+                    </span>
+                  </div>
+                  <DecisionPractice moduleId={id || ''} compact />
+                </div>
+              )}
+              {(id === 'android-04-components' || id === 'android-05-links') && (
+                <Suspense fallback={<LoadingPanel label="Loading Android Component Analyzer…" />}>
+                  <AndroidComponentAnalyzer />
+                </Suspense>
+              )}
+              <AndroidCaseLab key={id} moduleId={id} labId={`lab-${id}`} />
+            </div>
           )}
           {activeTab === 'lab' && !(effectivePathId === 'android-pentesting' && id?.startsWith('android-') && Number(id.slice(8, 10)) >= 4) && (
             <div className="space-y-6">
@@ -445,7 +506,7 @@ export function ModuleDetail() {
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="font-heading font-bold text-[15px] text-[var(--ink-primary)]">Decision practice — what would you do next?</h3>
-                    <span className="text-[10.5px] font-mono text-slate-400">
+                    <span className="text-[10.5px] font-mono text-[var(--ink-secondary)]">
                       Observe → Interpret → Hypothesise → Choose the test → Evidence → Conclude
                     </span>
                   </div>
@@ -453,49 +514,47 @@ export function ModuleDetail() {
                 </div>
               )}
               {labs.length === 0 && (
-                <div className="rounded-2xl bg-[var(--panel-bg)]/60 border border-dashed border-[var(--line-strong)]/60 p-12 text-center">
-                  <div className="w-12 h-12 rounded-xl bg-[#1e293b] border border-[var(--line-strong)] flex items-center justify-center mx-auto mb-4">
-                    <FlaskConical className="w-6 h-6 text-slate-400" />
+                <div className="rounded-2xl bg-[var(--panel-bg)] border border-dashed border-[var(--line-strong)] p-12 text-center">
+                  <div className="w-12 h-12 rounded-xl bg-[var(--panel-raised)] border border-[var(--line-strong)] flex items-center justify-center mx-auto mb-4">
+                    <FlaskConical className="w-6 h-6 text-[var(--ink-secondary)]" />
                   </div>
-                  <div className="text-slate-400 font-heading text-[14px]">No lab artefact for this module</div>
-                  <div className="text-[12px] text-slate-400 mt-1">
-                    This module is worked through the lessons and decision practice; the capture-based labs start
-                    at Module 02 (see Labs).
+                  <div className="text-[var(--ink-secondary)] font-heading text-[14px]">No lab artefact for this module</div>
+                  <div className="text-[12px] text-[var(--ink-secondary)] mt-1">
+                    {effectivePathId === 'android-pentesting'
+                      ? 'This module is worked through technical lessons and decision practice; practical source-case labs start at Module 04.'
+                      : 'This module is worked through the lessons and decision practice; the capture-based labs start at Module 02 (see Labs).'}
                   </div>
                 </div>
               )}
 
-              {labs.map(lab => (
-                <motion.div
+              {labs.filter(lab => !view.lab || lab.id === view.lab).map(lab => (
+                <div
                   key={lab.id}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                   className="sc-lab-unit rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-6 space-y-6 relative overflow-hidden"
                 >
 
                   <div className="relative">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                       <div className="flex items-center gap-3 flex-1">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                          <FlaskConical className="w-5 h-5 text-emerald-400" />
+                        <div className="w-10 h-10 rounded-xl bg-[var(--success-bg)] border border-[var(--success-border)] flex items-center justify-center">
+                          <FlaskConical className="w-5 h-5 text-[var(--success)]" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-heading font-bold text-[16px] text-[var(--ink-primary)] flex items-center gap-2">
                             {lab.title}
                             <span className="sc-lab-state">{lab.status === 'PLANNED' ? 'Planned' : lab.grading === 'verified' ? 'Answer-checked locally' : 'Self-review'}</span>
                           </h3>
-                          <p className="text-[12px] text-slate-400 mt-1 leading-relaxed">
-                            <span className="font-mono text-cyan-400">{lab.pcap ? `${lab.pcap}.pcapng` : 'No capture supplied'}</span>
-                            <span className="mx-1.5 text-slate-400">•</span>
+                          <p className="text-[12px] text-[var(--ink-secondary)] mt-1 leading-relaxed">
+                            <span className="font-mono text-[var(--learning)]">{lab.pcap ? `${lab.pcap}.pcapng` : 'No capture supplied'}</span>
+                            <span className="mx-1.5 text-[var(--ink-secondary)]">•</span>
                             {lab.type}
-                            <span className="mx-1.5 text-slate-400">•</span>
+                            <span className="mx-1.5 text-[var(--ink-secondary)]">•</span>
                             {lab.description}
                           </p>
                         </div>
                       </div>
                       {labCompleted[lab.id] && (
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium">
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--success-bg)] border border-[var(--success-border)] text-[var(--success)] text-[11px] font-medium">
                           <CheckCircle className="w-4 h-4" />
                           Completed locally
                         </div>
@@ -581,14 +640,14 @@ export function ModuleDetail() {
                   )}
 
                   {lab.id === 'lab-13-rogue' && (
-                    <div className="rounded-2xl bg-amber-500/[0.04] border border-amber-500/15 p-4 text-[12px] text-slate-300 leading-relaxed">
-                      <strong className="text-amber-300">Artifact boundary:</strong> This teaching capture contains BSSIDs de:ad:be:ef:00:01 (channel 36) and 02:11:22:33:44:55 (channel 6). A matching SSID does not prove ESS membership or unauthorized ownership; no authorized inventory is bundled.
+                    <div className="rounded-2xl bg-[var(--warning-bg)] border border-[var(--warning-border)] p-4 text-[12px] text-[var(--ink-secondary)] leading-relaxed">
+                      <strong className="text-[var(--attention)]">Artifact boundary:</strong> This teaching capture contains BSSIDs de:ad:be:ef:00:01 (channel 36) and 02:11:22:33:44:55 (channel 6). A matching SSID does not prove ESS membership or unauthorized ownership; no authorized inventory is bundled.
                     </div>
                   )}
 
                   {id === '14-captive-portals' && (
-                    <div className="rounded-2xl bg-amber-500/[0.04] border border-amber-500/15 p-4 text-[12px] text-slate-300 leading-relaxed">
-                      <strong className="text-amber-300">Artifact boundary:</strong> This PCAP simulates an open guest BSS and HTTP/ARP exchanges. It does not include a real hostapd configuration, session service, MAC authorization check, or tested bypass.
+                    <div className="rounded-2xl bg-[var(--warning-bg)] border border-[var(--warning-border)] p-4 text-[12px] text-[var(--ink-secondary)] leading-relaxed">
+                      <strong className="text-[var(--attention)]">Artifact boundary:</strong> This PCAP simulates an open guest BSS and HTTP/ARP exchanges. It does not include a real hostapd configuration, session service, MAC authorization check, or tested bypass.
                     </div>
                   )}
 
@@ -626,114 +685,112 @@ export function ModuleDetail() {
                   )}
 
                   {id === '18-corporate-attacks' && (
-                    <div className="rounded-2xl bg-amber-500/[0.04] border border-amber-500/15 p-4 text-[12px] text-slate-300 leading-relaxed">
-                      <strong className="text-amber-300">Artifact boundary:</strong> This 19-frame fixture has management/EAPOL and ICMP packets only. It does not contain DHCP, PEAP/TLS, RADIUS or an ACL configuration; see the lesson before making any chain claim.
+                    <div className="rounded-2xl bg-[var(--warning-bg)] border border-[var(--warning-border)] p-4 text-[12px] text-[var(--ink-secondary)] leading-relaxed">
+                      <strong className="text-[var(--attention)]">Artifact boundary:</strong> This 19-frame fixture has management/EAPOL and ICMP packets only. It does not contain DHCP, PEAP/TLS, RADIUS or an ACL configuration; see the lesson before making any chain claim.
                     </div>
                   )}
 
                   {lab.id === 'lab-19-methodology' && (
-                    <div className="rounded-2xl bg-amber-500/[0.04] border border-amber-500/15 p-5 text-[12px] text-slate-300 leading-relaxed space-y-2">
-                      <h4 className="font-bold text-amber-300">What is actually bundled</h4>
+                    <div className="rounded-2xl bg-[var(--warning-bg)] border border-[var(--warning-border)] p-5 text-[12px] text-[var(--ink-secondary)] leading-relaxed space-y-2">
+                      <h4 className="font-bold text-[var(--attention)]">What is actually bundled</h4>
                       <p><code>methodology.pcapng</code> is a 29-frame synthetic capture with eight distinct BSSIDs, one deauthentication frame, a weak-PSK practice handshake, and EAPOL exchanges. It does not include a complete RADIUS transaction, a validated PEAP/TLS certificate failure, DHCP, or captive-portal behavior.</p>
                       <p><code>ENG-01</code> below is a written capstone scenario brief, not an executable or automatically graded final exam. The referenced Northwind topology, four per-SSID captures, RADIUS logs, configuration excerpts, portal rules and retest artefacts are not bundled. Do not present this brief as a completed assessment.</p>
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-6 border-t border-[var(--line-normal)]/60">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-6 border-t border-[var(--line-normal)]">
                     <div className="space-y-4">
-                      <div className="text-[13px] font-bold text-slate-200 flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-                          <Wifi className="w-3.5 h-3.5 text-cyan-400" />
+                      <div className="text-[13px] font-bold text-[var(--ink-primary)] flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-[var(--accent-bg)] border border-[var(--accent-border)] flex items-center justify-center">
+                          <Wifi className="w-3.5 h-3.5 text-[var(--learning)]" />
                         </div>
                         Tasks
                       </div>
 
                       {id === '02-wifi-fundamentals' && lab.id === 'lab-02-beacon' && (
                         <>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">1. `LAB-WIFI` BSSID?</label><input value={labAnswers['bssid'] || ''} onChange={e => setLabAnswers({...labAnswers, bssid: e.target.value})} placeholder="00:11:22:33:44:55" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-slate-200 placeholder:text-slate-400 focus:border-cyan-500/30 focus:bg-[#0a1020] focus:outline-none hover:border-[var(--line-strong)]/60 transition-all duration-200" /></div>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">2. Channel?</label><input value={labAnswers['channel'] || ''} onChange={e => setLabAnswers({...labAnswers, channel: e.target.value})} placeholder="6" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">3. RSN authentication/cipher?</label><input value={labAnswers['security'] || ''} onChange={e => setLabAnswers({...labAnswers, security: e.target.value})} placeholder="WPA2-PSK, CCMP" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">4. Probe requests captured? (0 / none)</label><input value={labAnswers['leak'] || ''} onChange={e => setLabAnswers({...labAnswers, leak: e.target.value})} placeholder="0" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-bssid`} className="text-sm font-medium text-[var(--ink-secondary)]">1. `LAB-WIFI` BSSID?</label><input id={`${lab.id}-bssid`} value={labAnswers['bssid'] || ''} onChange={e => setLabAnswers({...labAnswers, bssid: e.target.value})} placeholder="00:11:22:33:44:55" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] placeholder:text-[var(--ink-secondary)] focus:border-[var(--accent-border)] focus:bg-[var(--panel-inset)] focus:outline-none hover:border-[var(--line-strong)] sc-surface-transition" /></div>
+                          <div><label htmlFor={`${lab.id}-channel`} className="text-sm font-medium text-[var(--ink-secondary)]">2. Channel?</label><input id={`${lab.id}-channel`} value={labAnswers['channel'] || ''} onChange={e => setLabAnswers({...labAnswers, channel: e.target.value})} placeholder="6" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-security`} className="text-sm font-medium text-[var(--ink-secondary)]">3. RSN authentication/cipher?</label><input id={`${lab.id}-security`} value={labAnswers['security'] || ''} onChange={e => setLabAnswers({...labAnswers, security: e.target.value})} placeholder="WPA2-PSK, CCMP" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-leak`} className="text-sm font-medium text-[var(--ink-secondary)]">4. Probe requests captured? (0 / none)</label><input id={`${lab.id}-leak`} value={labAnswers['leak'] || ''} onChange={e => setLabAnswers({...labAnswers, leak: e.target.value})} placeholder="0" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
                         </>
                       )}
 
                       {id === '05-wireless-recon' && (
                         <>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">1. How many beacon BSSIDs?</label><input value={labAnswers['apCount'] || ''} onChange={e => setLabAnswers({...labAnswers, apCount: e.target.value})} placeholder="6" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">2. Which SSID is hidden? How revealed?</label><input value={labAnswers['hidden'] || ''} onChange={e => setLabAnswers({...labAnswers, hidden: e.target.value})} placeholder="HIDDEN-LAB revealed via probe response" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">3. List clients and their PNL</label><input value={labAnswers['clients'] || ''} onChange={e => setLabAnswers({...labAnswers, clients: e.target.value})} placeholder="12:34:56:78:9A:BC → LAB-WIFI, HomeWiFi, Corp-WLAN" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">4. Do matching SSIDs prove one ESS? Why?</label><input value={labAnswers['ess'] || ''} onChange={e => setLabAnswers({...labAnswers, ess: e.target.value})} placeholder="No; verify authorized inventory and deployment context" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-apCount`} className="text-sm font-medium text-[var(--ink-secondary)]">1. How many beacon BSSIDs?</label><input id={`${lab.id}-apCount`} value={labAnswers['apCount'] || ''} onChange={e => setLabAnswers({...labAnswers, apCount: e.target.value})} placeholder="6" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-hidden`} className="text-sm font-medium text-[var(--ink-secondary)]">2. Which SSID is hidden? How revealed?</label><input id={`${lab.id}-hidden`} value={labAnswers['hidden'] || ''} onChange={e => setLabAnswers({...labAnswers, hidden: e.target.value})} placeholder="HIDDEN-LAB revealed via probe response" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-clients`} className="text-sm font-medium text-[var(--ink-secondary)]">3. List clients and their PNL</label><input id={`${lab.id}-clients`} value={labAnswers['clients'] || ''} onChange={e => setLabAnswers({...labAnswers, clients: e.target.value})} placeholder="12:34:56:78:9A:BC → LAB-WIFI, HomeWiFi, Corp-WLAN" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-ess`} className="text-sm font-medium text-[var(--ink-secondary)]">4. Do matching SSIDs prove one ESS? Why?</label><input id={`${lab.id}-ess`} value={labAnswers['ess'] || ''} onChange={e => setLabAnswers({...labAnswers, ess: e.target.value})} placeholder="No; verify authorized inventory and deployment context" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
                         </>
                       )}
 
                       {id === '06-traffic-analysis' && (
                         <>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">1. Total frames?</label><input value={labAnswers['frameCount'] || ''} onChange={e => setLabAnswers({...labAnswers, frameCount: e.target.value})} placeholder="21" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">2. Associated client MAC?</label><input value={labAnswers['client'] || ''} onChange={e => setLabAnswers({...labAnswers, client: e.target.value})} placeholder="12:34:56:78:9a:bc" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">3. EAPOL M1–M4 frame numbers?</label><input value={labAnswers['handshake'] || ''} onChange={e => setLabAnswers({...labAnswers, handshake: e.target.value})} placeholder="8, 9, 10, 11" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
-                          <div><label className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">4. Name post-association protocols</label><input value={labAnswers['protocols'] || ''} onChange={e => setLabAnswers({...labAnswers, protocols: e.target.value})} placeholder="DHCP, ARP, ICMP, DNS, HTTP" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-frameCount`} className="text-sm font-medium text-[var(--ink-secondary)]">1. Total frames?</label><input id={`${lab.id}-frameCount`} value={labAnswers['frameCount'] || ''} onChange={e => setLabAnswers({...labAnswers, frameCount: e.target.value})} placeholder="21" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-client`} className="text-sm font-medium text-[var(--ink-secondary)]">2. Associated client MAC?</label><input id={`${lab.id}-client`} value={labAnswers['client'] || ''} onChange={e => setLabAnswers({...labAnswers, client: e.target.value})} placeholder="12:34:56:78:9a:bc" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-handshake`} className="text-sm font-medium text-[var(--ink-secondary)]">3. EAPOL M1–M4 frame numbers?</label><input id={`${lab.id}-handshake`} value={labAnswers['handshake'] || ''} onChange={e => setLabAnswers({...labAnswers, handshake: e.target.value})} placeholder="8, 9, 10, 11" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-protocols`} className="text-sm font-medium text-[var(--ink-secondary)]">4. Name post-association protocols</label><input id={`${lab.id}-protocols`} value={labAnswers['protocols'] || ''} onChange={e => setLabAnswers({...labAnswers, protocols: e.target.value})} placeholder="DHCP, ARP, ICMP, DNS, HTTP" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
                         </>
                       )}
 
                       {!['02-wifi-fundamentals','05-wireless-recon','06-traffic-analysis'].includes(id||'') && (
-                        <div className="rounded-xl bg-[var(--panel-inset)]/60 border border-[var(--line-normal)]/40 p-4">
-                          <div className="text-[12px] text-slate-400 leading-relaxed">
+                        <div className="rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] p-4">
+                          <div className="text-[12px] text-[var(--ink-secondary)] leading-relaxed">
                             Guided self-review only: inspect the listed artifact and its lesson, then record that you reviewed it. This entry is not machine-graded; no answer validation or skill score is claimed.
                           </div>
                         </div>
                       )}
 
-                      <motion.button
+                      <button
                         onClick={() => handleLabCheck(lab.id)}
                         disabled={!!labCompleted[lab.id]}
-                        className={`w-full py-3 rounded-xl font-semibold text-[13px] transition-all duration-300 flex items-center justify-center gap-2 ${
+                        className={`w-full py-3 rounded-xl font-semibold text-[13px] sc-surface-transition flex items-center justify-center gap-2 ${
                           labCompleted[lab.id]
-                            ? 'bg-emerald-500/15 border border-emerald-500/20 text-emerald-400'
-                            : 'bg-[var(--learning)] text-slate-950'
+                            ? 'bg-[var(--success-bg)] border border-[var(--success-border)] text-[var(--success)]'
+                            : 'sc-learning-action'
                         }`}
                       >
                         {labCompleted[lab.id] ? <><CheckCircle className="w-4 h-4" /> {lab.grading === 'verified' ? 'Local answer check passed' : 'Review recorded'}</> : <><Target className="w-4 h-4" /> Record Lab Review</>}
-                      </motion.button>
+                      </button>
                     </div>
 
                     <div className="space-y-4">
-                      <div className="text-[12px] font-bold text-slate-300 flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
-                          <Shield className="w-3.5 h-3.5 text-violet-400" />
+                      <div className="text-[12px] font-bold text-[var(--ink-secondary)] flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-[var(--owner-bg)] border border-[var(--owner-border)] flex items-center justify-center">
+                          <Shield className="w-3.5 h-3.5 text-[var(--owner)]" />
                         </div>
                         VAPT Context & Evidence
                       </div>
-                      <div className="rounded-xl bg-amber-500/[0.03] border border-amber-500/10 p-4 text-[11px] text-slate-400 leading-relaxed ">
+                      <div className="rounded-xl bg-[var(--warning-bg)] border border-[var(--warning-border)] p-4 text-[11px] text-[var(--ink-secondary)] leading-relaxed ">
                         {id === '05-wireless-recon' && "Recon: this 17-frame artifact contains 6 beacon BSSIDs, six directed probes, and one hidden-SSID probe response (frame 13). A shared SSID alone does not establish ESS membership."}
                         {id === '06-traffic-analysis' && "Traffic analysis: 21 frames. Beacon 1, probe request/response 2–3, auth 4–5, association 6–7, EAPOL M1–M4 8–11, DHCP DORA 12–15, ARP 16–17, ICMP 18–19, DNS 20, HTTP 21. Post-handshake data is unprotected in this synthetic fixture."}
                         {id === '02-wifi-fundamentals' && "Beacons first. Enumerate SSID, BSSID, channel, security. Probe PNL leak useful for Evil Twin."}
                         {!['02-wifi-fundamentals','05-wireless-recon','06-traffic-analysis'].includes(id||'') && "Analyze PCAPs, configs, extract evidence with frame numbers and specific vulnerabilities. Document impact, recommendation, retest."}
                       </div>
-                      <div className="rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] p-4 font-mono text-[11px] text-slate-400 ">
-                        <div className="text-slate-400 mb-2 flex items-center gap-2">
-                          <div className="w-4 h-4 rounded bg-[#1e293b] border border-[var(--line-strong)] flex items-center justify-center">
+                      <div className="rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] p-4 font-mono text-[11px] text-[var(--ink-secondary)] ">
+                        <div className="text-[var(--ink-secondary)] mb-2 flex items-center gap-2">
+                          <div className="w-4 h-4 rounded bg-[var(--panel-raised)] border border-[var(--line-strong)] flex items-center justify-center">
                             <span className="text-[8px]">$</span>
                           </div>
                           tshark commands
                         </div>
                         {lab.pcap ? (
                           <>
-                            <div className="text-cyan-400/80">tshark -r {lab.pcap}.pcapng -Y "wlan.fc.type_subtype==8"</div>
-                            <div className="text-violet-400/80 mt-1">tshark -r {lab.pcap}.pcapng -Y "eapol"</div>
+                            <div className="text-[var(--learning)]">tshark -r {lab.pcap}.pcapng -Y "wlan.fc.type_subtype==8"</div>
+                            <div className="text-[var(--owner)] mt-1">tshark -r {lab.pcap}.pcapng -Y "eapol"</div>
                           </>
                         ) : (
                           <div>cat hostapd.conf — audit WPS, PMF, ciphers</div>
                         )}
                       </div>
                       {labCompleted[lab.id] && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="rounded-xl bg-emerald-500/[0.04] border border-emerald-500/15 p-4 text-[11px] text-emerald-400 flex items-center gap-2"
+                        <div
+                          className="rounded-xl bg-[var(--success-bg)] border border-[var(--success-border)] p-4 text-[11px] text-[var(--success)] flex items-center gap-2"
                         >
                           <CheckCircle className="w-4 h-4" />
                           Review recorded in this browser. This is local practice, not trusted grading.
-                        </motion.div>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -760,7 +817,7 @@ export function ModuleDetail() {
                       />
                     </div>
                   )}
-                </motion.div>
+                </div>
               ))}
             </div>
           )}
@@ -771,67 +828,72 @@ export function ModuleDetail() {
 
                 <div className="relative flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
-                      <Swords className="w-5 h-5 text-violet-400" />
+                    <div className="w-10 h-10 rounded-xl bg-[var(--owner-bg)] border border-[var(--owner-border)] flex items-center justify-center">
+                      <Swords className="w-5 h-5 text-[var(--owner)]" />
                     </div>
                     <div>
                       <h3 className="font-heading font-bold text-[16px] text-[var(--ink-primary)]">Knowledge Check</h3>
-                      <p className="text-[12px] text-slate-400">{quizzes.length} questions • 80% to pass • {module.title}</p>
+                      <p className="text-[12px] text-[var(--ink-secondary)]">{quizzes.length} questions • 80% to pass • {module.title}</p>
                     </div>
                   </div>
                   {quizSubmitted && (
                     <div className="text-right">
-                      <div className="text-[11px] text-slate-400 uppercase tracking-widest">Score</div>
+                      <div className="text-[11px] text-[var(--ink-secondary)] uppercase tracking-widest">Score</div>
                       <div className="text-[20px] font-bold text-[var(--ink-primary)] font-mono">{quizQuestions.filter((_, i) => quizAnswers[`q${i}`] === quizQuestions[i].correct).length} / {quizzes.length}</div>
                     </div>
                   )}
                 </div>
               </div>
 
+              {quizError && <Notice kind="error" live>{quizError}</Notice>}
+              {quizSubmitted && <div ref={quizSummaryRef} tabIndex={-1} className="sc-quiz-summary" role="status">
+                <strong>{quizPassed ? 'Passed' : 'Not passed'} · {quizScore} / {quizQuestions.length} correct</strong>
+                <p>Local practice result, not a verified assessment. Review the explanations below{quizPerfect ? '.' : ' or retry to improve.'}</p>
+              </div>}
               {quizQuestions.map((q, idx) => (
-                <motion.div
+                <div
                   key={idx}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-6 hover:border-[var(--line-strong)]/60 transition-all duration-300"
+
+
+
+                  className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-6 hover:border-[var(--line-strong)] "
                 >
                   <div className="text-[13px] font-semibold text-[var(--ink-primary)] mb-4 flex gap-3">
-                    <span className="w-6 h-6 rounded-full bg-[#1e293b] border border-[var(--line-strong)] flex items-center justify-center text-[11px] font-mono shrink-0">{idx + 1}</span>
+                    <span className="w-6 h-6 rounded-full bg-[var(--panel-raised)] border border-[var(--line-strong)] flex items-center justify-center text-[11px] font-mono shrink-0">{idx + 1}</span>
                     <span className="leading-relaxed">{q.question}</span>
                   </div>
                   <div className="space-y-2">
                     {q.options.map((opt: string, optIdx: number) => (
-                      <label key={optIdx} className={`group flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200 ${quizAnswers[`q${idx}`] === optIdx ? 'bg-[#1e293b] border-cyan-500/30 text-[var(--ink-primary)] shadow-soft' : 'bg-[var(--panel-inset)]/60 border-[var(--line-normal)]/60 text-slate-400 hover:border-[var(--line-strong)]/60 hover:text-slate-200 hover:bg-[var(--panel-inset)]/80'}`}>
-                        <input type="radio" name={`q${idx}`} checked={quizAnswers[`q${idx}`] === optIdx} onChange={() => setQuizAnswers({...quizAnswers, [`q${idx}`]: optIdx})} disabled={quizSubmitted} className="accent-cyan-400" />
+                      <label key={optIdx} className={`sc-quiz-choice group flex items-center gap-3 p-3 rounded-xl border cursor-pointer  ${quizAnswers[`q${idx}`] === optIdx ? 'bg-[var(--panel-raised)] border-[var(--accent-border)] text-[var(--ink-primary)] shadow-soft' : 'bg-[var(--panel-inset)] border-[var(--line-normal)] text-[var(--ink-secondary)] hover:border-[var(--line-strong)] hover:text-[var(--ink-primary)] hover:bg-[var(--panel-inset)]'}`}>
+                        <input type="radio" name={`q${idx}`} checked={quizAnswers[`q${idx}`] === optIdx} onChange={() => { setQuizAnswers({...quizAnswers, [`q${idx}`]: optIdx}); setQuizError('') }} disabled={quizSubmitted} className="shrink-0 accent-[var(--learning)]" />
                         <span className="text-[13px] leading-relaxed">{opt}</span>
                       </label>
                     ))}
                   </div>
                   {quizSubmitted && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`mt-4 p-3 rounded-xl text-[11px] border  ${quizAnswers[`q${idx}`] === q.correct ? 'bg-emerald-500/[0.04] border-emerald-500/15 text-emerald-400' : 'bg-red-500/[0.04] border-red-500/15 text-red-400'}`}
+                    <div
+
+
+                      className={`mt-4 p-3 rounded-xl text-[11px] border  ${quizAnswers[`q${idx}`] === q.correct ? 'bg-[var(--success-bg)] border-[var(--success-border)] text-[var(--success)]' : 'bg-[var(--danger-bg)] border-[var(--danger-border)] text-[var(--danger)]'}`}
                     >
                       <div className="flex items-center gap-2 font-medium">
                         {quizAnswers[`q${idx}`] === q.correct ? <><CheckCircle className="w-4 h-4" /> Correct</> : <>✗ Wrong — Correct: {q.options[q.correct]}</>}
                       </div>
-                      <div className="mt-1.5 text-[11px] opacity-80 leading-relaxed">{q.explanation}</div>
-                    </motion.div>
+                      <div className="mt-1.5 text-[11px]  leading-relaxed">{q.explanation}</div>
+                    </div>
                   )}
-                </motion.div>
+                </div>
               ))}
 
-              <motion.button
+              <button
                 onClick={() => { if (quizSubmitted) { setQuizAnswers({}); setQuizSubmitted(false) } else handleQuizSubmit() }}
                 disabled={quizSubmitted && quizPerfect}
-                className={`w-full py-4 rounded-xl font-bold text-[14px] transition-all duration-300 flex items-center justify-center gap-2 ${
+                className={`w-full py-4 rounded-xl font-bold text-[14px] sc-surface-transition flex items-center justify-center gap-2 ${
                   quizSubmitted
                     ? quizPassed
-                      ? quizPerfect ? 'bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 cursor-default' : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/15'
-                      : 'bg-amber-500/10 border border-amber-500/20 text-amber-300'
-                    : 'bg-[var(--learning)] text-slate-950'
+                      ? quizPerfect ? 'bg-[var(--success-bg)] border border-[var(--success-border)] text-[var(--success)] cursor-default' : 'bg-[var(--success-bg)] border border-[var(--success-border)] text-[var(--success)] hover:bg-[var(--success-bg)]'
+                      : 'bg-[var(--warning-bg)] border border-[var(--warning-border)] text-[var(--attention)]'
+                    : 'sc-learning-action'
                 }`}
               >
                 {quizSubmitted ? (
@@ -845,7 +907,7 @@ export function ModuleDetail() {
                     Submit Quiz
                   </>
                 )}
-              </motion.button>
+              </button>
             </div>
           )}
 
@@ -855,24 +917,24 @@ export function ModuleDetail() {
 
                 <div className="relative">
                   <h3 className="font-heading font-bold text-[16px] text-[var(--ink-primary)] mb-4 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
-                      <FileText className="w-4 h-4 text-violet-400" />
+                    <div className="w-8 h-8 rounded-xl bg-[var(--owner-bg)] border border-[var(--owner-border)] flex items-center justify-center">
+                      <FileText className="w-4 h-4 text-[var(--owner)]" />
                     </div>
                     Reporting Exercise
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Title</label>
-                      <div className="p-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] text-slate-300">{id === '05-wireless-recon' ? 'Wireless Recon: 6 BSSIDs, Hidden SSID & Probe Requests' : id === '06-traffic-analysis' ? 'Traffic Analysis: 21-frame Association & Data Flow' : 'Wireless Evidence Review'}</div>
+                      <label className="text-[11px] font-bold text-[var(--ink-secondary)] uppercase tracking-widest">Title</label>
+                      <div className="p-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] text-[var(--ink-secondary)]">{id === '05-wireless-recon' ? 'Wireless Recon: 6 BSSIDs, Hidden SSID & Probe Requests' : id === '06-traffic-analysis' ? 'Traffic Analysis: 21-frame Association & Data Flow' : 'Wireless Evidence Review'}</div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Severity</label>
-                      <div className="p-3 rounded-xl bg-slate-500/10 border border-slate-500/20 text-[13px] text-slate-300 font-medium">Not pre-assigned — justify from evidence, likelihood and impact</div>
+                      <label className="text-[11px] font-bold text-[var(--ink-secondary)] uppercase tracking-widest">Severity</label>
+                      <div className="p-3 rounded-xl bg-[var(--panel-raised)] border border-[var(--line-strong)] text-[13px] text-[var(--ink-secondary)] font-medium">Not pre-assigned — justify from evidence, likelihood and impact</div>
                     </div>
                   </div>
                   <div className="mt-4 space-y-2">
-                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Evidence</label>
-                    <div className="p-4 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] font-mono text-[11px] text-slate-400 leading-relaxed">
+                    <label className="text-[11px] font-bold text-[var(--ink-secondary)] uppercase tracking-widest">Evidence</label>
+                    <div className="p-4 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] font-mono text-[11px] text-[var(--ink-secondary)] leading-relaxed">
                       {id === '05-wireless-recon' ? 'PCAP: recon-lab.pcapng — cite the exact beacon/probe frame numbers and decoded fields. A look-alike or randomized MAC requires corroboration before attribution.' : id === '06-traffic-analysis' ? 'PCAP: traffic-analysis.pcapng — cite frames and decoded fields; synthetic application payloads do not establish a production session.' : 'Select the linked artifact, state what it directly shows, cite frame numbers, and separate observation from inference. No finding or severity is pre-assigned.'}
                     </div>
                   </div>
@@ -880,23 +942,20 @@ export function ModuleDetail() {
               </div>
             </div>
           )}
-        </motion.div>
-      </AnimatePresence>
+      </div>
 
-      <Suspense fallback={<LoadingPanel label="Loading Reading Experience…" />}>
-        <ReadingExperience content={lessonContent || ''} />
-      </Suspense>
+
 
       <Suspense fallback={<LoadingPanel label="Loading Notes & Bookmarks…" />}>
         <NotesBookmarks moduleId={id || ''} lessonId={lessons[activeLesson] || ''} />
       </Suspense>
 
-      <div className="flex flex-col sm:flex-row justify-between gap-4 pt-6 border-t border-[var(--line-normal)]/60">
-        <Link to={effectivePathId ? `/paths/${effectivePathId}/modules` : "/modules"} className="inline-flex items-center gap-2 text-[12px] text-slate-400 hover:text-slate-300 transition-colors px-3 py-2 rounded-xl hover:bg-[var(--panel-bg)]/60 border border-transparent hover:border-[var(--line-normal)]/60">
+      <div className="flex flex-col sm:flex-row justify-between gap-4 pt-6 border-t border-[var(--line-normal)]">
+        <Link to={effectivePathId ? `/paths/${effectivePathId}/modules` : "/modules"} className="inline-flex items-center gap-2 text-[12px] text-[var(--ink-secondary)] hover:text-[var(--ink-secondary)] transition-colors px-3 py-2 rounded-xl hover:bg-[var(--panel-bg)] border border-transparent hover:border-[var(--line-normal)]">
           <ArrowLeft className="w-4 h-4" />
           {effectivePathId ? `${effectivePathId} Modules` : "All Modules"}
         </Link>
-        <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono px-3 py-2 rounded-xl bg-[var(--panel-inset)]/60 border border-[var(--line-normal)]/40">
+        <div className="flex items-center gap-2 text-[11px] text-[var(--ink-secondary)] font-mono px-3 py-2 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)]">
           <Radio className="w-3 h-3" />
           Module {module.id} • {progress}% • {module.status} • Notes • Bookmarks • Enterprise
         </div>

@@ -1,0 +1,7 @@
+{
+  "name": "seccraft-wireless-decoder-qa",
+  "private": true,
+  "type": "module",
+  "description": "QA-only Wireshark WebAssembly decoder; never shipped in the application",
+  "dependencies": { "@goodtools/wiregasm": "1.9.1" }
+}

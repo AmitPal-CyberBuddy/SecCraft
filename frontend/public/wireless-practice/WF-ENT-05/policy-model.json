@@ -1,0 +1,10 @@
+{
+  "provenance":"Authored separate model records, not collected logs and not correlated with the supplied captures",
+  "runtime":"NOT TESTED",
+  "cases":[
+    {"id":"S1","model_client":"trusted server/name accepted","model_AAA":"Access-Accept; VLAN 100 requested","model_AP":"session S1 mapped to VLAN 100","model_switch":"session S1 port mapping confirms 100","model_application":"approved service healthy and reachable; prohibited service denied with enforcement log","claim_limit":"Only these model paths/directions are represented"},
+    {"id":"S2","model_client":"certificate name rejected before inner method","model_AAA":"no credential evaluation recorded","model_AP":"no authenticated session established","model_application":"not attempted","claim_limit":"Secure client-side rejection in a model, not a bad password or demonstrated credential capture"},
+    {"id":"S3","model_client":"authentication reported successful","model_AAA":"Access-Accept; VLAN 100 requested","model_AP":"session S3 mapped to default VLAN 200","model_switch":"session S3 port mapping confirms 200","model_application":"not checked","claim_limit":"Model policy/application mismatch; actual service reachability not established"},
+    {"id":"S4","model_client":"no complete client log","model_AAA":"Access-Accept; VLAN 100 requested","model_AP":null,"model_switch":null,"model_application":"no response; route and target health unknown","claim_limit":"Insufficient evidence of placement or enforced denial"}
+  ]
+}

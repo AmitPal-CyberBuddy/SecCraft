@@ -159,10 +159,16 @@ function normalizePersistedProgress(source: any, discardLegacyLabScores = false,
     + quizScores.reduce((sum: number, item: any) => sum + item.points, 0)
     + completedChallenges.reduce((sum: number, item: any) => sum + item.points, 0)
     + achievements.reduce((sum: number, item: any) => sum + item.points, 0)
+  // Empty legacy installs had an implicit Wireless default, not a learner choice.
+  const hasHistory = completedLessons.length + completedLabs.length + quizScores.length + completedChallenges.length + retiredRecords.length > 0
+  const candidate = learningPaths.find(path => path.id === input.currentLearningPathId && path.status === 'available')
+  const remembered = candidate && (input.pathChosen === true || hasHistory || candidate.id !== 'wireless-pentesting' || (input.currentModule && input.currentModule !== '01-intro-wireless')) ? candidate : null
+  const ownedModule = remembered && (remembered.modules as string[]).includes(currentModuleId(input.currentModule)) ? currentModuleId(input.currentModule) : null
   return {
     ...input,
-    currentLearningPathId: (learningPaths as Array<{ id: string }>).some(path => path.id === input.currentLearningPathId) ? input.currentLearningPathId : 'wireless-pentesting',
-    currentModule: (modules as Array<{ id: string }>).some(module => module.id === currentModuleId(input.currentModule)) ? currentModuleId(input.currentModule) : '01-intro-wireless',
+    currentLearningPathId: remembered?.id ?? null,
+    currentModule: ownedModule,
+    pathChosen: Boolean(remembered),
     completedLessons, completedLabs, quizScores, completedChallenges, retiredRecords, achievements,
     totalXp, streak: 0, lastEarnedPoints: null,
   }
@@ -192,6 +198,7 @@ interface ProgressState {
   retiredRecords: Array<{ type: string; moduleId: string; activityId: string; score?: number; total?: number; completedAt?: string }>
   currentModule: string | null
   currentLearningPathId: string | null
+  pathChosen: boolean
   streak: number
   lastActive: string | null
   totalXp: number
@@ -229,8 +236,9 @@ export const useProgressStore = create<ProgressState>()(
       completedChallenges: [],
       quizScores: [],
       retiredRecords: [],
-      currentModule: "01-intro-wireless",
-      currentLearningPathId: "wireless-pentesting",
+      currentModule: null,
+      currentLearningPathId: null,
+      pathChosen: false,
       streak: 0,
       lastActive: new Date().toISOString(),
       totalXp: 0,
@@ -329,8 +337,14 @@ export const useProgressStore = create<ProgressState>()(
         return { points, isNew: true }
       },
 
-      setCurrentModule: (id) => { if ((modules as Array<{ id: string }>).some(module => module.id === id)) set({ currentModule: id }) },
-      setCurrentLearningPath: (id) => { if ((learningPaths as Array<{ id: string }>).some(path => path.id === id)) set({ currentLearningPathId: id }) },
+      setCurrentModule: (id) => {
+        const module = modules.find(item => item.id === id)
+        if (module) set({ currentModule: id, currentLearningPathId: module.learningPathId, pathChosen: true })
+      },
+      setCurrentLearningPath: (id) => {
+        const path = learningPaths.find(item => item.id === id && item.status === 'available' && item.modules.length)
+        if (path) set({ currentLearningPathId: id, pathChosen: true, currentModule: (path.modules as string[]).includes(get().currentModule ?? '') ? get().currentModule : null })
+      },
 
       getPathProgress: (pathId) => {
         const state = get()
@@ -536,8 +550,9 @@ export const useProgressStore = create<ProgressState>()(
         completedChallenges: [],
         quizScores: [],
         retiredRecords: [],
-        currentModule: "01-intro-wireless",
-        currentLearningPathId: "wireless-pentesting",
+        currentModule: null,
+        currentLearningPathId: null,
+      pathChosen: false,
         streak: 0,
         lastActive: new Date().toISOString(),
         totalXp: 0,
@@ -547,7 +562,7 @@ export const useProgressStore = create<ProgressState>()(
     }),
     {
       name: 'platform-progress',
-      version: 6,
+      version: 7,
       merge: (persistedState, currentState) => {
         if (persistedState) return { ...currentState, ...normalizePersistedProgress(persistedState) }
         // Zustand does not call `migrate` when the new key is absent, so explicitly consult the

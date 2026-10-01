@@ -4,16 +4,14 @@
 
 | Method | Server proves identity? | Client proves identity with | On-the-air exposure | Notes |
 | --- | --- | --- | --- | --- |
-| EAP-MD5 | no | MD5 of password + challenge | password crackable offline | should not be used |
+| EAP-MD5 | no | password-based challenge response | susceptible to offline guessing if exposed | does not export the keying material required as a standalone WPA-Enterprise method; legacy/context only |
 | LEAP | weak challenge-response (not certificate-based server authentication) | MS-CHAPv1-style challenge/response | vulnerable to offline dictionary attacks | Cisco-proprietary and deprecated; do not use |
 | PEAPv0 + MS-CHAPv2 | **only if the client validates** | username + MS-CHAPv2 response | after a rogue authenticator: challenge/response → offline crack | the classic enterprise exposure |
 | EAP-TTLS + MS-CHAPv2 | only if validated | same as PEAP | same as PEAP | inner method can also be PAP/CHAP |
 | EAP-TLS | the client should validate the server certificate | X.509 client certificate | no password challenge/response to crack; certificate/private-key handling still matters | requires a PKI and managed trust |
 | TEAP | TLS server authentication when the client validates the certificate | varies | depends on the inner method and tunnel validation | flexible tunneled method; deployment and client support vary |
 
-**The rule:** the outer TLS tunnel only protects what is inside *if the client verifies the server's
-certificate*. Without validation, the tunnel is with whoever answered — an attacker can present their own
-certificate and terminate it.
+**The rule:** TLS can encrypt traffic even to an unintended peer. Server chain and expected-identity validation are what distinguish the intended server from an impersonator. Without effective validation, a compatible rogue server may terminate the tunnel; method/profile and runtime evidence determine what is exposed.
 
 ## 2. MS-CHAPv2, precisely
 
@@ -35,9 +33,9 @@ The NT-Response is built in three DES operations (RFC 2759 §4.2):
 3. NT-Response = DES(K1, challenge_hash) ‖ DES(K2, challenge_hash) ‖ DES(K3, challenge_hash) (24 bytes)
 ```
 
-The **challenge hash** concatenates the peer challenge first, then the Authenticator challenge and username, and takes the first 8 bytes of SHA-1. Omitting or reordering these values yields a different challenge, and encrypting the LM constant `KGS!@#$%` instead of that challenge is not MS-CHAPv2 NT-Response derivation. The DES keys come from the password hash, not from the challenges. Hashcat mode 5500 expects correctly formatted MS-CHAPv2/NetNTLMv1 material; derive the eight-byte challenge hash and use the tool's documented input format rather than pasting the two 16-byte challenges into an assumed format.
+The **challenge hash** excludes a prepended Windows domain from the username (`DOMAIN\user` contributes `user`, per RFC 2759). It concatenates the peer challenge first, then the Authenticator challenge and that username, and takes the first 8 bytes of SHA-1. Omitting or reordering these values yields a different challenge, and encrypting the LM constant `KGS!@#$%` instead of that challenge is not MS-CHAPv2 NT-Response derivation. The DES keys come from the password hash, not from the challenges. Hashcat mode 5500 expects correctly formatted MS-CHAPv2/NetNTLMv1 material; derive the eight-byte challenge hash and use the tool's documented input format rather than pasting the two 16-byte challenges into an assumed format.
 The labkit implements the full derivation, and `verify-lab-artifacts.py` re-derives the captured
-challenge/response pair from the documented lab password (see module 18 lab for the crack itself).
+challenge/response pair from the documented lab password (a known-answer fixture check, not a measured password-cracking run).
 
 ### Worked, reproducible derivation (lab-only values)
 
@@ -102,17 +100,15 @@ network={
     anonymous_identity="anonymous@corp.example"
     password="…"
     ca_cert="/etc/ssl/certs/corp-root-ca.pem"     # trust only the corporate CA
-    domain_suffix_match="radius.corp.example"     # accept only this server identity
+    domain_suffix_match="radius.corp.example"     # constrain the DNS suffix; review intended subdomain matching
     phase2="auth=MSCHAPV2"
     ieee80211w=2
 }
 ```
 
 * Configure an explicit trust anchor and expected server name. Without those settings, do not assume the supplicant validates the intended server certificate; exact defaults vary by supplicant and profile.
-* `domain_suffix_match` (or `subject_match`) binds the certificate to the expected server name; a valid
-  certificate for another name is not enough.
-* On the server side, disabling PEAP-MSCHAPv2 in favour of EAP-TLS removes the crackable material entirely;
-  if PEAP must stay, enforce machine + user certificate checks and strong password policy.
+* Use `domain_match` for a full expected DNS-name match or a deliberately scoped `domain_suffix_match` for a DNS suffix. `subject_match` is only a subject substring comparison, not an equivalent DNS identity control; the upstream configuration documentation warns against using it for a domain suffix. A valid chain alone is not enough.
+* Migrate compatible clients and servers to EAP-TLS to remove this password-response mechanism, with managed certificate issuance, validation, renewal and revocation. If PEAP-MSCHAPv2 remains, enforce server trust/name checks on clients, managed profiles and an appropriate password policy. Machine/user certificate chaining is not a generic PEAP-MSCHAPv2 switch; any TEAP or other chaining design needs separate client/server support and validation.
 
 ## 5. Lab tasks
 
@@ -132,3 +128,7 @@ network={
 
 **`scn-16-method-identification`** — you see PEAP then an immediate TLS alert. What happened?
 **`scn-16-cert-validation`** — the client has `ca_cert` but no `domain_suffix_match`. Still exploitable?
+
+## Profile reference
+
+The [upstream wpa_supplicant configuration reference](https://w1.fi/cgit/hostap/plain/wpa_supplicant/wpa_supplicant.conf) distinguishes `domain_match`, `domain_suffix_match` and substring-only `subject_match`, and documents method-specific inner authentication. Check the deployed version and effective managed profile; an example file is not evidence that a client used those settings.

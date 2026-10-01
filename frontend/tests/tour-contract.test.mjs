@@ -19,7 +19,7 @@ test('tour points at visible workspace controls rather than retired sidebar or d
     assert.ok(source.includes(selector.replace(/^[.#]/, '').replace('[data-tour="search"]', 'data-tour="search"')), `${selector} has no live target`)
   }
   assert.ok(tour.includes("pathname === '/app'"), 'dashboard-only steps must be conditional')
-  assert.ok(app.includes("location.pathname !== '/admin'"), 'owner console must not show a learner tour')
+  assert.ok(app.includes("!location.pathname.startsWith('/admin')"), 'owner console must not show a learner tour')
   assert.ok(!/data-tour="(sidebar|dashboard-stats|daily|reports)"/.test(tour), 'retired anchors must not return')
   assert.ok(tour.includes('Practice is saved in this browser and is unverified'))
 })

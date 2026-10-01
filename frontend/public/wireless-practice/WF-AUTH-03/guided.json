@@ -1,0 +1,12 @@
+{
+  "provenance": "Generated teaching PMKID records, not collected packets",
+  "records": [
+    {
+      "id": "G1",
+      "ssid": "Aster-Guided",
+      "ap": "02:00:00:30:10:01",
+      "station": "02:00:00:30:20:01",
+      "pmkid": "7beb7708d756e077e741ebee3a9415a3"
+    }
+  ]
+}

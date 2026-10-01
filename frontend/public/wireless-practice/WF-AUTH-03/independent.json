@@ -1,0 +1,19 @@
+{
+  "provenance": "Generated teaching PMKID records, not collected packets",
+  "records": [
+    {
+      "id": "I1",
+      "ssid": "Aster-Independent",
+      "ap": "02:00:00:30:10:02",
+      "station": "02:00:00:30:20:02",
+      "pmkid": "6062513348b342e37376caa516be9388"
+    },
+    {
+      "id": "I2",
+      "ssid": "Aster-No-Match",
+      "ap": "02:00:00:30:10:03",
+      "station": "02:00:00:30:20:03",
+      "pmkid": "19fc29e783beb374c6cb0caf401cbfe9"
+    }
+  ]
+}

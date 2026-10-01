@@ -1,3 +1,4 @@
+import { WorkflowSteps } from '@/components/common/TechnicalContent'
 import { useMemo, useState, type ChangeEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '@/lib/api'
@@ -107,6 +108,9 @@ export function ProgressSyncPanel() {
   const localRecords = useMemo(() => localProgressRecords(currentLocalState), [currentLocalState])
   const [fileRecords, setFileRecords] = useState<ProgressItem[] | null>(null)
   const [fileName, setFileName] = useState('')
+  const [readingFile, setReadingFile] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const [lastTransfer, setLastTransfer] = useState('')
   const [previewState, setPreviewState] = useState<{ result: PreviewResult; signature: string } | null>(null)
   const [serverProgress, setServerProgress] = useState<ServerProgress | null>(null)
   const [serverBusy, setServerBusy] = useState(false)
@@ -119,11 +123,14 @@ export function ProgressSyncPanel() {
 
   async function readFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
+    event.target.value = ''
+    setConfirming(false)
     setError('')
     setMessage('')
     setPreviewState(null)
     if (!file) { setFileRecords(null); setFileName(''); return }
     if (file.size > 2 * 1024 * 1024) { setFileRecords(null); setFileName(''); setError('Progress files must be 2 MB or smaller.'); return }
+    setReadingFile(true)
     try {
       const records = decodeProgressFile(JSON.parse(await file.text()))
       if (!records.length) throw new Error('No supported progress items were found in that file.')
@@ -134,7 +141,7 @@ export function ProgressSyncPanel() {
       setFileRecords(null)
       setFileName('')
       setError(cause instanceof Error ? cause.message : 'That JSON file could not be read.')
-    }
+    } finally { setReadingFile(false) }
   }
 
   async function downloadLocalExport() {
@@ -190,6 +197,7 @@ export function ProgressSyncPanel() {
   }
 
   async function requestPreview() {
+    setConfirming(false)
     setBusy(true); setError(''); setMessage('')
     try {
       const response = await apiFetch('/api/v1/progress/import/preview', {
@@ -206,8 +214,7 @@ export function ProgressSyncPanel() {
   }
 
   async function merge() {
-    if (!preview) return
-    if (!window.confirm(`Merge ${preview.unique_records} progress item(s) into this account? Imported items remain unverified and cannot grant XP or certificates.`)) return
+    if (!preview || !confirming || busy || readingFile) return
     setBusy(true); setError(''); setMessage('')
     try {
       const response = await apiFetch('/api/v1/progress/import', {
@@ -218,6 +225,8 @@ export function ProgressSyncPanel() {
       if (!body || !Number.isInteger(body.inserted) || !Number.isInteger(body.upgraded_unverified_progress) || !Number.isInteger(body.verified_server_records_preserved) || body.xp_awarded !== 0) {
         throw new Error('The account API returned an invalid merge response. Check the configured API origin.')
       }
+      setLastTransfer(new Date().toLocaleString())
+      setConfirming(false)
       setMessage(`Merged ${body.inserted + body.upgraded_unverified_progress} item(s). ${body.verified_server_records_preserved} verified server record(s) were left unchanged; no XP was awarded.`)
       setPreviewState(null)
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Progress merge failed.') }
@@ -226,9 +235,11 @@ export function ProgressSyncPanel() {
 
   return <section className="ws-sync-panel ws-panel" aria-labelledby="sync-actions-title">
     <div className="ws-panel-heading"><div><h2 id="sync-actions-title">Move progress</h2><p className="ws-muted">Preview first, then merge. Imported records remain unverified and never replace verified server records.</p></div></div>
-    <div className="ws-sync-group"><h3>Source · practice data</h3><div className="ws-sync-actions">
-      <button type="button" onClick={() => { setFileRecords(null); setFileName(''); setPreviewState(null); setError(''); setMessage('') }} aria-pressed={!fileRecords}>This browser</button>
-      <label className="ws-file-picker">Choose progress JSON<input type="file" accept="application/json,.json" onChange={readFile} className="sr-only" /></label>
+    <WorkflowSteps label="Progress transfer" steps={['Choose source', 'Review changes', 'Confirm transfer']} current={preview ? confirming ? 2 : 1 : 0} />
+    {lastTransfer && <p className="ws-muted">Last successful transfer in this session: {lastTransfer}</p>}
+    <div className="ws-sync-group"><h3>1. Choose source · practice data</h3><div className="ws-sync-actions">
+      <button type="button" disabled={busy || readingFile} onClick={() => { setConfirming(false); setFileRecords(null); setFileName(''); setPreviewState(null); setError(''); setMessage('') }} aria-pressed={!fileRecords}>This browser</button>
+      <label className="ws-file-picker">Choose progress JSON<input type="file" accept="application/json,.json" onChange={readFile} disabled={busy || readingFile} className="sr-only" /></label>
       <button type="button" onClick={() => void downloadLocalExport()}>Export local progress</button>
     </div><p className="ws-muted">{records.length} item(s) selected{fileName ? ` from ${fileName}` : ' from this browser'}. Scores, XP and achievements cannot become verified through import.</p></div>
     <div className="ws-sync-group"><h3>Account record</h3><div className="ws-sync-actions"><button type="button" onClick={() => void refreshServerProgress()} disabled={serverBusy}>{serverBusy ? 'Reading account record…' : 'Fetch account progress'}</button>{serverProgress && <button type="button" onClick={downloadServerExport}>Export account snapshot</button>}</div>
@@ -236,12 +247,14 @@ export function ProgressSyncPanel() {
     </div>
     {error && <div role="alert" className="ws-sync-error">{error}{error.includes('pending') || error.includes('active') || error.includes('token') ? <Link to="/login">Sign in →</Link> : null}</div>}
     {message && <div role="status" className="ws-sync-success">{message}</div>}
-    <div className="ws-sync-group"><h3>Preview and merge</h3>
+    <div className="ws-sync-group"><h3>2. Review changes before merging</h3><p className="ws-muted">Up to 500 records per transfer. JSON files must be 2 MB or smaller. Preview does not change your account.</p>
       {preview && <div className="ws-sync-preview" role="status"><div className="ws-row-meta">Import preview · unverified</div><dl>{[
         ['New', preview.would_insert], ['Advance unverified', preview.would_upgrade_unverified_progress], ['Verified preserved', preview.verified_server_records_preserved], ['Unchanged', preview.unchanged],
       ].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl><p>Merge awards 0 verified XP and does not create certificates.</p></div>}
       {records.length > 500 && <p className="ws-sync-error">The API accepts at most 500 records per preview. Select a smaller batch.</p>}
-      <div className="ws-sync-actions"><button type="button" onClick={() => void requestPreview()} disabled={busy || records.length === 0 || records.length > 500}>{busy ? 'Working…' : 'Preview merge'}</button>{preview && <button type="button" className="ws-action" onClick={() => void merge()} disabled={busy}>Confirm merge</button>}</div>
+      <div className="ws-sync-actions"><button type="button" onClick={() => void requestPreview()} disabled={busy || readingFile || records.length === 0 || records.length > 500}>{busy ? 'Working…' : 'Preview merge'}</button>{preview && !confirming && <button type="button" className="ws-action" onClick={() => setConfirming(true)} disabled={busy || readingFile}>Review confirmation</button>}</div>
+      {preview && confirming && <div className="ws-sync-confirm" role="group" aria-label="Confirm progress transfer"><h3>3. Confirm account transfer</h3><p>Merge {preview.unique_records} item(s) from {fileName || 'this browser'} into your signed-in account? Imported records remain unverified, verified server records are preserved, and no XP or certificates are awarded.</p><div className="ws-sync-actions"><button type="button" onClick={() => setConfirming(false)} disabled={busy}>Cancel</button><button type="button" className="ws-action" disabled={busy || readingFile} onClick={() => void merge()}>Confirm merge</button></div></div>}
+      {readingFile && <p role="status" className="ws-muted">Reading selected file…</p>}
       {busy && <p role="status" className="ws-muted">Contacting the account API…</p>}
     </div>
   </section>

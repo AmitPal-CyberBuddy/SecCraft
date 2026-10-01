@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { Flame, Target, Trophy, Zap, Clock, CheckCircle, Award, Calendar, TrendingUp } from 'lucide-react'
 import { useProgressStore } from '@/store/useProgressStore'
 
@@ -32,7 +32,6 @@ function buildTasks(completedLessons: { completedAt?: string }[], completedLabs:
 }
 
 export function DailyChallenges({ className = '' }: { className?: string }) {
-  const totalXp = useProgressStore(s => s.getTotalXp())
   const streak = useProgressStore(s => s.getStreak())
   const completedLessons = useProgressStore(s => s.completedLessons)
   const completedLabs = useProgressStore(s => s.completedLabs)
@@ -51,67 +50,68 @@ export function DailyChallenges({ className = '' }: { className?: string }) {
   }
   const getTypeColor = (type: string) => {
     switch(type) {
-      case 'lesson': return 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
-      case 'lab': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-      case 'quiz': return 'bg-violet-500/10 text-violet-400 border-violet-500/20'
-      default: return 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+      case 'lesson': return 'bg-[var(--accent-bg)] text-[var(--learning)] border-[var(--accent-border)]'
+      case 'lab': return 'bg-[var(--success-bg)] text-[var(--success)] border-[var(--success-border)]'
+      case 'quiz': return 'bg-[var(--owner-bg)] text-[var(--owner)] border-[var(--owner-border)]'
+      default: return 'bg-[var(--warning-bg)] text-[var(--attention)] border-[var(--warning-border)]'
     }
   }
 
   return (
-    <div className={`rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 sm:p-6 min-w-0 w-full ${className}`}>
+    <div className={`rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-4 xs:p-5 sm:p-6 min-w-0 w-full ${className}`}>
       <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500/15 to-amber-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
-            <Flame className="w-5 h-5 text-orange-400" />
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--warning-bg)] to-[var(--warning-bg)] border border-[var(--warning-border)] flex items-center justify-center shrink-0">
+            <Flame className="w-5 h-5 text-[var(--attention)]" />
           </div>
           <div className="min-w-0">
-            <h3 className="font-heading font-bold text-[14px] xs:text-[15px] text-slate-100 flex items-center gap-2">
+            <h3 className="font-heading font-bold text-[14px] xs:text-[15px] text-[var(--ink-primary)] flex flex-wrap items-center gap-2">
               Daily Challenges
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 font-mono">{streak} day streak</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--warning-bg)] border border-[var(--warning-border)] text-[var(--attention)] font-mono">{streak} day streak</span>
             </h3>
-            <p className="text-[11px] text-slate-400 font-mono">Local date • counted from your own completions • {completedCount}/{liveTasks.length} goals met today</p>
+            <p className="text-sm text-[var(--ink-secondary)] font-mono">Local date • counted from your own completions • {completedCount}/{liveTasks.length} goals met today</p>
           </div>
         </div>
-        <span className="text-[11px] px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono flex items-center gap-1 shrink-0"><Calendar className="w-3 h-3" />Daily practice</span>
+        <span className="text-sm px-2.5 py-1 rounded-full bg-[var(--warning-bg)] border border-[var(--warning-border)] text-[var(--attention)] font-mono flex items-center gap-1 shrink-0"><Calendar className="w-3 h-3" />Daily practice</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-        {liveTasks.map((task, idx) => {
+        {liveTasks.map(task => {
           const Icon = getTypeIcon(task.type)
           return (
-            <motion.div key={task.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} className={`p-3.5 rounded-xl border flex items-start gap-3 min-w-0 ${task.completed ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-[#020617]/60 border-[#1e293b]/60 hover:bg-[#020617]/80 hover:border-[#334155]/40'} transition-colors`}>
-              <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${task.completed ? 'bg-emerald-500/10 border-emerald-500/20' : getTypeColor(task.type)}`}>
-                {task.completed ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : <Icon className="w-4 h-4" />}
+            <div key={task.id} className={`p-3.5 rounded-xl border flex items-start gap-3 min-w-0 ${task.completed ? 'bg-[var(--success-bg)] border-[var(--success-border)]' : 'bg-[var(--panel-inset)] border-[var(--line-normal)] hover:bg-[var(--panel-inset)] hover:border-[var(--line-strong)]'} transition-colors`}>
+              <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${task.completed ? 'bg-[var(--success-bg)] border-[var(--success-border)]' : getTypeColor(task.type)}`}>
+                {task.completed ? <CheckCircle className="w-4 h-4 text-[var(--success)]" /> : <Icon className="w-4 h-4" />}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className={`text-[13px] font-medium truncate ${task.completed ? 'text-emerald-300' : 'text-slate-200'}`}>{task.title}</span>
-                  {task.completed && <span className="text-[10px] px-1.5 py-0.5 rounded-full border font-mono shrink-0 bg-emerald-500/10 text-emerald-300 border-emerald-500/20">RECORDED</span>}
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
+                  <span className={`text-sm font-medium ${task.completed ? 'text-[var(--success)]' : 'text-[var(--ink-primary)]'}`}>{task.title}</span>
+                  {task.completed && <span className="text-[10px] px-1.5 py-0.5 rounded-full border font-mono shrink-0 bg-[var(--success-bg)] text-[var(--success)] border-[var(--success-border)]">RECORDED</span>}
                 </div>
-                <div className="text-[11px] text-slate-400 mt-1 truncate">{task.desc}</div>
+                <div className="text-sm text-[var(--ink-secondary)] mt-1">{task.desc}</div>
+                {!task.completed && <Link className="ws-text-action inline-flex items-center min-h-11 text-sm" to={task.type === 'lab' ? '/labs' : '/modules'}>{task.type === 'lab' ? 'Choose a lab →' : task.type === 'quiz' ? 'Choose a module quiz →' : 'Choose a lesson →'}</Link>}
                 <div className="mt-2 flex items-center gap-2">
-                  <div className="flex-1 h-1.5 rounded-full bg-[#020617] border border-[#1e293b]/40 overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-cyan-400 to-violet-400 rounded-full" style={{ width: `${(task.progress/task.total)*100}%` }} />
+                  <div className="flex-1 h-1.5 rounded-full bg-[var(--panel-inset)] border border-[var(--line-normal)] overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-[var(--action-fill)] to-[var(--owner)] rounded-full" style={{ width: `${(task.progress/task.total)*100}%` }} />
                   </div>
-                  <span className="text-[10px] font-mono text-slate-400 shrink-0">{task.progress}/{task.total}</span>
+                  <span className="text-[10px] font-mono text-[var(--ink-secondary)] shrink-0">{task.progress}/{task.total}</span>
                 </div>
               </div>
-            </motion.div>
+            </div>
           )
         })}
       </div>
 
-      <div className="p-3 rounded-xl bg-gradient-to-r from-amber-500/[0.04] to-orange-500/[0.04] border border-amber-500/10 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <Zap className="w-4 h-4 text-amber-400 shrink-0" />
-          <span className="text-[12px] text-slate-300 font-medium">
+      <div className="p-3 rounded-xl bg-gradient-to-r from-[var(--warning-bg)] to-[var(--warning-bg)] border border-[var(--warning-border)] flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
+          <Zap className="w-4 h-4 text-[var(--attention)] shrink-0" />
+          <span className="text-sm text-[var(--ink-secondary)] font-medium">
             {completedCount === liveTasks.length
               ? 'All of today\u2019s practice goals met — no bonus XP; counts reset at local midnight.'
               : 'Daily goals award no separate XP; the underlying learning activity follows its normal one-time reward rule.'}
           </span>
         </div>
-        <span className="text-[11px] font-mono text-slate-400 shrink-0">{new Date().toLocaleDateString()}</span>
+        <span className="text-sm font-mono text-[var(--ink-secondary)] shrink-0">{new Date().toLocaleDateString()}</span>
       </div>
     </div>
   )

@@ -1,0 +1,7 @@
+{
+  "provenance":"Supplied expected certificate-file outcomes, not learner execution or an EAP session",
+  "reference_time_utc":"2026-10-01T00:00:00Z",
+  "ca-only":{"server-good.pem":true,"server-wrong-name.pem":true,"server-untrusted.pem":false,"server-expired.pem":false,"client-only.pem":false},
+  "strict":{"server-good.pem":true,"server-wrong-name.pem":false,"server-untrusted.pem":false,"server-expired.pem":false,"client-only.pem":false},
+  "live_EAP":"NOT TESTED"
+}

@@ -272,7 +272,7 @@ def build() -> List[Dict[str, object]]:
             dict(id="t1", question="Where is the PMKID, and what is its value?",
                  answer=(f"{fmt(m1)}: M1 key data is 'dd14000fac04' + the 16-byte PMKID = {pmkid_value} "
                          "(KDE: element 221, length 20, OUI 00-0F-AC, type 04)."),
-                 hint="tshark -Y 'eapol.type == 3' -T fields -e frame.number -e eapol.keydes.key_data"),
+                 hint="tshark -Y 'eapol.type == 3' -T fields -e frame.number -e wlan_rsna_eapol.keydes.data"),
             dict(id="t2", question="Verify the PMKID from the documented lab PSK and the BSSID/client addresses.",
                  answer=(f"PMKID = HMAC-SHA1-128(PMK, 'PMK Name' | AA | SPA) with AA={rec[0].get('bssid')} and "
                          f"SPA={rec[3].get('sa')} reproduces {pmkid_value}, where PMK = PBKDF2-HMAC-SHA1('{LAB_PSK}', "
@@ -489,7 +489,7 @@ def build() -> List[Dict[str, object]]:
                  answer=("Open association → DHCP DORA → HTTP connectivity-check GET → 302 redirect → cleartext POST with lab-only values → HTTP response with Set-Cookie. The fixture exposes those bytes on an open BSS, but it does not implement a real portal, prove that a server trusts the MAC in the URL, or demonstrate session hijacking; those require controlled service-side tests and logs."),
                  hint="tshark -Y 'http.request' -T fields -e frame.number -e http.request.method -e http.host -e http.request.uri"),
             dict(id="t2", question="Does the capture show client isolation? Which frames decide it?",
-                 answer=("The synthetic packet sequence shows an ARP request from 12:34:56:78:9a:bc forwarded by the AP to 55:66:77:88:99:aa, followed by the peer reply forwarded back. That demonstrates the fixture models station-to-station forwarding; it does not establish a real AP setting or production isolation failure. The capture says nothing about guest-to-corporate segmentation, which needs a separate scoped test."),
+                 answer=("The synthetic packet sequence shows an ARP request from 12:34:56:78:9a:bc forwarded by the AP to 02:66:77:88:99:aa, followed by the peer reply forwarded back. That demonstrates the fixture models station-to-station forwarding; it does not establish a real AP setting or production isolation failure. The capture says nothing about guest-to-corporate segmentation, which needs a separate scoped test."),
                  hint="Look for ARP between two non-AP MACs."),
             dict(id="t3", question="Prioritise the remediation and justify the order.",
                  answer=("Prioritize TLS/HTTPS for the portal and server-side session controls, then validate guest client isolation and inter-VLAN policy independently. The fixture demonstrates cleartext HTTP bytes and simulated peer ARP forwarding only; it does not establish a MAC-based authorization flaw or prove an actual production control is absent."),
@@ -571,8 +571,8 @@ def build() -> List[Dict[str, object]]:
         id="chal-14-radius", title="RADIUS — Verifiable Integrity and Trust Boundaries",
         module="15-enterprise-fundamentals", difficulty="Professional", type="pcap_analysis", level="assessment",
         estimated_time="40m", points=200, status="simulated",
-        description=("radius.pcapng contains an authentication exchange, an accounting pair, a rogue NAS request and "
-                     "policy attributes. Verify the integrity fields yourself before drawing conclusions."),
+        description=("radius.pcapng contains paired synthetic AAA transactions, a valid accounting pair, an intentionally invalid-secret request and a VLAN attribute. "
+                     "Verify correlation and authenticators; no live client or policy enforcement is supplied."),
         objectives=["Read codes and attributes as evidence",
                     "Verify Message-Authenticator and Response Authenticator",
                     "Assess the shared secret as a high-value credential"],
@@ -584,7 +584,7 @@ def build() -> List[Dict[str, object]]:
                                    for n, r in enumerate(rec, 1) if r.get("radius_code_name"))
                          + ". Note EAP-Message can be split across several attributes: concatenate every type-79 "
                            "attribute before parsing, or the EAP packet will be silently truncated."),
-                 hint="tshark -Y radius -T fields -e frame.number -e radius.code -e radius.eap_message"),
+                 hint="tshark -Y radius -T fields -e frame.number -e radius.code -e radius.eap_fragment"),
             dict(id="t2", question="Verify integrity: what does the Message-Authenticator prove, and why does one request fail?",
                  answer=("Message-Authenticator = HMAC-MD5 over the packet with the attribute value zeroed, keyed with the "
                          "shared secret — a valid value supports integrity under that shared secret, but does not uniquely identify which holder sent the packet. Recomputing "

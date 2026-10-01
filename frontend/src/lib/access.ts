@@ -292,7 +292,7 @@ export const PREVIEW_NOTE =
   'The Preview Curriculum is a real slice of the SecCraft method, not a watered-down trial. What an account adds is the record, not the reading.'
 
 export const ACCOUNT_ADDS_NOTE =
-  'An approved account adds the Full Curriculum, progress you can rely on, verified XP, assessment history, and a record that survives a new device.'
+  'An approved account unlocks the full curriculum and account-backed records. Imported practice stays unverified.'
 
 export const ACCOUNT_ADDOES_NOT_ADD_NOTE =
   'An account does not change how much of the public material you can read, and it never uploads your progress on its own. Synchronization is always a deliberate step.'

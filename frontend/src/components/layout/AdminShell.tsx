@@ -13,7 +13,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
   return <div className="ws-admin-shell sc-owner-shell">
     <a href="#admin-main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-[var(--panel-bg)]">Skip to content</a>
     <header className="sc-owner-masthead"><div><Link to="/app" className="sc-owner-brand"><Shield size={18} aria-hidden="true" /> SecCraft <span>/ Owner console</span></Link><Link to="/app" className="sc-owner-return"><ArrowLeft size={16} aria-hidden="true" /> Learner workspace</Link></div></header>
-    <main id="admin-main" className="sc-owner-main">{children}</main>
+    <nav aria-label="Owner sections" className="ws-tool-actions p-4"><Link className="ws-action ws-action-secondary" to="/admin">Accounts & policy</Link><Link className="ws-action ws-action-secondary" to="/admin/feedback">Feedback inbox</Link></nav>
+    <main tabIndex={-1} id="admin-main" className="sc-owner-main">{children}</main>
     <footer className="sc-owner-footer"><p>Owner privileges come from the server-side allowlist; this page cannot grant access.</p><a href="https://github.com/AmitPal-CyberBuddy/SecCraft" target="_blank" rel="noreferrer noopener">Repository <ExternalLink size={14} aria-hidden="true" /></a></footer>
   </div>
 }

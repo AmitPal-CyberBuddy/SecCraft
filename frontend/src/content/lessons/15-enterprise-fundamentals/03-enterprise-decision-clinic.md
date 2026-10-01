@@ -2,13 +2,9 @@
 
 > The `enterprise.pcapng`, `eap.pcapng` and `radius.pcapng` fixtures are **not one coherent session**. Their TLS-like payloads are abbreviated. Do not splice their identifiers/timestamps into a fabricated client→AP→AAA transcript.
 
-## Guided pass: distinguish the three questions
+## Prepare, then review across boundaries
 
-**Client/server trust:** an EAP method label says which protocol was attempted, not whether a real client validated the expected certificate name and trust anchor. `eap.pcapng` contains a deliberately *direct* MS-CHAPv2 teaching exchange, not a decrypted PEAP inner exchange. An effective supplicant profile and logs from a controlled attempt are needed to show a client rejected a wrong-name server.
-
-**Packet integrity:** in `radius.pcapng`, inspect attribute 80 (Message-Authenticator), the response authenticator and the example VLAN attribute. The repository verifier uses a published *lab-only* shared secret to check some packet bytes; the deliberately invalid request fails that check. Neither observation identifies a real rogue NAS or proves how a deployed server handled a request.
-
-**Policy enforcement:** an Access-Accept carrying a VLAN is not proof an AP/switch assigned it or blocked a forbidden route. Only controlled client address/VLAN, switch/controller policy and positive **and** negative reachability tests on approved endpoints support that conclusion.
+The preceding [Enterprise test-plan lesson](/paths/wireless-pentesting/modules/15-enterprise-fundamentals?tab=theory&lesson=02-enterprise-testing-lab) owns the collection/correlation walkthrough. Here, independently decide what each separate fixture supports about **server trust**, **packet integrity** and **applied policy**. Do not repeat the plan as if it were a result. Save your three-row answer before the self-check.
 
 ## Independent attempt (offline)
 
@@ -16,12 +12,11 @@
 # Run from the repository root, or use Wireshark if tshark is not installed.
 tshark -r frontend/public/pcaps/enterprise/enterprise.pcapng -Y 'eap' \
   -T fields -e frame.number -e eap.code -e eap.type
-tshark -r frontend/public/pcaps/radius/radius.pcapng -Y 'radius' \
-  -T fields -e frame.number -e radius.code -e radius.message_authenticator
+tshark -r frontend/public/pcaps/radius/radius.pcapng -Y 'radius' -V
 python3 scripts/verify-lab-artifacts.py
 ```
 
-Make three rows: `trust boundary | observed bytes and capture hash | what the bytes cannot prove | authorized control test`. For the policy row propose a test that includes an *allowed* and a *disallowed* destination; one unanswered ping does not prove a firewall rule. For certificate identity, design two managed test profiles with the same trusted CA but different expected server names. No actual certificates or managed profiles are shipped: mark that test NOT EXECUTED.
+Make three rows: `trust boundary | observed bytes and capture hash | what the bytes cannot prove | authorized control test`. For the policy row propose a test that includes an *allowed* and a *disallowed* destination; one unanswered ping does not prove a firewall rule. For certificate identity, design two managed test profiles with the same trusted CA but different expected server names. WF-ENT-05 now supplies real certificate files and illustrative profiles for offline comparison. Its certificate-file verification is not a supplicant test: mark actual client behavior NOT EXECUTED.
 
 ## Self-check and decision
 

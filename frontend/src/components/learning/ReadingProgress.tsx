@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
 
 interface ReadingProgressProps {
   targetId?: string // ID of scroll container, defaults to window
@@ -28,7 +27,7 @@ export function ReadingProgress({ targetId, className = '' }: ReadingProgressPro
       }
 
       const total = scrollHeight - clientHeight
-      const pct = total > 0 ? Math.min((scrollTop / total) * 100, 100) : 0
+      const pct = total > 0 ? Math.max(0, Math.min((scrollTop / total) * 100, 100)) : 0
       setProgress(pct)
     }
 
@@ -37,25 +36,17 @@ export function ReadingProgress({ targetId, className = '' }: ReadingProgressPro
       target.addEventListener('scroll', handleScroll, { passive: true })
       handleScroll()
     }
-    window.addEventListener('scroll', handleScroll, { passive: true })
+    window.addEventListener('resize', handleScroll)
 
     return () => {
       if (target) target.removeEventListener('scroll', handleScroll)
-      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('resize', handleScroll)
     }
   }, [targetId])
 
   return (
     <div className={`fixed top-0 left-0 right-0 h-[3px] z-[100] pointer-events-none ${className}`}>
-      <motion.div
-        className="h-full bg-gradient-to-r from-cyan-400 via-violet-400 to-cyan-400 origin-left"
-        style={{ width: `${progress}%` }}
-        initial={{ scaleX: 0 }}
-        animate={{ scaleX: 1 }}
-        transition={{ duration: 0.1 }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent" />
-      </motion.div>
+      <div className="h-full bg-[var(--learning)] origin-left" style={{ transform: `scaleX(${progress / 100})` }} />
     </div>
   )
 }
@@ -77,7 +68,8 @@ export function LessonReadingProgress({ content }: { content: string }) {
       const windowHeight = window.innerHeight
       const fullHeight = el.scrollHeight
       const visibleTop = Math.max(0, -rect.top)
-      const progress = Math.min((visibleTop / (fullHeight - windowHeight * 0.5)) * 100, 100)
+      const available = fullHeight - windowHeight * 0.5
+      const progress = available > 0 ? Math.min((visibleTop / available) * 100, 100) : 0
       setStats(s => ({ ...s, progress: Math.max(0, Math.min(100, progress)) }))
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
@@ -86,17 +78,17 @@ export function LessonReadingProgress({ content }: { content: string }) {
   }, [content])
 
   return (
-    <div className="flex items-center gap-4 text-[11px] font-mono text-slate-500">
+    <div className="flex items-center gap-4 text-[11px] font-mono text-[var(--ink-muted)]">
       <span className="flex items-center gap-1.5">
-        <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+        <div className="w-1.5 h-1.5 rounded-full bg-[var(--action-fill)]" />
         {stats.words.toLocaleString()} words
       </span>
-      <span className="w-1 h-1 rounded-full bg-slate-700" />
+      <span className="w-1 h-1 rounded-full bg-[var(--panel-raised)]" />
       <span>{stats.minutes} min read</span>
-      <span className="w-1 h-1 rounded-full bg-slate-700" />
+      <span className="w-1 h-1 rounded-full bg-[var(--panel-raised)]" />
       <span className="flex items-center gap-2">
-        <div className="w-16 h-1 bg-[#020617] rounded-full overflow-hidden border border-[#1e293b]/50">
-          <div className="h-full bg-gradient-to-r from-cyan-400 to-violet-400 rounded-full transition-all duration-150" style={{ width: `${stats.progress}%` }} />
+        <div className="w-16 h-1 bg-[var(--panel-inset)] rounded-full overflow-hidden border border-[var(--line-normal)]">
+          <div className="h-full bg-gradient-to-r from-[var(--action-fill)] to-[var(--owner)] rounded-full" style={{ width: `${stats.progress}%` }} />
         </div>
         {Math.round(stats.progress)}%
       </span>

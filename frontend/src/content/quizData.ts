@@ -82,7 +82,7 @@ export const quizData: Record<string, any[]> = {
     { id: "q2", question: "Open network risk:", options: ["No risk", "WPS risk", "PMF required", "Traffic sniffable, no encryption"], correct: 3, explanation: "Open = no TK, traffic sniffable unless HTTPS." },
     { id: "q3", question: "To claim a portal can be bypassed by cloning a client MAC, what evidence is needed?", options: ["A documented authorization policy plus a controlled cloned-MAC test and server-side logs showing unauthorized access", "Not possible", "Requires WPS", "Requires deauth only"], correct: 0, explanation: "A visible MAC address alone does not prove the service trusts it. Verify policy, perform a scoped negative/positive test, and inspect server-side logs." },
     { id: "q4", question: "In a hostapd setup that supports this setting, which option requests AP client isolation?", options: ["ap_isolate=0", "wps_state=2", "ap_isolate=1", "ieee80211w=0"], correct: 2, explanation: "`ap_isolate=1` requests client isolation in hostapd; verify implementation, bridges/VLANs and actual forwarding with a controlled two-client test." },
-    { id: "q5", question: "Better than pure open for guest:", options: ["WEP", "WPA3 OWE or WPA2-PSK with portal + isolation + HTTPS", "Open with no portal", "WPS"], correct: 1, explanation: "OWE gives encryption for open, or WPA2-PSK with portal, plus isolation and HTTPS." },
+    { id: "q5", question: "Better than pure open for guest:", options: ["WEP", "Enhanced Open (OWE) or an appropriately configured protected WLAN, with portal + isolation + HTTPS", "Open with no portal", "WPS"], correct: 1, explanation: "OWE (Enhanced Open, not WPA3-Personal) adds unauthenticated link encryption; it does not replace portal TLS/session controls or network isolation. Choose the approved deployment profile for the client fleet." },
   ],
   "15-enterprise-fundamentals": [
     { id: "q1", question: "Enterprise vs Personal difference:", options: ["Same PSK for all", "No auth", "WEP only", "Per-user credentials via 802.1X/RADIUS, PMK from MSK"], correct: 3, explanation: "Enterprise uses 802.1X, per-user, PMK from MSK not PBKDF2." },
@@ -106,78 +106,560 @@ export const quizData: Record<string, any[]> = {
     { id: "q5", question: "What additional evidence would establish an actual client accepted the staged SAE-only policy?", options: ["The after-file’s name", "One beacon advertising SAE", "A published wordlist", "A controlled client association with selected AKM/PMF and corresponding client/AP logs"], correct: 3, explanation: "The staged three-beacon file establishes an advertised change, not negotiated client behavior or installed protection." },
   ],
   "android-01-platform": [
-    { id: "q1", question: "An activity is exported with a custom VIEW scheme. What is demonstrated by the manifest alone?", options: ["Cross-account note disclosure", "A declared external entry point, not successful runtime delivery or impact", "The app is verified to own the scheme", "The provider is exported"], correct: 1, explanation: "Manifest metadata suggests a callable boundary; installed behavior, downstream checks and impact need separate evidence." },
-    { id: "q2", question: "Why does an unexported provider not settle the whole app's data exposure question?", options: ["It is always public", "A separately exported activity might call into it; follow every data path", "It cannot store data", "INTERNET permission exports it"], correct: 1, explanation: "Unexported blocks direct external provider calls but other externally reachable components may still access the data." },
-    { id: "q3", question: "What does comparing ownerId to session.userId in the supplied store establish?", options: ["A relevant guard on this excerpt's lookup path", "All deployed releases are safe", "The external caller was authenticated", "Every note has an owner"], correct: 0, explanation: "This source excerpt shows a guard on one path; other paths and actual runtime behavior are not supplied." },
-    { id: "q4", question: "A custom training:// link is equivalent to a verified HTTPS App Link. True?", options: ["True", "False: a custom scheme's host alone does not verify domain ownership"], correct: 1, explanation: "Custom schemes can have competing handlers; Android App Links involve separate domain verification." },
-    { id: "q5", question: "What must accompany a version-sensitive claim about component access?", options: ["Only the application label", "OS/API level, target SDK and built/merged manifest", "Only a decompiled class name", "The proxy certificate"], correct: 1, explanation: "Platform behavior and build-time manifest merging change the security interpretation." },
+    { id: "q1", question: "How does Android enforce process isolation between two standard third-party applications?", options: ["By assigning each installed application a distinct Linux UID/GID at install time", "By running each application in a separate virtual machine hypervisor", "By restricting network ports via iptables", "Through Java language private access modifiers alone"], correct: 0, explanation: "Android sandboxes apps at the Linux kernel level by assigning each package a unique UID (e.g., u0_a182), preventing other apps from accessing its private /data/data/ directory via kernel DAC and SELinux." },
+    { id: "q2", question: "Why is SELinux (MAC) required on Android even though Linux file permissions (DAC) already isolate UIDs?", options: ["DAC cannot protect network sockets", "Even if a process escalates to root (UID 0), SELinux type enforcement restricts unauthorized domain actions", "SELinux is only used for encrypting user passwords", "DAC permissions are ignored by the ART runtime"], correct: 1, explanation: "SELinux enforces Mandatory Access Control. Even if an attacker gains root privileges, SELinux policy prevents the untrusted_app domain from tampering with block devices or system services." },
+    { id: "q3", question: "When an application receives an IPC call via Binder, how does it securely identify the calling process?", options: ["By parsing an intent extra called 'caller_package'", "By reading the HTTP user-agent header", "By invoking Binder.getCallingUid(), which is kernel-injected by the /dev/binder driver", "By querying the Linux /proc filesystem"], correct: 2, explanation: "The Binder kernel driver intercepts transactions and injects verified calling UID and PID; the caller cannot spoof the return value of Binder.getCallingUid()." },
+    { id: "q4", question: "What is the primary security advantage of declaring a custom permission with android:protectionLevel='signature'?", options: ["It requires the user to grant permission at runtime", "Only applications signed with the exact same developer certificate can hold the permission", "It encrypts all data sent across the component", "It allows any app on Google Play to invoke the component"], correct: 1, explanation: "A signature-level permission is granted automatically by the platform only to apps signed with the identical cryptographic key, making it ideal for private inter-app suites." },
+    { id: "q5", question: "Why is APK Signature Scheme v2/v3 superior to legacy v1 JAR signing?", options: ["v1 signing did not support RSA keys", "v2/v3 signs the entire binary payload via an APK Signing Block, protecting ZIP metadata and preventing Janus-style container tampering", "v1 signing required an internet connection to install", "v2/v3 removes the need for developer certificates"], correct: 1, explanation: "v1 only verified individual file hashes, leaving zip metadata vulnerable to tampering (e.g., Janus vulnerability CVE-2017-13156). v2/v3 protects the entire file and adds key rotation lineage in v3." },
+    { id: "q6", question: "Starting with Android 12 (API 31), what manifest requirement is strictly enforced for components with intent filters?", options: ["They must be written in Kotlin", "They must declare an explicit android:exported attribute ('true' or 'false')", "They must request the INTERNET permission", "They must use biometric authentication"], correct: 1, explanation: "Android 12 makes explicit declaration of android:exported mandatory for any activity, service, or receiver that includes an <intent-filter>, preventing accidental exposure." },
   ],
   "android-02-workstation": [
-    { id: "q1", question: "What does adb devices alone prove?", options: ["A device is listed, not that any scoped app was tested", "A target APK is installed", "The app's provider is vulnerable", "The app is a release build"], correct: 0, explanation: "Connectivity is environment evidence only." },
-    { id: "q2", question: "No runnable APK or emulator is supplied. What is a defensible outcome?", options: ["A completed dynamic test", "An offline static hypothesis marked NOT EXECUTED dynamically", "A verified Frida bypass", "A production finding"], correct: 1, explanation: "Text-only artifacts permit static practice, not observed runtime results." },
-    { id: "q3", question: "Why record the exact build hash and Android version?", options: ["To infer all backend flaws", "To make an observation reproducible and account for platform/build differences", "To replace authorization", "To prove tool output is correct"], correct: 1, explanation: "Version and artifact identity constrain what a test actually covers." },
-    { id: "q4", question: "What can a local SHA-256 match against SHA256SUMS establish?", options: ["That this copy matches the recorded bytes, not execution or independent provenance", "That the app was installed", "That code is vulnerability-free", "That the author is certified"], correct: 0, explanation: "Integrity relative to the reference does not validate behavior or author identity." },
-    { id: "q5", question: "Which is a safe test target for a dynamic Android course?", options: ["Any commercial app you can download", "An app you own or are expressly authorized to test with scoped accounts", "A nearby user's device", "Any app with an exported component"], correct: 1, explanation: "Technical access is not authorization; scope includes app, device, account and allowed techniques." },
+    { id: "q1", question: "Which Android Virtual Device (AVD) system image type is recommended for security assessments and why?", options: ["Google Play image, because it allows adb root out of the box", "AOSP image, because it includes proprietary banking apps", "Google APIs (userdebug) image, because it permits 'adb root' and '-writable-system' while supporting Google Play Services", "Any production release build"], correct: 2, explanation: "Google APIs userdebug builds allow adb root and partition remounting (-writable-system) required for CA injection, while maintaining full Google Play Services support." },
+    { id: "q2", question: "Why must a Burp Suite CA certificate installed into /system/etc/security/cacerts/ be named in the format <hash>.0?", options: ["Android's BoringSSL crypto library indexes system certificates by the old subject hash followed by .0", "It is an arbitrary naming convention that helps developers locate certificates", "The .0 extension indicates that the certificate is encrypted", "ADB rejects files without a numerical extension"], correct: 0, explanation: "Android locates system CA certificates using OpenSSL/BoringSSL subject hash indexing (openssl x509 -subject_hash_old), appending an integer (.0) to handle hash collisions." },
+    { id: "q3", question: "When monitoring real-time application behavior, which ADB logcat command captures only messages from the target application's process?", options: ["adb logcat --pid=$(adb shell pidof -s <package_name>) -v time", "adb logcat --all-users", "adb logcat -d /data/data", "adb shell cat /dev/log/all"], correct: 0, explanation: "Filtering logcat by the target application's PID (--pid) isolates output specifically generated by that process across log buffers." },
+    { id: "q4", question: "In a professional security assessment, how should a static code review finding be reported if dynamic testing was unavailable?", options: ["Fabricate an ADB execution log to show the client", "Report it as a confirmed high-severity exploit without qualification", "Document the finding as a static code vulnerability hypothesis and explicitly note that dynamic verification was NOT EXECUTED", "Ignore the finding completely"], correct: 2, explanation: "Professional pentesting strictly separates static hypotheses from observed runtime behavior. If dynamic validation could not be executed, it must be explicitly labeled NOT EXECUTED." },
+    { id: "q5", question: "What is the primary operational reason to revert to a clean emulator snapshot or run 'adb shell pm clear' between test scenarios?", options: ["To prevent residual session tokens, cached state, or file artifacts from corrupting positive and negative test controls", "To bypass Android Verified Boot", "To regenerate the app's signing key", "To reset the host computer's IP address"], correct: 0, explanation: "Clean baselines ensure test reproducibility and prevent false positives/negatives caused by lingering credentials or cached data." },
   ],
   "android-03-apk-triage": [
-    { id: "q1", question: "What is missing when you have only the supplied manifest and Kotlin text?", options: ["A built APK's merged manifest, bytecode and runtime behavior", "A query parameter", "An exported entry point declaration", "An ownership comparison in the excerpt"], correct: 0, explanation: "Source excerpts are not equivalent to an installed, signed build." },
-    { id: "q2", question: "What is the source in the deep-link trace?", options: ["The app signature", "The untrusted id query parameter", "The owner's user ID", "The APK checksum"], correct: 1, explanation: "The handler reads id from an externally supplied URI." },
-    { id: "q3", question: "Which statement is supported after reading NoteStore.kt?", options: ["Every user can see any note", "The supplied lookup returns null when candidate ownership differs from the session user", "A real device rejected an intent", "No other data path exists"], correct: 1, explanation: "The guard exists on this teaching excerpt's path, but no full app or runtime result is provided." },
-    { id: "q4", question: "A scanner finds a string named api_key. What next?", options: ["Declare credential compromise", "Trace use, privilege, build variant and server-side controls before classifying it", "Ignore all strings", "Publish the value"], correct: 1, explanation: "Labels and strings alone do not demonstrate that a live privileged secret is exposed." },
-    { id: "q5", question: "What would best test the cross-account disclosure hypothesis on an authorized build?", options: ["One request with no account context", "Two controlled accounts with distinct notes, a positive and negative lookup and observed outcome", "A screenshot of the manifest", "A local quiz pass"], correct: 1, explanation: "A controlled negative comparison must establish ownership, access and outcome before making an impact claim." },
+    { id: "q1", question: "Why is an APK with android:debuggable='true' considered a critical security finding in production?", options: ["It prevents the app from connecting to Wi-Fi", "It exposes JDWP debugging ports, allows memory inspection via ADB without root, and enables arbitrary code execution within the app UID", "It forces the app to use HTTP instead of HTTPS", "It disables all screen rendering on the device"], correct: 1, explanation: "Setting android:debuggable='true' allows any attacker with local or physical ADB access to attach a Java debugger (JDWP), inspect in-memory secrets, and run shell commands as the application user via 'run-as'." },
+    { id: "q2", question: "Why must a mobile security analyst inspect all DEX files (classes.dex, classes2.dex, etc.) in a Multidex APK?", options: ["Only classes.dex contains readable strings", "A single DEX file has a 64K method reference limit; business logic and security controls are frequently partitioned across secondary DEX files", "Secondary DEX files only contain images and layouts", "Android ignores classes2.dex at runtime"], correct: 1, explanation: "Due to the 65,536 method reference limit in Dalvik bytecode, modern apps split compiled classes across multiple DEX files. Auditing only classes.dex misses classes located in secondary DEX files." },
+    { id: "q3", question: "In JADX-GUI, what is the fastest way to trace backwards from a sensitive sink (e.g., SQLiteDatabase.rawQuery) to its external entry point?", options: ["Opening the AndroidManifest.xml file", "Selecting the method and pressing 'X' to view all cross-references and call sites", "Running apktool to decompile resources", "Searching for the word 'SELECT' in strings.xml"], correct: 1, explanation: "The 'X' hotkey in JADX-GUI opens the Cross-References (XRef) dialog, displaying every method that invokes the highlighted function, allowing analysts to trace backwards to external callers." },
+    { id: "q4", question: "When would an analyst choose apktool over JADX during an assessment?", options: ["When they want to read clean, high-level Kotlin code", "When modifying binary XML attributes (e.g., enabling debugging) or patching Smali instructions before rebuilding and re-signing the APK", "When inspecting network traffic via a proxy", "When generating automated CVSS scores"], correct: 1, explanation: "apktool disassembles bytecode into Smali and decodes resources into editable XML, making it the standard tool for patching, modifying, and rebuilding APKs." },
+    { id: "q5", question: "In source-to-sink analysis, what defines a 'critical sink'?", options: ["The user interface button where input is entered", "A function that executes an operation with security or privacy implications (e.g., executing SQL, writing private files, or transmitting data)", "The manifest <application> tag", "A comment left by the developer"], correct: 1, explanation: "A sink is the terminal execution point where data is consumed. Sinks become vulnerable when untrusted data from an external source reaches them without passing through adequate security guards." },
+    { id: "q6", question: "In the SecCraft Notes Boundary demo, how does the fixed flavor prevent cross-account note exposure?", options: ["By encrypting the phone's SD card", "By checking that the note owner matches the active session user before returning data (!owner.equals(activeUser))", "By deleting the MainActivity component", "By requiring an internet connection"], correct: 1, explanation: "The vulnerable flavor returns the requested note regardless of ownership, while the fixed flavor enforces an authorization guard ensuring the caller's session matches the record's owner." },
   ],
   "android-04-components": [
-    { id: "q1", question: "An Activity is exported but its lookup checks ownerId. What is the best conclusion?", options: ["The app has a critical vulnerability", "The entry point is reachable in principle; cross-account disclosure is not established", "Unexported providers are automatically exposed", "The app is unreachable"], correct: 1, explanation: "The entry point is reachable in principle; cross-account disclosure is not established. Verify on an owned build before claiming a runtime result." },
-    { id: "q2", question: "A receiver reads an untrusted id and replies with db.findById(id).body. What is the missing control?", options: ["Use a longer id", "Check caller/permissions and enforce owner authorization before returning a body", "Obfuscate the receiver name", "Grant INTERNET permission"], correct: 1, explanation: "Check caller/permissions and enforce owner authorization before returning a body. Verify on an owned build before claiming a runtime result." },
-    { id: "q3", question: "Why inspect an installed merged manifest rather than source alone?", options: ["The merged manifest proves exploitation", "Build variants and merged declarations can change the shipped export surface", "Source always matches release exactly", "Only emulator manifest matters"], correct: 1, explanation: "Build variants and merged declarations can change the shipped export surface. Verify on an owned build before claiming a runtime result." },
-    { id: "q4", question: "Which demo comparison tests the training-account owner decision?", options: ["One arbitrary id in source only", "Alice requesting her own ID 1 and Bob’s ID 2 on both flavors, with observed account labels", "A third-party production note", "A screenshot of exported=true"], correct: 1, explanation: "Alice requesting her own ID 1 and Bob’s ID 2 on both flavors, with observed account labels. Source reasoning is not an observed device result." },
+    { id: "q1", question: "In Android versions prior to Android 12 (API 31), what was the default export behavior for a component declaring an <intent-filter>?", options: ["It defaulted to android:exported='false'", "It defaulted to android:exported='true', making it globally callable by any third-party app on the device", "The app was prevented from compiling", "It was only callable by system apps"], correct: 1, explanation: "Prior to Android 12, declaring an intent filter implicitly exported the component (defaulting to exported='true'), causing widespread accidental exposure of internal activities and receivers." },
+    { id: "q2", question: "Why is checking 'getCallingPackage()' in an exported Activity's onCreate() insufficient on its own for caller authorization?", options: ["getCallingPackage() always returns the target app's own name", "getCallingPackage() returns null if the caller launched the Activity using standard startActivity() rather than startActivityForResult()", "getCallingPackage() requires root privileges", "Only system services can call getCallingPackage()"], correct: 1, explanation: "getCallingPackage() only returns a valid package name if the caller used startActivityForResult(). If launched via standard startActivity(), it evaluates to null and can fail open if not checked." },
+    { id: "q3", question: "How does an attacker exploit path traversal in a Content Provider's openFile() method?", options: ["By modifying the AndroidManifest.xml file on the device", "By passing encoded directory traversal sequences (e.g., ..%2F) in the URI path segment to access files outside the intended base directory", "By using a brute-force PIN attack", "By sending an implicit broadcast"], correct: 1, explanation: "If openFile() constructs file paths using uri.getLastPathSegment() without canonical path validation, an attacker can traverse up into /data/data/<pkg>/ to read private databases or SharedPreferences." },
+    { id: "q4", question: "What vulnerability occurs when an application creates a mutable PendingIntent with an unfilled base Intent?", options: ["The app's certificate is revoked", "A malicious recipient app can use Intent.fillIn() to overwrite the target component or action, executing arbitrary commands with the creator's UID and permissions", "The app cannot connect to Wi-Fi", "The device reboots into recovery mode"], correct: 1, explanation: "Because PendingIntents execute with the creator's identity and privileges, an untrusted recipient can rewrite mutable fields via fillIn() to invoke private internal components as a Confused Deputy." },
+    { id: "q5", question: "How does accidental URI grant leakage occur in exported components?", options: ["By declaring android:allowBackup='false'", "When an exported component receives a sensitive content:// URI with FLAG_GRANT_READ_URI_PERMISSION and blindly forwards it to an untrusted external app", "By using SQLiteQueryBuilder", "By registering a dynamic receiver"], correct: 1, explanation: "If a component receives temporary URI read/write permissions and forwards the intent to external apps without stripping grant flags, untrusted third parties gain access to the underlying private file." },
+    { id: "q6", question: "What is the secure implementation standard for dynamic broadcast receivers registered on Android 13+ (API 33)?", options: ["Always pass ContextCompat.RECEIVER_EXPORTED", "Explicitly pass ContextCompat.RECEIVER_NOT_EXPORTED unless cross-app communication is strictly required", "Omit all flags", "Use only implicit intents"], correct: 1, explanation: "Android 13 requires developers to specify either RECEIVER_EXPORTED or RECEIVER_NOT_EXPORTED; internal receivers must use RECEIVER_NOT_EXPORTED to prevent broadcast injection from external apps." },
   ],
   "android-05-links": [
-    { id: "q1", question: "Which hostname passes endsWith(\"trusted.example\") unexpectedly?", options: ["trusted.example.attacker.test", "attackertrusted.example", "nottrusted.test", "attacker.example"], correct: 1, explanation: "attackertrusted.example. Verify on an owned build before claiming a runtime result." },
-    { id: "q2", question: "Which evidence is needed to call an HTTPS Android App Link verified?", options: ["A host string in a URI", "Installed manifest, Digital Asset Links association and device verification state", "A custom URL scheme", "An app icon"], correct: 1, explanation: "Installed manifest, Digital Asset Links association and device verification state. Verify on an owned build before claiming a runtime result." },
-    { id: "q3", question: "What does the Notes Boundary seccraftnotes:// handler demonstrate?", options: ["Verified App Link ownership", "A custom-scheme route, not verified domain ownership", "Production OAuth redirect safety", "A delivered malicious intent"], correct: 1, explanation: "A custom-scheme route, not verified domain ownership. Verify on an owned build before claiming a runtime result." },
-    { id: "q4", question: "Why does a safe-looking URI not establish a sensitive action occurred?", options: ["Any string is an exploit", "The handler, validation and privileged sink must all be observed in the scoped build", "URLs are authenticated automatically", "TLS certs verify Intent callers"], correct: 1, explanation: "The handler, validation and privileged sink must all be observed in the scoped build. Source reasoning is not an observed device result." },
+    { id: "q1", question: "Why are custom URI schemes (e.g., myapp://) inherently vulnerable to Intent Hijacking on Android?", options: ["Custom schemes only work over 4G/5G networks", "The Android platform does not verify domain ownership for custom schemes; any rogue application can declare the exact same scheme in its manifest", "Custom schemes cannot pass query parameters", "Google Play bans apps using custom schemes"], correct: 1, explanation: "Android has no registration authority or domain verification for custom schemes. If multiple apps register the same scheme, Android shows a chooser dialog and the user may route sensitive tokens to malware." },
+    { id: "q2", question: "How does Android cryptographically verify domain ownership for Android App Links?", options: ["By requiring the user to type a CAPTCHA", "By fetching /.well-known/assetlinks.json from the HTTPS domain host and matching the declared SHA-256 certificate fingerprint against the installed APK's signing certificate", "By checking DNS TXT records", "Through Bluetooth beaconing"], correct: 1, explanation: "Android App Links use Digital Asset Links. The OS verifies that the domain's assetlinks.json lists the exact SHA-256 fingerprint of the app's signing key before granting exclusive automatic link handling." },
+    { id: "q3", question: "Why is the validation check 'uri.host.endsWith(\"trusted.example\")' insecure?", options: ["It crashes on uppercase domain names", "An attacker can register 'attackertrusted.example' or 'phishingtrusted.example', which both pass the suffix check unexpectedly", "endsWith() is deprecated in Kotlin", "It rejects subdomains of trusted.example"], correct: 1, explanation: "Without a leading dot check (e.g., host == 'trusted.example' || host.endsWith('.trusted.example')), attacker-controlled domains containing the suffix string pass the check completely." },
+    { id: "q4", question: "What makes an Open Redirect in a mobile deep link dangerous?", options: ["It reduces mobile battery life", "An attacker can manipulate the redirect destination (e.g., ?next=https://evil.com) to steal OAuth tokens appended by the app or escape into an embedded WebView with native bridge access", "It deletes the app's cache directory", "It blocks push notifications"], correct: 1, explanation: "Open redirects allow attackers to steal authorization codes and tokens appended to the redirect URL, or trick the application into loading attacker-controlled web content in privileged WebViews." },
+    { id: "q5", question: "Why should deep links never trigger state-changing actions (e.g., money transfers or password changes) automatically upon launch?", options: ["Deep links cannot carry data", "An attacker can trigger the deep link automatically from an invisible iframe or image tag on a malicious website visited in the mobile browser", "Android closes the app if a deep link takes more than 1 second", "Deep links only work when the app is already open"], correct: 1, explanation: "External websites visited in mobile browsers can dispatch deep links without user awareness. State-changing actions must require explicit interactive user confirmation (e.g., biometric prompt)." },
+    { id: "q6", question: "In an Intent Redirection attack, how does an attacker access an unexported internal activity (android:exported='false')?", options: ["By cracking the device encryption key", "By passing an explicit intent targeting the unexported activity inside an extra (e.g., 'next_intent') to an exported forwarder activity, which launches it with the app's own UID", "By modifying the kernel bootloader", "By using ADB without USB debugging"], correct: 1, explanation: "The exported forwarder acts as a Confused Deputy. Because the forwarder launches the target intent from within the application process, the platform allows the unexported component to be reached." },
   ],
   "android-06-storage": [
-    { id: "q1", question: "The excerpt writes a token to preferences and Log.d. What two surfaces need separate review?", options: ["Only TLS", "Local persistence and logging", "Only permissions", "Only certificate pins"], correct: 1, explanation: "Local persistence and logging. Verify on an owned build before claiming a runtime result." },
-    { id: "q2", question: "Do plaintext app-private preferences prove every other Android app can read them?", options: ["Yes on every Android version", "No; sandbox and device access model must be tested separately", "Yes if the app has INTERNET permission", "No because preferences are always encrypted"], correct: 1, explanation: "No; sandbox and device access model must be tested separately. Verify on an owned build before claiming a runtime result." },
-    { id: "q3", question: "What is an appropriate logout negative control?", options: ["Check only that the button label changed", "Try reusing the old synthetic token and inspect retained storage/logs on an owned build", "Take a screenshot of the source snippet", "Assume secureStore clears everything"], correct: 1, explanation: "Try reusing the old synthetic token and inspect retained storage/logs on an owned build. Verify on an owned build before claiming a runtime result." },
-    { id: "q4", question: "Does Keystore make plaintext invisible to the app process using the key?", options: ["Yes, always", "No; app code can still handle the decrypted value incorrectly", "Only if the app is exported", "Keystore is a proxy"], correct: 1, explanation: "No; app code can still handle the decrypted value incorrectly. Source reasoning is not an observed device result." },
+    {
+      id: "q1",
+      question: "During an assessment of an unencrypted SQLite database (finance.db), transaction records were deleted but the table shows 0 rows. Which companion file frequently retains the deleted records in plaintext until a checkpoint merges it?",
+      options: [
+        "finance.db-wal (Write-Ahead Logging journal), which retains uncheckpointed pages and deleted records",
+        "finance.db.apk in Dalvik bytecode",
+        "/system/etc/hosts system configuration",
+        "finance.db.keystore hardware enclave"
+      ],
+      correct: 0,
+      explanation: "SQLite with WAL logging appends transactions to a database-wal file. Deleted rows and superseded records remain recoverable in plaintext within the WAL file until a database checkpoint operation truncates it."
+    },
+    {
+      id: "q2",
+      question: "On Android 13 (API 33) and above, which metadata flag must an application attach to ClipData to suppress the system clipboard overlay preview and prevent cross-device clipboard sync for sensitive tokens or OTPs?",
+      options: [
+        "ClipDescription.EXTRA_IS_SENSITIVE set to true",
+        "WindowManager.LayoutParams.FLAG_SECURE",
+        "android:allowBackup='false'",
+        "android:exported='false'"
+      ],
+      correct: 0,
+      explanation: "Android 13 introduced ClipDescription.EXTRA_IS_SENSITIVE. Tagging ClipData with this boolean extra instructs the system UI to obscure the visual clipboard preview overlay and suppresses clipboard content synchronization across devices."
+    },
+    {
+      id: "q3",
+      question: "When an application enables android:allowBackup='true', an analyst executes 'adb backup -f backup.ab -noapk <package>'. How can the contents of backup.ab be extracted on an analysis workstation?",
+      options: [
+        "Strip the 24-byte Android backup header, decompress the remaining zlib stream, and untar the resulting archive",
+        "Rename backup.ab to backup.apk and open it in JADX-GUI",
+        "Import backup.ab directly into Burp Suite as a client certificate",
+        "Execute fastboot oem unlock backup.ab"
+      ],
+      correct: 0,
+      explanation: "Android backup (.ab) archives feature a 24-byte magic/metadata header followed by a zlib-compressed tar stream. Stripping the header and uncompressing the zlib stream yields the tar archive containing private sandbox files."
+    },
+    {
+      id: "q4",
+      question: "Which window attribute must be set on an Activity to prevent sensitive account numbers or banking balances from appearing in the Android task switcher (recents) thumbnail and block user screenshots?",
+      options: [
+        "window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)",
+        "android:windowSoftInputMode='adjustResize'",
+        "SharedPreferences.Editor.clear() in onPause()",
+        "android:screenOrientation='portrait'"
+      ],
+      correct: 0,
+      explanation: "WindowManager.LayoutParams.FLAG_SECURE directs the Android Window Manager to treat the window surface as secure, masking it from the recent apps switcher, screenshot tools, and screen mirroring utilities."
+    },
+    {
+      id: "q5",
+      question: "What primary architectural security guarantee distinguishes Android Keystore keys generated with setUserAuthenticationRequired(true) combined with BiometricPrompt.CryptoObject?",
+      options: [
+        "Key material remains in hardware (TEE or StrongBox) and operations fail unless the system validates biometric or lock-screen authentication within the authorization window",
+        "The cryptographic key is automatically mirrored to Google Drive",
+        "The private key is converted into an exported plaintext string in Dalvik memory",
+        "The key automatically bypasses TLS certificate pinning"
+      ],
+      correct: 0,
+      explanation: "Android Keystore keys with user authentication requirements enforce custody in hardware. The TEE or StrongBox will refuse cryptographic signing or decryption unless an authorized BiometricPrompt.CryptoObject authentication token is presented."
+    },
+    {
+      id: "q6",
+      question: "During an audit, pressing 'Log Out' navigates to LoginActivity and clears access_token from SharedPreferences, but trip history and personal addresses remain visible offline. What vulnerability does this demonstrate?",
+      options: [
+        "Incomplete logout data lifecycle: local SQLite databases, HTTP disk caches, and in-memory caches were not purged alongside the token",
+        "Android kernel forbids deleting files created by prior process UIDs",
+        "ADB USB debugging was enabled, which forces local data caching",
+        "The application was compiled without ProGuard obfuscation"
+      ],
+      correct: 0,
+      explanation: "Comprehensive logout requires both remote session revocation and complete local state destruction, including clearing SQLite databases, wiping cached files, evicting disk caches, and zeroizing in-memory singleton state."
+    }
   ],
   "android-07-network": [
-    { id: "q1", question: "An empty checkServerTrusted implementation suggests what if actually installed?", options: ["The release build is already compromised", "A certificate-chain trust check may be bypassed", "Every hostname check is disabled", "Pinning is secure"], correct: 1, explanation: "A certificate-chain trust check may be bypassed. Verify on an owned build before claiming a runtime result." },
-    { id: "q2", question: "What does successfully intercepting traffic after a diagnostic pin bypass establish?", options: ["Production TLS is broken", "The controlled instrumented environment allowed observation, not a release vulnerability by itself", "Backend authorization passed", "All certificates are trusted"], correct: 1, explanation: "The controlled instrumented environment allowed observation, not a release vulnerability by itself. Verify on an owned build before claiming a runtime result." },
-    { id: "q3", question: "Which matrix best tests app-side server trust?", options: ["Only one valid HTTPS request", "Correct cert/name plus wrong CA, wrong name and expired cert on exact scoped builds", "Only API BOLA requests", "Only a source search for SSL"], correct: 1, explanation: "Correct cert/name plus wrong CA, wrong name and expired cert on exact scoped builds. Verify on an owned build before claiming a runtime result." },
-    { id: "q4", question: "Which finding belongs primarily in the API rather than Android platform path?", options: ["Release build accepts wrong-name certificate", "Untrusted CA accepted by custom manager", "Server allows user A to fetch user B’s records despite proper app TLS", "Debug config trusts a development CA"], correct: 2, explanation: "Server allows user A to fetch user B’s records despite proper app TLS. Source reasoning is not an observed device result." },
+    {
+      id: "q1",
+      question: "An application manifest specifies targetSdkVersion='34' and references a network_security_config.xml with <debug-overrides><trust-anchors><certificates src='user'/></trust-anchors></debug-overrides>. How does Android handle this configuration?",
+      options: [
+        "Debug builds (android:debuggable='true') trust user-installed root CAs, while production release builds (android:debuggable='false') completely ignore debug-overrides and trust only system CAs",
+        "All production release builds will automatically trust user-installed proxy CAs for all hostnames",
+        "The application fails to compile because debug-overrides was removed in Android 7",
+        "The application transmits all HTTP traffic in unencrypted cleartext"
+      ],
+      correct: 0,
+      explanation: "Android's Network Security Config parser activates <debug-overrides> strictly when android:debuggable is true. In production release builds, user CAs are not trusted unless explicitly permitted under base-config or domain-config."
+    },
+    {
+      id: "q2",
+      question: "You identify a custom X509TrustManager where checkServerTrusted(chain: Array<X509Certificate>?, authType: String?) is empty. What is the immediate consequence in production?",
+      options: [
+        "The app accepts ANY TLS certificate, allowing an attacker on the network to perform Machine-in-the-Middle decryption using a self-signed or invalid certificate",
+        "The application throws an SSLException and aborts all network communication",
+        "The application activates StrongBox hardware certificate pinning",
+        "The application blocks JavaScript execution inside embedded WebViews"
+      ],
+      correct: 0,
+      explanation: "An empty checkServerTrusted implementation never throws a CertificateException. As a result, the TLS stack accepts any certificate presented by any peer, completely destroying TLS integrity and confidentiality."
+    },
+    {
+      id: "q3",
+      question: "An application validates that a server certificate chains to a trusted public Root CA, but implements HostnameVerifier { _, _ -> true }. How can an attacker execute a Machine-in-the-Middle attack?",
+      options: [
+        "The attacker presents a valid certificate issued by any trusted CA for their own domain (attacker.com); because hostname matching is disabled, the app accepts it for api.targetbank.com",
+        "The attacker must factor an RSA-4096 modulus",
+        "The attacker must compromise the target bank's private TLS signing key",
+        "The attack is impossible because the CA root certificate chain was verified"
+      ],
+      correct: 0,
+      explanation: "TLS verification requires two independent checks: CA chain trust and Subject Alternative Name (SAN) hostname matching. A hostname verifier that always returns true allows any valid certificate for any domain to impersonate the target server."
+    },
+    {
+      id: "q4",
+      question: "Why does RFC 7469 and OWASP MASVS-NETWORK mandate that applications utilizing SPKI certificate pinning configure backup pins (e.g., intermediate CA or disaster recovery key)?",
+      options: [
+        "If a single pinned leaf certificate is compromised or expires before an app update is installed, all client connections are permanently bricked without a valid backup pin",
+        "SPKI certificate pinning only functions over unencrypted HTTP",
+        "A single leaf pin triggers a Dalvik OutOfMemoryError crash",
+        "Android 14 removed support for SHA-256 certificate hashes"
+      ],
+      correct: 0,
+      explanation: "Pinning only a single leaf certificate creates a critical availability risk. If the leaf certificate expires or requires emergency revocation, clients without an update cannot connect. Backup pins provide operational resilience."
+    },
+    {
+      id: "q5",
+      question: "A security analyst hooks SSL_CTX_set_custom_verify using Frida on a rooted device to intercept HTTPS requests in Burp Suite, then reports 'Critical Vulnerability: Certificate Pinning Broken'. Why is this finding classification incorrect?",
+      options: [
+        "Dynamic instrumentation on an owned test device is a diagnostic testing technique, not an app vulnerability; the client is in the user's control and cannot defend against its own execution environment",
+        "Frida hooks only operate on Android 4.4 and earlier versions",
+        "Burp Suite cannot parse mobile TLS records",
+        "Certificate pinning is required by international law on all mobile applications"
+      ],
+      correct: 0,
+      explanation: "The untrusted mobile client axiom states that the device owner controls the runtime environment. Defeating pinning via Frida on an owned device allows inspection of traffic but does not constitute a remote vulnerability in the application."
+    },
+    {
+      id: "q6",
+      question: "Why must native Android applications implement OAuth 2.0 with Proof Key for Code Exchange (PKCE, RFC 7636) instead of the standard Authorization Code Flow with a static client_secret?",
+      options: [
+        "Mobile apps are public clients and cannot protect hardcoded client secrets from static decompilation; PKCE uses dynamic code_verifier and code_challenge tokens per session to prevent code interception",
+        "PKCE encrypts the entire SQLite database on disk",
+        "Standard authorization code flows are blocked by Android SELinux",
+        "PKCE allows mobile applications to bypass HTTPS requirements"
+      ],
+      correct: 0,
+      explanation: "Mobile apps cannot safeguard confidential client secrets. PKCE eliminates the need for client secrets in public clients by generating dynamic cryptographically random verifiers per authorization request."
+    }
   ],
   "android-08-webview": [
-    { id: "q1", question: "In the excerpt, what is the source-to-sink path?", options: ["Manifest label → app icon", "Intent url extra → loadUrl while JavaScript bridge exists", "Keystore → TLS", "RADIUS → WebView"], correct: 1, explanation: "Intent url extra → loadUrl while JavaScript bridge exists. Verify on an owned build before claiming a runtime result." },
-    { id: "q2", question: "Can you claim native code executed just from addJavascriptInterface(Bridge())?", options: ["Yes on every device", "No; bridge methods and actual loaded origin/invocation are missing", "Only after a source hash", "Yes if HTTPS is used"], correct: 1, explanation: "No; bridge methods and actual loaded origin/invocation are missing. Verify on an owned build before claiming a runtime result." },
-    { id: "q3", question: "Why check redirects after the initial host validation?", options: ["Redirects remove JavaScript support", "A later navigation can change which origin executes content", "Redirects prove certificate pinning", "The initial host always remains final"], correct: 1, explanation: "A later navigation can change which origin executes content. Verify on an owned build before claiming a runtime result." },
-    { id: "q4", question: "Which build contains a WebView in the supplied materials?", options: ["Notes Boundary fixed flavor", "Notes Boundary vulnerable flavor", "None: Notes Boundary has no WebView; the case is a separate snippet", "Both demo flavors"], correct: 2, explanation: "None: Notes Boundary has no WebView; the case is a separate snippet. Source reasoning is not an observed device result." },
+    {
+      id: "q1",
+      question: "Which WebViewClient callback must an application implement to intercept and filter outgoing URL navigations, preventing an embedded WebView from navigating to untrusted external domains?",
+      options: [
+        "shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean",
+        "onPageFinished(view: WebView, url: String)",
+        "onReceivedError(view: WebView, errorCode: Int, description: String, failingUrl: String)",
+        "WebChromeClient.onProgressChanged()"
+      ],
+      correct: 0,
+      explanation: "shouldOverrideUrlLoading intercepts URL navigation attempts. Returning true prevents the WebView from executing navigation internally, allowing the application to validate hostnames or redirect external links to the system browser."
+    },
+    {
+      id: "q2",
+      question: "What severe vulnerability occurs when an application sets settings.allowUniversalAccessFromFileURLs = true on an embedded WebView?",
+      options: [
+        "Scripts executed from a local file:// URL can violate Same-Origin Policy to read arbitrary private files, preferences, and databases in /data/data/<package>/ and exfiltrate them",
+        "The WebView permanently disables hardware acceleration",
+        "The device cellular modem is disconnected",
+        "The application cannot be signed with APK Signature Scheme v2"
+      ],
+      correct: 0,
+      explanation: "allowUniversalAccessFromFileURLs disables Same-Origin Policy protections for file:// URLs, enabling local or downloaded HTML/JS to read any file in the app's sandboxed private storage and exfiltrate it over the network."
+    },
+    {
+      id: "q3",
+      question: "Which AndroidX WebKit component provides a secure mechanism for serving bundled HTML, CSS, and JavaScript assets without enabling dangerous file:// schemes?",
+      options: [
+        "androidx.webkit.WebViewAssetLoader, which intercepts requests to a virtual HTTPS domain (https://appassets.androidplatform.net/) to enforce Same-Origin Policy",
+        "setAllowFileAccess(true) pointing to file:///android_asset/",
+        "Runtime.getRuntime().exec('chmod 777 /data/data/')",
+        "Storing HTML files in public SD card /sdcard/Download/"
+      ],
+      correct: 0,
+      explanation: "WebViewAssetLoader routes local asset requests through a virtual HTTPS origin, preventing file:// scheme vulnerabilities while preserving Same-Origin Policy, CORS, and mixed-content restrictions."
+    },
+    {
+      id: "q4",
+      question: "Prior to Android 4.2 (API 17), calling webView.addJavascriptInterface(InjectedObject(), 'bridge') allowed remote code execution because:",
+      options: [
+        "Untrusted JavaScript could use Java reflection via getClass().forName() on the injected bridge object to access java.lang.Runtime and execute arbitrary system shell commands",
+        "Dalvik bytecode was converted into raw x86 assembly without sandbox constraints",
+        "The Dalvik runtime allowed direct memory pointer manipulation via CSS stylesheets",
+        "WebViews executed all JavaScript as Linux root (UID 0)"
+      ],
+      correct: 0,
+      explanation: "In Android < 4.2, all public methods of the exposed Java object—including inherited Object.getClass()—were callable from JavaScript. Attackers used reflection to instantiate Runtime and invoke exec(). API 17+ requires the @JavascriptInterface annotation."
+    },
+    {
+      id: "q5",
+      question: "On Android 14, an Activity exposes @JavascriptInterface fun transferFunds(amount: Double, recipient: String) via a bridge. If the WebView navigates to an attacker-controlled external URL, what is the impact?",
+      options: [
+        "Logical bridge abuse: the external webpage inherits window.bridge and can call transferFunds() to execute unauthorized transactions with native app privileges",
+        "@JavascriptInterface automatically disables TLS encryption on all HTTP requests",
+        "The method requires ProGuard obfuscation to be disabled",
+        "Android 14 blocks Double primitive parameters in JavaScript interfaces"
+      ],
+      correct: 0,
+      explanation: "Even with @JavascriptInterface, any webpage loaded into the WebView has access to the injected JavaScript object. If the WebView can be navigated to an untrusted domain, that domain can execute privileged native methods."
+    },
+    {
+      id: "q6",
+      question: "What primary architectural security benefit does WebViewCompat.addWebMessageListener() provide over legacy addJavascriptInterface()?",
+      options: [
+        "It accepts an explicit set of allowed origins, and the Android framework itself validates that the sending page's origin matches before dispatching messages to native code",
+        "It replaces HTTPS with Bluetooth Low Energy packets",
+        "It allows WebViews to run Python scripts without a browser engine",
+        "It strips all Content Security Policy (CSP) headers"
+      ],
+      correct: 0,
+      explanation: "WebViewCompat.addWebMessageListener binds native message listeners to an explicit set of allowed origins. The underlying Chromium engine verifies the frame's origin before delivering messages, preventing off-domain bridge inheritance."
+    }
   ],
   "android-09-runtime": [
-    { id: "q1", question: "A hook reports lookup(\"2\") ran. What remains unproven?", options: ["That the method exists", "Whether a different training user’s note became visible in an unmodified build", "That an argument was supplied", "That the hook attached"], correct: 1, explanation: "Whether a different training user’s note became visible in an unmodified build. Verify on an owned build before claiming a runtime result." },
-    { id: "q2", question: "Why observe the Notes Boundary account label on each invocation?", options: ["The label controls TLS", "A new Activity instance can reset the training user to Alice", "It proves real authentication", "The label is a package signature"], correct: 1, explanation: "A new Activity instance can reset the training user to Alice. Verify on an owned build before claiming a runtime result." },
-    { id: "q3", question: "What should be compared with an instrumented run?", options: ["Only a bytecode decompile", "Unmodified scoped build behavior with positive and negative controls", "Any third-party app", "A certificate without hostname"], correct: 1, explanation: "Unmodified scoped build behavior with positive and negative controls. Verify on an owned build before claiming a runtime result." },
-    { id: "q4", question: "No device or APK was run. What can be recorded?", options: ["A passed runtime assessment", "A bounded static hypothesis and an unexecuted dynamic test plan", "An observed Frida bypass", "A production finding"], correct: 1, explanation: "A bounded static hypothesis and an unexecuted dynamic test plan. Source reasoning is not an observed device result." },
+    {
+      id: "q1",
+      question: "Why must a mobile security tester establish a non-instrumented runtime observation baseline (using ADB and Logcat) before introducing Frida or Objection hooks?",
+      options: [
+        "Dynamic instrumentation tools alter runtime timing and memory state and can inadvertently bypass or trigger anti-tamper logic, obscuring genuine baseline application behavior",
+        "Non-instrumented observation encrypts the Dalvik bytecode on disk",
+        "ADB cannot communicate with the device once Frida is installed",
+        "Non-instrumented testing is required by the Linux kernel license"
+      ],
+      correct: 0,
+      explanation: "Instrumenting an application introduces significant observer effects by altering execution timing and memory layouts. Establishing an uninstrumented baseline ensures the tester observes authentic application behavior on unmodified devices."
+    },
+    {
+      id: "q2",
+      question: "You want to dynamically verify whether an active payment screen enforces FLAG_SECURE at the Android Window Manager level. Which command and flag value confirms that window screen captures and task switcher thumbnails are actively blocked?",
+      options: [
+        "Execute 'adb shell dumpsys window windows | grep -E \"mCurrentFocus|flags=\"' and verify that the focused window flags include 0x00002000",
+        "Execute 'adb shell getprop ro.build.type' and check for userdebug",
+        "Execute 'adb shell am force-stop <package>'",
+        "Inspect res/values/strings.xml in JADX-GUI"
+      ],
+      correct: 0,
+      explanation: "dumpsys window windows queries the Window Manager Service directly. The flag bit 0x00002000 corresponds to WindowManager.LayoutParams.FLAG_SECURE, confirming that hardware-level capture protection is currently enforced for that window surface."
+    },
+    {
+      id: "q3",
+      question: "An authentication token is never written to disk or logs, but you suspect it lingers in process memory after logout. How can an analyst extract and analyze the volatile Dalvik/ART heap on a test device?",
+      options: [
+        "Execute 'adb shell am dumpheap <pkg> /data/local/tmp/app.hprof', pull the file, convert it using hprof-conv, and search for tokens using strings or Eclipse Memory Analyzer",
+        "Run 'adb backup -all -noapk'",
+        "Execute 'adb shell pm path <pkg>'",
+        "Decompile the APK using apktool d"
+      ],
+      correct: 0,
+      explanation: "am dumpheap triggers an immediate ART memory dump. Because Android's HPROF format differs slightly from standard Java HPROF, hprof-conv converts it so tools like MAT or strings can locate lingering secrets and object references."
+    },
+    {
+      id: "q4",
+      question: "You are writing a Frida script to intercept certificate pinning checks that initialize during Application.onCreate(). Why must you execute Frida in Spawn mode (frida -U -f <pkg> --no-pause) rather than Attach mode?",
+      options: [
+        "Attach mode hooks an already running process, meaning early lifecycle methods like Application.onCreate() have already finished executing before Frida can inject hooks",
+        "Spawn mode only operates on non-rooted production devices",
+        "Attach mode disables the JavaScript V8 engine",
+        "Spawn mode automatically re-signs the APK with a custom certificate"
+      ],
+      correct: 0,
+      explanation: "In Attach mode, the process is already running, so static initializers and onCreate() have already executed. Spawn mode instructs frida-server to launch the process suspended, inject Frida runtime hooks, and resume execution."
+    },
+    {
+      id: "q5",
+      question: "You are hooking a method TokenValidator.verify(String token, int timeout) where another overload TokenValidator.verify(String token) exists in the same class. How do you specify the correct method overload in Frida?",
+      options: [
+        "TokenValidator.verify.overload('java.lang.String', 'int').implementation = function(token, timeout) { ... }",
+        "TokenValidator.verify['String, int'].hook(function(token, timeout) { ... })",
+        "TokenValidator.verify.args(2).implementation = function(token, timeout) { ... }",
+        "Java.override('TokenValidator.verify', ['String', 'int'])"
+      ],
+      correct: 0,
+      explanation: "Frida requires the .overload() method chained to the method name, passing the fully qualified Java class names (e.g. 'java.lang.String', 'int') as arguments to unambiguously select the desired method signature."
+    },
+    {
+      id: "q6",
+      question: "An application contains local Java checks that search for /system/bin/su and test-keys build tags. An analyst uses Frida to hook these methods and bypass root detection. Why is client-side heuristic root detection fundamentally limited?",
+      options: [
+        "The client runs in an untrusted environment where the device owner controls the kernel, runtime, and memory, allowing trivial hooking of user-space checks; true integrity requires server-verified hardware attestation (e.g., Google Play Integrity API)",
+        "Heuristic checks only function on x86 processors",
+        "Root detection is illegal under OWASP MASVS guidelines",
+        "Root checks cannot run if the device has an active Wi-Fi connection"
+      ],
+      correct: 0,
+      explanation: "The untrusted mobile client axiom dictates that any code running entirely client-side on a device controlled by an adversary can be hooked or modified. Server-side validation of cryptographically signed hardware attestation tokens from the TEE/StrongBox is necessary for resilient trust."
+    }
   ],
   "android-10-crypto": [
-    { id: "q1", question: "What is wrong with a constant 12-byte IV for repeated AES-GCM encryption under one key?", options: ["It disables encryption automatically", "Nonce reuse violates the mode’s uniqueness requirement", "It forces safe randomization", "Only cipher text length matters"], correct: 1, explanation: "Nonce reuse violates the mode’s uniqueness requirement. Verify on an owned build before claiming a runtime result." },
-    { id: "q2", question: "Can a provider reject repeated IV encryption rather than emit vulnerable ciphertext?", options: ["No, never", "Yes; test the actual provider and build before claiming observed ciphertext compromise", "Only if a WebView is used", "An IV is the password"], correct: 1, explanation: "Yes; test the actual provider and build before claiming observed ciphertext compromise. Verify on an owned build before claiming a runtime result." },
-    { id: "q3", question: "Does non-exportable Keystore storage solve misuse of GCM nonce generation?", options: ["Yes", "No; key custody and correct nonce lifecycle are separate", "Only on debug builds", "Only after decompiling"], correct: 1, explanation: "No; key custody and correct nonce lifecycle are separate. Verify on an owned build before claiming a runtime result." },
-    { id: "q4", question: "What is supplied for this crypto case?", options: ["A live key", "A captured ciphertext pair", "Illustrative source excerpts, not a key, ciphertext or device trace", "A server attestation"], correct: 2, explanation: "Illustrative source excerpts, not a key, ciphertext or device trace. Source reasoning is not an observed device result." },
+    {
+      id: "q1",
+      question: "During static analysis of a local document vault, you observe Cipher.getInstance(\"AES/ECB/PKCS5Padding\"). Why is Electronic Codebook (ECB) mode forbidden for encrypting multi-block data?",
+      options: [
+        "ECB encrypts each 16-byte block independently under the same key without an IV, causing identical plaintext blocks to produce identical ciphertext blocks and preserving data patterns",
+        "ECB mode requires internet connectivity to generate keys",
+        "ECB only operates on 56-bit DES keys",
+        "ECB mode automatically disables Android SELinux"
+      ],
+      correct: 0,
+      explanation: "In ECB mode, block encryption is deterministic and independent. Identical plaintext blocks produce identical ciphertext blocks, leaking structural patterns and enabling block manipulation attacks."
+    },
+    {
+      id: "q2",
+      question: "What critical cryptographic vulnerabilities occur when two distinct documents are encrypted using AES-GCM under the same encryption key and the same 12-byte initialization vector (IV)?",
+      options: [
+        "Loss of confidentiality (XOR of ciphertexts equals XOR of plaintexts) and loss of authenticity (allows recovering the GHASH subkey H to forge authentication tags)",
+        "The Android Keystore automatically revokes the application's package signature",
+        "The encryption speed drops by a factor of 1024",
+        "The device immediately triggers a factory reset"
+      ],
+      correct: 0,
+      explanation: "GCM mode uses counter mode keystreams. Reusing an IV destroys the one-time pad property (C1 ⊕ C2 = P1 ⊕ P2) and allows the Forbidden Attack to compute the GHASH key H, forging valid tags for arbitrary payloads."
+    },
+    {
+      id: "q3",
+      question: "When deriving an AES-256 encryption key from a user-supplied password using PBEKeySpec, which parameters are required to prevent precomputation and rainbow table attacks?",
+      options: [
+        "A cryptographically random unique per-user salt generated via SecureRandom combined with a high iteration count (e.g., 120,000+ iterations of PBKDF2WithHmacSHA256)",
+        "A static hardcoded salt array shared across all installations",
+        "Single-iteration MD5 hashing",
+        "Converting the password string directly to UTF-8 bytes without hashing"
+      ],
+      correct: 0,
+      explanation: "Password-based key derivation requires a unique, high-entropy cryptographic salt per user to defeat precomputed rainbow tables, along with sufficient iterations to resist high-speed GPU dictionary attacks."
+    },
+    {
+      id: "q4",
+      question: "An application gates access to confidential notes by calling BiometricPrompt.authenticate(promptInfo) without passing a CryptoObject. Why is this implementation insecure against an adversary with a rooted device?",
+      options: [
+        "The authentication is purely a client-side boolean control-flow callback; an attacker can hook onAuthenticationSucceeded() with Frida to bypass authentication without providing any biometric input",
+        "BiometricPrompt cannot be used on devices with fingerprint sensors",
+        "It disables Android hardware encryption",
+        "It sends the user's raw biometric image to the server in cleartext"
+      ],
+      correct: 0,
+      explanation: "Without a CryptoObject, no cryptographic operation depends on the biometric verification. Hooking onAuthenticationSucceeded() allows an attacker to execute the downstream navigation logic without touching the sensor."
+    },
+    {
+      id: "q5",
+      question: "How does binding a Cipher to BiometricPrompt.CryptoObject prevent runtime hook bypasses on rooted devices?",
+      options: [
+        "The underlying AES key is held inside hardware (TEE/StrongBox) with setUserAuthenticationRequired(true); even if the callback is hooked, calling cipher.doFinal() throws UserNotAuthenticatedException because hardware refused to unlock the key",
+        "The CryptoObject re-compiles the Dalvik VM into native assembly",
+        "The CryptoObject takes a photo of the attacker using the front camera",
+        "It forces the Android kernel to reboot into safe mode"
+      ],
+      correct: 0,
+      explanation: "With CryptoObject, the hardware Keystore physically enforces that cryptographic operations fail unless an authenticated biometric verification signal was provided to the TEE/StrongBox for that specific operation."
+    },
+    {
+      id: "q6",
+      question: "Why does server-side Key Attestation (or Google Play Integrity API) provide stronger security guarantees than local checks for /system/bin/su?",
+      options: [
+        "Local checks run on an untrusted client controlled by the user, whereas Key Attestation generates an X.509 certificate chain signed by Google's Root CA inside the hardware TEE, certifying verified boot and patch status directly to the server",
+        "The su binary is required on all Android production builds",
+        "Key Attestation disables cellular networking",
+        "Local checks are encrypted with SHA-1"
+      ],
+      correct: 0,
+      explanation: "Under the Untrusted Mobile Client Axiom, purely client-side heuristic checks can be intercepted and forged. Key Attestation uses silicon-embedded hardware private keys in the TEE to sign attestation records verifiable by the backend."
+    }
   ],
   "android-11-release": [
-    { id: "q1", question: "Which input reaches DexClassLoader in the case?", options: ["A hardcoded signed asset", "A caller-supplied plugin path from an Intent extra", "A TLS certificate", "A BSSID"], correct: 1, explanation: "A caller-supplied plugin path from an Intent extra. Verify on an owned build before claiming a runtime result." },
-    { id: "q2", question: "Does loadClass alone prove arbitrary payload code executed?", options: ["Yes", "No; file control, reachability and method invocation still need evidence", "Only on an emulator", "Yes if the name is obfuscated"], correct: 1, explanation: "No; file control, reachability and method invocation still need evidence. Verify on an owned build before claiming a runtime result." },
-    { id: "q3", question: "Why might a decompiler miss a runtime code path?", options: ["It always reads all dynamic code", "Dynamic loading, reflection, native code, splits and obfuscation can change visibility", "Only network traffic matters", "APKs cannot contain native code"], correct: 1, explanation: "Dynamic loading, reflection, native code, splits and obfuscation can change visibility. Verify on an owned build before claiming a runtime result." },
-    { id: "q4", question: "Is PluginLoader present in the buildable Notes Boundary project?", options: ["Yes, in both flavors", "No; it is an independent synthetic excerpt", "Only in fixed flavor", "It is an Android framework class"], correct: 1, explanation: "No; it is an independent synthetic excerpt. Source reasoning is not an observed device result." },
+    {
+      id: "q1",
+      question: "In a non-static instance method in Smali assembly, which register convention is strictly enforced by the Dalvik/ART virtual machine?",
+      options: [
+        "Register p0 always holds the this reference to the current object instance, while p1, p2, ... hold the incoming method arguments",
+        "Register v0 holds the return value of all future methods",
+        "Register p0 is reserved exclusively for Linux kernel system calls",
+        "Instance methods cannot access local registers"
+      ],
+      correct: 0,
+      explanation: "In non-static instance methods in Dalvik/Smali, p0 is implicitly assigned to this. Local variables use registers v0, v1, ..., and method parameters start at p1."
+    },
+    {
+      id: "q2",
+      question: "You are analyzing a method .method public isLicensed()Z. It executes a validation check and branches with if-eqz v0, :not_licensed. How can you patch this bytecode using apktool to make the app always report a valid license?",
+      options: [
+        "Replace the method body with const/4 v0, 0x1 followed by return v0, then rebuild and re-sign the APK",
+        "Delete the AndroidManifest.xml file",
+        "Run zipalign -c 4 on the source folder",
+        "Rename the APK file to license.patch"
+      ],
+      correct: 0,
+      explanation: "In Smali, const/4 v0, 0x1 loads boolean true (integer 1) into register v0, and return v0 returns it immediately, bypassing all license checks and branching logic."
+    },
+    {
+      id: "q3",
+      question: "You decompile an APK obfuscated with R8 where all business classes are renamed (a.a, b.c). Why are Android framework SDK calls (such as SharedPreferences.getString() or Cipher.getInstance()) still visible in plaintext?",
+      options: [
+        "Android OS framework classes and standard runtime SDK signatures cannot be renamed by R8 because the Android operating system expects exact symbol names at runtime",
+        "R8 is unable to process Java strings",
+        "Obfuscation only applies to AndroidManifest.xml",
+        "ProGuard only runs on debug builds"
+      ],
+      correct: 0,
+      explanation: "R8 can only rename internal application symbols. External framework libraries and Android SDK classes must retain their exact method signatures so the Dalvik/ART VM can link and execute them at runtime."
+    },
+    {
+      id: "q4",
+      question: "In a compiled native shared library (libsecurity.so), you find no exported functions matching Java_com_example_*, yet the Java class calls external fun checkLicense(). How was this native function bound?",
+      options: [
+        "Dynamic registration via JNI_OnLoad() using env->RegisterNatives(), which programmatically maps Java method names to C function pointers at runtime",
+        "The native library was compiled for iOS rather than Android",
+        "Dalvik bytecode does not support JNI",
+        "The function was converted into a JavaScript interface"
+      ],
+      correct: 0,
+      explanation: "JNI supports dynamic registration via RegisterNatives called inside JNI_OnLoad. This allows developers to map internal C function pointers without exposing standard mangled symbol names in .dynsym."
+    },
+    {
+      id: "q5",
+      question: "An exported BroadcastReceiver extracts intent.getStringExtra(\"plugin_url\"), downloads a .dex file to external storage, and passes the path to DexClassLoader. What is the primary security flaw?",
+      options: [
+        "Arbitrary Dynamic Code Execution: any app on the device can supply a path or malicious payload to execute untrusted code with the permissions and UID of the host application",
+        "DexClassLoader causes the device battery to drain instantly",
+        "BroadcastReceivers cannot receive string extras",
+        "External storage automatically encrypts all DEX files"
+      ],
+      correct: 0,
+      explanation: "Loading unverified DEX code from caller-controlled paths or writable external storage allows local or network adversaries to inject arbitrary code directly into the target app process."
+    },
+    {
+      id: "q6",
+      question: "Starting in Android 14 (API 34), what security restriction is enforced by the operating system when an application attempts to dynamically load code files via DexClassLoader?",
+      options: [
+        "The dynamically loaded file must be marked strictly read-only (e.g. via file.setReadOnly() or permissions 0400) before loading; otherwise, Android throws a SecurityException",
+        "Dynamic code loading is completely banned and unsupported on all Android devices",
+        "The DEX file must be signed with a hardware RSA-8192 key",
+        "The app must have android.permission.INTERNET"
+      ],
+      correct: 0,
+      explanation: "Android 14 mandates that files loaded dynamically must be read-only to prevent other processes or threads from tampering with or swapping the bytecode (TOCTOU attacks) while it is being loaded."
+    }
   ],
   "android-12-case": [
-    { id: "q1", question: "Which source supports a scoped training-account ownership hypothesis?", options: ["An invented combined WebView-token-note chain", "Notes Boundary vulnerable/fixed flavor comparison", "An unrelated live API", "A professional certificate"], correct: 1, explanation: "Notes Boundary vulnerable/fixed flavor comparison. Verify on an owned build before claiming a runtime result." },
-    { id: "q2", question: "Can the separate storage and WebView snippets be called findings in Notes Boundary?", options: ["Yes, because they appear in one course", "No; they are different fictional cases, not part of its buildable source", "Only if the source ZIP is hashed", "Yes after a quiz"], correct: 1, explanation: "No; they are different fictional cases, not part of its buildable source. Verify on an owned build before claiming a runtime result." },
-    { id: "q3", question: "What is a minimum retest for the fixed training-note flavor?", options: ["Only the source-level guard", "Built hashes, account labels, own/other/unknown IDs and observed outputs on the owned device", "A screenshot of a quiz pass", "One arbitrary URL"], correct: 1, explanation: "Built hashes, account labels, own/other/unknown IDs and observed outputs on the owned device. Verify on an owned build before claiming a runtime result." },
-    { id: "q4", question: "What can completing this self-review certify?", options: ["Professional engagement readiness", "Independent supervised testing", "Only that local answers/review were recorded; not independent Android pentest competence", "A verified device result"], correct: 2, explanation: "Only that local answers/review were recorded; not independent Android pentest competence. Source reasoning is not an observed device result." },
+    {
+      id: "q1",
+      question: "During an audit, an analyst notices that InAppBrowserActivity uses a WebView and an unrelated PluginLoader helper uses DexClassLoader. Why is it an assessment error to report 'Critical Remote Code Execution via WebView Plugin Loading' without further static or dynamic proof?",
+      options: [
+        "Cross-fixture evidence fabrication: unless static cross-references or dynamic execution traces prove that the WebView or its bridge actually passes attacker input to DexClassLoader, the two components are unrelated and the claimed kill chain is an unverified hypothesis",
+        "DexClassLoader is blocked by Google Play",
+        "WebViews cannot execute JavaScript",
+        "Multiple findings must always be combined into a single CVE"
+      ],
+      correct: 0,
+      explanation: "In professional assessment methodology, each step of an attack chain requires verifiable source-to-sink reachability. Fabricating links between disparate components without evidence undermines audit integrity and client trust."
+    },
+    {
+      id: "q2",
+      question: "When conducting an authorized penetration test of an Android banking app, which activity constitutes a violation of standard Rules of Engagement (ROE)?",
+      options: [
+        "Sending volumetric fuzzing payloads or denial-of-service traffic directly against production backend APIs without explicit out-of-band authorization and scheduled maintenance windows",
+        "Decompiling the APK using JADX-GUI on a local workstation",
+        "Analyzing local SQLite databases in /data/data/<pkg>/ on an owned test device",
+        "Disassembling native .so files using Ghidra"
+      ],
+      correct: 0,
+      explanation: "Mobile application ROEs strictly delineate local client testing from backend infrastructure. Attacking production APIs without written authorization risks service outages and violates testing agreements."
+    },
+    {
+      id: "q3",
+      question: "What two cryptographic values must a penetration tester record and include in the Assessment Scope table to definitively identify the exact target build evaluated?",
+      options: [
+        "The SHA-256 digest of the APK file (sha256sum app.apk) and the SHA-256 fingerprint of the developer's signing certificate (apksigner verify --print-certs app.apk)",
+        "The user's Google Play password and device IMEI",
+        "The Wi-Fi router BSSID and WPA2 passphrase",
+        "The local IP address of the ADB workstation"
+      ],
+      correct: 0,
+      explanation: "The package SHA-256 hash guarantees exact binary immutability, while the signing certificate fingerprint proves the APK was signed by the authorized entity, preventing confusion with re-signed or debug builds."
+    },
+    {
+      id: "q4",
+      question: "When verifying an authorization fix in a mobile app where Alice was previously able to view Bob's notes, why is testing ONLY the negative control (confirming Alice cannot access Bob's note) insufficient?",
+      options: [
+        "A positive control (confirming Alice can still successfully access Alice's own notes) is essential to prove that the authorization patch did not introduce a regression that breaks legitimate application functionality",
+        "Negative controls are forbidden by OWASP MASVS",
+        "Positive controls automatically generate a retest certificate",
+        "The Android kernel requires two requests per process"
+      ],
+      correct: 0,
+      explanation: "Robust retesting requires both positive controls (legitimate workflows still succeed) and negative controls (unauthorized actions are blocked), preventing regressions that break core functionality."
+    },
+    {
+      id: "q5",
+      question: "In the 12-Step Lab Evidence Contract, what is the critical difference between Step 5 (Static Evidence) and Step 7 (Observation)?",
+      options: [
+        "Static Evidence documents code patterns and decompiled source excerpts that form the vulnerability hypothesis, whereas Observation records the exact command transcript, output, or file-system proof witnessed on an actual device during execution",
+        "Static Evidence is written in English, while Observation must be in binary machine code",
+        "Observation is only performed by automated scanners",
+        "Static Evidence requires a physical hardware security key"
+      ],
+      correct: 0,
+      explanation: "Static analysis only indicates potential risk or reachable sinks. Step 7 (Observation) provides concrete proof that the vulnerability was triggered, capturing reproducible terminal commands and device responses."
+    },
+    {
+      id: "q6",
+      question: "A development team informs you that an IDOR vulnerability has been resolved in Git and sends you a pull request link. What must the security analyst do before updating the finding status to 'Remediated'?",
+      options: [
+        "Obtain the newly compiled release APK, verify its SHA-256 digest, install it on an owned test device, and execute both positive and negative controls to observe that the exploit vector is eliminated without side effects",
+        "Immediately close the finding and sign the final report",
+        "Retest using the original vulnerable APK from the initial test",
+        "Delete the vulnerability finding from the report without notice"
+      ],
+      correct: 0,
+      explanation: "A code commit in source control does not prove a fix works in production. The analyst must test the newly compiled binary artifact to confirm the remediation is effective and does not cause regressions."
+    }
   ],
 }

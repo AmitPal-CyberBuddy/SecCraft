@@ -2,11 +2,9 @@
 
 > `deauth.pcapng` and `rogue-ap.pcapng` are **separate synthetic exercises**. Do not join their stations or pretend a packet in one caused behavior in the other. No RF delivery, real ownership or user impact is supplied.
 
-## Guided comparison
+## Prepare, then decide independently
 
-In `rogue-ap.pcapng`, frames 1–2 advertise the same `Corp-WLAN` name from two BSSIDs with different AKMs and channel/IE profiles. A same-name BSS is a *look-alike observation*, not necessarily an unauthorized device. Frames 3–4 are deauthentication-shaped; frames 5–10 cover the later probe and association to the look-alike. A temporal sequence does not prove the deauth caused that association or that a physical transmitter sent either frame. Check each BSSID against an owner-provided inventory and wired switch record before deciding ownership.
-
-Separately, `deauth.pcapng` has reason-code and SA Query-shaped examples. Use frame source/destination and reason codes to describe **what was recorded**, then ask what the station did. MFPC without MFPR is an AP advertisement of *optional* protection; a specific client needs negotiated-state and log evidence. An unprotected frame in a PCAP is not evidence of receiver acceptance.
+Use [Rogue infrastructure analysis](/paths/wireless-pentesting/modules/12-deauth-disassoc?tab=theory&lesson=01-rogue-infrastructure-analysis) for the frame map and [PMF and availability](/paths/wireless-pentesting/modules/12-deauth-disassoc?tab=theory&lesson=01-pmf-and-availability) for protection semantics. This checkpoint combines those skills without repeating their guided decode. Save your decisions before the self-check.
 
 ## Independent attempt
 

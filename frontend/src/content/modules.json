@@ -1,1382 +1,1673 @@
 [
- {
-  "id": "01-intro-wireless",
-  "title": "Wireless Security Foundations",
-  "phase": 1,
-  "difficulty": "Beginner",
-  "estimated_hours": 2.0,
-  "prerequisites": [],
-  "lab_requirement": "SIMULATION",
-  "content_status": "brief",
-  "skills": [
-   "wireless-basics",
-   "attack-surface",
-   "methodology",
-   "ethics"
-  ],
-  "description": "Why radio changes the threat model: broadcast medium, no physical boundary, layer-1 evidence, and the legal boundary of testing.",
-  "objectives": [
-   "Explain why 802.11 traffic can be observed without any network access and what that means for a penetration test",
-   "Distinguish Wi-Fi (802.11) from other wireless technologies and say why the academy stays focused on 802.11",
-   "Describe the engagement lifecycle used by every later module: authorisation \u2192 passive observation \u2192 test \u2192 evidence \u2192 next safe decision",
-   "State the legal and ethical limits: own lab hardware or a signed authorisation, never third-party networks"
-  ],
-  "artifacts": [
-   "Lab review: read the sample Rules of Engagement in Engagement Mode and list what is in scope"
-  ],
-  "decision_practice": [
-   "scn-01-scope-gap"
-  ],
-  "evidence_focus": "Every finding must name the affected BSSID/SSID and the frame or config line that proves it.",
-  "retest_focus": "A retest needs new evidence from the remediated target and comparable filters; hash each before/after capture separately.",
-  "lessons": [
-   {
-    "id": "00-network-and-tool-primer",
-    "title": "Networking and offline capture primer",
-    "kind": "concept"
-   },
-   {
-    "id": "01-why-wireless-is-different",
-    "title": "Why wireless changes the threat model",
-    "kind": "concept"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "wireless-pentesting",
-  "phaseName": "Foundations",
-  "lab_requirement_generic": "SIMULATION"
- },
- {
-  "id": "02-wifi-fundamentals",
-  "title": "Wi-Fi Fundamentals: Identity and Topology",
-  "phase": 1,
-  "difficulty": "Beginner",
-  "estimated_hours": 2.0,
-  "prerequisites": [
-   "01-intro-wireless"
-  ],
-  "lab_requirement": "SIMULATION",
-  "content_status": "brief",
-  "skills": [
-   "ssid",
-   "bssid",
-   "ap",
-   "client",
-   "channels",
-   "bands"
-  ],
-  "description": "SSID vs BSSID vs ESS, BSS/DS topology, bands and channels, and how to read a beacon without guessing.",
-  "objectives": [
-   "Decode a beacon's fixed fields and identify SSID, BSSID, channel, capability and beacon interval",
-   "Explain the difference between an ESS, a BSS and a BSSID and why the distinction matters for recon evidence",
-   "Map 2.4/5/6 GHz channels, channel width and overlap, and choose a capture channel",
-   "Describe what a client leaks in a probe request (PNL, wildcard probes, randomised MAC)"
-  ],
-  "artifacts": [
-   "labs: beacon-only.pcapng, recon-lab.pcapng"
-  ],
-  "decision_practice": [
-   "scn-02-ess-or-rogue",
-   "scn-02-randomised-client"
-  ],
-  "evidence_focus": "Extract frame numbers, BSSID, channel and SSID text exactly as captured; keep the capture hash.",
-  "retest_focus": "Re-run the same tshark filter after a fix so the before/after evidence uses identical extraction.",
-  "lessons": [
-   {
-    "id": "01-identity-topology-and-beacons",
-    "title": "Identity, topology and reading a beacon",
-    "kind": "concept"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "wireless-pentesting",
-  "phaseName": "Foundations",
-  "lab_requirement_generic": "SIMULATION"
- },
- {
-  "id": "03-80211-architecture",
-  "title": "802.11 Frames, IEs and the Association Flow",
-  "phase": 1,
-  "difficulty": "Beginner",
-  "estimated_hours": 2.5,
-  "prerequisites": [
-   "02-wifi-fundamentals"
-  ],
-  "lab_requirement": "SIMULATION",
-  "content_status": "brief",
-  "skills": [
-   "frames",
-   "information-elements",
-   "association",
-   "capabilities"
-  ],
-  "description": "Management/control/data frames, the information elements that carry security policy, and the association state machine.",
-  "objectives": [
-   "Identify frame type/subtype numbers and pick the right display filter for each",
-   "Read RSNE fields: version, group cipher, pairwise ciphers, AKM suites and RSN capabilities (including MFPC/MFPR bits)",
-   "Walk the association flow and explain what each step proves",
-   "Explain what a client must accept for a downgrade to succeed (transition mode, missing PMF, weak AKM)"
-  ],
-  "artifacts": [
-   "labs: traffic-analysis.pcapng, beacon-only.pcapng"
-  ],
-  "decision_practice": [
-   "scn-03-rsn-decode",
-   "scn-03-pmf-bits"
-  ],
-  "evidence_focus": "Frame numbers + the decoded IE values (not screenshots of text you typed).",
-  "retest_focus": "Compare the RSNE before and after a configuration change to show the policy actually changed.",
-  "lessons": [
-   {
-    "id": "01-frames-ies-and-association",
-    "title": "Frames, information elements and the association flow",
-    "kind": "concept"
-   },
-   {
-    "id": "02-worked-rsn-decode",
-    "title": "Worked RSN byte decode and evidence decision",
-    "kind": "lab"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "wireless-pentesting",
-  "phaseName": "Foundations",
-  "lab_requirement_generic": "SIMULATION"
- },
- {
-  "id": "04-kali-wireless-setup",
-  "title": "Monitor Mode and the Wireless Toolchain",
-  "phase": 1,
-  "difficulty": "Beginner",
-  "estimated_hours": 2.0,
-  "prerequisites": [
-   "03-80211-architecture"
-  ],
-  "lab_requirement": "HYBRID",
-  "content_status": "brief",
-  "skills": [
-   "interface-modes",
-   "monitor-mode",
-   "toolchain",
-   "regulatory"
-  ],
-  "description": "Interface modes, monitor mode and injection, driver/firmware reality, and choosing the right tool for each job.",
-  "objectives": [
-   "Explain which interface modes are needed for capture vs. injection and why managed mode cannot see other networks' frames",
-   "Verify adapter capability (monitor/injection, supported bands) instead of assuming it",
-   "Read the regulatory domain with `iw reg get` and understand why setting it is a jurisdiction decision, not a troubleshooting step",
-   "Decide when the lab can be completed with a capture (SIMULATION) and when real radio hardware is required (RF_REQUIRED)"
-  ],
-  "artifacts": [
-   "labs: none (hardware-facing). Uses lab-data summaries to practise interface reasoning.",
-   "scripts/enable-monitor.sh (hardware, optional)"
-  ],
-  "decision_practice": [
-   "scn-04-tool-choice"
-  ],
-  "evidence_focus": "Interface name, mode, channel and driver evidence from your own machine (`iw dev`, `iw phy`) when hardware is used.",
-  "retest_focus": "Repeat the interface check after a driver or mode change and record both outputs.",
-  "lessons": [
-   {
-    "id": "01-monitor-mode-and-toolchain",
-    "title": "Monitor mode, injection and the toolchain",
-    "kind": "concept"
-   },
-   {
-    "id": "02-owned-lab-readiness",
-    "title": "Owned-lab readiness and passive collection",
-    "kind": "lab"
-   }
-  ],
-  "status": "hardware",
-  "learningPathId": "wireless-pentesting",
-  "phaseName": "Foundations",
-  "lab_requirement_generic": "HYBRID"
- },
- {
-  "id": "05-wireless-recon",
-  "title": "Passive Reconnaissance and ESS Mapping",
-  "phase": 2,
-  "difficulty": "Beginner",
-  "estimated_hours": 2.5,
-  "prerequisites": [
-   "04-kali-wireless-setup"
-  ],
-  "lab_requirement": "SIMULATION",
-  "content_status": "brief",
-  "skills": [
-   "recon",
-   "ess-mapping",
-   "hidden-ssid",
-   "pnl"
-  ],
-  "description": "Enumerate BSSs, clients and relationships from a passive capture, and separate a legitimate ESS from a look-alike.",
-  "objectives": [
-   "Produce an AP inventory (BSSID, SSID, channel, band, security, PMF, WPS) from a capture",
-   "Explain why hiding an SSID is not a security control and show the frame that reveals it",
-   "Reconstruct client behaviour: what it probes for, where it associates, whether the MAC is randomised",
-   "Identify look-alike infrastructure by comparing IE fingerprints, channels and vendor OUIs"
-  ],
-  "artifacts": [
-   "labs: recon-lab.pcapng, methodology.pcapng"
-  ],
-  "decision_practice": [
-   "scn-05-hidden-ssid",
-   "scn-05-clone-or-ess"
-  ],
-  "evidence_focus": "AP inventory table + frame numbers for every claim; capture SHA-256.",
-  "retest_focus": "Re-run the inventory after remediation and show the look-alike BSSID is gone from the authorised list.",
-  "lessons": [
-   {
-    "id": "01-passive-recon-workflow",
-    "title": "Passive reconnaissance workflow (lab)",
-    "kind": "lab"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "wireless-pentesting",
-  "phaseName": "Reconnaissance",
-  "lab_requirement_generic": "SIMULATION"
- },
- {
-  "id": "06-traffic-analysis",
-  "title": "Traffic Analysis: From Capture to Evidence",
-  "phase": 2,
-  "difficulty": "Intermediate",
-  "estimated_hours": 2.5,
-  "prerequisites": [
-   "05-wireless-recon"
-  ],
-  "lab_requirement": "SIMULATION",
-  "content_status": "brief",
-  "skills": [
-   "wireshark",
-   "tshark",
-   "evidence",
-   "eapol"
-  ],
-  "description": "Filter, isolate and extract the exact frames that prove a finding \u2014 the core skill behind every later technical decision.",
-  "objectives": [
-   "Write display filters that target management subtypes, EAPOL/EAP, RADIUS and BSSID/SSID",
-   "Isolate one conversation and reconstruct the association + 4-way handshake with frame numbers",
-   "Recognise what is and is not visible on the air (encrypted payload vs. metadata)",
-   "Package evidence: capture hash, filter, frame list, and the claim each frame supports"
-  ],
-  "artifacts": [
-   "labs: traffic-analysis.pcapng, methodology.pcapng"
-  ],
-  "decision_practice": [
-   "scn-06-which-frames",
-   "scn-06-encrypted-or-not"
-  ],
-  "evidence_focus": "A reproducible filter string plus frame numbers, capture SHA-256, and a statement of what the evidence does *not* show.",
-  "retest_focus": "Same filter re-run on the post-fix capture; the delta is the retest evidence.",
-  "lessons": [
-   {
-    "id": "01-evidence-workflow",
-    "title": "From capture to evidence (lab)",
-    "kind": "lab"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "wireless-pentesting",
-  "phaseName": "Reconnaissance",
-  "lab_requirement_generic": "SIMULATION"
- },
- {
-  "id": "07-wep-legacy",
-  "title": "WEP: Why the Design Fails",
-  "phase": 3,
-  "difficulty": "Intermediate",
-  "estimated_hours": 1.5,
-  "prerequisites": [
-   "06-traffic-analysis"
-  ],
-  "lab_requirement": "SIMULATION",
-  "content_status": "brief",
-  "skills": [
-   "wep",
-   "rc4",
-   "iv-reuse",
-   "legacy"
-  ],
-  "description": "RC4 with a 24-bit IV, CRC32 integrity and why key recovery is a matter of minutes \u2014 plus the migration path.",
-  "objectives": [
-   "Explain IV reuse and how FMS/KoreK/PTW recover the key from a capture",
-   "Explain why the ICV (CRC32) cannot detect modification",
-   "State the correct remediation: remove WEP, do not 'harden' it",
-   "Describe what evidence a WEP finding needs (frame counts, key recovery proof)"
-  ],
-  "artifacts": [
-   "labs: wep-legacy lab notes + generated capture guidance"
-  ],
-  "decision_practice": [
-   "scn-07-wep-report"
-  ],
-  "evidence_focus": "IV/frame counts, the recovered key *in the lab only*, and the tool output with parameters.",
-  "retest_focus": "Post-fix capture shows no WEP BSS and the network no longer accepts WEP association.",
-  "lessons": [
-   {
-    "id": "01-wep-design-failure",
-    "title": "WEP: why the design fails",
-    "kind": "concept"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "wireless-pentesting",
-  "phaseName": "Wi-Fi Security",
-  "lab_requirement_generic": "SIMULATION"
- },
- {
-  "id": "08-wpa-wpa2",
-  "title": "WPA2: RSN, Handshakes and Offline Audits",
-  "phase": 3,
-  "difficulty": "Intermediate",
-  "estimated_hours": 6.0,
-  "prerequisites": [
-   "07-wep-legacy"
-  ],
-  "lab_requirement": "SIMULATION",
-  "content_status": "authored",
-  "skills": [
-   "wpa2",
-   "ccmp",
-   "4-way-handshake",
-   "pmf",
-   "offline-audit",
-   "pmkid",
-   "hashcat",
-   "wordlist"
-  ],
-  "description": "Understand RSN key setup, read the four-way handshake, then verify only authorized PSK/PMKID fixtures offline.",
-  "objectives": [
-   "Derive PMK/PTK and explain each field the PTK is bound to",
-   "Identify M1\u2013M4 in a capture and say what each message proves",
-   "Explain why capturing a handshake does not mean the network is compromised",
-   "Read RSN capabilities and set/verify PMF (MFPC vs MFPR)",
-   "Convert a capture with hcxpcapngtool and run hashcat mode 22000 (unified PMKID + EAPOL)",
-   "Compare PMKID collection without a full 4-way handshake (requirements, completeness, station/AP behavior)",
-   "Interpret a crack: what access does the key actually grant?",
-   "Write the finding with defensible severity derived from impact, not from the technique name"
-  ],
-  "artifacts": [
-   "labs: wpa2-handshake.pcapng (two clients, one complete exchange)",
-   "labs: wpa2-handshake.pcapng, pmkid.pcapng, wordlists/wififorge-lab-psk.txt"
-  ],
-  "decision_practice": [
-   "scn-08-handshake-completeness",
-   "scn-08-psk-compromise",
-   "scn-09-pmkid-vs-handshake",
-   "scn-09-cracked-not-owned"
-  ],
-  "evidence_focus": "The handshake's frame numbers, nonces (first/last bytes are enough), capture hash, and the wordlist/params used.",
-  "retest_focus": "After a PSK change, the old capture must no longer crack and the new one must.",
-  "lessons": [
-   {
-    "id": "01-rsn-key-hierarchy",
-    "title": "RSN and the key hierarchy",
-    "kind": "concept"
-   },
-   {
-    "id": "02-four-way-handshake-lab",
-    "title": "Reading the 4-way handshake (lab)",
-    "kind": "lab"
-   },
-   {
-    "id": "01-offline-audit-lab",
-    "title": "Offline audit workflow (lab)",
-    "kind": "lab"
-   },
-   {
-    "id": "02-pmkid-clientless-lab",
-    "title": "PMKID: reduced-handshake capture (lab)",
-    "kind": "lab"
-   },
-   {
-    "id": "03-handshake-decision-clinic",
-    "title": "Handshake evidence: guided and independent decision",
-    "kind": "lab"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "wireless-pentesting",
-  "phaseName": "Wi-Fi Security",
-  "lab_requirement_generic": "SIMULATION"
- },
- {
-  "id": "10-wps",
-  "title": "WPS: The 8-Digit PIN and Its Defences",
-  "phase": 3,
-  "difficulty": "Intermediate",
-  "estimated_hours": 2.0,
-  "prerequisites": [
-   "08-wpa-wpa2"
-  ],
-  "lab_requirement": "HYBRID",
-  "content_status": "brief",
-  "skills": [
-   "wps",
-   "pin",
-   "lockout",
-   "pixie-dust"
-  ],
-  "description": "WPS architecture, the 11 000-guess PIN flaw, registrar/setup-locked states, and why disabling WPS beats tuning lockout.",
-  "objectives": [
-   "Decode the WPS IE: version, config methods, device password ID, setup-locked, selected registrar",
-   "Explain the 10^7 \u2192 ~11 000 reduction and what defeats it (lockout, M4/M6 validation, WPS 2.0)",
-   "Explain why 'WPS enabled' is a configuration finding while the PIN attack itself needs an authorization decision",
-   "Remediate: disable WPS, or if it must exist, enforce lockout and use PBC with a monitored window"
-  ],
-  "artifacts": [
-   "labs: wps-beacon.pcapng (unlocked vs. setup-locked BSS)"
-  ],
-  "decision_practice": [
-   "scn-10-wps-locked"
-  ],
-  "evidence_focus": "Beacon frame number, decoded WPS attributes, and AP model/firmware if known.",
-  "retest_focus": "Post-fix beacon shows no WPS IE (or setup-locked + lockout logs) and a new enumeration attempt fails.",
-  "lessons": [
-   {
-    "id": "01-wps-architecture-and-pin",
-    "title": "WPS architecture and the PIN flaw",
-    "kind": "concept"
-   }
-  ],
-  "status": "hardware",
-  "learningPathId": "wireless-pentesting",
-  "phaseName": "Wi-Fi Security",
-  "lab_requirement_generic": "HYBRID"
- },
- {
-  "id": "11-wpa3",
-  "title": "WPA3: SAE, Transition Mode and OWE",
-  "phase": 4,
-  "difficulty": "Advanced",
-  "estimated_hours": 3.0,
-  "prerequisites": [
-   "10-wps"
-  ],
-  "lab_requirement": "SIMULATION",
-  "content_status": "brief",
-  "skills": [
-   "wpa3",
-   "sae",
-   "dragonfly",
-   "owe",
-   "transition"
-  ],
-  "description": "SAE (Dragonfly) handshake properties, forward secrecy, transition-mode downgrade, PMF requirements and OWE.",
-  "objectives": [
-   "Explain why the SAE commit/confirm exchange is not offline-crackable",
-   "Detect transition mode from the RSNE (AKM list) and describe the downgrade path",
-   "Explain the PMF requirement and OWE's role for open networks",
-   "Judge whether a WPA3 deployment is genuinely WPA3-only"
-  ],
-  "artifacts": [
-   "labs: wpa3-only.pcapng, wpa3-transition.pcapng"
-  ],
-  "decision_practice": [
-   "scn-11-transition-downgrade",
-   "scn-11-owe"
-  ],
-  "evidence_focus": "RSNE bytes and frame numbers for the AKM list; a client-side association trace showing which AKM was used.",
-  "retest_focus": "Re-enumerate the BSS after forcing WPA3-only and verify the PSK AKM is gone.",
-  "lessons": [
-   {
-    "id": "01-sae-and-transition-mode",
-    "title": "SAE, transition mode and OWE",
-    "kind": "concept"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "wireless-pentesting",
-  "phaseName": "Attack Techniques",
-  "lab_requirement_generic": "SIMULATION"
- },
- {
-  "id": "12-deauth-disassoc",
-  "title": "Management Frames, PMF and Look-Alike APs",
-  "phase": 4,
-  "difficulty": "Advanced",
-  "estimated_hours": 5.5,
-  "prerequisites": [
-   "11-wpa3"
-  ],
-  "lab_requirement": "RF_REQUIRED",
-  "content_status": "authored",
-  "skills": [
-   "pmf",
-   "deauth",
-   "disassoc",
-   "availability",
-   "sa-query",
-   "rogue-ap",
-   "evil-twin",
-   "wids",
-   "client-behaviour"
-  ],
-  "description": "Inspect management-frame protection and same-SSID infrastructure; distinguish frame observations from delivery, ownership and client outcomes.",
-  "objectives": [
-   "Explain why unprotected deauth/disassoc frames can be spoofed and what that achieves",
-   "Read MFPC/MFPR from the RSNE and predict whether spoofing will work",
-   "Interpret reason codes (1, 7, 8, 15) and SA Query behaviour",
-   "Assess availability impact as a finding (and why it is often the weakest but noisiest test)",
-   "Compare IE fingerprints, BSSID vendor/OUI, channel, beacon interval and signal to identify a twin",
-   "Explain client behaviour that makes evil twin practical (auto-connect, PNL, missing server validation)",
-   "Describe detection controls (WIDS/WIPS, authorised-BSSID lists, RF triangulation) and their limits",
-   "Design the test safely: which SSIDs are authorised, and what must never be captured from real clients"
-  ],
-  "artifacts": [
-   "labs: deauth.pcapng (PMF-capable vs PMF-required BSS), wpa3-only.pcapng",
-   "labs: rogue-ap.pcapng"
-  ],
-  "decision_practice": [
-   "scn-12-pmf-value",
-   "scn-12-evidence-for-dos",
-   "scn-13-twin-detection",
-   "scn-13-enterprise-rogue"
-  ],
-  "evidence_focus": "Frame numbers, reason codes, counts and timing; plus client-side evidence (association loss) that the frames had effect.",
-  "retest_focus": "With ieee80211w=2 the same spoof no longer disconnects the client \u2014 capture both states.",
-  "lessons": [
-   {
-    "id": "01-pmf-and-availability",
-    "title": "PMF and availability testing",
-    "kind": "concept"
-   },
-   {
-    "id": "01-rogue-infrastructure-analysis",
-    "title": "Rogue infrastructure analysis (lab)",
-    "kind": "lab"
-   },
-   {
-    "id": "02-lookalike-decision-clinic",
-    "title": "Look-alike and PMF evidence clinic",
-    "kind": "lab"
-   }
-  ],
-  "status": "hardware",
-  "learningPathId": "wireless-pentesting",
-  "phaseName": "Attack Techniques",
-  "lab_requirement_generic": "REAL"
- },
- {
-  "id": "14-captive-portals",
-  "title": "Captive Portals, Guest Networks and Isolation",
-  "phase": 4,
-  "difficulty": "Advanced",
-  "estimated_hours": 2.0,
-  "prerequisites": [
-   "12-deauth-disassoc"
-  ],
-  "lab_requirement": "HYBRID",
-  "content_status": "brief",
-  "skills": [
-   "captive-portal",
-   "guest",
-   "client-isolation",
-   "segmentation"
-  ],
-  "description": "Portal architecture, session handling weaknesses, and client isolation as a control rather than a checkbox.",
-  "objectives": [
-   "Trace the portal flow (DHCP \u2192 DNS/HTTP redirect \u2192 portal \u2192 session) from a capture",
-   "Identify credential exposure when the portal is served over cleartext HTTP",
-   "Test whether client isolation is enforced, and explain the difference between isolation and segmentation",
-   "Remediate with HTTPS portal, OWE/WPA2-Guest, per-client isolation and VLAN + ACL enforcement"
-  ],
-  "artifacts": [
-   "labs: captive-portal.pcapng"
-  ],
-  "decision_practice": [
-   "scn-14-isolation-vs-segmentation"
-  ],
-  "evidence_focus": "HTTP request/response frame numbers, session token, and an ARP/ICMP test showing whether peers are reachable.",
-  "retest_focus": "Isolation enabled: the repeat test shows no client-to-client reachability; capture both states.",
-  "lessons": [
-   {
-    "id": "01-portal-and-isolation",
-    "title": "Portal testing and client isolation (lab)",
-    "kind": "lab"
-   }
-  ],
-  "status": "hardware",
-  "learningPathId": "wireless-pentesting",
-  "phaseName": "Attack Techniques",
-  "lab_requirement_generic": "HYBRID"
- },
- {
-  "id": "15-enterprise-fundamentals",
-  "title": "Enterprise Wi-Fi: 802.1X, EAP and RADIUS",
-  "phase": 5,
-  "difficulty": "Advanced",
-  "estimated_hours": 9.5,
-  "prerequisites": [
-   "14-captive-portals"
-  ],
-  "lab_requirement": "SIMULATION",
-  "content_status": "authored",
-  "skills": [
-   "802.1x",
-   "radius",
-   "supplicant",
-   "authenticator",
-   "eap",
-   "peap",
-   "eap-tls",
-   "eap-ttls",
-   "mschapv2",
-   "shared-secret",
-   "message-authenticator",
-   "dynamic-vlan"
-  ],
-  "description": "Follow the client/AP/AAA trust boundaries from EAP method selection to RADIUS attributes and applied policy; separate the independent synthetic fixtures.",
-  "objectives": [
-   "Draw the 802.1X architecture and name the role of supplicant, authenticator and authentication server",
-   "Explain how the MSK becomes the PMK and why the 4-way handshake still happens after EAP succeeds",
-   "List the attributes RADIUS returns (VLAN, ACL, session timeout) and the risks of trusting them",
-   "Identify the testing decision points for each enterprise component",
-   "Identify the EAP method from the outer exchange and explain what is inside the tunnel",
-   "Explain MS-CHAPv2 challenge/response and why it is crackable when the server's certificate is not validated",
-   "Compare EAP-TLS (mutual certificates) with password-based inner methods",
-   "Advise on client configuration: ca_cert, domain_suffix_match/subject_match, and disabling insecure methods server-side",
-   "Decode an Access-Request/Challenge/Accept exchange and name the attributes that matter",
-   "Verify a Message-Authenticator and a Response Authenticator from a capture",
-   "Explain why the shared secret is a high-value credential and how it is attacked (offline guessing against captured authenticators)",
-   "Harden: per-AP secrets, require_message_authenticator, source-IP restriction, RadSec, and monitoring"
-  ],
-  "artifacts": [
-   "labs: enterprise.pcapng, radius.pcapng",
-   "labs: eap.pcapng, radius.pcapng (MS-CHAPv2 material)",
-   "labs: radius.pcapng (including a rogue NAS whose Message-Authenticator fails)"
-  ],
-  "decision_practice": [
-   "scn-15-which-component",
-   "scn-15-msk-to-pmk",
-   "scn-16-method-identification",
-   "scn-16-cert-validation",
-   "scn-17-secret-rotation",
-   "scn-17-radius-log-reading"
-  ],
-  "evidence_focus": "EAP exchange frames, RADIUS code + attributes, and the resulting 4-way handshake \u2014 in one timeline.",
-  "retest_focus": "After remediation, re-capture and show the client can no longer authenticate with the old configuration (e.g. missing certificate validation).",
-  "lessons": [
-   {
-    "id": "01-architecture-and-roles",
-    "title": "802.1X architecture and roles",
-    "kind": "concept"
-   },
-   {
-    "id": "01-methods-and-credential-exposure",
-    "title": "EAP methods and credential exposure",
-    "kind": "concept"
-   },
-   {
-    "id": "02-cert-validation-and-lab",
-    "title": "Certificate validation and the PEAP lab",
-    "kind": "lab"
-   },
-   {
-    "id": "01-radius-mechanics-and-verification",
-    "title": "RADIUS mechanics and verifiable integrity",
-    "kind": "concept"
-   },
-   {
-    "id": "02-hardening-and-monitoring",
-    "title": "RADIUS hardening, RadSec and monitoring",
-    "kind": "concept"
-   },
-   {
-    "id": "02-enterprise-testing-lab",
-    "title": "Testing the enterprise path (lab)",
-    "kind": "lab"
-   },
-   {
-    "id": "03-enterprise-decision-clinic",
-    "title": "Enterprise trust-boundary evidence clinic",
-    "kind": "lab"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "wireless-pentesting",
-  "phaseName": "Enterprise Wi-Fi",
-  "lab_requirement_generic": "SIMULATION"
- },
- {
-  "id": "18-corporate-attacks",
-  "title": "Corporate Wireless Kill Chains",
-  "phase": 5,
-  "difficulty": "Advanced",
-  "estimated_hours": 4.0,
-  "prerequisites": [
-   "15-enterprise-fundamentals"
-  ],
-  "lab_requirement": "HYBRID",
-  "content_status": "authored",
-  "skills": [
-   "kill-chain",
-   "segmentation",
-   "isolation",
-   "detection"
-  ],
-  "description": "How individual weaknesses chain into network access: rogue authenticator, credential capture, segmentation bypass \u2014 and how each link is broken.",
-  "objectives": [
-   "Assemble a defensible attack chain from the evidence you collected in earlier modules",
-   "Test segmentation and isolation with a method whose result is unambiguous (protocol-level reachability, not 'it felt open')",
-   "Map each link in the chain to a specific control that breaks it",
-   "Report the chain without overstating impact: access to a VLAN is not 'domain admin'"
-  ],
-  "artifacts": [
-   "labs: corporate-attacks.pcapng, methodology.pcapng"
-  ],
-  "decision_practice": [
-   "scn-18-chain-order",
-   "scn-18-segmentation-evidence"
-  ],
-  "evidence_focus": "One timeline: deauth/rogue frames, EAP capture, credential material, and the segmentation test result with frame numbers.",
-  "retest_focus": "Post-fix: each link is re-tested individually and shown to fail.",
-  "lessons": [
-   {
-    "id": "01-kill-chain-and-segmentation",
-    "title": "Kill chain and segmentation testing (lab)",
-    "kind": "lab"
-   },
-   {
-    "id": "02-detection-and-response",
-    "title": "Detection, containment and response",
-    "kind": "concept"
-   }
-  ],
-  "status": "hardware",
-  "learningPathId": "wireless-pentesting",
-  "phaseName": "Enterprise Wi-Fi",
-  "lab_requirement_generic": "HYBRID"
- },
- {
-  "id": "20-final-assessment",
-  "title": "Wireless Assessment: Scope and Independent Case",
-  "phase": 6,
-  "difficulty": "Professional",
-  "estimated_hours": 6.0,
-  "prerequisites": [
-   "18-corporate-attacks"
-  ],
-  "lab_requirement": "SIMULATION",
-  "content_status": "authored",
-  "skills": [
-   "assessment",
-   "professional",
-   "methodology",
-   "roe",
-   "evidence"
-  ],
-  "description": "Plan a bounded assessment and analyze independent synthetic Case C-20 evidence. Northwind remains a planning-only brief; live RF and client outcomes are not supplied.",
-  "objectives": [
-   "Independently inventory C-20 frames, verify fixture handshake inputs and compare staged policy advertisements",
-   "Defend each finding against the evidence and remove anything you cannot reproduce",
-   "Identify what you did *not* test and why (scope, safety, or environment limits)",
-   "Turn a scope document into a test plan with explicit in/out-of-scope artefacts",
-   "Apply the evidence standard: reproducibility, integrity (hash), and traceability to a claim",
-   "Distinguish tested capture claims from hypotheses and state the next authorized validation test"
-  ],
-  "artifacts": [
-   "capstone/capstone-baseline.pcapng + capstone/capstone-retest.pcapng (Case C-20; synthetic)",
-   "labs: methodology.pcapng (separate synthetic exercise)",
-   "ENG-01: optional written planning scenario; Northwind evidence not supplied"
-  ],
-  "decision_practice": [
-   "scn-20-triage",
-   "scn-20-no-finding",
-   "scn-19-severity-context",
-   "scn-19-retest-fail"
-  ],
-  "evidence_focus": "For each claim cite capture hash, frame and filter; separate observed policy from client behavior and unknown ownership.",
-  "retest_focus": "The staged beacon shows an advertised-policy change only; live client checks are NOT TESTED.",
-  "lessons": [
-   {
-    "id": "01-methodology-and-roe",
-    "title": "Methodology, scope and rules of engagement",
-    "kind": "concept"
-   },
-   {
-    "id": "02-independent-capture-case",
-    "title": "Independent capture case C-20",
-    "kind": "professional"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "wireless-pentesting",
-  "phaseName": "Professional",
-  "lab_requirement_generic": "SIMULATION"
- },
- {
-  "id": "android-01-platform",
-  "title": "Android Platform and Trust Boundaries",
-  "phase": 1,
-  "phaseName": "Android Foundations",
-  "difficulty": "Beginner",
-  "estimated_hours": 2.5,
-  "prerequisites": [],
-  "lab_requirement": "OFFLINE TEXT",
-  "content_status": "authored",
-  "skills": [
-   "android",
-   "static-analysis",
-   "evidence"
-  ],
-  "description": "Explain process UID isolation and the limits of app-side checks",
-  "objectives": [
-   "Explain process UID isolation and the limits of app-side checks",
-   "Identify activities, services, receivers, providers and external entry points in a supplied manifest",
-   "Separate an exported component from evidence that sensitive data was exposed"
-  ],
-  "artifacts": [
-   "android-foundations/AndroidManifest.xml",
-   "android-foundations/LinkActivity.kt",
-   "android-foundations/NoteStore.kt",
-   "android-foundations/SHA256SUMS"
-  ],
-  "decision_practice": [],
-  "evidence_focus": "Cite the exact excerpt and hash; distinguish static hypothesis from runtime behavior.",
-  "retest_focus": "An installed, authorized build and controlled test accounts are required for a dynamic conclusion.",
-  "lessons": [
-   {
-    "id": "01-sandbox-and-components",
-    "title": "Sandbox, components and caller boundaries",
-    "kind": "concept"
-   },
-   {
-    "id": "02-intents-and-versions",
-    "title": "Intents, exports and version-aware interpretation",
-    "kind": "concept"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "android-pentesting",
-  "lab_requirement_generic": "OFFLINE TEXT"
- },
- {
-  "id": "android-02-workstation",
-  "title": "Safe Android Testing Workstation",
-  "phase": 1,
-  "phaseName": "Android Foundations",
-  "difficulty": "Beginner",
-  "estimated_hours": 2.0,
-  "prerequisites": [
-   "android-01-platform"
-  ],
-  "lab_requirement": "OFFLINE TEXT",
-  "content_status": "authored",
-  "skills": [
-   "android",
-   "static-analysis",
-   "evidence"
-  ],
-  "description": "Plan an authorized isolated emulator or owned-device test without touching third-party applications",
-  "objectives": [
-   "Plan an authorized isolated emulator or owned-device test without touching third-party applications",
-   "Record build identity, target/API levels, scope, test account and cleanup",
-   "Tell a static text exercise from an executed runtime test"
-  ],
-  "artifacts": [
-   "android-foundations/AndroidManifest.xml",
-   "android-foundations/LinkActivity.kt",
-   "android-foundations/NoteStore.kt",
-   "android-foundations/SHA256SUMS"
-  ],
-  "decision_practice": [],
-  "evidence_focus": "Cite the exact excerpt and hash; distinguish static hypothesis from runtime behavior.",
-  "retest_focus": "An installed, authorized build and controlled test accounts are required for a dynamic conclusion.",
-  "lessons": [
-   {
-    "id": "01-setup-and-scope",
-    "title": "Authorized emulator and ADB setup",
-    "kind": "concept"
-   },
-   {
-    "id": "02-evidence-and-fallback",
-    "title": "Evidence integrity and offline fallback",
-    "kind": "concept"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "android-pentesting",
-  "lab_requirement_generic": "OFFLINE TEXT"
- },
- {
-  "id": "android-03-apk-triage",
-  "title": "APK and Source Triage",
-  "phase": 2,
-  "phaseName": "Android Foundations",
-  "difficulty": "Beginner",
-  "estimated_hours": 4.0,
-  "prerequisites": [
-   "android-02-workstation"
-  ],
-  "lab_requirement": "OFFLINE TEXT",
-  "content_status": "authored",
-  "skills": [
-   "android",
-   "static-analysis",
-   "evidence"
-  ],
-  "description": "Explain APK/AAB packaging, merged manifest, signatures, resources and DEX without mistaking source excerpts for an APK",
-  "objectives": [
-   "Explain APK/AAB packaging, merged manifest, signatures, resources and DEX without mistaking source excerpts for an APK",
-   "Trace untrusted deep-link input through a lookup to an ownership check",
-   "Distinguish an interesting entry point from a demonstrated cross-account disclosure"
-  ],
-  "artifacts": [
-   "android-foundations/AndroidManifest.xml",
-   "android-foundations/LinkActivity.kt",
-   "android-foundations/NoteStore.kt",
-   "android-foundations/SHA256SUMS",
-   "android-demos/notes-boundary-source.zip (original training project; no compiled APK)"
-  ],
-  "decision_practice": [],
-  "evidence_focus": "Cite the exact excerpt and hash; distinguish static hypothesis from runtime behavior.",
-  "retest_focus": "An installed, authorized build and controlled test accounts are required for a dynamic conclusion.",
-  "lessons": [
-   {
-    "id": "01-apk-anatomy",
-    "title": "APK, manifest, DEX and resource triage",
-    "kind": "concept"
-   },
-   {
-    "id": "02-source-to-sink",
-    "title": "Independent source-to-sink investigation",
-    "kind": "concept"
-   },
-   {
-    "id": "03-compare-owned-demo-source",
-    "title": "Source clinic: compare an owned demo\u2019s vulnerable and fixed boundaries",
-    "kind": "lab"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "android-pentesting",
-  "lab_requirement_generic": "OFFLINE TEXT"
- },
- {
-  "id": "android-04-components",
-  "title": "Exported Components and IPC",
-  "phase": 3,
-  "phaseName": "Platform",
-  "difficulty": "Intermediate",
-  "estimated_hours": 3.5,
-  "prerequisites": [
-   "android-03-apk-triage"
-  ],
-  "lab_requirement": "SIMULATION",
-  "content_status": "authored",
-  "skills": [
-   "android",
-   "static-analysis",
-   "evidence",
-   "masvs-platform"
-  ],
-  "description": "An exported component is callable only under its installed manifest and permission policy. Trace an untrusted Intent through an entry point to an owned resource before calling it a disclosure.",
-  "objectives": [
-   "An exported component is callable only under its installed manifest and permission policy. Trace an untrusted Intent through an entry point to an owned resource before calling it a disclosure.",
-   "Compare a positive (Alice opens note 1), a negative (Alice requests Bob\u2019s note 2) and an unknown ID in both demo flavors. On an owned emulator, record the built manifest, hash, account label and visible result. Without a build, trace the Java branches and mark execution NOT TESTED. The receiver case is source-only: inspect permission protection level and intent reachability before proposing a second-app call.",
-   "Never equate exported=true with exploitation. The default Activity lifecycle can reset the mock account; a successful second-app delivery and observed sensitive sink require separate evidence."
-  ],
-  "artifacts": [
-   "android-cases/cases.json (original synthetic snippets)",
-   "android-demos/notes-boundary-source.zip (buildable source only; scope limited to mock notes)"
-  ],
-  "decision_practice": [],
-  "evidence_focus": "Cite the exact source and SHA-256; separate static reasoning from independently observed device behavior.",
-  "retest_focus": "A fixed source excerpt is not a retest; run the exact build on an owned emulator with positive and negative controls.",
-  "lessons": [
-   {
-    "id": "01-mechanism-and-worked-trace",
-    "title": "Mechanism and worked evidence trace",
-    "kind": "concept"
-   },
-   {
-    "id": "02-independent-decision",
-    "title": "Independent decision and model feedback",
-    "kind": "lab"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "android-pentesting",
-  "lab_requirement_generic": "SIMULATION"
- },
- {
-  "id": "android-05-links",
-  "title": "Deep Links and App Links",
-  "phase": 3,
-  "phaseName": "Platform",
-  "difficulty": "Intermediate",
-  "estimated_hours": 3.5,
-  "prerequisites": [
-   "android-04-components"
-  ],
-  "lab_requirement": "SIMULATION",
-  "content_status": "authored",
-  "skills": [
-   "android",
-   "static-analysis",
-   "evidence",
-   "masvs-platform"
-  ],
-  "description": "Custom schemes route intents without proving domain ownership. HTTPS App Links additionally need an installed manifest, Digital Asset Links and device verification state. Parse scheme, host, path and parameters before any sensitive action.",
-  "objectives": [
-   "Custom schemes route intents without proving domain ownership. HTTPS App Links additionally need an installed manifest, Digital Asset Links and device verification state. Parse scheme, host, path and parameters before any sensitive action.",
-   "Make a table of three hosts (trusted.example, attackertrusted.example, trusted.example.attacker.test) and predict the vulnerable and fixed branch for each. A proposed device test needs the exact package/version, resolver state and a controlled destination. For auth redirects, verify a state/nonce and caller trust where applicable; no OAuth exchange is included.",
-   "A string comparison alone is not proof of a verified App Link or action execution. Query and fragment parsing, redirects and version-specific resolver state matter; do not invent domain ownership."
-  ],
-  "artifacts": [
-   "android-cases/cases.json (original synthetic snippets)",
-   "android-demos/notes-boundary-source.zip (buildable source only; scope limited to mock notes)"
-  ],
-  "decision_practice": [],
-  "evidence_focus": "Cite the exact source and SHA-256; separate static reasoning from independently observed device behavior.",
-  "retest_focus": "A fixed source excerpt is not a retest; run the exact build on an owned emulator with positive and negative controls.",
-  "lessons": [
-   {
-    "id": "01-mechanism-and-worked-trace",
-    "title": "Mechanism and worked evidence trace",
-    "kind": "concept"
-   },
-   {
-    "id": "02-independent-decision",
-    "title": "Independent decision and model feedback",
-    "kind": "lab"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "android-pentesting",
-  "lab_requirement_generic": "SIMULATION"
- },
- {
-  "id": "android-06-storage",
-  "title": "Storage, Backup and Data Leakage",
-  "phase": 4,
-  "phaseName": "Data on device",
-  "difficulty": "Intermediate",
-  "estimated_hours": 4.0,
-  "prerequisites": [
-   "android-05-links"
-  ],
-  "lab_requirement": "SIMULATION",
-  "content_status": "authored",
-  "skills": [
-   "android",
-   "static-analysis",
-   "evidence",
-   "masvs-storage"
-  ],
-  "description": "Map where each sensitive value is created, persisted, rendered and destroyed: app-private files, preferences, databases, cache, notifications, logs, clipboard, backup and shared storage. Android sandboxing and storage protection are different controls.",
-  "objectives": [
-   "Map where each sensitive value is created, persisted, rendered and destroyed: app-private files, preferences, databases, cache, notifications, logs, clipboard, backup and shared storage. Android sandboxing and storage protection are different controls.",
-   "List every sink in the example, rank what can be inferred statically, then design an owned-device before/after-logout test with a fake token. Include a positive control that the app still works while signed in, negative control that old data cannot be reused, and screenshot/notification surface check.",
-   "Android Keystore makes certain keys non-exportable under conditions, not app-process plaintext inaccessible. Key handling, user authentication policy and hardware backing vary. Do not call an imaginary secureStore secure."
-  ],
-  "artifacts": [
-   "android-cases/cases.json (original synthetic snippets)",
-   "android-demos/notes-boundary-source.zip (buildable source only; scope limited to mock notes)"
-  ],
-  "decision_practice": [],
-  "evidence_focus": "Cite the exact source and SHA-256; separate static reasoning from independently observed device behavior.",
-  "retest_focus": "A fixed source excerpt is not a retest; run the exact build on an owned emulator with positive and negative controls.",
-  "lessons": [
-   {
-    "id": "01-mechanism-and-worked-trace",
-    "title": "Mechanism and worked evidence trace",
-    "kind": "concept"
-   },
-   {
-    "id": "02-independent-decision",
-    "title": "Independent decision and model feedback",
-    "kind": "lab"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "android-pentesting",
-  "lab_requirement_generic": "SIMULATION"
- },
- {
-  "id": "android-07-network",
-  "title": "Network Trust and Client Sessions",
-  "phase": 4,
-  "phaseName": "Network boundary",
-  "difficulty": "Intermediate",
-  "estimated_hours": 4.0,
-  "prerequisites": [
-   "android-06-storage"
-  ],
-  "lab_requirement": "SIMULATION",
-  "content_status": "authored",
-  "skills": [
-   "android",
-   "static-analysis",
-   "evidence",
-   "masvs-network"
-  ],
-  "description": "Test whether the shipped app validates a server certificate and hostname. Distinguish platform trust, network-security-config, debug overrides, optional pinning and diagnostic interception. A pinning bypass is an observation technique, not a vulnerability result.",
-  "objectives": [
-   "Test whether the shipped app validates a server certificate and hostname. Distinguish platform trust, network-security-config, debug overrides, optional pinning and diagnostic interception. A pinning bypass is an observation technique, not a vulnerability result.",
-   "Write a matrix for correct chain/name, wrong CA, wrong name and expired certificate on a future owned test server. Compare exact debug/release builds; record the connected host, OS/API level and selected config. After inspecting traffic, hand off backend authorization claims to the API path.",
-   "Do not disable TLS verification on real targets or declare all traffic compromised from seeing a hook/flag. No endpoint or measured request is shipped for this module."
-  ],
-  "artifacts": [
-   "android-cases/cases.json (original synthetic snippets)",
-   "android-demos/notes-boundary-source.zip (buildable source only; scope limited to mock notes)"
-  ],
-  "decision_practice": [],
-  "evidence_focus": "Cite the exact source and SHA-256; separate static reasoning from independently observed device behavior.",
-  "retest_focus": "A fixed source excerpt is not a retest; run the exact build on an owned emulator with positive and negative controls.",
-  "lessons": [
-   {
-    "id": "01-mechanism-and-worked-trace",
-    "title": "Mechanism and worked evidence trace",
-    "kind": "concept"
-   },
-   {
-    "id": "02-independent-decision",
-    "title": "Independent decision and model feedback",
-    "kind": "lab"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "android-pentesting",
-  "lab_requirement_generic": "SIMULATION"
- },
- {
-  "id": "android-08-webview",
-  "title": "WebView and Native Bridge Boundaries",
-  "phase": 4,
-  "phaseName": "Platform",
-  "difficulty": "Intermediate",
-  "estimated_hours": 4.0,
-  "prerequisites": [
-   "android-07-network"
-  ],
-  "lab_requirement": "SIMULATION",
-  "content_status": "authored",
-  "skills": [
-   "android",
-   "static-analysis",
-   "evidence",
-   "masvs-platform"
-  ],
-  "description": "WebView creates a boundary between web-origin code and app privileges. Track external Intent data, allowed navigations, redirects, content/file URLs, JavaScript settings and annotated bridge methods before discussing impact.",
-  "objectives": [
-   "WebView creates a boundary between web-origin code and app privileges. Track external Intent data, allowed navigations, redirects, content/file URLs, JavaScript settings and annotated bridge methods before discussing impact.",
-   "Trace untrusted URL \u2192 loaded origin \u2192 bridge method \u2192 privileged action, marking missing links. Propose a benign controlled page and a negative origin for an owned demo build. Explain how you would inspect the final origin after redirects and whether an annotated bridge method was actually called.",
-   "A URL-filter snippet does not ensure safety across all navigation and API levels. The buildable Notes Boundary project has no WebView; do not claim its APK validates this case."
-  ],
-  "artifacts": [
-   "android-cases/cases.json (original synthetic snippets)",
-   "android-demos/notes-boundary-source.zip (buildable source only; scope limited to mock notes)"
-  ],
-  "decision_practice": [],
-  "evidence_focus": "Cite the exact source and SHA-256; separate static reasoning from independently observed device behavior.",
-  "retest_focus": "A fixed source excerpt is not a retest; run the exact build on an owned emulator with positive and negative controls.",
-  "lessons": [
-   {
-    "id": "01-mechanism-and-worked-trace",
-    "title": "Mechanism and worked evidence trace",
-    "kind": "concept"
-   },
-   {
-    "id": "02-independent-decision",
-    "title": "Independent decision and model feedback",
-    "kind": "lab"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "android-pentesting",
-  "lab_requirement_generic": "SIMULATION"
- },
- {
-  "id": "android-09-runtime",
-  "title": "Runtime Observation and Instrumentation",
-  "phase": 5,
-  "phaseName": "Dynamic method",
-  "difficulty": "Advanced",
-  "estimated_hours": 4.5,
-  "prerequisites": [
-   "android-08-webview"
-  ],
-  "lab_requirement": "SIMULATION",
-  "content_status": "authored",
-  "skills": [
-   "android",
-   "static-analysis",
-   "evidence",
-   "masvs-resilience"
-  ],
-  "description": "A dynamic test combines built artifact identity, controlled accounts, observations and reproducibility. ADB, logs, Frida and debuggers are tools; a hook firing only proves the method executed in an instrumented environment.",
-  "objectives": [
-   "A dynamic test combines built artifact identity, controlled accounts, observations and reproducibility. ADB, logs, Frida and debuggers are tools; a hook firing only proves the method executed in an instrumented environment.",
-   "On an owned emulator, launch each flavor, record APK hash/API/account label and observe the positive and negative IDs. Optionally attach instrumentation to corroborate parameter and return values; compare against an uninstrumented run. If no runtime is available, produce a clearly labeled test plan and NOT EXECUTED rows.",
-   "Emulators, debugging, instrumentation, lifecycle and anti-tamper can change behavior. Hook success is not a professional exploit or production account leak. No Frida trace is provided or machine graded."
-  ],
-  "artifacts": [
-   "android-cases/cases.json (original synthetic snippets)",
-   "android-demos/notes-boundary-source.zip (buildable source only; scope limited to mock notes)"
-  ],
-  "decision_practice": [],
-  "evidence_focus": "Cite the exact source and SHA-256; separate static reasoning from independently observed device behavior.",
-  "retest_focus": "A fixed source excerpt is not a retest; run the exact build on an owned emulator with positive and negative controls.",
-  "lessons": [
-   {
-    "id": "01-mechanism-and-worked-trace",
-    "title": "Mechanism and worked evidence trace",
-    "kind": "concept"
-   },
-   {
-    "id": "02-independent-decision",
-    "title": "Independent decision and model feedback",
-    "kind": "lab"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "android-pentesting",
-  "lab_requirement_generic": "SIMULATION"
- },
- {
-  "id": "android-10-crypto",
-  "title": "Cryptography and Device Identity",
-  "phase": 5,
-  "phaseName": "Data on device",
-  "difficulty": "Advanced",
-  "estimated_hours": 4.0,
-  "prerequisites": [
-   "android-09-runtime"
-  ],
-  "lab_requirement": "SIMULATION",
-  "content_status": "authored",
-  "skills": [
-   "android",
-   "static-analysis",
-   "evidence",
-   "masvs-crypto"
-  ],
-  "description": "Test key use, algorithms, IV/nonce generation, lifecycle, keystore protection and biometric/app authorization separately. Device integrity and anti-tamper signals require a server-side decision to affect privileged actions.",
-  "objectives": [
-   "Test key use, algorithms, IV/nonce generation, lifecycle, keystore protection and biometric/app authorization separately. Device integrity and anti-tamper signals require a server-side decision to affect privileged actions.",
-   "Design a test with two synthetic plaintexts under one controlled key. Identify the invariant to check (distinct IV per encryption), what your test can infer if the provider rejects a repeat, and a negative control for different keys. Explain why Keystore and biometrics do not automatically enforce server authorization.",
-   "Never call a sample key stolen or infer a cryptographic attack from source alone. Provider behavior and actual build data are NOT TESTED."
-  ],
-  "artifacts": [
-   "android-cases/cases.json (original synthetic snippets)",
-   "android-demos/notes-boundary-source.zip (buildable source only; scope limited to mock notes)"
-  ],
-  "decision_practice": [],
-  "evidence_focus": "Cite the exact source and SHA-256; separate static reasoning from independently observed device behavior.",
-  "retest_focus": "A fixed source excerpt is not a retest; run the exact build on an owned emulator with positive and negative controls.",
-  "lessons": [
-   {
-    "id": "01-mechanism-and-worked-trace",
-    "title": "Mechanism and worked evidence trace",
-    "kind": "concept"
-   },
-   {
-    "id": "02-independent-decision",
-    "title": "Independent decision and model feedback",
-    "kind": "lab"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "android-pentesting",
-  "lab_requirement_generic": "SIMULATION"
- },
- {
-  "id": "android-11-release",
-  "title": "Reverse Engineering and Release Surfaces",
-  "phase": 5,
-  "phaseName": "Code integrity",
-  "difficulty": "Advanced",
-  "estimated_hours": 3.5,
-  "prerequisites": [
-   "android-10-crypto"
-  ],
-  "lab_requirement": "SIMULATION",
-  "content_status": "authored",
-  "skills": [
-   "android",
-   "static-analysis",
-   "evidence",
-   "masvs-code"
-  ],
-  "description": "Inspect the exact release package and split APKs, manifest, signatures, DEX and native libraries. Distinguish obfuscation as friction from trust enforcement. Dynamic code loading and third-party SDKs extend the attack surface.",
-  "objectives": [
-   "Inspect the exact release package and split APKs, manifest, signatures, DEX and native libraries. Distinguish obfuscation as friction from trust enforcement. Dynamic code loading and third-party SDKs extend the attack surface.",
-   "List every missing link from external input to executed untrusted code. Propose a negative control with an invalid path and a positive test against a trusted built-in plugin on an authorized demo. Compare debug and release builds and inventory bundled libraries and dependency versions before declaring an SDK risk.",
-   "The source-only case does not prove arbitrary code execution. No dynamic loader or native library is shipped in the Notes Boundary APK source."
-  ],
-  "artifacts": [
-   "android-cases/cases.json (original synthetic snippets)",
-   "android-demos/notes-boundary-source.zip (buildable source only; scope limited to mock notes)"
-  ],
-  "decision_practice": [],
-  "evidence_focus": "Cite the exact source and SHA-256; separate static reasoning from independently observed device behavior.",
-  "retest_focus": "A fixed source excerpt is not a retest; run the exact build on an owned emulator with positive and negative controls.",
-  "lessons": [
-   {
-    "id": "01-mechanism-and-worked-trace",
-    "title": "Mechanism and worked evidence trace",
-    "kind": "concept"
-   },
-   {
-    "id": "02-independent-decision",
-    "title": "Independent decision and model feedback",
-    "kind": "lab"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "android-pentesting",
-  "lab_requirement_generic": "SIMULATION"
- },
- {
-  "id": "android-12-case",
-  "title": "Independent Android Assessment Case",
-  "phase": 6,
-  "phaseName": "Independent practice",
-  "difficulty": "Advanced",
-  "estimated_hours": 5.0,
-  "prerequisites": [
-   "android-11-release"
-  ],
-  "lab_requirement": "SIMULATION",
-  "content_status": "authored",
-  "skills": [
-   "android",
-   "static-analysis",
-   "evidence",
-   "masvs-platform"
-  ],
-  "description": "An engagement claim must tie an owned app, a particular installed build and a controlled observation to one trust boundary. Independent practice should also discard unsupported hypotheses; broad tool coverage without evidence is not an assessment.",
-  "objectives": [
-   "An engagement claim must tie an owned app, a particular installed build and a controlled observation to one trust boundary. Independent practice should also discard unsupported hypotheses; broad tool coverage without evidence is not an assessment.",
-   "Independently choose two hypotheses from the case pack, build an evidence-gap matrix and discard at least two unsupported impact claims. If you have an owned Android workstation, build and test both Notes Boundary flavors using the project README, with own/other/unknown ID controls, hashes and mock account labels. Without it, submit only a static reasoning exercise and mark the dynamic columns NOT EXECUTED.",
-   "Self-review and quizzes cannot certify Android engagement or interview proficiency. Production reports, client sign-off, supervised work and a verified device lab are outside this teaching pack."
-  ],
-  "artifacts": [
-   "android-cases/cases.json (original synthetic snippets)",
-   "android-demos/notes-boundary-source.zip (buildable source only; scope limited to mock notes)"
-  ],
-  "decision_practice": [],
-  "evidence_focus": "Cite the exact source and SHA-256; separate static reasoning from independently observed device behavior.",
-  "retest_focus": "A fixed source excerpt is not a retest; run the exact build on an owned emulator with positive and negative controls.",
-  "lessons": [
-   {
-    "id": "01-mechanism-and-worked-trace",
-    "title": "Mechanism and worked evidence trace",
-    "kind": "concept"
-   },
-   {
-    "id": "02-independent-decision",
-    "title": "Independent decision and model feedback",
-    "kind": "lab"
-   }
-  ],
-  "status": "simulated",
-  "learningPathId": "android-pentesting",
-  "lab_requirement_generic": "SIMULATION"
- }
+  {
+    "id": "01-intro-wireless",
+    "title": "Wireless Security Foundations",
+    "phase": 1,
+    "difficulty": "Beginner",
+    "estimated_hours": 2.5,
+    "prerequisites": [],
+    "lab_requirement": "SIMULATION",
+    "content_status": "authored",
+    "skills": [
+      "wireless-basics",
+      "attack-surface",
+      "methodology",
+      "ethics"
+    ],
+    "description": "Why radio changes the threat model: broadcast medium, no physical boundary, layer-1 evidence, and the legal boundary of testing.",
+    "objectives": [
+      "Explain why 802.11 traffic can be observed without any network access and what that means for a penetration test",
+      "Distinguish Wi-Fi (802.11) from other wireless technologies and say why the academy stays focused on 802.11",
+      "Describe the engagement lifecycle used by every later module: authorisation \u2192 passive observation \u2192 test \u2192 evidence \u2192 next safe decision",
+      "State the legal and ethical limits: own lab hardware or a signed authorisation, never third-party networks",
+      "Classify a proposed action against supplied scope and write a bounded next-test request without inventing a result"
+    ],
+    "artifacts": [
+      "Lab review: read the sample Rules of Engagement in Engagement Mode and list what is in scope",
+      "WF-FND-01: original evidence-only foundations pack, worksheet and public self-review rubric (in the new lesson)"
+    ],
+    "decision_practice": [
+      "scn-01-scope-gap"
+    ],
+    "evidence_focus": "Every finding must name the affected BSSID/SSID and the frame or config line that proves it.",
+    "retest_focus": "A retest needs new evidence from the remediated target and comparable filters; hash each before/after capture separately.",
+    "lessons": [
+      {
+        "id": "00-network-and-tool-primer",
+        "title": "Networking and offline capture primer",
+        "kind": "concept"
+      },
+      {
+        "id": "01-why-wireless-is-different",
+        "title": "Why wireless changes the threat model",
+        "kind": "concept"
+      },
+      {
+        "id": "02-scope-and-assessment-decisions",
+        "title": "From permission to an assessment decision",
+        "kind": "concept"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "wireless-pentesting",
+    "phaseName": "Wireless Foundations",
+    "lab_requirement_generic": "SIMULATION"
+  },
+  {
+    "id": "02-wifi-fundamentals",
+    "title": "Wi-Fi Identity, Topology & RF Fundamentals",
+    "phase": 1,
+    "difficulty": "Beginner",
+    "estimated_hours": 2.5,
+    "prerequisites": [
+      "01-intro-wireless"
+    ],
+    "lab_requirement": "SIMULATION",
+    "content_status": "authored",
+    "skills": [
+      "ssid",
+      "bssid",
+      "ap",
+      "client",
+      "channels",
+      "bands"
+    ],
+    "description": "Identify BSSs and station observations, interpret RF metadata, and correlate advertised identity with owner records without guessing client trust or device identity.",
+    "objectives": [
+      "Decode a beacon's fixed fields and identify SSID, BSSID, channel, capability and beacon interval",
+      "Explain the difference between an ESS, a BSS and a BSSID and why the distinction matters for recon evidence",
+      "Map 2.4/5/6 GHz channels, channel width and overlap, and choose a capture channel",
+      "Distinguish directed/wildcard probes and locally administered addresses without assuming device identity, randomization policy or future association",
+      "Build a frame-cited inventory correlated with owner records and explicitly mark missing noise, width and RF coverage"
+    ],
+    "artifacts": [
+      "labs: beacon-only.pcapng, recon-lab.pcapng",
+      "WF-FND-01: original evidence-only foundations pack, worksheet and public self-review rubric (in the new lesson)"
+    ],
+    "decision_practice": [
+      "scn-02-ess-or-rogue",
+      "scn-02-randomised-client"
+    ],
+    "evidence_focus": "Extract frame numbers, BSSID, channel and SSID text exactly as captured; keep the capture hash.",
+    "retest_focus": "Re-run the same tshark filter after a fix so the before/after evidence uses identical extraction.",
+    "lessons": [
+      {
+        "id": "01-identity-topology-and-beacons",
+        "title": "Identity, topology and reading a beacon",
+        "kind": "concept"
+      },
+      {
+        "id": "02-rf-and-client-observation",
+        "title": "RF and client observations without guessing",
+        "kind": "concept"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "wireless-pentesting",
+    "phaseName": "Wireless Foundations",
+    "lab_requirement_generic": "SIMULATION"
+  },
+  {
+    "id": "03-80211-architecture",
+    "title": "802.11 Frames, IEs and the Association Flow",
+    "phase": 1,
+    "difficulty": "Beginner",
+    "estimated_hours": 3.5,
+    "prerequisites": [
+      "02-wifi-fundamentals"
+    ],
+    "lab_requirement": "SIMULATION",
+    "content_status": "authored",
+    "skills": [
+      "frames",
+      "information-elements",
+      "association",
+      "capabilities"
+    ],
+    "description": "Decode frame roles and RSN information, reconstruct association state, then defend an independent foundations case using scope, inventory and numbered evidence.",
+    "objectives": [
+      "Identify frame type/subtype numbers and pick the right display filter for each",
+      "Read RSNE fields: version, group cipher, pairwise ciphers, AKM suites and RSN capabilities (including MFPC/MFPR bits)",
+      "Walk the association flow and explain what each step proves",
+      "Separate advertised, requested and demonstrated security properties; state the client evidence needed to test a transition or PMF hypothesis",
+      "Independently reconstruct WF-FND-01, reject unsupported access/impact claims and compare staged evidence without claiming an executed retest"
+    ],
+    "artifacts": [
+      "labs: traffic-analysis.pcapng, beacon-only.pcapng",
+      "WF-FND-01: original evidence-only foundations pack, worksheet and public self-review rubric (in the new lesson)"
+    ],
+    "decision_practice": [
+      "scn-03-rsn-decode",
+      "scn-03-pmf-bits"
+    ],
+    "evidence_focus": "Frame numbers + the decoded IE values (not screenshots of text you typed).",
+    "retest_focus": "Compare the RSNE before and after a configuration change to show the policy actually changed.",
+    "lessons": [
+      {
+        "id": "01-frames-ies-and-association",
+        "title": "Frames, information elements and the association flow",
+        "kind": "concept"
+      },
+      {
+        "id": "02-worked-rsn-decode",
+        "title": "Worked RSN byte decode and evidence decision",
+        "kind": "lab"
+      },
+      {
+        "id": "03-foundations-independent-case",
+        "title": "Independent foundations case: evidence to decision",
+        "kind": "practice"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "wireless-pentesting",
+    "phaseName": "Wireless Foundations",
+    "lab_requirement_generic": "SIMULATION"
+  },
+  {
+    "id": "04-kali-wireless-setup",
+    "title": "Monitor Mode and the Wireless Toolchain",
+    "phase": 2,
+    "difficulty": "Beginner",
+    "estimated_hours": 3.0,
+    "prerequisites": [
+      "03-80211-architecture"
+    ],
+    "lab_requirement": "HYBRID",
+    "content_status": "expanded",
+    "skills": [
+      "interface-modes",
+      "monitor-mode",
+      "toolchain",
+      "regulatory"
+    ],
+    "description": "Interface modes, monitor mode and injection, driver/firmware reality, and choosing the right tool for each job.",
+    "objectives": [
+      "Distinguish managed connectivity, monitor-mode capture, reception and separately validated injection",
+      "Verify adapter capability (monitor/injection, supported bands) instead of assuming it",
+      "Read the regulatory domain with `iw reg get` and understand why setting it is a jurisdiction decision, not a troubleshooting step",
+      "Choose supplied offline evidence, actual local file analysis or optional owned-equipment validation; recognize that hosted live labs are unavailable",
+      "Diagnose VM attachment, driver, blocking and band/channel problems without inventing tested capabilities"
+    ],
+    "artifacts": [
+      "WF-OPS-02 capability-cases.json and diagnostic worksheet; no radio required",
+      "scripts/enable-monitor.sh (hardware, optional)",
+      "WF-OPS-02 offline workflow case: captures, decoded evidence, capability records, fictional client log and public self-review guide"
+    ],
+    "decision_practice": [
+      "scn-04-tool-choice"
+    ],
+    "evidence_focus": "Interface name, mode, channel and driver evidence from your own machine (`iw dev`, `iw phy`) when hardware is used.",
+    "retest_focus": "Repeat the interface check after a driver or mode change and record both outputs.",
+    "lessons": [
+      {
+        "id": "01-monitor-mode-and-toolchain",
+        "title": "Monitor mode, injection and the toolchain",
+        "kind": "concept"
+      },
+      {
+        "id": "02-owned-lab-readiness",
+        "title": "Owned-lab readiness and passive collection",
+        "kind": "lab"
+      },
+      {
+        "id": "03-capability-troubleshooting",
+        "title": "Capability troubleshooting and practice routes",
+        "kind": "lab"
+      }
+    ],
+    "status": "hardware",
+    "learningPathId": "wireless-pentesting",
+    "phaseName": "Become a Wireless Tester",
+    "lab_requirement_generic": "HYBRID"
+  },
+  {
+    "id": "05-wireless-recon",
+    "title": "Passive Reconnaissance and ESS Mapping",
+    "phase": 2,
+    "difficulty": "Beginner",
+    "estimated_hours": 3.5,
+    "prerequisites": [
+      "04-kali-wireless-setup"
+    ],
+    "lab_requirement": "SIMULATION",
+    "content_status": "expanded",
+    "skills": [
+      "recon",
+      "ess-mapping",
+      "hidden-ssid",
+      "pnl"
+    ],
+    "description": "Build a scoped BSS/client inventory, distinguish owner records from observations and plan coverage without claiming that missing traffic proves absence.",
+    "objectives": [
+      "Produce an AP inventory (BSSID, SSID, channel, band, security, PMF, WPS) from a capture",
+      "Explain why hiding an SSID is not a security control and show the frame that reveals it",
+      "Reconstruct observed probes and association; distinguish locally administered addresses from proven device randomization",
+      "Treat similar names and IE fingerprints as investigation leads, not authenticated ownership",
+      "Document channel/time coverage, scope exclusions and uncertainty alongside every inventory"
+    ],
+    "artifacts": [
+      "labs: recon-lab.pcapng, methodology.pcapng",
+      "WF-OPS-02 offline workflow case: captures, decoded evidence, capability records, fictional client log and public self-review guide"
+    ],
+    "decision_practice": [
+      "scn-05-hidden-ssid",
+      "scn-05-clone-or-ess"
+    ],
+    "evidence_focus": "AP inventory table + frame numbers for every claim; capture SHA-256.",
+    "retest_focus": "Compare equivalent authorized collection windows and owner configuration; absence from one capture does not prove removal.",
+    "lessons": [
+      {
+        "id": "01-passive-recon-workflow",
+        "title": "Passive reconnaissance workflow (lab)",
+        "kind": "lab"
+      },
+      {
+        "id": "02-coverage-and-inventory",
+        "title": "Coverage planning and scoped inventory",
+        "kind": "lab"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "wireless-pentesting",
+    "phaseName": "Become a Wireless Tester",
+    "lab_requirement_generic": "SIMULATION"
+  },
+  {
+    "id": "06-traffic-analysis",
+    "title": "Traffic Analysis: From Capture to Evidence",
+    "phase": 2,
+    "difficulty": "Intermediate",
+    "estimated_hours": 3.5,
+    "prerequisites": [
+      "05-wireless-recon"
+    ],
+    "lab_requirement": "SIMULATION",
+    "content_status": "expanded",
+    "skills": [
+      "wireshark",
+      "tshark",
+      "evidence",
+      "eapol"
+    ],
+    "description": "Filter, isolate and extract the exact frames that prove a finding \u2014 the core skill behind every later technical decision.",
+    "objectives": [
+      "Write display filters that target management subtypes, EAPOL/EAP, RADIUS and BSSID/SSID",
+      "Isolate one conversation and reconstruct the association + 4-way handshake with frame numbers",
+      "Recognise what is and is not visible on the air (encrypted payload vs. metadata)",
+      "Package evidence: capture hash, filter, frame list, and the claim each frame supports",
+      "Normalize a fictional endpoint clock with an explicit offset and uncertainty; preserve source-specific frame identity"
+    ],
+    "artifacts": [
+      "labs: traffic-analysis.pcapng, methodology.pcapng",
+      "WF-OPS-02 offline workflow case: captures, decoded evidence, capability records, fictional client log and public self-review guide"
+    ],
+    "decision_practice": [
+      "scn-06-which-frames",
+      "scn-06-encrypted-or-not"
+    ],
+    "evidence_focus": "Source hashes, frame/event IDs, reproducible filters, original and normalized clocks, uncertainty, and explicit NOT TESTED outcomes.",
+    "retest_focus": "Same filter re-run on the post-fix capture; the delta is the retest evidence.",
+    "lessons": [
+      {
+        "id": "01-evidence-workflow",
+        "title": "From capture to evidence (lab)",
+        "kind": "lab"
+      },
+      {
+        "id": "02-timeline-and-evidence-handoff",
+        "title": "Timeline correlation and evidence handoff",
+        "kind": "lab"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "wireless-pentesting",
+    "phaseName": "Become a Wireless Tester",
+    "lab_requirement_generic": "SIMULATION"
+  },
+  {
+    "id": "07-wep-legacy",
+    "title": "WEP: Why the Design Fails",
+    "phase": 3,
+    "difficulty": "Intermediate",
+    "estimated_hours": 1.5,
+    "prerequisites": [
+      "06-traffic-analysis"
+    ],
+    "lab_requirement": "SIMULATION",
+    "content_status": "brief",
+    "skills": [
+      "wep",
+      "rc4",
+      "iv-reuse",
+      "legacy"
+    ],
+    "description": "RC4 with a 24-bit IV, CRC32 integrity and why key recovery is a matter of minutes \u2014 plus the migration path.",
+    "objectives": [
+      "Explain IV reuse and how FMS/KoreK/PTW recover the key from a capture",
+      "Explain why the ICV (CRC32) cannot detect modification",
+      "State the correct remediation: remove WEP, do not 'harden' it",
+      "Describe what evidence a WEP finding needs (frame counts, key recovery proof)"
+    ],
+    "artifacts": [
+      "labs: wep-legacy lab notes + generated capture guidance"
+    ],
+    "decision_practice": [
+      "scn-07-wep-report"
+    ],
+    "evidence_focus": "IV/frame counts, the recovered key *in the lab only*, and the tool output with parameters.",
+    "retest_focus": "Post-fix capture shows no WEP BSS and the network no longer accepts WEP association.",
+    "lessons": [
+      {
+        "id": "01-wep-design-failure",
+        "title": "WEP: why the design fails",
+        "kind": "concept"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "wireless-pentesting",
+    "phaseName": "Authentication & Cryptographic Security",
+    "lab_requirement_generic": "SIMULATION"
+  },
+  {
+    "id": "08-wpa-wpa2",
+    "title": "WPA2: RSN, Handshakes and Offline Audits",
+    "phase": 3,
+    "difficulty": "Intermediate",
+    "estimated_hours": 7.0,
+    "prerequisites": [
+      "07-wep-legacy"
+    ],
+    "lab_requirement": "SIMULATION",
+    "content_status": "expanded",
+    "skills": [
+      "wpa2",
+      "ccmp",
+      "4-way-handshake",
+      "pmf",
+      "offline-audit",
+      "pmkid",
+      "hashcat",
+      "wordlist"
+    ],
+    "description": "Understand RSN key setup, read the four-way handshake, then verify only authorized PSK/PMKID fixtures offline.",
+    "objectives": [
+      "Derive PMK/PTK and explain each field the PTK is bound to",
+      "Identify M1\u2013M4 in a capture and say what each message proves",
+      "Explain why capturing a handshake does not mean the network is compromised",
+      "Read RSN capabilities and set/verify PMF (MFPC vs MFPR)",
+      "Convert a capture with hcxpcapngtool and run hashcat mode 22000 (unified PMKID + EAPOL)",
+      "Compare PMKID collection without a full 4-way handshake (requirements, completeness, station/AP behavior)",
+      "Interpret a crack: what access does the key actually grant?",
+      "Write the finding with defensible severity derived from impact, not from the technique name",
+      "Report a bounded candidate match or non-recovery without claiming strength or live access"
+    ],
+    "artifacts": [
+      "labs: wpa2-handshake.pcapng (two clients, one complete exchange)",
+      "labs: wpa2-handshake.pcapng, pmkid.pcapng, wordlists/wififorge-lab-psk.txt",
+      "WF-AUTH-03: bounded local PMKID checker, guided/independent records, policy captures and public self-review"
+    ],
+    "decision_practice": [
+      "scn-08-handshake-completeness",
+      "scn-08-psk-compromise",
+      "scn-09-pmkid-vs-handshake",
+      "scn-09-cracked-not-owned"
+    ],
+    "evidence_focus": "The handshake's frame numbers, nonces (first/last bytes are enough), capture hash, and the wordlist/params used.",
+    "retest_focus": "After a PSK change, the old capture must no longer crack and the new one must.",
+    "lessons": [
+      {
+        "id": "01-rsn-key-hierarchy",
+        "title": "RSN and the key hierarchy",
+        "kind": "concept"
+      },
+      {
+        "id": "02-four-way-handshake-lab",
+        "title": "Reading the 4-way handshake (lab)",
+        "kind": "lab"
+      },
+      {
+        "id": "03-handshake-decision-clinic",
+        "title": "Handshake evidence: guided and independent decision",
+        "kind": "lab"
+      },
+      {
+        "id": "02-pmkid-clientless-lab",
+        "title": "PMKID: reduced-handshake capture (lab)",
+        "kind": "lab"
+      },
+      {
+        "id": "01-offline-audit-lab",
+        "title": "Offline audit workflow (lab)",
+        "kind": "lab"
+      },
+      {
+        "id": "04-bounded-candidate-audit",
+        "title": "Bounded candidate audit and non-recovery",
+        "kind": "lab"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "wireless-pentesting",
+    "phaseName": "Authentication & Cryptographic Security",
+    "lab_requirement_generic": "SIMULATION"
+  },
+  {
+    "id": "10-wps",
+    "title": "WPS: The 8-Digit PIN and Its Defences",
+    "phase": 3,
+    "difficulty": "Intermediate",
+    "estimated_hours": 3.0,
+    "prerequisites": [
+      "08-wpa-wpa2"
+    ],
+    "lab_requirement": "HYBRID",
+    "content_status": "expanded",
+    "skills": [
+      "wps",
+      "pin",
+      "lockout",
+      "pixie-dust"
+    ],
+    "description": "WPS architecture, the 11 000-guess PIN flaw, registrar/setup-locked states, and why disabling WPS beats tuning lockout.",
+    "objectives": [
+      "Decode the WPS IE: version, config methods, device password ID, setup-locked, selected registrar",
+      "Explain the 10^7 \u2192 ~11 000 reduction and what defeats it (lockout, M4/M6 validation, WPS 2.0)",
+      "Explain why 'WPS enabled' is a configuration finding while the PIN attack itself needs an authorization decision",
+      "Remediate: disable WPS, or if it must exist, enforce lockout and use PBC with a monitored window",
+      "Apply attempt/window/lockout stop rules and distinguish advertised state from measured enforcement"
+    ],
+    "artifacts": [
+      "labs: wps-beacon.pcapng (unlocked vs. setup-locked BSS)",
+      "WF-AUTH-03: bounded local PMKID checker, guided/independent records, policy captures and public self-review"
+    ],
+    "decision_practice": [
+      "scn-10-wps-locked"
+    ],
+    "evidence_focus": "Beacon frame number, decoded WPS attributes, and AP model/firmware if known.",
+    "retest_focus": "Post-fix beacon shows no WPS IE (or setup-locked + lockout logs) and a new enumeration attempt fails.",
+    "lessons": [
+      {
+        "id": "01-wps-architecture-and-pin",
+        "title": "WPS architecture and the PIN flaw",
+        "kind": "concept"
+      },
+      {
+        "id": "02-applicability-lockout-and-budget",
+        "title": "WPS applicability, lockout and test budgets",
+        "kind": "lab"
+      }
+    ],
+    "status": "hardware",
+    "learningPathId": "wireless-pentesting",
+    "phaseName": "Authentication & Cryptographic Security",
+    "lab_requirement_generic": "HYBRID"
+  },
+  {
+    "id": "11-wpa3",
+    "title": "WPA3: SAE, Transition Mode and OWE",
+    "phase": 3,
+    "difficulty": "Advanced",
+    "estimated_hours": 4.0,
+    "prerequisites": [
+      "10-wps"
+    ],
+    "lab_requirement": "SIMULATION",
+    "content_status": "expanded",
+    "skills": [
+      "wpa3",
+      "sae",
+      "dragonfly",
+      "owe",
+      "transition"
+    ],
+    "description": "SAE (Dragonfly) handshake properties, forward secrecy, transition-mode downgrade, PMF requirements and OWE.",
+    "objectives": [
+      "Explain why the SAE commit/confirm exchange is not offline-crackable",
+      "Detect transition mode from the RSNE (AKM list) and describe the downgrade path",
+      "Explain the PMF requirement and OWE's role for open networks",
+      "Judge whether a WPA3 deployment is genuinely WPA3-only",
+      "Separate advertisement, negotiated policy and attacker-induced downgrade; propose secure negative controls"
+    ],
+    "artifacts": [
+      "labs: wpa3-only.pcapng, wpa3-transition.pcapng",
+      "WF-AUTH-03: bounded local PMKID checker, guided/independent records, policy captures and public self-review"
+    ],
+    "decision_practice": [
+      "scn-11-transition-downgrade",
+      "scn-11-owe"
+    ],
+    "evidence_focus": "RSNE bytes and frame numbers for the AKM list; a client-side association trace showing which AKM was used.",
+    "retest_focus": "Re-enumerate the BSS after forcing WPA3-only and verify the PSK AKM is gone.",
+    "lessons": [
+      {
+        "id": "01-sae-and-transition-mode",
+        "title": "SAE, transition mode and OWE",
+        "kind": "concept"
+      },
+      {
+        "id": "02-policy-negotiation-and-negative-controls",
+        "title": "Policy, negotiation and negative controls",
+        "kind": "lab"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "wireless-pentesting",
+    "phaseName": "Authentication & Cryptographic Security",
+    "lab_requirement_generic": "SIMULATION"
+  },
+  {
+    "id": "12-deauth-disassoc",
+    "title": "Management Frames, PMF and Look-Alike APs",
+    "phase": 4,
+    "difficulty": "Advanced",
+    "estimated_hours": 7.5,
+    "prerequisites": [
+      "11-wpa3"
+    ],
+    "lab_requirement": "RF_REQUIRED",
+    "content_status": "expanded",
+    "skills": [
+      "pmf",
+      "deauth",
+      "disassoc",
+      "availability",
+      "sa-query",
+      "rogue-ap",
+      "evil-twin",
+      "wids",
+      "client-behaviour"
+    ],
+    "description": "Inspect management-frame protection and same-SSID infrastructure; distinguish frame observations from delivery, ownership and client outcomes.",
+    "objectives": [
+      "Explain why unprotected deauth/disassoc frames can be spoofed and what that achieves",
+      "Read MFPC/MFPR from the RSNE and predict whether spoofing will work",
+      "Interpret reason codes (1, 7, 8, 15) and SA Query behaviour",
+      "Assess availability impact as a finding (and why it is often the weakest but noisiest test)",
+      "Compare IE fingerprints, BSSID vendor/OUI, channel, beacon interval and signal to identify a twin",
+      "Explain client behaviour that makes evil twin practical (auto-connect, PNL, missing server validation)",
+      "Describe detection controls (WIDS/WIPS, authorised-BSSID lists, RF triangulation) and their limits",
+      "Design the test safely: which SSIDs are authorised, and what must never be captured from real clients",
+      "Separate packet observations, model outcomes and real execution; design bounded positive and secure negative controls"
+    ],
+    "artifacts": [
+      "labs: deauth.pcapng (PMF-capable vs PMF-required BSS), wpa3-only.pcapng",
+      "labs: rogue-ap.pcapng",
+      "WF-TRUST-04: packet scenes, fictional ownership/client/policy records, worksheet and public rubric"
+    ],
+    "decision_practice": [
+      "scn-12-pmf-value",
+      "scn-12-evidence-for-dos",
+      "scn-13-twin-detection",
+      "scn-13-enterprise-rogue"
+    ],
+    "evidence_focus": "Frame numbers, reason codes, counts and timing; plus client-side evidence (association loss) that the frames had effect.",
+    "retest_focus": "With ieee80211w=2 the same spoof no longer disconnects the client \u2014 capture both states.",
+    "lessons": [
+      {
+        "id": "01-pmf-and-availability",
+        "title": "PMF and availability testing",
+        "kind": "concept"
+      },
+      {
+        "id": "01-rogue-infrastructure-analysis",
+        "title": "Rogue infrastructure analysis (lab)",
+        "kind": "lab"
+      },
+      {
+        "id": "02-lookalike-decision-clinic",
+        "title": "Look-alike and PMF evidence clinic",
+        "kind": "lab"
+      },
+      {
+        "id": "03-management-effects-and-controls",
+        "title": "Management-frame effects and defensive controls",
+        "kind": "lab"
+      },
+      {
+        "id": "04-client-trust-and-attribution",
+        "title": "Client trust and infrastructure attribution",
+        "kind": "lab"
+      }
+    ],
+    "status": "hardware",
+    "learningPathId": "wireless-pentesting",
+    "phaseName": "Wireless Attack Scenarios",
+    "lab_requirement_generic": "REAL"
+  },
+  {
+    "id": "14-captive-portals",
+    "title": "Captive Portals, Guest Networks and Isolation",
+    "phase": 4,
+    "difficulty": "Advanced",
+    "estimated_hours": 3.0,
+    "prerequisites": [
+      "12-deauth-disassoc"
+    ],
+    "lab_requirement": "HYBRID",
+    "content_status": "expanded",
+    "skills": [
+      "captive-portal",
+      "guest",
+      "client-isolation",
+      "segmentation"
+    ],
+    "description": "Portal architecture, session handling weaknesses, and client isolation as a control rather than a checkbox.",
+    "objectives": [
+      "Trace the portal flow (DHCP \u2192 DNS/HTTP redirect \u2192 portal \u2192 session) from a capture",
+      "Identify credential exposure when the portal is served over cleartext HTTP",
+      "Test whether client isolation is enforced, and explain the difference between isolation and segmentation",
+      "Remediate with HTTPS portal, OWE/WPA2-Guest, per-client isolation and VLAN + ACL enforcement",
+      "Separate packet observations, model outcomes and real execution; design bounded positive and secure negative controls"
+    ],
+    "artifacts": [
+      "labs: captive-portal.pcapng",
+      "WF-TRUST-04: packet scenes, fictional ownership/client/policy records, worksheet and public rubric"
+    ],
+    "decision_practice": [
+      "scn-14-isolation-vs-segmentation"
+    ],
+    "evidence_focus": "HTTP request/response frame numbers, session token, and an ARP/ICMP test showing whether peers are reachable.",
+    "retest_focus": "Isolation enabled: the repeat test shows no client-to-client reachability; capture both states.",
+    "lessons": [
+      {
+        "id": "01-portal-and-isolation",
+        "title": "Portal testing and client isolation (lab)",
+        "kind": "lab"
+      },
+      {
+        "id": "02-session-and-boundary-evidence",
+        "title": "Portal sessions and guest-boundary evidence",
+        "kind": "lab"
+      }
+    ],
+    "status": "hardware",
+    "learningPathId": "wireless-pentesting",
+    "phaseName": "Wireless Attack Scenarios",
+    "lab_requirement_generic": "HYBRID"
+  },
+  {
+    "id": "15-enterprise-fundamentals",
+    "title": "Enterprise Wi-Fi: 802.1X, EAP and RADIUS",
+    "phase": 5,
+    "difficulty": "Advanced",
+    "estimated_hours": 12.5,
+    "prerequisites": [
+      "14-captive-portals"
+    ],
+    "lab_requirement": "SIMULATION",
+    "content_status": "expanded",
+    "skills": [
+      "802.1x",
+      "radius",
+      "supplicant",
+      "authenticator",
+      "eap",
+      "peap",
+      "eap-tls",
+      "eap-ttls",
+      "mschapv2",
+      "shared-secret",
+      "message-authenticator",
+      "dynamic-vlan"
+    ],
+    "description": "Follow the client/AP/AAA trust boundaries from EAP method selection to RADIUS attributes and applied policy; separate the independent synthetic fixtures.",
+    "objectives": [
+      "Draw the 802.1X architecture and name the role of supplicant, authenticator and authentication server",
+      "Explain how the MSK becomes the PMK and why the 4-way handshake still happens after EAP succeeds",
+      "List the attributes RADIUS returns (VLAN, ACL, session timeout) and the risks of trusting them",
+      "Identify the testing decision points for each enterprise component",
+      "Identify the EAP method from the outer exchange and explain what is inside the tunnel",
+      "Explain MS-CHAPv2 challenge/response and why it is crackable when the server's certificate is not validated",
+      "Compare EAP-TLS (mutual certificates) with password-based inner methods",
+      "Advise on client configuration: ca_cert, domain_suffix_match/subject_match, and disabling insecure methods server-side",
+      "Decode an Access-Request/Challenge/Accept exchange and name the attributes that matter",
+      "Verify a Message-Authenticator and a Response Authenticator from a capture",
+      "Explain why the shared secret is a high-value credential and how it is attacked (offline guessing against captured authenticators)",
+      "Harden: per-AP secrets, require_message_authenticator, source-IP restriction, RadSec, and monitoring",
+      "Validate local certificate chain, expected identity, time and purpose without claiming a live EAP outcome",
+      "Correlate RADIUS requests/replies and distinguish returned policy from applied forwarding"
+    ],
+    "artifacts": [
+      "labs: enterprise.pcapng, radius.pcapng",
+      "labs: eap.pcapng, radius.pcapng (MS-CHAPv2 material)",
+      "labs: radius.pcapng (including a rogue NAS whose Message-Authenticator fails)",
+      "WF-ENT-05: public certificate verifier, independent trust failures, AAA packet pairs and policy models"
+    ],
+    "decision_practice": [
+      "scn-15-which-component",
+      "scn-15-msk-to-pmk",
+      "scn-16-method-identification",
+      "scn-16-cert-validation",
+      "scn-17-secret-rotation",
+      "scn-17-radius-log-reading"
+    ],
+    "evidence_focus": "EAP exchange frames, RADIUS code + attributes, and the resulting 4-way handshake \u2014 in one timeline.",
+    "retest_focus": "After remediation, re-capture and show the client can no longer authenticate with the old configuration (e.g. missing certificate validation).",
+    "lessons": [
+      {
+        "id": "01-architecture-and-roles",
+        "title": "802.1X architecture and roles",
+        "kind": "concept"
+      },
+      {
+        "id": "01-methods-and-credential-exposure",
+        "title": "EAP methods and credential exposure",
+        "kind": "concept"
+      },
+      {
+        "id": "04-method-selection-and-trust-boundaries",
+        "title": "Method selection and trust boundaries",
+        "kind": "lab"
+      },
+      {
+        "id": "05-certificate-identity-validation",
+        "title": "Certificate chain, name and purpose validation",
+        "kind": "lab"
+      },
+      {
+        "id": "02-cert-validation-and-lab",
+        "title": "Certificate validation and the PEAP lab",
+        "kind": "lab"
+      },
+      {
+        "id": "01-radius-mechanics-and-verification",
+        "title": "RADIUS mechanics and verifiable integrity",
+        "kind": "concept"
+      },
+      {
+        "id": "02-hardening-and-monitoring",
+        "title": "RADIUS hardening, RadSec and monitoring",
+        "kind": "concept"
+      },
+      {
+        "id": "06-radius-to-applied-policy",
+        "title": "RADIUS correlation and applied policy",
+        "kind": "lab"
+      },
+      {
+        "id": "02-enterprise-testing-lab",
+        "title": "Testing the enterprise path (lab)",
+        "kind": "lab"
+      },
+      {
+        "id": "03-enterprise-decision-clinic",
+        "title": "Enterprise trust-boundary evidence clinic",
+        "kind": "lab"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "wireless-pentesting",
+    "phaseName": "Enterprise Wi-Fi",
+    "lab_requirement_generic": "SIMULATION"
+  },
+  {
+    "id": "18-corporate-attacks",
+    "title": "Post-Association Boundaries and Segmentation",
+    "phase": 6,
+    "difficulty": "Advanced",
+    "estimated_hours": 7.0,
+    "prerequisites": [
+      "15-enterprise-fundamentals"
+    ],
+    "lab_requirement": "HYBRID",
+    "content_status": "expanded",
+    "skills": [
+      "kill-chain",
+      "segmentation",
+      "isolation",
+      "detection"
+    ],
+    "description": "Map intended guest, corporate and management access; distinguish policy decisions, observed reachability and supported impact with scoped controls and retest plans.",
+    "objectives": [
+      "Map exact source, service, direction and protocol to authorization and intended policy",
+      "Use route, placement, enforcement and application evidence without inferring VLANs from addresses",
+      "Evaluate first-match policy models, secure denials, positive controls and inconclusive observations",
+      "Propose bounded comparable retests and report supported impact without inventing an attack chain"
+    ],
+    "artifacts": [
+      "labs: corporate-attacks.pcapng, methodology.pcapng",
+      "WF-BOUND-06: two-client policy model, exact flow scope, local calculator, packet example and public self-review"
+    ],
+    "decision_practice": [
+      "scn-18-chain-order",
+      "scn-18-segmentation-evidence"
+    ],
+    "evidence_focus": "Source-specific packet facts and separate flow/rule/model-observation records, with health/route controls and explicit untested live outcomes.",
+    "retest_focus": "Compare exact approved paths after a specific change; preserve legitimate services and leave missing evidence inconclusive.",
+    "lessons": [
+      {
+        "id": "01-kill-chain-and-segmentation",
+        "title": "Separate an attack narrative from segmentation evidence",
+        "kind": "lab"
+      },
+      {
+        "id": "02-detection-and-response",
+        "title": "Detection, containment and response",
+        "kind": "concept"
+      },
+      {
+        "id": "03-boundary-map-and-test-scope",
+        "title": "Boundary mapping and exact test scope",
+        "kind": "lab"
+      },
+      {
+        "id": "04-policy-order-and-evidence-controls",
+        "title": "Policy order, health and evidence controls",
+        "kind": "lab"
+      },
+      {
+        "id": "05-retest-and-supported-impact",
+        "title": "Comparable retests and supported impact",
+        "kind": "lab"
+      }
+    ],
+    "status": "hardware",
+    "learningPathId": "wireless-pentesting",
+    "phaseName": "Post-Association Boundaries",
+    "lab_requirement_generic": "HYBRID"
+  },
+  {
+    "id": "20-final-assessment",
+    "title": "Wireless Assessment: Scope and Independent Case",
+    "phase": 7,
+    "difficulty": "Professional",
+    "estimated_hours": 9.0,
+    "prerequisites": [
+      "18-corporate-attacks"
+    ],
+    "lab_requirement": "SIMULATION",
+    "content_status": "authored",
+    "skills": [
+      "assessment",
+      "professional",
+      "methodology",
+      "roe",
+      "evidence"
+    ],
+    "description": "Plan a bounded assessment, analyze synthetic C-20 evidence and prepare a source-cited client handoff. Public self-review is not trusted grading; Northwind remains planning-only.",
+    "objectives": [
+      "Independently inventory C-20 frames, verify fixture handshake inputs and compare staged policy advertisements",
+      "Defend each finding against the evidence and remove anything you cannot reproduce",
+      "Identify what you did *not* test and why (scope, safety, or environment limits)",
+      "Turn a scope document into a test plan with explicit in/out-of-scope artefacts",
+      "Apply the evidence standard: reproducibility, integrity (hash), and traceability to a claim",
+      "Distinguish tested capture claims from hypotheses and state the next authorized validation test",
+      "Preserve an independent attempt and distinguish supported claims, non-findings and untested outcomes",
+      "Prepare a concise client handoff, evidence-handling record and authorized retest proposal without claiming live closure"
+    ],
+    "artifacts": [
+      "capstone/capstone-baseline.pcapng + capstone/capstone-retest.pcapng (Case C-20; synthetic)",
+      "labs: methodology.pcapng (separate synthetic exercise)",
+      "ENG-01: optional written planning scenario; Northwind evidence not supplied"
+    ],
+    "decision_practice": [
+      "scn-20-triage",
+      "scn-20-no-finding",
+      "scn-19-severity-context",
+      "scn-19-retest-fail"
+    ],
+    "evidence_focus": "For each claim cite capture hash, frame and filter; separate observed policy from client behavior and unknown ownership.",
+    "retest_focus": "The staged beacon shows an advertised-policy change only; live client checks are NOT TESTED.",
+    "lessons": [
+      {
+        "id": "01-methodology-and-roe",
+        "title": "Methodology, scope and rules of engagement",
+        "kind": "concept"
+      },
+      {
+        "id": "02-independent-capture-case",
+        "title": "Independent capture case C-20",
+        "kind": "professional"
+      },
+      {
+        "id": "03-independent-attempt-and-decision-log",
+        "title": "Independent attempt and decision log",
+        "kind": "professional"
+      },
+      {
+        "id": "04-findings-non-findings-and-review",
+        "title": "Findings, non-findings and review",
+        "kind": "professional"
+      },
+      {
+        "id": "05-client-handoff-and-retest-closure",
+        "title": "Client handoff and retest closure",
+        "kind": "professional"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "wireless-pentesting",
+    "phaseName": "Integrated Assessment",
+    "lab_requirement_generic": "SIMULATION"
+  },
+  {
+    "id": "android-01-platform",
+    "title": "Android Architecture & Security Model",
+    "phase": 1,
+    "phaseName": "Android Foundations",
+    "difficulty": "Beginner",
+    "estimated_hours": 4.5,
+    "prerequisites": [],
+    "lab_requirement": "OFFLINE TEXT",
+    "content_status": "authored",
+    "skills": [
+      "android-architecture",
+      "linux-sandbox",
+      "selinux-mac",
+      "binder-ipc",
+      "android-permissions",
+      "apk-signing",
+      "sdk-compatibility"
+    ],
+    "description": "Master Linux kernel UID isolation, Zygote process creation, SELinux policies, Binder IPC transactions, and version-dependent security mitigations across Android 7 to 15.",
+    "objectives": [
+      "Analyze Linux kernel process isolation, UID/GID assignment, and SELinux Mandatory Access Control domains.",
+      "Evaluate Binder IPC transactions, onTransact unmarshaling, caller UID verification, and permission protection levels.",
+      "Audit APK signature schemes (v1 through v4), key rotation lineages, and Android Verified Boot (AVB 2.0).",
+      "Map target SDK levels and Android OS version behavior changes to identify applicable platform security mitigations."
+    ],
+    "artifacts": [
+      "android-foundations/AndroidManifest.xml",
+      "android-foundations/LinkActivity.kt",
+      "android-foundations/NoteStore.kt",
+      "android-foundations/SHA256SUMS"
+    ],
+    "decision_practice": [],
+    "evidence_focus": "Cite the exact excerpt and hash; distinguish static hypothesis from runtime behavior.",
+    "retest_focus": "An installed, authorized build and controlled test accounts are required for a dynamic conclusion.",
+    "lessons": [
+      {
+        "id": "01-architecture-sandbox-and-trust-boundaries",
+        "title": "Android Architecture, Sandbox & Trust Boundaries",
+        "kind": "concept"
+      },
+      {
+        "id": "02-components-binder-and-permissions",
+        "title": "Components, Binder/IPC & Permissions",
+        "kind": "concept"
+      },
+      {
+        "id": "03-app-signing-and-platform-security",
+        "title": "App Signing, Installation & Platform Security",
+        "kind": "concept"
+      },
+      {
+        "id": "04-versions-sdk-levels-and-testing-context",
+        "title": "Android Versions, SDK Levels & Testing Context",
+        "kind": "concept"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "android-pentesting",
+    "lab_requirement_generic": "OFFLINE TEXT"
+  },
+  {
+    "id": "android-02-workstation",
+    "title": "Android Pentesting Setup",
+    "phase": 1,
+    "phaseName": "Android Foundations",
+    "difficulty": "Beginner",
+    "estimated_hours": 3.5,
+    "prerequisites": [
+      "android-01-platform"
+    ],
+    "lab_requirement": "OFFLINE TEXT",
+    "content_status": "authored",
+    "skills": [
+      "adb-workflows",
+      "emulator-configuration",
+      "burp-proxy-setup",
+      "system-ca-injection",
+      "logcat-analysis",
+      "evidence-preservation"
+    ],
+    "description": "Configure an authorized mobile security workstation with ADB, AVD userdebug emulators, writable system partitions, proxy certificate injection, and forensic evidence collection.",
+    "objectives": [
+      "Operate ADB client-server-daemon workflows, shell commands, and package management utilities.",
+      "Deploy Burp Suite and Mitmproxy root CA certificates into the Android system trust store with correct hash naming.",
+      "Filter real-time Logcat memory buffers to identify credential leakage and monitor runtime application behavior.",
+      "Execute reproducible evidence capture workflows with target build provenance and clean snapshot management."
+    ],
+    "artifacts": [
+      "android-foundations/AndroidManifest.xml",
+      "android-foundations/LinkActivity.kt",
+      "android-foundations/NoteStore.kt",
+      "android-foundations/SHA256SUMS"
+    ],
+    "decision_practice": [],
+    "evidence_focus": "Cite the exact excerpt and hash; distinguish static hypothesis from runtime behavior.",
+    "retest_focus": "An installed, authorized build and controlled test accounts are required for a dynamic conclusion.",
+    "lessons": [
+      {
+        "id": "01-workstation-sdk-adb-and-emulator",
+        "title": "Android Pentesting Workstation: SDK, ADB & Emulator",
+        "kind": "concept"
+      },
+      {
+        "id": "02-proxying-logcat-filesystem-and-accounts",
+        "title": "Proxying, Logcat, Filesystem & Test Accounts",
+        "kind": "concept"
+      },
+      {
+        "id": "03-device-preparation-root-and-evidence",
+        "title": "Device Preparation, Root/Non-Root, Snapshots & Evidence",
+        "kind": "concept"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "android-pentesting",
+    "lab_requirement_generic": "OFFLINE TEXT"
+  },
+  {
+    "id": "android-03-apk-triage",
+    "title": "APK/AAB Reconnaissance & Static Triage",
+    "phase": 2,
+    "phaseName": "Android Foundations",
+    "difficulty": "Beginner",
+    "estimated_hours": 4.5,
+    "prerequisites": [
+      "android-02-workstation"
+    ],
+    "lab_requirement": "OFFLINE TEXT",
+    "content_status": "authored",
+    "skills": [
+      "apk-anatomy",
+      "aab-bundles",
+      "manifest-auditing",
+      "dex-multidex",
+      "resource-extraction",
+      "jni-native-libraries",
+      "jadx-decompilation",
+      "apktool-smali",
+      "source-to-sink"
+    ],
+    "description": "Deconstruct APK and AAB container structures, audit binary manifests, inspect Multidex bytecode and native libraries, and execute rigorous source-to-sink analysis across paired vulnerable and fixed codebases.",
+    "objectives": [
+      "Deconstruct APK and AAB container architectures, binary XML layouts, and manifest security directives.",
+      "Analyze Multidex bytecode files, resource tables, uncompiled assets, and JNI native shared libraries.",
+      "Master static decompilation workflows with JADX, apktool, apkanalyzer, and MobSF.",
+      "Construct application attack-surface matrices and execute source-to-sink analysis comparing paired vulnerable and fixed builds."
+    ],
+    "artifacts": [
+      "android-foundations/AndroidManifest.xml",
+      "android-foundations/LinkActivity.kt",
+      "android-foundations/NoteStore.kt",
+      "android-foundations/SHA256SUMS",
+      "android-demos/notes-boundary-source.zip (original training project; no compiled APK)"
+    ],
+    "decision_practice": [],
+    "evidence_focus": "Cite the exact excerpt and hash; distinguish static hypothesis from runtime behavior.",
+    "retest_focus": "An installed, authorized build and controlled test accounts are required for a dynamic conclusion.",
+    "lessons": [
+      {
+        "id": "01-apk-aab-anatomy-manifest-and-permissions",
+        "title": "APK/AAB Anatomy, Manifest & Permissions",
+        "kind": "concept"
+      },
+      {
+        "id": "02-dex-resources-assets-and-native-libraries",
+        "title": "DEX, Resources, Assets & Native Libraries",
+        "kind": "concept"
+      },
+      {
+        "id": "03-apk-analysis-tools-and-workflows",
+        "title": "APK Analysis with JADX, apktool, apkanalyzer & MobSF",
+        "kind": "concept"
+      },
+      {
+        "id": "04-attack-surface-mapping-and-source-to-sink",
+        "title": "Attack-Surface Mapping & Source-to-Sink Analysis",
+        "kind": "concept"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "android-pentesting",
+    "lab_requirement_generic": "OFFLINE TEXT"
+  },
+  {
+    "id": "android-04-components",
+    "title": "Components, IPC & Intent Security",
+    "phase": 3,
+    "phaseName": "Platform",
+    "difficulty": "Intermediate",
+    "estimated_hours": 4.5,
+    "prerequisites": [
+      "android-03-apk-triage"
+    ],
+    "lab_requirement": "SIMULATION",
+    "content_status": "authored",
+    "skills": [
+      "component-security",
+      "intent-filters",
+      "caller-verification",
+      "binder-ipc",
+      "content-providers",
+      "broadcast-security",
+      "pending-intents",
+      "uri-grants"
+    ],
+    "description": "Audit exported Activities, Services, Receivers, and Content Providers. Investigate Binder IPC caller verification, Confused Deputy vulnerabilities, PendingIntent mutability hijacking, and temporary URI grant leakage.",
+    "objectives": [
+      "Differentiate explicit vs. implicit intent resolution and evaluate manifest export directives across Android versions.",
+      "Analyze intent extras, untrusted data URIs, and component caller identity verification pitfalls.",
+      "Audit Services, Broadcast Receivers, and Content Providers for injection, snooping, and path traversal vulnerabilities.",
+      "Prevent Confused Deputy privilege escalation via PendingIntent hijacking and temporary URI grant leakage."
+    ],
+    "artifacts": [
+      "android-cases/cases.json (original synthetic snippets)",
+      "android-demos/notes-boundary-source.zip (buildable source only; scope limited to mock notes)"
+    ],
+    "decision_practice": [],
+    "evidence_focus": "Cite the exact source and SHA-256; separate static reasoning from independently observed device behavior.",
+    "retest_focus": "A fixed source excerpt is not a retest; run the exact build on an owned emulator with positive and negative controls.",
+    "lessons": [
+      {
+        "id": "01-exported-components-and-intent-filters",
+        "title": "Exported Components & Intent Filters",
+        "kind": "concept"
+      },
+      {
+        "id": "02-intent-extra-uri-handling-and-authorization",
+        "title": "Intent/Extra/URI Handling & Component Authorization",
+        "kind": "concept"
+      },
+      {
+        "id": "03-services-broadcast-receivers-and-content-providers",
+        "title": "Services, Broadcast Receivers & Content Providers",
+        "kind": "concept"
+      },
+      {
+        "id": "04-pendingintent-uri-grants-and-ipc-abuse",
+        "title": "PendingIntent, URI Grants & IPC Abuse",
+        "kind": "concept"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "android-pentesting",
+    "lab_requirement_generic": "SIMULATION"
+  },
+  {
+    "id": "android-05-links",
+    "title": "Deep Links, App Links & Intent Hijacking",
+    "phase": 3,
+    "phaseName": "Platform",
+    "difficulty": "Intermediate",
+    "estimated_hours": 3.5,
+    "prerequisites": [
+      "android-04-components"
+    ],
+    "lab_requirement": "SIMULATION",
+    "content_status": "authored",
+    "skills": [
+      "deep-links",
+      "app-links",
+      "assetlinks-verification",
+      "uri-parsing",
+      "open-redirects",
+      "intent-redirection",
+      "confused-deputy"
+    ],
+    "description": "Audit custom URI schemes and verified Android App Links. Discover domain verification bypasses, insecure host suffix matching, open redirects, and Confused Deputy Intent Redirection.",
+    "objectives": [
+      "Compare custom URI schemes against Android App Links and analyze Digital Asset Links domain verification.",
+      "Identify host parsing vulnerabilities, insecure suffix comparisons, and open redirects in mobile routers.",
+      "Mitigate Confused Deputy Intent Redirection and enforce strict component allowlists prior to launching internal intents."
+    ],
+    "artifacts": [
+      "android-cases/cases.json (original synthetic snippets)",
+      "android-demos/notes-boundary-source.zip (buildable source only; scope limited to mock notes)"
+    ],
+    "decision_practice": [],
+    "evidence_focus": "Cite the exact source and SHA-256; separate static reasoning from independently observed device behavior.",
+    "retest_focus": "A fixed source excerpt is not a retest; run the exact build on an owned emulator with positive and negative controls.",
+    "lessons": [
+      {
+        "id": "01-uri-schemes-intent-resolution-and-app-links",
+        "title": "URI Schemes, Intent Resolution & App Links",
+        "kind": "concept"
+      },
+      {
+        "id": "02-domain-verification-redirects-and-trust",
+        "title": "Domain Verification, Redirects & Trust Decisions",
+        "kind": "concept"
+      },
+      {
+        "id": "03-intent-redirection-fallbacks-and-defensive-validation",
+        "title": "Intent Redirection, Fallbacks & Defensive Validation",
+        "kind": "concept"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "android-pentesting",
+    "lab_requirement_generic": "SIMULATION"
+  },
+  {
+    "title": "Storage, Persistence, and Data Leakage",
+    "phase": 4,
+    "phaseName": "Phase 4: Data & Network Security",
+    "difficulty": "Intermediate",
+    "estimated_hours": 4.0,
+    "prerequisites": [
+      "android-05-links"
+    ],
+    "lab_requirement": "SIMULATION",
+    "content_status": "authored",
+    "skills": [
+      "android",
+      "static-analysis",
+      "evidence",
+      "masvs-storage",
+      "masvs-crypto",
+      "sqlite-forensics",
+      "keystore"
+    ],
+    "description": "Audit data storage mechanisms, backup extraction vectors, and sensitive data leakage channels across Android applications. Master EncryptedSharedPreferences, SQLite WAL forensics, system clipboard snooping, FLAG_SECURE controls, and Android Keystore hardware-backed cryptographic guarantees.",
+    "objectives": [
+      "Differentiate internal sandboxed storage from external shared storage and understand scoped storage boundaries introduced in modern Android releases.",
+      "Inspect and audit EncryptedSharedPreferences and room/SQLite databases for plaintext sensitive persistence and WAL log residual traces.",
+      "Identify and remediate secondary data leakage vectors including debug Logcat, system clipboard broadcasts, push notification payloads, and task switcher snapshots.",
+      "Analyze ADB backup configurations, implement comprehensive logout data wiping, and leverage Android Keystore StrongBox and biometric-bound CryptoObjects."
+    ],
+    "artifacts": [
+      "android-cases/cases.json (paired vulnerable and hardened storage implementations)",
+      "android-demos/notes-boundary-source.zip (comprehensive notes boundary demo project)"
+    ],
+    "decision_practice": [],
+    "evidence_focus": "Cite the exact source file, line numbers, and SHA-256 digest of extracted databases or logs; clearly separate static code patterns from verified runtime file-system artifacts.",
+    "retest_focus": "Validate both positive controls (active user credentials function correctly) and negative controls (logged-out state securely removes or destroys local cached credentials) on an owned test environment.",
+    "lessons": [
+      {
+        "id": "01-app-storage-preferences-files-sqlite-and-cache",
+        "title": "Internal vs External Storage, EncryptedSharedPreferences, SQLite & Cache",
+        "kind": "concept"
+      },
+      {
+        "id": "02-logs-clipboard-notifications-and-screenshots",
+        "title": "Data Leakage: Logs, System Clipboard, Notifications & FLAG_SECURE",
+        "kind": "lab"
+      },
+      {
+        "id": "03-backup-data-lifecycle-and-logout",
+        "title": "Android Backup Subsystem, Data Lifecycle & Incomplete Logout Auditing",
+        "kind": "concept"
+      },
+      {
+        "id": "04-keystore-keys-and-secure-data-handling",
+        "title": "Hardware Keystore, Biometric-Bound CryptoObjects & Secure Memory",
+        "kind": "lab"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "android-pentesting",
+    "lab_requirement_generic": "SIMULATION",
+    "id": "android-06-storage"
+  },
+  {
+    "title": "Network Security, TLS Validation, and Session Management",
+    "phase": 4,
+    "phaseName": "Phase 4: Data & Network Security",
+    "difficulty": "Intermediate",
+    "estimated_hours": 4.0,
+    "prerequisites": [
+      "android-06-storage"
+    ],
+    "lab_requirement": "SIMULATION",
+    "content_status": "authored",
+    "skills": [
+      "android",
+      "network-security",
+      "masvs-network",
+      "tls-verification",
+      "cert-pinning",
+      "proxying",
+      "oauth-pkce"
+    ],
+    "description": "Master Android network security architecture: inspect network_security_config.xml directives, analyze TrustManager certificate validation and HostnameVerifier implementations, evaluate SPKI certificate pinning resilience, configure interception proxies, and secure OAuth PKCE mobile session lifecycles.",
+    "objectives": [
+      "Analyze network_security_config.xml directives including cleartextTrafficPermitted, base-config CA trust boundaries, and debug-overrides.",
+      "Identify and exploit flawed custom X509TrustManager and HostnameVerifier implementations susceptible to Machine-in-the-Middle (MitM) attacks.",
+      "Evaluate SPKI certificate pinning implementations, backup pin architectures, and correctly distinguish diagnostic pinning bypasses from actual security vulnerabilities.",
+      "Configure TLS interception proxies on modern Android releases and enforce secure mobile API session management using OAuth 2.0 PKCE and ephemeral tokens."
+    ],
+    "artifacts": [
+      "android-cases/cases.json (network security configuration cases and pinning models)",
+      "android-demos/notes-boundary-source.zip (buildable source with network trust configurations)"
+    ],
+    "decision_practice": [],
+    "evidence_focus": "Record exact TLS handshake error logs, proxy intercept evidence, and static TrustManager/NSC declarations alongside target build identity.",
+    "retest_focus": "Verify with a four-quadrant test matrix: valid CA cert, expired cert, untrusted root CA, and mismatched hostname on an owned test server.",
+    "lessons": [
+      {
+        "id": "01-tls-network-security-config-and-cleartext",
+        "title": "Network Security Config, Cleartext Traffic Policies & Debug Overrides",
+        "kind": "concept"
+      },
+      {
+        "id": "02-certificate-and-hostname-validation",
+        "title": "TrustManager Chain Validation & Hostname Verification Flaws",
+        "kind": "lab"
+      },
+      {
+        "id": "03-pinning-custom-trustmanagers-and-debug-overrides",
+        "title": "Certificate Pinning, Backup Pins & Trust Verification vs Bypasses",
+        "kind": "concept"
+      },
+      {
+        "id": "04-session-tokens-proxying-and-api-boundaries",
+        "title": "Session Token Security, Interception Proxying & Mobile API Boundaries",
+        "kind": "lab"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "android-pentesting",
+    "lab_requirement_generic": "SIMULATION",
+    "id": "android-07-network"
+  },
+  {
+    "title": "WebView Architecture, JavaScript Bridges, and Native Boundaries",
+    "phase": 4,
+    "phaseName": "Phase 4: Data & Network Security",
+    "difficulty": "Intermediate",
+    "estimated_hours": 4.0,
+    "prerequisites": [
+      "android-07-network"
+    ],
+    "lab_requirement": "SIMULATION",
+    "content_status": "authored",
+    "skills": [
+      "android",
+      "webview-security",
+      "masvs-platform",
+      "javascript-bridges",
+      "origin-isolation",
+      "chromium-hardening"
+    ],
+    "description": "Assess Android WebView components: examine Chromium multi-process architecture, control navigation through shouldOverrideUrlLoading, audit WebSettings security flags, mitigate file scheme and universal access risks, exploit exposed JavaScript bridge interfaces, and implement hardened origin-based bridge architectures.",
+    "objectives": [
+      "Trace the execution lifecycle of WebView components and intercept URL navigation using WebViewClient.shouldOverrideUrlLoading.",
+      "Audit critical WebSettings flags including allowFileAccess, allowUniversalAccessFromFileURLs, and configure modern WebViewAssetLoader replacements.",
+      "Evaluate the security boundaries of addJavascriptInterface, identify historical reflection RCE and modern logical bridge method exploitation vectors.",
+      "Implement hardened WebView configurations with strict HTTPS origin allowlists, safe intent URL handling, and modern addWebMessageListener architectures."
+    ],
+    "artifacts": [
+      "android-cases/cases.json (paired vulnerable and hardened WebView implementations)",
+      "android-demos/notes-boundary-source.zip (buildable Android demonstration files)"
+    ],
+    "decision_practice": [],
+    "evidence_focus": "Document exact intent injection parameters, loaded origin URLs, and intercepted JavaScript bridge calls with reproducible ADB commands.",
+    "retest_focus": "Verify with positive navigation tests (authorized domains render properly) and negative attack tests (unauthorized domains and malicious file/intent schemes are rejected).",
+    "lessons": [
+      {
+        "id": "01-webview-architecture-and-navigation",
+        "title": "Chromium Architecture, Navigation Controls & Intent Scheme Handling",
+        "kind": "concept"
+      },
+      {
+        "id": "02-javascript-origins-cookies-and-local-content",
+        "title": "WebSettings Security Directives, Origin Isolation & Cookie Handling",
+        "kind": "lab"
+      },
+      {
+        "id": "03-javascript-bridges-and-native-apis",
+        "title": "JavaScript Interfaces, Bridge Exploitation & Native API Exposure",
+        "kind": "concept"
+      },
+      {
+        "id": "04-safe-webview-config-allowlists-and-hardening",
+        "title": "Safe WebView Configuration, Origin Allowlists & Bridge Hardening",
+        "kind": "lab"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "android-pentesting",
+    "lab_requirement_generic": "SIMULATION",
+    "id": "android-08-webview"
+  },
+  {
+    "id": "android-09-runtime",
+    "title": "Runtime Observation, Dynamic Analysis & Instrumentation",
+    "phase": 5,
+    "phaseName": "Phase 5: Dynamic Analysis & Instrumentation",
+    "difficulty": "Advanced",
+    "estimated_hours": 5.0,
+    "prerequisites": [
+      "android-08-webview"
+    ],
+    "lab_requirement": "SIMULATION",
+    "content_status": "authored",
+    "skills": [
+      "android",
+      "dynamic-analysis",
+      "frida",
+      "objection",
+      "masvs-resilience",
+      "logcat",
+      "memory-forensics"
+    ],
+    "description": "Conduct end-to-end dynamic security assessments on Android: establish non-instrumented baselines with ADB and Logcat, trace runtime filesystem and database states, deploy Frida for Dalvik/ART method interception, explore runtime state with Objection, and evaluate anti-tamper and root detection controls under the untrusted client model.",
+    "objectives": [
+      "Establish non-instrumented runtime baselines using ADB, Logcat PID filtering, dumpsys activity/window flags, and Dalvik heap dump forensics.",
+      "Track dynamic filesystem modifications, audit live SQLite databases, and configure transparent proxy interception with Burp Suite on owned test devices.",
+      "Deploy frida-server, master spawn vs attach execution modes, and author Frida Java Bridge scripts to hook methods, inspect arguments, and trace execution stacks.",
+      "Use Objection to explore runtime memory, analyze heuristic root detection mechanisms, evaluate hardware attestation boundaries, and apply the 12-Step Lab Contract."
+    ],
+    "artifacts": [
+      "android-cases/cases.json (original synthetic snippets)",
+      "android-demos/notes-boundary-source.zip (buildable source only; scope limited to mock notes)"
+    ],
+    "decision_practice": [],
+    "evidence_focus": "Cite the exact source and SHA-256; separate static reasoning from independently observed device behavior.",
+    "retest_focus": "A fixed source excerpt is not a retest; run the exact build on an owned emulator with positive and negative controls.",
+    "lessons": [
+      {
+        "id": "01-runtime-observation-adb-logcat-and-process-lifecycle",
+        "title": "Runtime Observation: ADB, Logcat & Process Lifecycle",
+        "kind": "concept"
+      },
+      {
+        "id": "02-runtime-filesystem-databases-and-network-observation",
+        "title": "Dynamic State: Filesystem Changes, Databases & Live Network",
+        "kind": "lab"
+      },
+      {
+        "id": "03-frida-architecture-spawn-attach-and-java-hooks",
+        "title": "Frida Architecture: Spawn, Attach & Java Method Hooks",
+        "kind": "concept"
+      },
+      {
+        "id": "04-objection-anti-tamper-evaluation-and-validation-workflow",
+        "title": "Objection, Anti-Tamper Evaluation & Dynamic Validation",
+        "kind": "lab"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "android-pentesting",
+    "lab_requirement_generic": "SIMULATION"
+  },
+  {
+    "id": "android-10-crypto",
+    "title": "Cryptography, Nonces, Biometrics & Hardware Keys",
+    "phase": 6,
+    "phaseName": "Phase 6: Advanced Android Security",
+    "difficulty": "Advanced",
+    "estimated_hours": 4.5,
+    "prerequisites": [
+      "android-09-runtime"
+    ],
+    "lab_requirement": "SIMULATION",
+    "content_status": "authored",
+    "skills": [
+      "android",
+      "cryptography",
+      "masvs-crypto",
+      "aes-gcm",
+      "nonce-reuse",
+      "biometrics",
+      "keystore",
+      "play-integrity"
+    ],
+    "description": "Assess cryptographic implementations and device identity controls: identify deprecated ciphers and ECB mode pattern leakage, audit AES-GCM nonce reuse and GHASH tag forgery vulnerabilities, implement hardware-backed BiometricPrompt.CryptoObject authentication, and evaluate the architectural limits of client-side root detection vs Google Play Integrity API attestation.",
+    "objectives": [
+      "Identify insecure cryptographic algorithms (ECB mode, DES, MD5, SHA-1) and implement salted PBKDF2WithHmacSHA256 key derivation.",
+      "Analyze AES-GCM counter mode encryption, audit static IV anti-patterns (Vault.kt), and prevent two-time pad and GHASH key forgery vulnerabilities.",
+      "Differentiate vulnerable boolean biometric callbacks from hardware-bound BiometricPrompt.CryptoObject implementations anchored in Android Keystore StrongBox and TEE.",
+      "Evaluate the fundamental limitations of client-side heuristic root checks under the Untrusted Mobile Client Axiom and configure server-verified Google Play Integrity API attestations."
+    ],
+    "artifacts": [
+      "android-cases/cases.json (original synthetic snippets)",
+      "android-demos/notes-boundary-source.zip (buildable source only; scope limited to mock notes)"
+    ],
+    "decision_practice": [],
+    "evidence_focus": "Cite the exact source and SHA-256; separate static reasoning from independently observed device behavior.",
+    "retest_focus": "A fixed source excerpt is not a retest; run the exact build on an owned emulator with positive and negative controls.",
+    "lessons": [
+      {
+        "id": "01-cryptographic-misuse-algorithms-and-key-management",
+        "title": "Cryptographic Misuse: Algorithms, Ciphers & Key Derivation",
+        "kind": "concept"
+      },
+      {
+        "id": "02-iv-nonce-reuse-aes-gcm-and-hardcoded-secrets",
+        "title": "IV/Nonce Reuse, AES-GCM & Hardcoded Secrets",
+        "kind": "lab"
+      },
+      {
+        "id": "03-biometrics-keystore-and-crypto-object-binding",
+        "title": "Biometrics, Keystore & CryptoObject Binding",
+        "kind": "concept"
+      },
+      {
+        "id": "04-attestation-root-detection-and-client-side-limits",
+        "title": "Attestation, Root Detection & Client-Side Security Limits",
+        "kind": "lab"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "android-pentesting",
+    "lab_requirement_generic": "SIMULATION"
+  },
+  {
+    "id": "android-11-release",
+    "title": "Reverse Engineering, Smali, Native Code & Dynamic Code Loading",
+    "phase": 6,
+    "phaseName": "Phase 6: Advanced Android Security",
+    "difficulty": "Advanced",
+    "estimated_hours": 4.5,
+    "prerequisites": [
+      "android-10-crypto"
+    ],
+    "lab_requirement": "SIMULATION",
+    "content_status": "authored",
+    "skills": [
+      "android",
+      "reverse-engineering",
+      "smali",
+      "masvs-code",
+      "r8-obfuscation",
+      "jni-reversing",
+      "dynamic-code-loading"
+    ],
+    "description": "Master Android reverse engineering and release package security: decompile DEX bytecode into Smali intermediate assembly, modify branching logic and repackage APKs, reconstruct obfuscated workflows using Android Framework anchor points, reverse engineer compiled JNI C/C++ shared libraries in Ghidra, and audit Dynamic Code Loading (DCL) under Android 14 read-only constraints.",
+    "objectives": [
+      "Analyze Dalvik/ART register architecture, interpret Smali instructions, and execute binary bytecode patching and repackaging using apktool and apksigner.",
+      "Audit R8/ProGuard shrinking and obfuscation rules and reconstruct obfuscated control flows using Android SDK framework anchor points.",
+      "Reverse engineer compiled JNI shared libraries (.so), dissect static and dynamic (RegisterNatives) function bindings, and identify native memory safety vulnerabilities.",
+      "Audit Dynamic Code Loading (DCL) sinks (DexClassLoader), prevent caller-controlled plugin injection, and enforce Android 14 read-only mandates and cryptographic signature verification."
+    ],
+    "artifacts": [
+      "android-cases/cases.json (original synthetic snippets)",
+      "android-demos/notes-boundary-source.zip (buildable source only; scope limited to mock notes)"
+    ],
+    "decision_practice": [],
+    "evidence_focus": "Cite the exact source and SHA-256; separate static reasoning from independently observed device behavior.",
+    "retest_focus": "A fixed source excerpt is not a retest; run the exact build on an owned emulator with positive and negative controls.",
+    "lessons": [
+      {
+        "id": "01-smali-dex-bytecode-and-decompilation",
+        "title": "Smali, DEX Bytecode & Decompilation",
+        "kind": "concept"
+      },
+      {
+        "id": "02-obfuscation-r8-proguard-and-code-reconstruction",
+        "title": "Obfuscation, R8/ProGuard & Code Reconstruction",
+        "kind": "lab"
+      },
+      {
+        "id": "03-jni-native-libraries-and-cross-language-analysis",
+        "title": "JNI, Native Libraries & Cross-Language Analysis",
+        "kind": "concept"
+      },
+      {
+        "id": "04-dynamic-code-loading-anti-tamper-and-resilience",
+        "title": "Dynamic Code Loading, Anti-Tamper & App Resilience",
+        "kind": "lab"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "android-pentesting",
+    "lab_requirement_generic": "SIMULATION"
+  },
+  {
+    "id": "android-12-case",
+    "title": "Independent Android Assessment & Attack Scenarios",
+    "phase": 6,
+    "phaseName": "Phase 6: Independent Assessment & Attack Scenarios",
+    "difficulty": "Advanced",
+    "estimated_hours": 6.0,
+    "prerequisites": [
+      "android-11-release"
+    ],
+    "lab_requirement": "SIMULATION",
+    "content_status": "authored",
+    "skills": [
+      "android",
+      "penetration-testing",
+      "evidence",
+      "reporting",
+      "retest-validation",
+      "masvs-all",
+      "threat-modeling",
+      "cvss"
+    ],
+    "description": "Execute a professional end-to-end Android penetration test: construct multi-step attack chains, define Rules of Engagement (ROE) and cryptographic chain of custody, evaluate evidence gaps without cross-fixture fabrication, execute four-quadrant control matrices across paired vulnerable and fixed builds, author executive-ready reports conforming to the 12-Step Lab Contract, and validate remediations through formal retesting.",
+    "objectives": [
+      "Model multi-step Android kill chains (Intent Redirection, WebView Bridge Escalation, Dynamic Code Loading) while rigorously rejecting cross-fixture evidence fabrication.",
+      "Establish Rules of Engagement (ROE), record exact APK SHA-256 digests and certificate fingerprints, and document Android OS execution environment matrices.",
+      "Execute four-quadrant test matrices on paired vulnerable and fixed demo builds (NoteVault) with positive, negative, and boundary controls.",
+      "Author professional penetration test findings formatted to the 12-Step Lab Contract, calculate CVSS scores, provide concrete Kotlin remediations, and execute formal retest validation."
+    ],
+    "artifacts": [
+      "android-cases/cases.json (original synthetic snippets)",
+      "android-demos/notes-boundary-source.zip (buildable source only; scope limited to mock notes)"
+    ],
+    "decision_practice": [],
+    "evidence_focus": "Cite the exact source and SHA-256; separate static reasoning from independently observed device behavior.",
+    "retest_focus": "A fixed source excerpt is not a retest; run the exact build on an owned emulator with positive and negative controls.",
+    "lessons": [
+      {
+        "id": "01-multi-step-attack-scenarios-and-kill-chains",
+        "title": "Multi-Step Attack Scenarios & Android Kill Chains",
+        "kind": "concept"
+      },
+      {
+        "id": "02-assessment-scoping-rules-of-engagement-and-chain-of-custody",
+        "title": "Assessment Scoping, Rules of Engagement & Chain of Custody",
+        "kind": "lab"
+      },
+      {
+        "id": "03-independent-engagement-execution-and-evidence-matrix",
+        "title": "Independent Engagement Execution & Evidence Matrix",
+        "kind": "concept"
+      },
+      {
+        "id": "04-professional-reporting-remediation-and-retest-validation",
+        "title": "Professional Reporting, Remediation & Retest Validation",
+        "kind": "lab"
+      }
+    ],
+    "status": "simulated",
+    "learningPathId": "android-pentesting",
+    "lab_requirement_generic": "SIMULATION"
+  }
 ]

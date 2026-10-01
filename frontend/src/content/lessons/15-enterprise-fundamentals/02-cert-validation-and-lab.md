@@ -7,20 +7,20 @@
 ```
 real AP (Corp-WLAN, 802.1X)              rogue authenticator (same SSID, stronger signal)
         │                                        │
-        ├── deauth/beacon pressure ──────────────┤ client associates to the twin
+        ├── deauth/beacon pressure ──────────────┤ client may select (profile-dependent)
         │                                        │
         │                               EAP-Request/Identity
         │                                        │        (rogue presents *its* certificate)
         │                       ┌────────────────┴─────────────────┐
         │                       │ client validates?                │
-        │                       │  yes → TLS alert, no credentials │
+        │                       │  yes → reject wrong identity; inspect log │
         │                       │  no  → inner MS-CHAPv2 exchange  │
         │                       └────────────────┬─────────────────┘
         │                                        │
         │                       attacker captures: username,
         │                       server challenge, peer challenge, NT-Response
         │                                        ▼
-        │                             hashcat -m 5500 → password
+        │                             bounded candidate check → possible match
 ```
 
 Two outcomes, two completely different findings:
@@ -31,8 +31,8 @@ Two outcomes, two completely different findings:
 ## 2. Lab procedure (own hardware, authorised lab)
 
 1. In an isolated, authorized lab, configure a test authenticator with a test server certificate and matching private key; do not target a production SSID. Validate the certificate chain and server name through the actual supplicant profile and its logs (`openssl s_client` does not emulate EAP).
-2. Configure a test client **without** `ca_cert`; connect. Capture with `tshark`.
-3. Repeat with `ca_cert` and `domain_suffix_match` set. Capture the difference.
+2. Review the effective trust and expected-name policy on an isolated test client. An omitted `ca_cert` does not by itself prove validation is disabled: inherited/system trust and client behavior matter. For the available offline alternative, use the certificate-file lesson; do not weaken a production profile.
+3. Under separate authorization, compare a managed explicit trust/name policy with the agreed baseline and secure negative control. Record actual client validation reasons, not just packet timing.
 4. Compare only lab-generated evidence and supplicant logs. Do not infer credential exposure from a missing field in a packet capture alone.
 
 ```bash
@@ -61,8 +61,7 @@ sudo wpa_supplicant -i wlan0 -c lab-client.conf -dd 2>&1 | grep -Ei 'certificate
 1. **EAP-TLS** with client certificates — remove the password from the exchange entirely.
 2. **Enforce certificate validation** on every client profile: `ca_cert` + `domain_suffix_match`
    (and machine-level, GPO/MDM-managed profiles that users cannot edit).
-3. **Disable PEAP-MSCHAPv2** server-side where possible; if not, require machine/user certificate checks
-   before evaluating the password.
+3. **Retire PEAP-MSCHAPv2** through a coordinated client/server migration where feasible. If it remains, enforce managed server trust/name validation and password controls. Do not promise machine/user certificate chaining from ordinary PEAP-MSCHAPv2; a separately supported method/profile is needed.
 4. **PMF required** to protect robust management frames on supporting clients. This reduces spoofed deauth/disassoc paths but does not authenticate an AP or prevent every evil-twin technique.
 5. **Monitoring** for rogue BSSIDs / duplicate SSIDs and for anomalous EAP flows.
 

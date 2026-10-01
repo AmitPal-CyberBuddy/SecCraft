@@ -17,7 +17,7 @@ import { AVAILABLE_LABS } from '@/content/labs'
  * Now path-aware: platform totals + per-path totals.
  */
 
-const moduleList = modules as Array<{ id: string; lessons?: unknown[]; learningPathId?: string }>
+const moduleList = modules
 const challengeList = challenges as Array<{ learningPathId?: string }>
 const scenarioList = scenarios as Array<{ learningPathId?: string }>
 const artifactMap = (artifacts as { artifacts: Record<string, unknown> }).artifacts ?? {}

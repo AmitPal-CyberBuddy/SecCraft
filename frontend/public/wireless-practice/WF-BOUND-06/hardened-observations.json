@@ -1,0 +1,76 @@
+{
+  "provenance": "Authored observations, not collected logs or performed tests",
+  "runtime": "NOT TESTED",
+  "observations": [
+    {
+      "id": "hardened-F1",
+      "flow": "F1",
+      "model_rule_decision": "allow",
+      "model_route_verified": true,
+      "model_target_healthy": true,
+      "model_application_result": "approved request returned expected demo response",
+      "model_application_reached": true,
+      "model_enforcement_recorded": true
+    },
+    {
+      "id": "hardened-F2",
+      "flow": "F2",
+      "model_rule_decision": "allow",
+      "model_route_verified": true,
+      "model_target_healthy": true,
+      "model_application_result": "approved request returned expected demo response",
+      "model_application_reached": true,
+      "model_enforcement_recorded": true
+    },
+    {
+      "id": "hardened-F3",
+      "flow": "F3",
+      "model_rule_decision": "allow",
+      "model_route_verified": true,
+      "model_target_healthy": true,
+      "model_application_result": "approved request returned expected demo response",
+      "model_application_reached": true,
+      "model_enforcement_recorded": true
+    },
+    {
+      "id": "hardened-F4",
+      "flow": "F4",
+      "model_rule_decision": "deny",
+      "model_route_verified": true,
+      "model_target_healthy": true,
+      "model_application_result": "not reached; enforcement log records denial",
+      "model_application_reached": false,
+      "model_enforcement_recorded": true
+    },
+    {
+      "id": "hardened-F5",
+      "flow": "F5",
+      "model_rule_decision": "deny",
+      "model_route_verified": true,
+      "model_target_healthy": true,
+      "model_application_result": "not reached; enforcement log records denial",
+      "model_application_reached": false,
+      "model_enforcement_recorded": true
+    },
+    {
+      "id": "hardened-F6",
+      "flow": "F6",
+      "model_rule_decision": "deny",
+      "model_route_verified": true,
+      "model_target_healthy": true,
+      "model_application_result": "not reached; enforcement log records denial",
+      "model_application_reached": false,
+      "model_enforcement_recorded": true
+    },
+    {
+      "id": "hardened-F7",
+      "flow": "F7",
+      "model_rule_decision": null,
+      "model_route_verified": null,
+      "model_target_healthy": null,
+      "model_application_result": "no response; health/route unknown",
+      "model_application_reached": null,
+      "model_enforcement_recorded": null
+    }
+  ]
+}

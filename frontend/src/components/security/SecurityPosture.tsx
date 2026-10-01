@@ -1,5 +1,4 @@
 import { useMemo } from 'react'
-import { motion } from 'framer-motion'
 import { ShieldCheck, Lock, Globe, KeyRound, Package, Server, Info, AlertTriangle, CheckCircle, ExternalLink } from 'lucide-react'
 import { TERMINAL_COMMAND_COUNT } from '@/components/terminal/commandCount'
 
@@ -107,38 +106,35 @@ export function SecurityPosture({ className = '' }: { className?: string }) {
   }, [])
 
   const iconFor = (state: Check['state']) =>
-    state === 'pass' ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : state === 'warn' ? <AlertTriangle className="w-4 h-4 text-amber-400" /> : <Info className="w-4 h-4 text-cyan-400" />
+    state === 'pass' ? <CheckCircle className="w-4 h-4 text-[var(--success)]" /> : state === 'warn' ? <AlertTriangle className="w-4 h-4 text-[var(--attention)]" /> : <Info className="w-4 h-4 text-[var(--learning)]" />
 
   const authConfigured = Boolean(import.meta.env.VITE_SUPABASE_URL?.trim() && import.meta.env.VITE_SUPABASE_ANON_KEY?.trim())
   const serviceOrigins = configuredServiceOrigins()
 
   return (
-    <div className={`rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 sm:p-6 min-w-0 w-full ${className}`}>
+    <div className={`rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-4 xs:p-5 sm:p-6 min-w-0 w-full ${className}`}>
       <div className="flex items-center gap-3 mb-4">
-        <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-          <ShieldCheck className="w-5 h-5 text-emerald-400" />
+        <div className="w-9 h-9 rounded-xl bg-[var(--success-bg)] border border-[var(--success-border)] flex items-center justify-center shrink-0">
+          <ShieldCheck className="w-5 h-5 text-[var(--success)]" />
         </div>
         <div className="min-w-0">
-          <h3 className="font-heading font-bold text-[14px] xs:text-[15px] text-slate-100">Security posture</h3>
-          <p className="text-[11px] text-slate-500 font-mono">what this build actually does — checked in your browser, not asserted</p>
+          <h3 className="font-heading font-bold text-[14px] xs:text-[15px] text-[var(--ink-primary)]">Security posture</h3>
+          <p className="text-sm text-[var(--ink-muted)] font-mono">what this build actually does — checked in your browser, not asserted</p>
         </div>
       </div>
 
       <div className="space-y-2.5">
-        {checks.map((check, idx) => (
-          <motion.div
+        {checks.map(check => (
+          <div
             key={check.id}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.04 }}
-            className="p-3.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/60 flex items-start gap-3"
+            className="p-3.5 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] flex items-start gap-3"
           >
             <div className="mt-0.5 shrink-0">{iconFor(check.state)}</div>
             <div className="min-w-0">
-              <div className="text-[12.5px] font-medium text-slate-200">{check.label}</div>
-              <div className="text-[11.5px] text-slate-400 mt-1 leading-relaxed">{check.detail}</div>
+              <div className="text-[12.5px] font-medium text-[var(--ink-primary)]">{check.label}</div>
+              <div className="text-sm text-[var(--ink-secondary)] mt-1 leading-relaxed">{check.detail}</div>
             </div>
-          </motion.div>
+          </div>
         ))}
       </div>
 
@@ -150,19 +146,19 @@ export function SecurityPosture({ className = '' }: { className?: string }) {
           { icon: Server, label: 'Account sync', value: authConfigured ? 'Optional' : 'Not configured' },
           { icon: Package, label: 'Configured service origins', value: String(serviceOrigins.length) },
         ].map(item => (
-          <div key={item.label} className="p-2.5 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
-            <div className="flex items-center gap-1.5 text-[10px] text-slate-500 uppercase tracking-wide font-semibold">
+          <div key={item.label} className="p-2.5 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)]">
+            <div className="flex items-center gap-1.5 text-[10px] text-[var(--ink-muted)] uppercase tracking-wide font-semibold">
               <item.icon className="w-3 h-3" /> {item.label}
             </div>
-            <div className="text-[14px] font-mono font-bold text-slate-100 mt-1">{item.value}</div>
+            <div className="text-[14px] font-mono font-bold text-[var(--ink-primary)] mt-1">{item.value}</div>
           </div>
         ))}
       </div>
 
-      <div className="mt-4 p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 flex items-start gap-2.5">
-        <ShieldCheck className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
-        <div className="text-[11px] text-slate-400 leading-relaxed">
-          Reporting a problem is welcome; see <span className="font-mono text-slate-300">SECURITY.md</span> in the repository for
+      <div className="mt-4 p-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] flex items-start gap-2.5">
+        <ShieldCheck className="w-4 h-4 text-[var(--success)] mt-0.5 shrink-0" />
+        <div className="text-sm text-[var(--ink-secondary)] leading-relaxed">
+          Reporting a problem is welcome; see <span className="font-mono text-[var(--ink-secondary)]">SECURITY.md</span> in the repository for
           the disclosure route. There is no bounty programme, and no third party has audited this project — treat the
           statements above as engineering facts you can re-verify, not as an assurance.
         </div>
@@ -172,7 +168,7 @@ export function SecurityPosture({ className = '' }: { className?: string }) {
         href="https://github.com/AmitPal-CyberBuddy/SecCraft/blob/main/SECURITY.md"
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-3 inline-flex items-center gap-1.5 text-[11px] text-cyan-400 hover:text-cyan-300"
+        className="mt-3 inline-flex items-center gap-1.5 text-sm text-[var(--learning)] hover:text-[var(--learning)]"
       >
         <ExternalLink className="w-3 h-3" /> SECURITY.md
       </a>

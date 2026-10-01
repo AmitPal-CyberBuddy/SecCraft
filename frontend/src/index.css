@@ -2,79 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: dark;
-  --bg: #020617;
-  --bg-soft: #0a1020;
-  --card: #0f172a;
-  --card-hover: #111d33;
-  --surface: #1e293b;
-  --surface-hover: #25354f;
-  --border: #1e293b;
-  --border-strong: #334155;
-  --border-hover: #3a4a65;
-  --text: #f1f5f9;
-  --text-soft: #cbd5e1;
-  --text-muted: #94a3b8;
-  --text-dim: #64748b;
-  --cyan: #33CFFF;
-  --cyan-strong: #06b6d4;
-  --violet: #a78bfa;
-  --violet-strong: #8b5cf6;
-  --emerald: #34d399;
-  --amber: #f59e0b;
-  --orange: #FF9F1C;
-  --pink: #f472b6;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --shadow-soft: 0 4px 24px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.4);
-  --shadow-medium: 0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.5);
-  --shadow-glow-cyan: 0 0 0 1px rgba(51,207,255,0.15), 0 0 32px rgba(51,207,255,0.12), 0 4px 24px rgba(0,0,0,0.4);
-  --shadow-glow-violet: 0 0 0 1px rgba(167,139,250,0.15), 0 0 32px rgba(167,139,250,0.12), 0 4px 24px rgba(0,0,0,0.4);
-  --shadow-glow-emerald: 0 0 0 1px rgba(52,211,153,0.15), 0 0 32px rgba(52,211,153,0.12);
-}
+:root { color-scheme:dark; --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-xl:20px; }
 
-/* Light mode — proper visibility with SecCraft branding */
-.light, [data-theme="light"] {
-  color-scheme: light;
-  --bg: #f8fafc;
-  --bg-soft: #f1f5f9;
-  --card: #ffffff;
-  --card-hover: #f8fafc;
-  --surface: #e2e8f0;
-  --surface-hover: #cbd5e1;
-  --border: #e2e8f0;
-  --border-strong: #cbd5e1;
-  --border-hover: #94a3b8;
-  --text: #0f172a;
-  --text-soft: #1e293b;
-  --text-muted: #475569;
-  --text-dim: #64748b;
-  --cyan: #0ea5e9;
-  --cyan-strong: #0284c7;
-  --violet: #7c3aed;
-  --violet-strong: #6d28d9;
-  --emerald: #059669;
-  --amber: #d97706;
-  --orange: #ea580c;
-  --pink: #db2777;
-  --shadow-soft: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.05);
-  --shadow-medium: 0 4px 16px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.06);
-  --shadow-glow-cyan: 0 0 0 1px rgba(14,165,233,0.15), 0 0 24px rgba(14,165,233,0.08);
-  --shadow-glow-violet: 0 0 0 1px rgba(124,58,237,0.15), 0 0 24px rgba(124,58,237,0.08);
-  --shadow-glow-emerald: 0 0 0 1px rgba(5,150,105,0.15), 0 0 24px rgba(5,150,105,0.08);
-}
+/* The semantic palette lives in styles/workspace.css. */
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #334155 #020617;
+  scrollbar-color: var(--control-border) var(--app-bg);
 }
 
-.light *, .light *::-webkit-scrollbar, [data-theme="light"] * {
-  scrollbar-color: #cbd5e1 #f8fafc;
-}
+
 
 *::-webkit-scrollbar {
   width: 5px;
@@ -86,23 +23,18 @@
 }
 
 *::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: var(--control-border);
   border-radius: 10px;
-  border: 1px solid #0f172a;
+  border: 1px solid var(--panel-inset);
 }
 
-.light *::-webkit-scrollbar-thumb, [data-theme="light"] *::-webkit-scrollbar-thumb {
-  background: #94a3b8;
-  border: 1px solid #f8fafc;
-}
+
 
 *::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: var(--ink-muted);
 }
 
-.light *::-webkit-scrollbar-thumb:hover, [data-theme="light"] *::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
-}
+
 
 html {
   scroll-behavior: smooth;
@@ -132,14 +64,7 @@ body {
   overflow-x: hidden;
 }
 
-.light body, [data-theme="light"] body {
-  background: var(--bg);
-  background-image: 
-    radial-gradient(ellipse 800px 600px at 0% -10%, rgba(14,165,233,0.06), transparent 60%),
-    radial-gradient(ellipse 600px 500px at 100% 0%, rgba(124,58,237,0.05), transparent 60%),
-    radial-gradient(ellipse 500px 400px at 100% 100%, rgba(5,150,105,0.03), transparent 60%);
-  color: var(--text);
-}
+
 
 h1, h2, h3, h4, h5 {
   font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -149,25 +74,20 @@ h1, h2, h3, h4, h5 {
 
 /* Focus styles for accessibility */
 *:focus-visible {
-  outline: 2px solid rgba(51,207,255,0.5);
+  outline: 2px solid var(--focus-color);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-.light *:focus-visible, [data-theme="light"] *:focus-visible {
-  outline: 2px solid rgba(14,165,233,0.5);
-}
+
 
 /* Selection */
 ::selection {
-  background: rgba(51,207,255,0.2);
-  color: #f1f5f9;
+  background: color-mix(in srgb, var(--learning) 20%, transparent);
+  color: var(--ink-primary);
 }
 
-.light ::selection, [data-theme="light"] ::selection {
-  background: rgba(14,165,233,0.2);
-  color: #0f172a;
-}
+
 
 /* ─────────────────────────────────────────────────────────────────────────
    Product-state channel
@@ -176,39 +96,27 @@ h1, h2, h3, h4, h5 {
    by hue alone. Values are also flipped in light mode below.
    ───────────────────────────────────────────────────────────────────────── */
 :root {
-  --state-public: #94a3b8;
-  --state-guest: #33cfff;
-  --state-pending: #fbbf24;
-  --state-active: #34d399;
-  --state-rejected: #fb7185;
-  --state-suspended: #fb7185;
-  --state-owner: #c4b5fd;
+  --state-public: var(--ink-muted);
+  --state-guest: var(--learning);
+  --state-pending: var(--attention);
+  --state-active: var(--success);
+  --state-rejected: var(--danger);
+  --state-suspended: var(--danger);
+  --state-owner: var(--owner);
 }
 
-.light, [data-theme="light"] {
-  --state-public: #475569;
-  --state-guest: #0369a1;
-  --state-pending: #b45309;
-  --state-active: #047857;
-  --state-rejected: #be123c;
-  --state-suspended: #be123c;
-  --state-owner: #6d28d9;
-}
 
-/* Terminal — always dark for readability */
+
+/* Legacy terminal vocabulary; fixed transcript palette is in technical-tools.css. */
 .terminal {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  background: #0a0f1c;
-  border: 1px solid #1e293b;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), var(--shadow-soft);
-  color: #cbd5e1;
+  background: var(--panel-inset);
+  border: 1px solid var(--line-normal);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ink-primary) 3%, transparent), var(--shadow-soft);
+  color: var(--ink-secondary);
 }
 
-.light .terminal, [data-theme="light"] .terminal {
-  background: #0f172a;
-  border: 1px solid #1e293b;
-  color: #cbd5e1;
-}
+
 
 /* Markdown enhanced — Readability Optimized */
 .markdown {
@@ -282,8 +190,8 @@ h1, h2, h3, h4, h5 {
 .markdown code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
-  background: rgba(51,207,255,0.08);
-  border: 1px solid rgba(51,207,255,0.15);
+  background: color-mix(in srgb, var(--learning) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--learning) 15%, transparent);
   padding: 2px 6px;
   border-radius: 6px;
   color: var(--cyan);
@@ -292,15 +200,11 @@ h1, h2, h3, h4, h5 {
   overflow-wrap: anywhere;
 }
 
-.light .markdown code, [data-theme="light"] .markdown code {
-  background: rgba(14,165,233,0.08);
-  border: 1px solid rgba(14,165,233,0.15);
-  color: #0284c7;
-}
+
 
 .markdown pre {
-  background: #0a0f1c;
-  border: 1px solid #1e293b;
+  background: var(--panel-inset);
+  border: 1px solid var(--line-normal);
   border-radius: 12px;
   padding: 16px;
   overflow-x: auto;
@@ -311,10 +215,7 @@ h1, h2, h3, h4, h5 {
   -webkit-overflow-scrolling: touch;
 }
 
-.light .markdown pre, [data-theme="light"] .markdown pre {
-  background: #0f172a;
-  border: 1px solid #1e293b;
-}
+
 
 @media (max-width: 640px) {
   .markdown pre {
@@ -357,7 +258,7 @@ h1, h2, h3, h4, h5 {
   background: transparent;
   border: none;
   padding: 0;
-  color: #cbd5e1;
+  color: var(--ink-secondary);
   font-size: 12.5px;
   line-height: 1.6;
   white-space: pre;
@@ -449,7 +350,7 @@ body {
 
 /* Better focus states for production */
 *:focus-visible {
-  outline: 2px solid rgba(51,207,255,0.5);
+  outline: 2px solid var(--focus-color);
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -466,7 +367,7 @@ img, video, canvas, svg {
 
 .markdown blockquote {
   border-left: 2px solid var(--cyan);
-  background: rgba(51,207,255,0.04);
+  background: color-mix(in srgb, var(--learning) 4%, transparent);
   padding: 12px 18px;
   margin: 18px 0;
   border-radius: 0 8px 8px 0;
@@ -474,10 +375,7 @@ img, video, canvas, svg {
   font-style: italic;
 }
 
-.light .markdown blockquote, [data-theme="light"] .markdown blockquote {
-  background: rgba(14,165,233,0.04);
-  color: var(--text-muted);
-}
+
 
 .markdown table {
   width: 100%;
@@ -509,25 +407,10 @@ img, video, canvas, svg {
 }
 
 .markdown tr:hover td {
-  background: rgba(255,255,255,0.01);
+  background: color-mix(in srgb, var(--ink-primary) 1%, transparent);
 }
 
-.light .markdown tr:hover td, [data-theme="light"] .markdown tr:hover td {
-  background: rgba(0,0,0,0.01);
-}
 
-/* Loading states */
-.skeleton {
-  background: linear-gradient(90deg, var(--card) 25%, var(--surface) 50%, var(--card) 75%);
-  background-size: 200% 100%;
-  animation: skeleton 1.5s infinite;
-  border-radius: 8px;
-}
-
-@keyframes skeleton {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
 
 /* Tooltip */
 .tooltip {
@@ -547,108 +430,19 @@ pre::-webkit-scrollbar {
 
 /* Grid pattern */
 .grid-pattern {
-  background-image: 
-    linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px);
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--ink-primary) 1%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--ink-primary) 1%, transparent) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
-.light .grid-pattern, [data-theme="light"] .grid-pattern {
-  background-image: 
-    linear-gradient(rgba(0,0,0,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px);
-}
-
-/* Light mode overrides for hardcoded Tailwind arbitrary colors — fix visibility */
-.light .bg-\[\#020617\], [data-theme="light"] .bg-\[\#020617\] { background-color: #f8fafc !important; }
-.light .bg-\[\#020617\]\/95, [data-theme="light"] .bg-\[\#020617\]\/95 { background-color: rgba(248,250,252,0.95) !important; }
-.light .bg-\[\#020617\]\/90, [data-theme="light"] .bg-\[\#020617\]\/90 { background-color: rgba(248,250,252,0.9) !important; }
-.light .bg-\[\#020617\]\/80, [data-theme="light"] .bg-\[\#020617\]\/80 { background-color: rgba(248,250,252,0.8) !important; }
-.light .bg-\[\#020617\]\/70, [data-theme="light"] .bg-\[\#020617\]\/70 { background-color: rgba(248,250,252,0.7) !important; }
-.light .bg-\[\#020617\]\/60, [data-theme="light"] .bg-\[\#020617\]\/60 { background-color: rgba(248,250,252,0.6) !important; }
-.light .bg-\[\#020617\]\/50, [data-theme="light"] .bg-\[\#020617\]\/50 { background-color: rgba(248,250,252,0.5) !important; }
-.light .bg-\[\#0f172a\], [data-theme="light"] .bg-\[\#0f172a\] { background-color: #ffffff !important; }
-.light .bg-\[\#0f172a\]\/90, [data-theme="light"] .bg-\[\#0f172a\]\/90 { background-color: rgba(255,255,255,0.9) !important; }
-.light .bg-\[\#0f172a\]\/80, [data-theme="light"] .bg-\[\#0f172a\]\/80 { background-color: rgba(255,255,255,0.8) !important; }
-.light .bg-\[\#0f172a\]\/70, [data-theme="light"] .bg-\[\#0f172a\]\/70 { background-color: rgba(255,255,255,0.7) !important; }
-.light .bg-\[\#0f172a\]\/60, [data-theme="light"] .bg-\[\#0f172a\]\/60 { background-color: rgba(255,255,255,0.6) !important; }
-.light .bg-\[\#0a0f3d\], [data-theme="light"] .bg-\[\#0a0f3d\] { background-color: #ffffff !important; }
-.light .bg-\[\#0a0f3d\]\/90, [data-theme="light"] .bg-\[\#0a0f3d\]\/90 { background-color: rgba(255,255,255,0.9) !important; }
-.light .bg-\[\#0a0f3d\]\/80, [data-theme="light"] .bg-\[\#0a0f3d\]\/80 { background-color: rgba(255,255,255,0.8) !important; }
-.light .bg-\[\#0a1020\]\/95, [data-theme="light"] .bg-\[\#0a1020\]\/95 { background-color: rgba(255,255,255,0.95) !important; }
-.light .bg-\[\#0a1020\]\/90, [data-theme="light"] .bg-\[\#0a1020\]\/90 { background-color: rgba(255,255,255,0.9) !important; }
-.light .bg-\[\#1e293b\], [data-theme="light"] .bg-\[\#1e293b\] { background-color: #f1f5f9 !important; }
-.light .bg-\[\#1e293b\]\/60, [data-theme="light"] .bg-\[\#1e293b\]\/60 { background-color: rgba(241,245,249,0.6) !important; }
-.light .bg-\[\#1e293b\]\/40, [data-theme="light"] .bg-\[\#1e293b\]\/40 { background-color: rgba(241,245,249,0.4) !important; }
-
-.light .text-slate-100, [data-theme="light"] .text-slate-100 { color: #0f172a !important; }
-.light .text-slate-200, [data-theme="light"] .text-slate-200 { color: #1e293b !important; }
-.light .text-slate-300, [data-theme="light"] .text-slate-300 { color: #334155 !important; }
-.light .text-slate-400, [data-theme="light"] .text-slate-400 { color: #475569 !important; }
-.light .text-slate-500, [data-theme="light"] .text-slate-500 { color: #475569 !important; }
-.light .text-slate-600, [data-theme="light"] .text-slate-600 { color: #64748b !important; }
-
-.light .border-\[\#1e293b\], [data-theme="light"] .border-\[\#1e293b\] { border-color: #e2e8f0 !important; }
-.light .border-\[\#1e293b\]\/60, [data-theme="light"] .border-\[\#1e293b\]\/60 { border-color: rgba(226,232,240,0.6) !important; }
-.light .border-\[\#1e293b\]\/40, [data-theme="light"] .border-\[\#1e293b\]\/40 { border-color: rgba(226,232,240,0.4) !important; }
-.light .border-\[\#334155\], [data-theme="light"] .border-\[\#334155\] { border-color: #cbd5e1 !important; }
-.light .border-\[\#334155\]\/60, [data-theme="light"] .border-\[\#334155\]\/60 { border-color: rgba(203,213,225,0.6) !important; }
-
-.light .text-cyan-400, [data-theme="light"] .text-cyan-400 { color: #0369a1 !important; }
-.light .text-violet-400, [data-theme="light"] .text-violet-400 { color: #6d28d9 !important; }
-.light .text-emerald-400, [data-theme="light"] .text-emerald-400 { color: #047857 !important; }
-.light .text-amber-400, [data-theme="light"] .text-amber-400 { color: #b45309 !important; }
-.light .text-orange-400, [data-theme="light"] .text-orange-400 { color: #c2410c !important; }
-
-/* Fix text-white that would be invisible on white bg in light mode */
-.light .text-white, [data-theme="light"] .text-white { color: #0f172a !important; }
-.light .text-white\/90, [data-theme="light"] .text-white\/90 { color: #1e293b !important; }
-.light .text-white\/80, [data-theme="light"] .text-white\/80 { color: #334155 !important; }
-.light .text-white\/60, [data-theme="light"] .text-white\/60 { color: #475569 !important; }
-
-/* Terminal always keeps light text in light mode — override after */
-.light .terminal .text-white, [data-theme="light"] .terminal .text-white,
-.light .terminal .text-white\/90, [data-theme="light"] .terminal .text-white\/90,
-.light .terminal .text-white\/80, [data-theme="light"] .terminal .text-white\/80,
-.light .terminal .text-slate-100, [data-theme="light"] .terminal .text-slate-100,
-.light .terminal .text-slate-200, [data-theme="light"] .terminal .text-slate-200,
-.light .terminal .text-slate-300, [data-theme="light"] .terminal .text-slate-300,
-.light .terminal .text-slate-400, [data-theme="light"] .terminal .text-slate-400 {
-  color: #f1f5f9 !important;
-}
-.light .terminal .text-slate-500, [data-theme="light"] .terminal .text-slate-500 {
-  color: #94a3b8 !important;
-}
-
-.light .bg-white, [data-theme="light"] .bg-white { background-color: #ffffff !important; }
-
-/* Fix cyan/violet bg badges that are too light in light mode */
-.light .bg-cyan-500\/10, [data-theme="light"] .bg-cyan-500\/10 { background-color: rgba(14,165,233,0.1) !important; }
-.light .bg-violet-500\/10, [data-theme="light"] .bg-violet-500\/10 { background-color: rgba(124,58,237,0.1) !important; }
-.light .bg-emerald-500\/10, [data-theme="light"] .bg-emerald-500\/10 { background-color: rgba(5,150,105,0.1) !important; }
-.light .bg-amber-500\/10, [data-theme="light"] .bg-amber-500\/10 { background-color: rgba(180,83,9,0.1) !important; }
-
-/* Light mode border for cards that use arbitrary */
-.light .border-white\/10, [data-theme="light"] .border-white\/10 { border-color: rgba(0,0,0,0.08) !important; }
-.light .border-white\/5, [data-theme="light"] .border-white\/5 { border-color: rgba(0,0,0,0.05) !important; }
-
-/* Ensure backdrop blur headers are visible in light */
-.light .backdrop-blur-2xl, [data-theme="light"] .backdrop-blur-2xl { backdrop-filter: blur(24px) saturate(180%); }
-.light .backdrop-blur-xl, [data-theme="light"] .backdrop-blur-xl { backdrop-filter: blur(20px) saturate(180%); }
-
-/* Fix bg-slate-* dots and muted backgrounds for light mode */
-.light .bg-slate-600, [data-theme="light"] .bg-slate-600 { background-color: #94a3b8 !important; }
-.light .bg-slate-700, [data-theme="light"] .bg-slate-700 { background-color: #cbd5e1 !important; }
-.light .bg-slate-500\/10, [data-theme="light"] .bg-slate-500\/10 { background-color: rgba(100,116,139,0.1) !important; }
-
-/* Fix border-slate for light */
-.light .border-slate-500\/20, [data-theme="light"] .border-slate-500\/20 { border-color: rgba(100,116,139,0.2) !important; }
-.light .border-slate-500\/25, [data-theme="light"] .border-slate-500\/25 { border-color: rgba(100,116,139,0.25) !important; }
-
-/* Ensure all cards with bg-[#0f172a] and border have proper light contrast */
-.light .bg-\[\#0f172a\].border, [data-theme="light"] .bg-\[\#0f172a\].border,
-.light .bg-\[\#0f172a\].border-\[\#1e293b\], [data-theme="light"] .bg-\[\#0f172a\].border-\[\#1e293b\] {
-  background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04) !important;
-}
+/* Practice delivery: readable at a glance, details available without a new workflow. */
+.sc-practice-availability { margin-block: 1rem; border: 1px solid var(--line-normal); border-radius: 12px; background: var(--panel-bg); color: var(--ink-secondary); }
+.sc-practice-availability summary { cursor: pointer; padding: .85rem 1rem; font-size: .8rem; line-height: 1.6; color: var(--ink-primary); }
+.sc-practice-availability summary span { display: inline; margin-inline-end: 1rem; }
+.sc-practice-availability summary span:first-child { font-weight: 650; }
+.sc-practice-delivery-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; padding: .25rem 1rem 1rem; }
+.sc-practice-delivery-grid h3 { color: var(--ink-primary); font-size: .82rem; margin: 0 0 .35rem; }
+.sc-practice-delivery-grid p, .sc-practice-delivery-note { font-size: .78rem; line-height: 1.65; margin: 0; }
+.sc-practice-delivery-note { border-top: 1px solid var(--line-normal); padding: .75rem 1rem; }
+@media (max-width: 540px) { .sc-practice-delivery-grid { grid-template-columns: minmax(0,1fr); } }

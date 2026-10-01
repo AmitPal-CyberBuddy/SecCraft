@@ -1,0 +1,24 @@
+{
+  "provenance": "Authored first-match, stateless policy model; not vendor firewall syntax",
+  "default": "deny",
+  "rules": [
+    {
+      "id": "guest-approved",
+      "source_zone": "guest",
+      "destinations": [
+        "portal-demo",
+        "public-web-demo"
+      ],
+      "action": "allow"
+    },
+    {
+      "id": "corp-approved",
+      "source_zone": "corporate",
+      "destinations": [
+        "internal-api",
+        "internal-reports"
+      ],
+      "action": "allow"
+    }
+  ]
+}

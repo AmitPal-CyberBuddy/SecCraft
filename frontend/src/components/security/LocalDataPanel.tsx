@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
 import { HardDrive, ShieldCheck, Trash2, RefreshCw, Wifi, WifiOff, Info } from 'lucide-react'
 import { useProgressStore } from '@/store/useProgressStore'
 import { apiFetch } from '@/lib/api'
@@ -89,56 +88,56 @@ export function LocalDataPanel({ className = '' }: { className?: string }) {
 
   return (
     <div className={`space-y-3 ${className}`}>
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 sm:p-5">
+      <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-4 sm:p-5">
         <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+          <div className="w-9 h-9 rounded-xl bg-[var(--success-bg)] border border-[var(--success-border)] flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-4 h-4 text-[var(--success)]" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-[14px] font-semibold text-slate-100">Local data &amp; privacy</h3>
-            <p className="mt-1 text-[12px] text-slate-400 leading-relaxed">
+            <h3 className="text-[14px] font-semibold text-[var(--ink-primary)]">Local data &amp; privacy</h3>
+            <p className="mt-1 text-[12px] text-[var(--ink-secondary)] leading-relaxed">
               Guest learning and its progress remain local to this browser. If account services are configured and you sign in,
               authentication is handled by Supabase and synchronized records are sent to the configured SecCraft API.
               The app does not add analytics or telemetry; local learning remains available if those services are offline.
             </p>
             <div className="mt-3 flex flex-wrap gap-2 text-[10.5px] font-mono">
-              <span className={`px-2 py-1 rounded-full border ${online ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
+              <span className={`px-2 py-1 rounded-full border ${online ? 'bg-[var(--success-bg)] border-[var(--success-border)] text-[var(--success)]' : 'bg-[var(--warning-bg)] border-[var(--warning-border)] text-[var(--attention)]'}`}>
                 {online ? <Wifi className="inline w-3 h-3 mr-1 -mt-0.5" /> : <WifiOff className="inline w-3 h-3 mr-1 -mt-0.5" />}
                 {online ? 'browser online' : 'browser offline (app still works)'}
               </span>
-              <span className={`px-2 py-1 rounded-full border ${apiReachable === true ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : apiReachable === false ? 'bg-slate-500/10 border-slate-500/20 text-slate-400' : 'bg-[#020617] border-[#1e293b] text-slate-500'}`}>
+              <span className={`px-2 py-1 rounded-full border ${apiReachable === true ? 'bg-[var(--success-bg)] border-[var(--success-border)] text-[var(--success)]' : apiReachable === false ? 'bg-[var(--panel-raised)] border-[var(--line-strong)] text-[var(--ink-secondary)]' : 'bg-[var(--panel-inset)] border-[var(--line-normal)] text-[var(--ink-muted)]'}`}>
                 platform API: {apiReachable === true ? 'reachable' : apiReachable === false ? 'not reachable (guest content still works)' : 'not checked'}
               </span>
-              <span className="px-2 py-1 rounded-full bg-[#020617] border border-[#1e293b] text-slate-400">account provider: {supabaseConfigured ? 'configured' : 'not configured'}</span>
+              <span className="px-2 py-1 rounded-full bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[var(--ink-secondary)]">account provider: {supabaseConfigured ? 'configured' : 'not configured'}</span>
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
 
-      <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 sm:p-5">
+      <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-[13.5px] font-semibold text-slate-100 flex items-center gap-2">
-            <HardDrive className="w-4 h-4 text-cyan-400" /> What this browser stores
+          <h3 className="text-[13.5px] font-semibold text-[var(--ink-primary)] flex items-center gap-2">
+            <HardDrive className="w-4 h-4 text-[var(--learning)]" /> What this browser stores
           </h3>
-          <div className="flex items-center gap-2 text-[10.5px] font-mono text-slate-500">
+          <div className="flex items-center gap-2 text-[10.5px] font-mono text-[var(--ink-muted)]">
             {checkedAt && <span>measured {checkedAt}</span>}
-            <button onClick={measure} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#020617] border border-[#1e293b] hover:border-[#334155] transition-colors">
+            <button onClick={measure} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[var(--panel-inset)] border border-[var(--line-normal)] hover:border-[var(--line-strong)] transition-colors">
               <RefreshCw className="w-3 h-3" /> re-measure
             </button>
           </div>
         </div>
 
-        <div className="mt-3 divide-y divide-[#1e293b]/70">
+        <div className="mt-3 divide-y divide-[var(--line-normal)]">
           {KNOWN_KEYS.map(({ key, label, description }) => {
             const size = sizes[key] ?? 0
             return (
               <div key={key} className="py-2.5 flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="text-[12.5px] text-slate-200">{label}</div>
-                  <div className="text-[11px] text-slate-500 leading-relaxed">{description}</div>
-                  <div className="text-[10px] font-mono text-slate-400 mt-0.5">{key}</div>
+                  <div className="text-[12.5px] text-[var(--ink-primary)]">{label}</div>
+                  <div className="text-sm text-[var(--ink-muted)] leading-relaxed">{description}</div>
+                  <div className="text-[10px] font-mono text-[var(--ink-secondary)] mt-0.5">{key}</div>
                 </div>
-                <span className={`shrink-0 text-[11px] font-mono ${size ? 'text-cyan-400' : 'text-slate-400'}`}>
+                <span className={`shrink-0 text-sm font-mono ${size ? 'text-[var(--learning)]' : 'text-[var(--ink-secondary)]'}`}>
                   {size ? `${size} B` : 'empty'}
                 </span>
               </div>
@@ -146,16 +145,16 @@ export function LocalDataPanel({ className = '' }: { className?: string }) {
           })}
           {(sizes['__other__'] ?? 0) > 0 && (
             <div className="py-2.5 flex items-center justify-between gap-3">
-              <div className="text-[12px] text-slate-400">Other keys on this origin</div>
-              <span className="text-[11px] font-mono text-slate-400">{sizes['__other__']} B</span>
+              <div className="text-[12px] text-[var(--ink-secondary)]">Other keys on this origin</div>
+              <span className="text-sm font-mono text-[var(--ink-secondary)]">{sizes['__other__']} B</span>
             </div>
           )}
         </div>
 
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <span className="text-[11px] font-mono text-slate-500">total: {total} B</span>
+          <span className="text-sm font-mono text-[var(--ink-muted)]">total: {total} B</span>
           <div className="flex items-center gap-2">
-            <button onClick={checkApi} className="px-3 py-1.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[11.5px] text-slate-300 hover:border-[#334155] transition-colors">
+            <button onClick={checkApi} className="px-3 py-1.5 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-sm text-[var(--ink-secondary)] hover:border-[var(--line-strong)] transition-colors">
               Check platform API
             </button>
             <button
@@ -166,14 +165,14 @@ export function LocalDataPanel({ className = '' }: { className?: string }) {
                 if (supabase) { try { await supabase.auth.signOut({ scope: 'local' }) } catch { /* local app data is still cleared */ } }
                 measure()
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/20 text-[11.5px] text-red-400 hover:bg-red-500/15 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--danger-bg)] border border-[var(--danger-border)] text-sm text-[var(--danger)] hover:bg-[var(--danger-bg)] transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" /> Erase local data &amp; sign out
             </button>
           </div>
         </div>
 
-        <p className="mt-3 flex items-start gap-1.5 text-[11px] text-slate-500 leading-relaxed">
+        <p className="mt-3 flex items-start gap-1.5 text-sm text-[var(--ink-muted)] leading-relaxed">
           <Info className="w-3 h-3 mt-0.5 shrink-0" />
           Captures you download or upload stay on your device; the evidence vault stores only the metadata you type
           (labels, claims, filters, frame numbers, hashes). If you are working with client data, treat this browser

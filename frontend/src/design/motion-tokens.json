@@ -1,0 +1,6 @@
+{
+  "duration": { "control": 140, "selection": 180, "panel": 220 },
+  "compactDuration": { "control": 100, "selection": 140, "panel": 160 },
+  "ease": [0.22, 1, 0.36, 1],
+  "distance": { "settle": 4, "panel": 8, "drawer": 12 }
+}

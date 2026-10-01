@@ -1,3 +1,4 @@
+import { scrollBehavior } from '@/lib/motion'
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
@@ -49,9 +50,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <Sidebar onClose={closeMenu} isMobile isOpen={menuOpen} />
     </div>
     <Topbar onMenuToggle={() => setMenuOpen(open => !open)} sidebarOpen={menuOpen} />
-    <main id="main-content" className="sc-shell-main">
+    <main id="main-content" tabIndex={-1} className="sc-shell-main">
       <div className="ws-main sc-shell-content"><div className="min-w-0 w-full max-w-[1400px] mx-auto"><AccountBanner />{children}</div></div>
     </main>
-    {showScrollTop && <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="sc-scroll-top fixed bottom-4 right-4 z-30 w-10 h-10 flex items-center justify-center" aria-label="Scroll to top"><ArrowUp size={17} /></button>}
+    {showScrollTop && <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: scrollBehavior() })} className="sc-scroll-top fixed bottom-4 right-4 z-30 w-10 h-10 flex items-center justify-center" aria-label="Scroll to top"><ArrowUp size={17} /></button>}
   </div>
 }

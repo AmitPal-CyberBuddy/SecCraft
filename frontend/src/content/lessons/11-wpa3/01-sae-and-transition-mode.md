@@ -22,14 +22,11 @@ Properties that matter for testing:
 
 * **Passive-capture resistance.** A correctly implemented SAE exchange does not provide the ordinary WPA-Personal handshake/PMKID offline verifier; a password guess generally requires an online exchange. Online rate limiting is implementation-dependent, and side-channel or implementation flaws remain possible.
 * **Forward secrecy (with sound ephemeral randomness and implementation).** Recorded sessions are designed not to reveal their keys merely because the password is later learned.
-* **PMF is mandatory** in WPA3-Personal (MFPC + MFPR set in the RSNE).
-* **Groups**: 19 (P-256), 20 (P-384), 21 (P-521) — these are **elliptic-curve** (Weierstrass) groups;
-  MODP groups 22–24 exist in the standard but are not the default. WPA3-Personal uses 128-bit security;
-  the 192-bit Suite B mode adds group 21 with GCMP-256 and BIP-GMAC-256.
+* **PMF is mandatory for SAE associations.** A WPA3-Personal-only BSS advertises MFPC + MFPR; a transition BSS may advertise MFPC without MFPR to admit legacy PSK clients, while SAE associations still require PMF.
+* **Groups**: group 19 (P-256) is a common SAE choice; additional group support depends on implementation and profile. Do not conflate SAE groups with WPA3-Enterprise’s distinct 192-bit security profile. Verify applicable client/AP versions rather than inferring a security level from a group number.
 * **SAE-EXT-KEY** (AKM selector 24) is a distinct extended-key variant. Do not infer Wi-Fi generation, security posture, or successful negotiation from that selector alone; check the applicable standard/profile and client support.
 
-Do **not** report "SAE is vulnerable to X" based on a lab capture: the commit/confirm payloads cannot be
-turned into an offline audit, because no keyed verification value is exposed.
+Do **not** report "SAE is vulnerable to X" based on this fixture. Its commit/confirm-shaped bytes are not a valid cryptographic exchange. A correctly implemented passive SAE exchange does not expose the ordinary password-derived PSK offline verifier; implementation-vulnerability claims require separate version-specific evidence.
 
 ## 2. Transition mode: the downgrade surface
 
@@ -42,9 +39,9 @@ RSNE: version 1, group CCMP, pairwise CCMP, AKM {PSK, SAE}, caps = 0x0080 (MFPC,
 Consequences:
 
 * A WPA2-era client associates with the **PSK** AKM and runs a normal 4-way handshake — capture of that
-  handshake yields crackable material exactly as in module 09 (`wpa3-transition.pcapng` shows this).
+  handshake yields crackable material exactly as in Module 08 (`wpa3-transition.pcapng` shows this).
 * Deployments often reuse one passphrase for both AKMs, but may configure distinct credentials. If reused, a weak passphrase can be audited from a captured PSK handshake for clients that select PSK; do not assume credential reuse without configuration evidence.
-* MFPR not being set means the management-frame protections of WPA3 are not enforced for those clients.
+* MFPR not being set means protection is not universally required by this advertisement; capable clients may still negotiate PMF. Check the actual negotiated policy before predicting a client effect.
 
 The finding is not "WPA3 is broken"; it is *"the deployment permits a WPA2 association, so WPA3's
 offline-guessing resistance does not apply to all clients"*.
