@@ -2,7 +2,7 @@
   "name": "seccraft",
   "private": true,
   "version": "2.1.0",
-  "description": "SecCraft \u2014 Hands-on Cybersecurity Learning Platform. Learn. Practice. Investigate. Improve.",
+  "description": "SecCraft — Hands-on Cybersecurity Learning Platform. Learn. Practice. Investigate. Improve.",
   "type": "module",
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
@@ -11,12 +11,15 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "test": "node --test --test-concurrency=1 tests/api-resilience.test.mjs tests/access-matrix.test.mjs tests/account-states.test.mjs tests/tour-contract.test.mjs tests/admin-console.test.mjs",
+    "test": "node --test --test-concurrency=1 tests/api-resilience.test.mjs tests/access-matrix.test.mjs tests/account-states.test.mjs tests/tour-contract.test.mjs tests/admin-console.test.mjs tests/responsive-foundations.test.mjs tests/shared-controls.test.mjs tests/learning-journey.test.mjs tests/dense-workflows.test.mjs tests/secondary-pages.test.mjs tests/feedback-reliability.test.mjs tests/motion-system.test.mjs",
     "preview": "vite preview",
     "preview:pages": "node ../scripts/serve-pages-preview.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",
+    "@zxcvbn-ts/core": "^4.2.0",
+    "@zxcvbn-ts/language-common": "^4.1.3",
+    "@zxcvbn-ts/language-en": "^4.1.1",
     "clsx": "^2.1.1",
     "driver.js": "^1.8.0",
     "framer-motion": "^12.23.24",

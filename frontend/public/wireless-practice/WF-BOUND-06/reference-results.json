@@ -1,0 +1,24 @@
+{
+  "provenance": "Supplied expected model classifications, not actual network outcomes",
+  "baseline": {
+    "F1": "MODEL_CONSISTENT",
+    "F2": "MODEL_CONSISTENT",
+    "F3": "MODEL_CONSISTENT",
+    "F4": "MODEL_DEVIATION",
+    "F5": "MODEL_DEVIATION",
+    "F6": "MODEL_CONSISTENT",
+    "F7": "INCONCLUSIVE",
+    "F8": "STOP_SCOPE"
+  },
+  "hardened": {
+    "F1": "MODEL_CONSISTENT",
+    "F2": "MODEL_CONSISTENT",
+    "F3": "MODEL_CONSISTENT",
+    "F4": "MODEL_CONSISTENT",
+    "F5": "MODEL_CONSISTENT",
+    "F6": "MODEL_CONSISTENT",
+    "F7": "INCONCLUSIVE",
+    "F8": "STOP_SCOPE"
+  },
+  "live_network": "NOT TESTED"
+}

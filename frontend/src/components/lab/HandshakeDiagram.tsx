@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Wifi, Key, Shield, Zap, ArrowRight, CheckCircle, AlertTriangle, Eye, Lock, Unlock } from 'lucide-react'
+import { SelectionMarker } from '@/components/common/SelectionMarker'
+import { useState, useId } from 'react'
+import { Key, Shield, ArrowRight, CheckCircle, AlertTriangle, Eye } from 'lucide-react'
 
 interface Props {
   pcapId?: string
@@ -23,6 +23,7 @@ interface Props {
 }
 
 export function HandshakeDiagram({ pcapId = 'wpa2-handshake', bssid = 'AA:BB:CC:DD:EE:FF', client = '11:22:33:44:55:66', ssid = 'LAB-WPA2', anonce = 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2', snonce = 'd4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6', mic = '1234567890abcdef1234567890abcdef', pmkid, rsn }: Props) {
+  const detailId = useId()
   const [activeStep, setActiveStep] = useState(0)
   const [showPMKID, setShowPMKID] = useState(false)
 
@@ -92,25 +93,25 @@ export function HandshakeDiagram({ pcapId = 'wpa2-handshake', bssid = 'AA:BB:CC:
   }
 
   return (
-    <div className="space-y-4">
+    <div className="sc-technical-surface space-y-4">
       {/* Header */}
-      <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-5 relative overflow-hidden group hover:border-[#334155]/60 transition-all">
-        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/[0.03] to-violet-500/[0.02] opacity-60 group-hover:opacity-100 transition-opacity" />
-        <div className="relative flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-              <Key className="w-5 h-5 text-cyan-400" />
+      <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-5 relative overflow-hidden group hover:border-[var(--line-strong)] sc-technical-transition">
+
+        <div className="relative flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="shrink-0 w-9 h-9 rounded-xl bg-[var(--accent-bg)] border border-[var(--accent-border)] flex items-center justify-center">
+              <Key className="w-5 h-5 text-[var(--learning)]" />
             </div>
             <div>
-              <div className="text-[13px] font-bold text-slate-100 flex items-center gap-2">
+              <div className="text-[13px] font-bold text-[var(--ink-primary)] flex items-center gap-2">
                 4-Way Handshake Interactive Diagram — {pcapId}.pcapng
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">LIVE</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--success-bg)] text-[var(--success)] border border-[var(--success-border)]">Simulation</span>
               </div>
-              <div className="text-[11px] text-slate-500 font-mono">BSSID {bssid} • Client {client} • SSID {ssid} • Replay 1,1,2,2 • ANonce/SNonce/MIC</div>
+              <div className="text-[11px] text-[var(--ink-muted)] font-mono">BSSID {bssid} • Client {client} • SSID {ssid} • Replay 1,1,2,2 • ANonce/SNonce/MIC</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setShowPMKID(!showPMKID)} className={`px-3 py-1.5 rounded-full text-[11px] font-medium border transition-all ${showPMKID ? 'bg-violet-500/15 border-violet-500/30 text-violet-400' : 'bg-[#020617]/60 border-[#1e293b]/60 text-slate-500 hover:text-slate-300'}`}>
+            <button type="button" aria-pressed={showPMKID} onClick={() => setShowPMKID(!showPMKID)} className={`min-h-11 px-3 py-1.5 rounded-full text-[11px] font-medium border sc-technical-transition ${showPMKID ? 'bg-[var(--owner-bg)] border-[var(--owner-border)] text-[var(--owner)]' : 'bg-[var(--panel-inset)] border-[var(--line-normal)] text-[var(--ink-muted)] hover:text-[var(--ink-secondary)]'}`}>
               {showPMKID ? 'Hide PMKID' : 'Show PMKID'}
             </button>
           </div>
@@ -119,152 +120,152 @@ export function HandshakeDiagram({ pcapId = 'wpa2-handshake', bssid = 'AA:BB:CC:
         {/* Flow */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-4 gap-3">
           {steps.map((step, idx) => (
-            <motion.div
+            <button
+              type="button"
+              aria-pressed={activeStep === idx}
+              aria-controls={detailId}
               key={step.id}
-              whileHover={{ scale: 1.02 }}
               onClick={() => setActiveStep(idx)}
-              className={`p-4 rounded-xl border cursor-pointer transition-all relative overflow-hidden ${activeStep === idx ? 'bg-[#1e293b] border-cyan-500/30 shadow-glow-cyan' : 'bg-[#020617]/60 border-[#1e293b]/50 hover:border-[#334155]/60 hover:bg-[#020617]/80'}`}
+              className={`sc-technical-choice text-left p-4 rounded-xl border cursor-pointer sc-technical-transition relative overflow-hidden ${activeStep === idx ? 'bg-[var(--panel-raised)] border-[var(--accent-border)] shadow-soft' : 'bg-[var(--panel-inset)] border-[var(--line-normal)] hover:border-[var(--line-strong)] hover:bg-[var(--panel-inset)]'}`}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${step.good ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>{step.id}</span>
-                <span className="text-[10px] font-mono text-slate-500">Replay {step.replay}</span>
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${step.good ? 'bg-[var(--success-bg)] text-[var(--success)] border-[var(--success-border)]' : 'bg-[var(--danger-bg)] text-[var(--danger)] border-[var(--danger-border)]'}`}>{step.id}</span>
+                <span className="text-[10px] font-mono text-[var(--ink-muted)]">Replay {step.replay}</span>
               </div>
-              <div className="text-[12px] font-semibold text-slate-100">{step.title}</div>
-              <div className="text-[11px] font-mono text-slate-500 mt-1 truncate">SA {step.sa.slice(0, 8)}... DA {step.da.slice(0, 8)}...</div>
-              <div className="text-[10px] text-slate-400 mt-2 leading-relaxed">{step.nonce} • {step.mic} • {step.keyData}</div>
-              {activeStep === idx && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-cyan-400 to-violet-400" />}
-            </motion.div>
+              <div className="text-[12px] font-semibold text-[var(--ink-primary)]">{step.title}</div>
+              <div className="text-[11px] font-mono text-[var(--ink-muted)] mt-1 truncate">SA {step.sa.slice(0, 8)}... DA {step.da.slice(0, 8)}...</div>
+              <div className="text-[10px] text-[var(--ink-secondary)] mt-2 leading-relaxed">{step.nonce} • {step.mic} • {step.keyData}</div>
+            </button>
           ))}
         </div>
 
         {/* Active step detail */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeStep}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="mt-4 p-4 rounded-xl bg-[#020617] border border-[#1e293b] font-mono text-[11px] text-slate-400 leading-relaxed"
+        <>
+          <div
+            id={detailId} role="region" aria-label="Handshake step details"
+            className="sc-technical-detail mt-4 p-4 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] font-mono text-[11px] text-[var(--ink-secondary)] leading-relaxed"
           >
+            <SelectionMarker value={activeStep} />
+            <span className="sr-only" role="status">{steps[activeStep].title} selected</span>
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-6 h-6 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center"><ArrowRight className="w-3 h-3 text-cyan-400" /></div>
-              <span className="text-[12px] font-bold text-slate-200">{steps[activeStep].title} — Detail</span>
+              <div className="w-6 h-6 rounded-lg bg-[var(--accent-bg)] border border-[var(--accent-border)] flex items-center justify-center"><ArrowRight className="w-3 h-3 text-[var(--learning)]" /></div>
+              <span className="text-[12px] font-bold text-[var(--ink-primary)]">{steps[activeStep].title} — Detail</span>
             </div>
             <div>SA {steps[activeStep].sa} → DA {steps[activeStep].da} BSSID {bssid} Replay {steps[activeStep].replay} Nonce {steps[activeStep].nonce} MIC {steps[activeStep].mic} Key Data {steps[activeStep].keyData}</div>
-            <div className="mt-2 text-slate-300">{steps[activeStep].description}</div>
-            <div className="mt-2 text-cyan-400/80">Filter: {steps[activeStep].filter}</div>
-          </motion.div>
-        </AnimatePresence>
+            <div className="mt-2 text-[var(--ink-secondary)]">{steps[activeStep].description}</div>
+            <div className="mt-2 text-[var(--learning)]">Filter: {steps[activeStep].filter}</div>
+          </div>
+        </>
       </div>
 
       {/* RSN IE Decoder */}
-      <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-5 relative overflow-hidden group hover:border-[#334155]/60 transition-all">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/[0.03] to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
+      <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-5 relative overflow-hidden group hover:border-[var(--line-strong)] sc-technical-transition">
+
         <div className="relative">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
-              <Shield className="w-4 h-4 text-violet-400" />
+            <div className="w-8 h-8 rounded-xl bg-[var(--owner-bg)] border border-[var(--owner-border)] flex items-center justify-center">
+              <Shield className="w-4 h-4 text-[var(--owner)]" />
             </div>
             <div>
-              <div className="text-[13px] font-bold text-slate-100">RSN IE Decoder — Tag 48</div>
-              <div className="text-[11px] text-slate-500 font-mono">Version, Group Cipher, Pairwise, AKM, Capabilities MFPC/MFPR, PMKID, Group Mgmt BIP, WPS</div>
+              <div className="text-[13px] font-bold text-[var(--ink-primary)]">RSN IE Decoder — Tag 48</div>
+              <div className="text-[11px] text-[var(--ink-muted)] font-mono">Version, Group Cipher, Pairwise, AKM, Capabilities MFPC/MFPR, PMKID, Group Mgmt BIP, WPS</div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
-              <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
-                <div className="text-[11px] text-slate-500 uppercase tracking-widest">Version</div>
-                <div className="text-[12px] font-mono text-slate-200 mt-1">{rsnInfo.version} — RSN Version 1</div>
+              <div className="p-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)]">
+                <div className="text-[11px] text-[var(--ink-muted)] uppercase tracking-widest">Version</div>
+                <div className="text-[12px] font-mono text-[var(--ink-primary)] mt-1">{rsnInfo.version} — RSN Version 1</div>
               </div>
-              <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
-                <div className="text-[11px] text-slate-500 uppercase tracking-widest">Group Cipher</div>
-                <div className={`text-[12px] font-mono mt-1 ${rsnInfo.groupCipher.includes('CCMP') ? 'text-emerald-400' : 'text-red-400'}`}>{rsnInfo.groupCipher}</div>
-                <div className="text-[10px] text-slate-400 mt-1">Filter: wlan.rsn.gcs.type==4 CCMP good, ==2 TKIP bad</div>
+              <div className="p-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)]">
+                <div className="text-[11px] text-[var(--ink-muted)] uppercase tracking-widest">Group Cipher</div>
+                <div className={`text-[12px] font-mono mt-1 ${rsnInfo.groupCipher.includes('CCMP') ? 'text-[var(--success)]' : 'text-[var(--danger)]'}`}>{rsnInfo.groupCipher}</div>
+                <div className="text-[10px] text-[var(--ink-secondary)] mt-1">Filter: wlan.rsn.gcs.type==4 CCMP good, ==2 TKIP bad</div>
               </div>
-              <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
-                <div className="text-[11px] text-slate-500 uppercase tracking-widest">Pairwise Cipher</div>
-                <div className={`text-[12px] font-mono mt-1 ${rsnInfo.pairwiseCipher.includes('CCMP') ? 'text-emerald-400' : 'text-red-400'}`}>{rsnInfo.pairwiseCipher}</div>
-                <div className="text-[10px] text-slate-400 mt-1">Filter: wlan.rsn.pcs.type==4 CCMP good</div>
+              <div className="p-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)]">
+                <div className="text-[11px] text-[var(--ink-muted)] uppercase tracking-widest">Pairwise Cipher</div>
+                <div className={`text-[12px] font-mono mt-1 ${rsnInfo.pairwiseCipher.includes('CCMP') ? 'text-[var(--success)]' : 'text-[var(--danger)]'}`}>{rsnInfo.pairwiseCipher}</div>
+                <div className="text-[10px] text-[var(--ink-secondary)] mt-1">Filter: wlan.rsn.pcs.type==4 CCMP good</div>
               </div>
-              <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
-                <div className="text-[11px] text-slate-500 uppercase tracking-widest">AKM (Auth Key Mgmt)</div>
-                <div className="text-[12px] font-mono text-slate-200 mt-1">{rsnInfo.akm}</div>
-                <div className="text-[10px] text-slate-400 mt-1">Filter: wlan.rsn.akms.type==2 PSK, ==8 SAE WPA3, ==1 EAP, count&gt;1 transition</div>
+              <div className="p-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)]">
+                <div className="text-[11px] text-[var(--ink-muted)] uppercase tracking-widest">AKM (Auth Key Mgmt)</div>
+                <div className="text-[12px] font-mono text-[var(--ink-primary)] mt-1">{rsnInfo.akm}</div>
+                <div className="text-[10px] text-[var(--ink-secondary)] mt-1">Filter: wlan.rsn.akms.type==2 PSK, ==8 SAE WPA3, ==1 EAP, count&gt;1 transition</div>
                 <div className="flex gap-1 mt-2">
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">PSK 2</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20">SAE 8 WPA3</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">EAP 1 Enterprise</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--success-bg)] text-[var(--success)] border border-[var(--success-border)]">PSK 2</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--owner-bg)] text-[var(--owner)] border border-[var(--owner-border)]">SAE 8 WPA3</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--info-bg)] text-[var(--info)] border border-[var(--control-border)]">EAP 1 Enterprise</span>
                 </div>
               </div>
             </div>
 
             <div className="space-y-3">
-              <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
-                <div className="text-[11px] text-slate-500 uppercase tracking-widest">RSN Capabilities — PMF MFPC/MFPR</div>
+              <div className="p-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)]">
+                <div className="text-[11px] text-[var(--ink-muted)] uppercase tracking-widest">RSN Capabilities — PMF MFPC/MFPR</div>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className={`text-[11px] px-2.5 py-1 rounded-full border font-mono ${rsnInfo.mfpc ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>MFPC {rsnInfo.mfpc ? '1 capable' : '0 disabled'}</span>
-                  <span className={`text-[11px] px-2.5 py-1 rounded-full border font-mono ${rsnInfo.mfpr ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>MFPR {rsnInfo.mfpr ? '1 required' : '0 not required'}</span>
+                  <span className={`text-[11px] px-2.5 py-1 rounded-full border font-mono ${rsnInfo.mfpc ? 'bg-[var(--success-bg)] text-[var(--success)] border-[var(--success-border)]' : 'bg-[var(--danger-bg)] text-[var(--danger)] border-[var(--danger-border)]'}`}>MFPC {rsnInfo.mfpc ? '1 capable' : '0 disabled'}</span>
+                  <span className={`text-[11px] px-2.5 py-1 rounded-full border font-mono ${rsnInfo.mfpr ? 'bg-[var(--success-bg)] text-[var(--success)] border-[var(--success-border)]' : 'bg-[var(--warning-bg)] text-[var(--attention)] border-[var(--warning-border)]'}`}>MFPR {rsnInfo.mfpr ? '1 required' : '0 not required'}</span>
                 </div>
-                <div className="text-[10px] text-slate-500 mt-2 leading-relaxed">
+                <div className="text-[10px] text-[var(--ink-muted)] mt-2 leading-relaxed">
                   {rsnInfo.mfpc && rsnInfo.mfpr ? 'MFPC=1/MFPR=1 advertises PMF required; this reduces acceptance of spoofed robust management frames by negotiated peers. It does not prevent every deauth technique' : rsnInfo.mfpc && !rsnInfo.mfpr ? 'MFPC=1/MFPR=0 advertises PMF capable but not required. Assess client negotiation and transition policy; do not infer a downgrade from this bit alone' : 'MFPC=0/MFPR=0 advertises no PMF. Susceptible peers may accept spoofed robust management frames; this does not prove a disconnect, handshake capture or impact'}
                 </div>
-                <div className="text-[10px] text-cyan-400/80 mt-1">Filter: wlan.rsn.capabilities.mfpc==1 && mfpr==1 required, ==0 && ==0 disabled</div>
+                <div className="text-[10px] text-[var(--learning)] mt-1">Filter: wlan.rsn.capabilities.mfpc==1 && mfpr==1 required, ==0 && ==0 disabled</div>
               </div>
-              <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
-                <div className="text-[11px] text-slate-500 uppercase tracking-widest">PMKID & Group Management</div>
-                <div className="text-[12px] font-mono text-slate-200 mt-1">PMKID is a 16-byte HMAC-SHA1-derived value in some EAPOL-Key M1s — no need for all four handshake messages; an associated-client exchange/AP support may be needed, no deauth is inherently required</div>
-                <div className="text-[10px] text-slate-400 mt-1">Filter: wlan.rsn.pmkid or wlan_rsna_eapol.pmkid</div>
-                <div className="text-[12px] font-mono text-slate-200 mt-2">Group Mgmt Cipher BIP (00-0F-AC-06) — for PMF — BIP-GMAC-128/256 for WPA3</div>
-                <div className="text-[10px] text-slate-400 mt-1">Filter: wlan.rsn.gmcs.type==6 BIP good</div>
+              <div className="p-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)]">
+                <div className="text-[11px] text-[var(--ink-muted)] uppercase tracking-widest">PMKID & Group Management</div>
+                <div className="text-[12px] font-mono text-[var(--ink-primary)] mt-1">PMKID is a 16-byte HMAC-SHA1-derived value in some EAPOL-Key M1s — no need for all four handshake messages; an associated-client exchange/AP support may be needed, no deauth is inherently required</div>
+                <div className="text-[10px] text-[var(--ink-secondary)] mt-1">Filter: wlan.rsn.pmkid or wlan_rsna_eapol.pmkid</div>
+                <div className="text-[12px] font-mono text-[var(--ink-primary)] mt-2">Group Mgmt Cipher BIP (00-0F-AC-06) — for PMF — BIP-GMAC-128/256 for WPA3</div>
+                <div className="text-[10px] text-[var(--ink-secondary)] mt-1">Filter: wlan.rsn.gmcs.type==6 BIP good</div>
               </div>
-              <div className={`p-3 rounded-xl border ${rsnInfo.wps ? 'bg-red-500/10 border-red-500/20' : 'bg-emerald-500/10 border-emerald-500/20'}`}>
-                <div className="text-[11px] uppercase tracking-widest flex items-center gap-1" style={{ color: rsnInfo.wps ? '#f87171' : '#34d399' }}>
+              <div className={`p-3 rounded-xl border ${rsnInfo.wps ? 'bg-[var(--danger-bg)] border-[var(--danger-border)]' : 'bg-[var(--success-bg)] border-[var(--success-border)]'}`}>
+                <div className="text-[11px] uppercase tracking-widest flex items-center gap-1" style={{ color: rsnInfo.wps ? 'var(--danger)' : 'var(--success)' }}>
                   {rsnInfo.wps ? <><AlertTriangle className="w-3 h-3" /> WPS information element present — investigate configuration and lock state</> : <><CheckCircle className="w-3 h-3" /> No WPS information element in this selected frame</>}
                 </div>
-                <div className="text-[10px] text-slate-500 mt-1">Filter: wps or wlan.tag.oui==00:50:f2:04 — WPS IE presence is an observation, not proof of an exploitable PIN or enrollment policy</div>
-                <div className="text-[11px] font-mono mt-1" style={{ color: rsnInfo.wps ? '#f87171' : '#34d399' }}>{rsnInfo.wps ? 'WPS IE observed; check setup lock, methods, implementation, rate limits and authorized config' : 'No WPS IE observed in this frame; absence alone does not validate the running configuration'}</div>
+                <div className="text-[10px] text-[var(--ink-muted)] mt-1">Filter: wps or wlan.tag.oui==00:50:f2:04 — WPS IE presence is an observation, not proof of an exploitable PIN or enrollment policy</div>
+                <div className="text-[11px] font-mono mt-1" style={{ color: rsnInfo.wps ? 'var(--danger)' : 'var(--success)' }}>{rsnInfo.wps ? 'WPS IE observed; check setup lock, methods, implementation, rate limits and authorized config' : 'No WPS IE observed in this frame; absence alone does not validate the running configuration'}</div>
               </div>
             </div>
           </div>
 
-          <div className="mt-4 p-3 rounded-xl bg-[#020617] border border-[#1e293b] font-mono text-[11px] text-slate-400 leading-relaxed">
-            <div className="text-slate-300 mb-1">Example RSN IE Good WPA3-only:</div>
+          <div className="mt-4 p-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] font-mono text-[11px] text-[var(--ink-secondary)] leading-relaxed">
+            <div className="text-[var(--ink-secondary)] mb-1">Example RSN IE Good WPA3-only:</div>
             Tag 48 Length 20 Version 1 Group CCMP (00-0F-AC-04) Pairwise Count 1 CCMP AKM Count 1 SAE (00-0F-AC-08) RSN Caps 0x00C0 MFPC=1 MFPR=1 PMF required PMKID Count 0 Group Mgmt BIP (00-0F-AC-06) — good — no WPS — no TKIP
-            <div className="text-slate-300 mt-2 mb-1">Example Bad Transition PSK+SAE PMF optional WPS:</div>
+            <div className="text-[var(--ink-secondary)] mt-2 mb-1">Example Bad Transition PSK+SAE PMF optional WPS:</div>
             Illustrative only: an RSNE with PSK+SAE and MFPC=1/MFPR=0 permits transition-compatible policy; this alone does not prove a downgrade. Weak passphrases remain a PSK concern. Review WPS state and actual client negotiation; rate risks in context.
           </div>
         </div>
       </div>
 
       {/* PMKID */}
-      <AnimatePresence>
+      <>
         {showPMKID && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="rounded-2xl bg-[#0f172a] border border-violet-500/20 p-5 relative overflow-hidden shadow-glow-violet">
-            <div className="absolute inset-0 bg-gradient-to-br from-violet-500/[0.03] to-transparent" />
+          <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--owner-border)] p-5 relative overflow-hidden shadow-soft">
+
             <div className="relative">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center"><Eye className="w-4 h-4 text-violet-400" /></div>
+                <div className="w-8 h-8 rounded-xl bg-[var(--owner-bg)] border border-[var(--owner-border)] flex items-center justify-center"><Eye className="w-4 h-4 text-[var(--owner)]" /></div>
                 <div>
-                  <div className="text-[13px] font-bold text-slate-100">PMKID — Reduced Handshake Capture</div>
-                  <div className="text-[11px] text-slate-500 font-mono">PMKID = HMAC-SHA1-128(PMK, "PMK Name" | BSSID | STA MAC) 16 bytes — HMAC-SHA1 20 bytes first 16 — may be collected without a full 4-way exchange; collection methods/AP behavior vary</div>
+                  <div className="text-[13px] font-bold text-[var(--ink-primary)]">PMKID — Reduced Handshake Capture</div>
+                  <div className="text-[11px] text-[var(--ink-muted)] font-mono">PMKID = HMAC-SHA1-128(PMK, "PMK Name" | BSSID | STA MAC) 16 bytes — HMAC-SHA1 20 bytes first 16 — may be collected without a full 4-way exchange; collection methods/AP behavior vary</div>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
-                  <div className="text-[11px] text-slate-500 uppercase tracking-widest">PMKID Value</div>
-                  <div className="text-[12px] font-mono text-violet-400 mt-1 break-all">{pmkid || 'aabbccddeeff00112233445566778899'}</div>
-                  <div className="text-[10px] text-slate-400 mt-1">16 bytes 32 hex chars — first 128 bits of HMAC-SHA1</div>
+                <div className="p-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)]">
+                  <div className="text-[11px] text-[var(--ink-muted)] uppercase tracking-widest">PMKID Value</div>
+                  <div className="text-[12px] font-mono text-[var(--owner)] mt-1 break-all">{pmkid || 'aabbccddeeff00112233445566778899'}</div>
+                  <div className="text-[10px] text-[var(--ink-secondary)] mt-1">16 bytes 32 hex chars — first 128 bits of HMAC-SHA1</div>
                 </div>
-                <div className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
-                  <div className="text-[11px] text-slate-500 uppercase tracking-widest">Formula</div>
-                  <div className="text-[11px] font-mono text-slate-300 mt-1">PMK = PBKDF2(passphrase, SSID, 4096, 32 bytes)</div>
-                  <div className="text-[11px] font-mono text-slate-300">Data = "PMK Name" (8) + BSSID (6) + STA MAC (6) = 20 bytes</div>
-                  <div className="text-[11px] font-mono text-slate-300">HMAC-SHA1(PMK, Data) = 20 bytes</div>
-                  <div className="text-[11px] font-mono text-violet-400">PMKID = first 16 bytes</div>
+                <div className="p-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)]">
+                  <div className="text-[11px] text-[var(--ink-muted)] uppercase tracking-widest">Formula</div>
+                  <div className="text-[11px] font-mono text-[var(--ink-secondary)] mt-1">PMK = PBKDF2(passphrase, SSID, 4096, 32 bytes)</div>
+                  <div className="text-[11px] font-mono text-[var(--ink-secondary)]">Data = "PMK Name" (8) + BSSID (6) + STA MAC (6) = 20 bytes</div>
+                  <div className="text-[11px] font-mono text-[var(--ink-secondary)]">HMAC-SHA1(PMK, Data) = 20 bytes</div>
+                  <div className="text-[11px] font-mono text-[var(--owner)]">PMKID = first 16 bytes</div>
                 </div>
               </div>
-              <div className="mt-3 p-3 rounded-xl bg-[#020617] border border-[#1e293b] font-mono text-[11px] text-slate-400">
+              <div className="mt-3 p-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] font-mono text-[11px] text-[var(--ink-secondary)]">
                 <div>BSSID {bssid} STA MAC {client} SSID {ssid} PMKID {pmkid || 'aabb...'} in EAPOL M1 key data RSN IE PMKID Count 1</div>
                 <div className="mt-1">Filter: wlan_rsna_eapol.pmkid or eapol && wlan.rsn.pmkid</div>
                 <div className="mt-1">Some collection methods actively associate as a test station and request an exchange; an AP may emit PMKID in M1. No victim deauthentication or complete four-way handshake is necessarily required, but this is not literally clientless. Use only in an authorized lab.</div>
@@ -272,14 +273,14 @@ export function HandshakeDiagram({ pcapId = 'wpa2-handshake', bssid = 'AA:BB:CC:
                 <div className="mt-1">Defense: Use a unique high-entropy PSK; consider WPA3-SAE-only where compatible. PMF/WPS controls address separate risks; no fixed password length guarantees strength.</div>
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </>
 
       {/* Evidence */}
-      <div className="rounded-2xl bg-[#020617]/60 border border-[#1e293b]/50 p-4">
-        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2"><Shield className="w-3 h-3" /> VAPT Evidence — Handshake & RSN</div>
-        <div className="mt-2 text-[11px] font-mono text-slate-500 leading-relaxed">
+      <div className="rounded-2xl bg-[var(--panel-inset)] border border-[var(--line-normal)] p-4">
+        <div className="text-[11px] font-bold text-[var(--ink-secondary)] uppercase tracking-widest flex items-center gap-2"><Shield className="w-3 h-3" /> VAPT Evidence — Handshake & RSN</div>
+        <div className="mt-2 text-[11px] font-mono text-[var(--ink-muted)] leading-relaxed">
           PCAP: {pcapId}.pcapng SHA256 (sha256sum {pcapId}.pcapng) Frames 11-12 BSSID {bssid} Client {client} SSID {ssid} Ch6<br/>
           M1 f9 ANonce {anonce.slice(0, 16)}... replay 1 SA BSSID DA client MIC 0, M2 f10 SNonce {snonce.slice(0, 16)}... MIC {mic.slice(0, 16)}... replay 1 SA client DA BSSID, M3 f11 GTK encrypted MIC replay 2 SA BSSID DA client, M4 f12 ACK MIC replay 2 SA client DA BSSID — complete 1,1,2,2<br/>
           RSN: Group CCMP, Pairwise CCMP, AKM {rsnInfo.akm}, MFPC={rsnInfo.mfpc ? 1 : 0} MFPR={rsnInfo.mfpr ? 1 : 0} {rsnInfo.mfpc && rsnInfo.mfpr ? 'PMF required good' : rsnInfo.mfpc ? 'PMF capable optional Medium' : 'PMF disabled Medium deauth possible'}, WPS {rsnInfo.wps ? 'enabled High 11k' : 'disabled good'}, BIP Group Mgmt<br/>

@@ -1,4 +1,4 @@
-# Kill Chain and Segmentation Testing (Lab)
+# Separate an Attack Narrative from Segmentation Evidence
 
 > Artifact: `corporate-attacks.pcapng` — 19-frame deterministic simulation. It contains management frames, a PSK look-alike BSS, a real-MIC WPA-Personal handshake using the documented lab PSK, a direct synthetic EAP-MSCHAPv2 exchange, and an ICMP echo/reply pair. **It does not contain DHCP, DNS, a PEAP/TLS tunnel, RADIUS packets, certificate-validation evidence or a complete production attack chain.**
 

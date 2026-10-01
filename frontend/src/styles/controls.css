@@ -1,0 +1,79 @@
+/* Shared controls use semantic tokens in both themes. No legacy-class overrides. */
+.ws-page-header > div { min-width:0; }
+.ws-page-header h1 { overflow-wrap:anywhere; }
+.ws-page-header .ws-muted { font-size:1rem; line-height:1.65; }
+.ws-header-action { display:flex; align-items:center; flex-wrap:wrap; gap:12px; flex-shrink:0; max-width:100%; }
+.ws-panel-surface { padding:clamp(16px,2.5vw,28px); border:1px solid var(--line-normal); border-radius:var(--radius-panel); background:var(--panel-bg); }
+.ws-panel-heading { flex-wrap:wrap; }
+.ws-panel-heading h2 { line-height:1.35; }
+.ws-view-switcher { display:flex; flex-wrap:wrap; gap:8px; padding:8px 0; min-width:0; }
+.ws-view-switcher button { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; max-width:100%; padding:10px 14px; border:1px solid var(--line-normal); border-radius:var(--radius-control); background:var(--panel-bg); color:var(--ink-secondary); font-size:.875rem; line-height:1.4; text-align:left; }
+.ws-view-switcher button > span { min-width:0; overflow-wrap:anywhere; }
+.ws-view-switcher button > span:first-child:has(svg) { flex:none; }
+.ws-view-switcher button:hover { background:var(--panel-raised); border-color:var(--line-strong); }
+.ws-view-switcher button[aria-pressed="true"] { background:var(--nav-active); border-color:var(--learning); color:var(--ink-primary); box-shadow:inset 0 -2px var(--learning); font-weight:650; }
+.ws-view-count { font-variant-numeric:tabular-nums; border:1px solid var(--line-normal); border-radius:4px; padding:0 5px; font-size:.75rem; }
+.ws-field { display:grid; gap:8px; min-width:0; }
+.ws-field label { font-size:.875rem; font-weight:650; color:var(--ink-primary); }
+.ws-field-hint,.ws-field-error { margin:0; font-size:.875rem; line-height:1.6; }
+.ws-field-hint { color:var(--ink-secondary); }
+.ws-field-error { color:var(--danger); }
+.ws-input { min-height:44px; width:100%; min-width:0; padding:10px 12px; border:1px solid var(--line-normal); border-radius:var(--radius-control); background:var(--panel-inset); color:var(--ink-primary); font:inherit; font-size:1rem; line-height:1.5; }
+.ws-input::placeholder { color:var(--ink-muted); opacity:1; }
+.ws-input:hover:not(:disabled) { border-color:var(--line-strong); }
+.ws-input[aria-invalid="true"] { border-color:var(--danger); }
+.ws-input:disabled { opacity:.65; cursor:not-allowed; }
+.ws-notice { --notice-accent:var(--learning); display:flex; align-items:start; flex-wrap:wrap; gap:12px 20px; padding:16px; border:1px solid var(--line-normal); border-left:3px solid var(--notice-accent); border-radius:var(--radius-control); background:var(--panel-inset); color:var(--ink-secondary); font-size:.875rem; line-height:1.65; overflow-wrap:anywhere; }
+.ws-notice > div:first-child { flex:1 1 240px; min-width:0; }
+.ws-notice strong { display:block; margin-bottom:4px; color:var(--ink-primary); }
+.ws-notice a { color:var(--learning); text-decoration:underline; text-underline-offset:3px; }
+.ws-notice-success { --notice-accent:var(--success); }
+.ws-notice-warning { --notice-accent:var(--attention); }
+.ws-notice-error { --notice-accent:var(--danger); }
+.ws-notice-action { display:flex; flex-wrap:wrap; gap:8px; }
+.ws-empty { font-size:1rem; line-height:1.65; overflow-wrap:anywhere; }
+.ws-empty p { margin-top:8px; }
+.ws-empty-action { margin-top:16px; }
+.sc-loading strong { font-size:1rem; }
+.sc-loading { font-size:1rem; line-height:1.6; }
+.sc-loading p { font-size:.875rem; color:var(--ink-secondary); }
+:is(.ws-view-switcher button,.ws-input,.ws-notice a):focus-visible { outline:2px solid var(--focus-color); outline-offset:3px; }
+@media(max-width:479px) {
+  .ws-view-switcher button { flex:1 1 130px; }
+  .ws-header-action { width:100%; }
+  .ws-header-action > .ws-action { width:100%; }
+}
+
+/* Existing dialogs retain their focus traps and return-focus behavior. */
+.ws-search-overlay { position:fixed; inset:0; z-index:100; display:flex; align-items:flex-start; justify-content:center; padding:clamp(12px,8dvh,72px) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left)); }
+.ws-search-overlay .search-dialog { max-height:min(760px,calc(100dvh - clamp(12px,8dvh,72px) - max(12px,env(safe-area-inset-bottom)))); }
+.activity-drawer { padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); }
+.search-dialog input { font-size:1rem; }
+.search-dialog button,.activity-drawer button { min-height:44px; }
+
+/* Core learning flow: controls remain readable rather than squeezing at tablet widths. */
+.sc-filter-summary { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin:14px 0; }
+.sc-filter-summary .sc-modules-count { margin:0; font-size:.875rem; }
+.sc-modules-controls :is(input,select) { min-height:44px; font-size:1rem; }
+.sc-modules-controls label { min-width:0; }
+.sc-reading-toolbar,.sc-reading-controls { display:flex; align-items:center; flex-wrap:wrap; gap:12px; min-width:0; }
+.sc-reading-toolbar { flex:1 1 100%; }
+.sc-reading-controls .ws-view-switcher { padding:0; }
+.sc-reading-toolbar > button { min-height:44px; }
+.sc-reading-main .sc-reading-toolbar { margin-top:12px; }
+.sc-reading-main .sc-reading-controls { width:100%; }
+.sc-current-phase { display:inline-block; margin:4px 0 4px 12px; padding:3px 8px; border:1px solid var(--learning); border-radius:4px; font-size:.75rem; color:var(--learning); vertical-align:middle; }
+.sc-map-phase[data-current] { border-left:2px solid var(--learning); padding-left:16px; }
+.sc-artifact-disclosure { border:1px solid var(--line-normal); border-radius:var(--radius-panel); padding:16px; min-width:0; }
+.sc-artifact-disclosure > summary { min-height:44px; cursor:pointer; font-size:1rem; font-weight:650; color:var(--ink-primary); }
+.sc-artifact-disclosure > summary:focus-visible { outline:2px solid var(--focus-color); outline-offset:3px; }
+.sc-artifact-disclosure[open] > summary { margin-bottom:16px; }
+.sc-reading-heading { flex-wrap:wrap; }
+@media(max-width:680px) {
+  .sc-reading-controls { display:block; }
+  .sc-reading-controls > button { margin-top:8px; }
+  .sc-map-phase li { flex-wrap:wrap; }
+  .sc-map-state { white-space:normal; }
+  .ws-focus-actions > .ws-action { width:100%; }
+  .sc-artifact-disclosure { padding:12px; }
+}

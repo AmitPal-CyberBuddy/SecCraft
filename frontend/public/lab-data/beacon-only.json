@@ -32,7 +32,7 @@
    "ds_channel": 6,
    "rsn": {
     "version": 1,
-    "group": 172,
+    "group": 4,
     "pairwise": [
      4
     ],
@@ -55,7 +55,9 @@
    "bssid": "00:11:22:33:44:55",
    "sa": "00:11:22:33:44:55",
    "da": "ff:ff:ff:ff:ff:ff",
-   "number": 1
+   "number": 1,
+   "capture_timestamp_us": 1700000000002000,
+   "relative_time_ms": 0.0
   },
   {
    "frame_type": "mgmt",
@@ -85,7 +87,7 @@
    "ds_channel": 36,
    "rsn": {
     "version": 1,
-    "group": 172,
+    "group": 4,
     "pairwise": [
      4
     ],
@@ -110,7 +112,9 @@
    "bssid": "de:ad:be:ef:00:01",
    "sa": "de:ad:be:ef:00:01",
    "da": "ff:ff:ff:ff:ff:ff",
-   "number": 2
+   "number": 2,
+   "capture_timestamp_us": 1700000000004000,
+   "relative_time_ms": 2.0
   },
   {
    "frame_type": "mgmt",
@@ -141,7 +145,9 @@
    "bssid": "de:ad:be:ef:00:02",
    "sa": "de:ad:be:ef:00:02",
    "da": "ff:ff:ff:ff:ff:ff",
-   "number": 3
+   "number": 3,
+   "capture_timestamp_us": 1700000000006000,
+   "relative_time_ms": 4.0
   },
   {
    "frame_type": "mgmt",
@@ -173,7 +179,9 @@
    "bssid": "de:ad:be:ef:00:03",
    "sa": "de:ad:be:ef:00:03",
    "da": "ff:ff:ff:ff:ff:ff",
-   "number": 4
+   "number": 4,
+   "capture_timestamp_us": 1700000000008000,
+   "relative_time_ms": 6.0
   }
  ],
  "summary": {
@@ -205,5 +213,6 @@
   "assoc": 0,
   "wps": 0
  },
- "module": "wifi-fundamentals"
+ "module": "wifi-fundamentals",
+ "provenance": "Generated offline teaching capture; not a hosted environment or live RF observation"
 }

@@ -1,0 +1,13 @@
+{
+  "provenance": "Authored model records for reasoning only; no HTTP requests or network probes were performed",
+  "runtime": "NOT TESTED",
+  "observations": [
+    {"id":"R1","rule":"P1","model_observation":"login page responds","model_decision":"allow"},
+    {"id":"R2","rule":"P2","model_observation":"gateway log says unauthenticated denied","model_decision":"deny"},
+    {"id":"R3","rule":"P3","model_observation":"approved service responds; gateway allows valid-A","model_decision":"allow"},
+    {"id":"R4","rule":"P4","model_observation":"gateway denies expired-A; approved service not reached","model_decision":"deny"},
+    {"id":"R5","rule":"P5","model_observation":"gateway accepts copied-A for guest-B and approved service responds","model_decision":"allow"},
+    {"id":"R6","rule":"P6","model_observation":"no response; target health and route unknown","model_decision":null},
+    {"id":"R7","rule":"P7","model_observation":"ARP exchange forwarded between two guests in model; no application check","model_decision":"allow"}
+  ]
+}

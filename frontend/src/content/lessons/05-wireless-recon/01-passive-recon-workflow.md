@@ -13,7 +13,7 @@ defensible statement about what the capture **cannot** tell you.
 ```
 1. Inventory BSSs        → BSSID, SSID, channel, band, capability
 2. Classify security     → RSNE: ciphers, AKM list, MFPC/MFPR, WPS IE
-3. Group networks        → which BSSIDs share an SSID (ESS) and which are look-alikes
+3. Group networks        → group same-name BSSIDs as candidates; confirm ESS membership or unauthorized ownership separately
 4. Inventory clients     → observed MAC, locally administered bit, probes and association (do not equate addresses to devices)
 5. Correlate             → which client is seen with which BSS (auth/assoc/data)
 6. State limits          → what the capture does not establish (identity, payload, intent)
@@ -33,7 +33,7 @@ tshark -r recon-lab.pcapng -Y 'wlan.fc.type_subtype == 4' \
 
 # the hidden SSID reveal
 tshark -r recon-lab.pcapng -Y 'wlan.fc.type_subtype == 5' \
-  -T fields -e frame.number -e wlan.bssid -e wlan.ssid -e wlan.ssid_len
+  -T fields -e frame.number -e wlan.bssid -e wlan.ssid
 ```
 
 ## 3. Questions (answer with frame numbers)

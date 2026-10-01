@@ -144,7 +144,7 @@ function headersFile(cspPolicy: string): string {
  */
 const REQUEST_PATTERNS: { label: string; regex: RegExp }[] = [
   { label: 'html', regex: /(?:href|src|srcset|action)=["']https?:\/\/(?!localhost|127\.0\.0\.1)[^"']+/gi },
-  { label: 'css', regex: /url\(\s*["']?https?:\/\/(?!localhost|127\.0\.0\.1)[^)"']+/gi },
+  { label: 'css', regex: /(?<![a-zA-Z0-9_])url\(\s*["']?https?:\/\/(?!localhost|127\.0\.0\.1)[^)"']+/gi },
   { label: 'js', regex: /(?:fetch|import|importScripts|Worker|open)\s*\(\s*["'`]https?:\/\/(?!localhost|127\.0\.0\.1)[^"'`]+/gi },
 ]
 
@@ -238,6 +238,7 @@ export default defineConfig(({ mode, command }) => {
         output: {
           manualChunks: (id) => {
             if (id.includes('node_modules')) {
+              if (id.includes('@zxcvbn-ts')) return 'password-strength'
               if (id.includes('jspdf') || id.includes('html2canvas')) return 'pdf-vendor'
               if (id.includes('driver.js')) return 'tour-vendor'
               if (id.includes('framer-motion')) return 'motion-vendor'

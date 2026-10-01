@@ -1,0 +1,42 @@
+{
+  "provenance": "Fictional owner inventory, not runtime discovery",
+  "clients": {
+    "guest-A": {
+      "zone": "guest",
+      "vlan": 20
+    },
+    "corp-B": {
+      "zone": "corporate",
+      "vlan": 100
+    }
+  },
+  "services": {
+    "portal-demo": {
+      "zone": "guest",
+      "protocol": "tcp",
+      "port": 443
+    },
+    "public-web-demo": {
+      "zone": "external",
+      "protocol": "tcp",
+      "port": 443
+    },
+    "internal-api": {
+      "zone": "corporate",
+      "protocol": "tcp",
+      "port": 443
+    },
+    "management-console": {
+      "zone": "management",
+      "protocol": "tcp",
+      "port": 443
+    },
+    "internal-reports": {
+      "zone": "corporate",
+      "protocol": "tcp",
+      "port": 443
+    }
+  },
+  "management_vlan": 10,
+  "runtime": "NOT TESTED"
+}

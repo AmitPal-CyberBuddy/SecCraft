@@ -18,9 +18,9 @@ function NavRow({ item, onNavigate }: { item: NavItem; onNavigate?: () => void }
 
 export function Sidebar({ onClose, isMobile, isOpen }: Props) {
   const { userState, signOut } = useSession()
-  const pathId = useProgressStore(s => s.currentLearningPathId) || 'wireless-pentesting'
+  const pathId = useProgressStore(s => s.currentLearningPathId)
   const path = learningPaths.find(p => p.id === pathId)
-  const progress = useProgressStore(s => s.getPathProgress(pathId))
+  const progress = useProgressStore(s => s.getPathProgress(pathId ?? ''))
   const learner = buildLearnerSections()
   const account = buildAccountSections(userState)
   const owner = isOwner(userState) ? buildOwnerSection() : []
@@ -31,6 +31,6 @@ export function Sidebar({ onClose, isMobile, isOpen }: Props) {
       {account.map(section => <div className="sc-navigation-group" key={section.key}><h2>{section.label}</h2>{section.items.map(item => <NavRow key={item.to} item={item} onNavigate={isMobile ? onClose : undefined} />)}</div>)}
       {owner.map(section => <div className="sc-navigation-group sc-owner-group" key={section.key}><h2>{section.label}</h2>{section.items.map(item => <NavRow key={item.to} item={item} onNavigate={isMobile ? onClose : undefined} />)}</div>)}
     </nav>
-    <div className="sc-navigation-footer"><Link to={`/paths/${pathId}`} onClick={isMobile ? onClose : undefined} className="sc-nav-path"><span className="sc-nav-path-label">CURRENT PATH <span>{progress}%</span></span><strong>{path?.title ?? 'Wireless Pentesting'}</strong><span className="sc-nav-track"><span style={{ width: `${progress}%` }} /></span><small>Local practice in this browser</small></Link><div className="sc-nav-account"><span>{isSignedIn(userState) ? 'Account' : 'Preview learner'} · {userState}</span>{isSignedIn(userState) ? <button type="button" onClick={() => void signOut()}>Sign out</button> : <Link to="/signup" onClick={isMobile ? onClose : undefined}>Request access</Link>}</div></div>
+    <div className="sc-navigation-footer"><Link to={path ? `/paths/${path.id}` : '/paths'} onClick={isMobile ? onClose : undefined} className="sc-nav-path"><span className="sc-nav-path-label">{path ? 'CURRENT PATH' : 'LEARNING PATHS'} {path && <span>{progress}%</span>}</span><strong>{path?.title ?? 'Choose your path'}</strong>{path && <span className="sc-nav-track"><span style={{ width: `${progress}%` }} /></span>}<small>Local practice in this browser</small></Link><div className="sc-nav-account"><span>{isSignedIn(userState) ? 'Account' : 'Preview learner'} · {userState}</span>{isSignedIn(userState) ? <button type="button" onClick={() => void signOut()}>Sign out</button> : <Link to="/signup" onClick={isMobile ? onClose : undefined}>Request access</Link>}</div></div>
   </aside>
 }

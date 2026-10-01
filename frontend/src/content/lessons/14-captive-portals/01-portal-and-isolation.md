@@ -19,7 +19,7 @@ The HTTP and cookie bytes are visible because the fixture is an open BSS and the
 | Control | What it enforces | Evidence to collect in a real scoped test |
 | --- | --- | --- |
 | Client isolation (`ap_isolate=1`) | Prevents station-to-station forwarding through the AP | Controlled two-client traffic in both directions and AP/config evidence |
-| VLAN separation | Distinct L2 broadcast domains | Address/prefix, gateway, VLAN assignment and ARP behavior |
+| VLAN separation | Distinct L2 broadcast domains | Owner/switch/controller VLAN assignment and tagged-path evidence; address/prefix and ARP alone cannot identify a VLAN |
 | Inter-VLAN ACL/firewall | Explicit routed traffic policy | Approved source/target/service tests plus rule/config evidence |
 | Portal authorization | Whether a client has a valid session | Server-side policy/logs, token lifecycle and controlled negative tests |
 
@@ -29,8 +29,8 @@ The four ARP frames in this fixture model an AP forwarding an exchange between t
 
 ```bash
 tshark -r captive-portal.pcapng -Y 'http' \
-  -T fields -e frame.number -e http.request.method -e http.response.code -e http.location -e http.cookie
-tshark -r captive-portal.pcapng -Y 'bootp' -T fields -e frame.number -e bootp.option.dhcp
+  -T fields -e frame.number -e http.request.method -e http.response.code -e http.location -e http.set_cookie
+tshark -r captive-portal.pcapng -Y 'dhcp' -T fields -e frame.number -e dhcp.option.dhcp
 tshark -r captive-portal.pcapng -Y 'arp' -T fields -e frame.number -e arp.opcode -e arp.src.proto_ipv4 -e arp.dst.proto_ipv4
 ```
 

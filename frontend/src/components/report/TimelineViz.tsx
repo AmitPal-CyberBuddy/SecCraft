@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
 import { Clock, Shield, Zap, Target, FileCode, Info, FlaskConical } from 'lucide-react'
 import { useProgressStore } from '@/store/useProgressStore'
 
@@ -79,33 +78,33 @@ export function TimelineViz({ className = '' }: { className?: string }) {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'lesson': return 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400'
-      case 'lab': return 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-      case 'evidence': return 'bg-violet-500/10 border-violet-500/20 text-violet-400'
-      default: return 'bg-[#1e293b] border-[#334155] text-slate-500'
+      case 'lesson': return 'bg-[var(--accent-bg)] border-[var(--accent-border)] text-[var(--learning)]'
+      case 'lab': return 'bg-[var(--success-bg)] border-[var(--success-border)] text-[var(--success)]'
+      case 'evidence': return 'bg-[var(--owner-bg)] border-[var(--owner-border)] text-[var(--owner)]'
+      default: return 'bg-[var(--panel-raised)] border-[var(--line-strong)] text-[var(--ink-muted)]'
     }
   }
   const icon = { lesson: Target, lab: FlaskConical, evidence: FileCode } as const
 
   return (
-    <div className={`rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 sm:p-6 min-w-0 w-full ${className}`}>
+    <div className={`sc-technical-surface rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-4 xs:p-5 sm:p-6 min-w-0 w-full ${className}`}>
       <div className="flex items-center gap-3 mb-5">
-        <div className="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
-          <Clock className="w-5 h-5 text-violet-400" />
+        <div className="w-9 h-9 rounded-xl bg-[var(--owner-bg)] border border-[var(--owner-border)] flex items-center justify-center shrink-0">
+          <Clock className="w-5 h-5 text-[var(--owner)]" />
         </div>
         <div className="min-w-0">
-          <h3 className="font-heading font-bold text-[14px] xs:text-[15px] text-slate-100">Engagement timeline — from your own records</h3>
-          <p className="text-[11px] text-slate-500 font-mono">
+          <h3 className="font-heading font-bold text-[14px] xs:text-[15px] text-[var(--ink-primary)]">Engagement timeline — from your own records</h3>
+          <p className="text-[11px] text-[var(--ink-muted)] font-mono">
             {events.length} entries • evidence vault + local completions • chronological
           </p>
         </div>
       </div>
 
       {events.length === 0 ? (
-        <div className="p-6 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 text-center">
-          <Info className="w-5 h-5 text-slate-500 mx-auto mb-2" />
-          <div className="text-[12.5px] text-slate-300">No timeline yet</div>
-          <p className="mt-1.5 text-[11.5px] text-slate-500 leading-relaxed max-w-[560px] mx-auto">
+        <div className="p-6 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-center">
+          <Info className="w-5 h-5 text-[var(--ink-muted)] mx-auto mb-2" />
+          <div className="text-[12.5px] text-[var(--ink-secondary)]">No timeline yet</div>
+          <p className="mt-1.5 text-[11.5px] text-[var(--ink-muted)] leading-relaxed max-w-[560px] mx-auto">
             The timeline is built from two real sources: records you add to the Evidence Vault (label, claim,
             filter, frame numbers, SHA-256) and the completion timestamps of lessons and labs on this device.
             Nothing is pre-filled with a sample engagement — add your first artefact, or complete a lab, and it
@@ -114,35 +113,35 @@ export function TimelineViz({ className = '' }: { className?: string }) {
         </div>
       ) : (
         <div className="relative">
-          <div className="absolute left-[18px] top-0 bottom-0 w-0.5 bg-gradient-to-b from-cyan-500/20 via-violet-500/20 to-amber-500/20" />
+
           <div className="space-y-4">
             {events.map((ev, idx) => {
               const Icon = icon[ev.type as keyof typeof icon] || Shield
               return (
-                <motion.div key={`${ev.at}-${idx}`} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: Math.min(idx, 10) * 0.04 }} className="relative flex gap-4 min-w-0">
+                <div key={`${ev.at}-${idx}`} className="relative flex gap-4 min-w-0">
                   <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 z-10 ${getTypeColor(ev.type)}`}>
                     <Icon className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0 pb-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-[11px] font-mono font-bold text-slate-400">{new Date(ev.at).toLocaleString()}</span>
+                      <span className="text-[11px] font-mono font-bold text-[var(--ink-secondary)]">{new Date(ev.at).toLocaleString()}</span>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full border font-mono ${getTypeColor(ev.type)}`}>{ev.type.toUpperCase()}</span>
-                      <span className="text-[12px] font-semibold text-slate-100 break-words">{ev.title}</span>
+                      <span className="text-[12px] font-semibold text-[var(--ink-primary)] break-words">{ev.title}</span>
                     </div>
-                    <div className="mt-1 text-[11.5px] text-slate-500 leading-relaxed break-words">{ev.desc}</div>
+                    <div className="mt-1 text-[11.5px] text-[var(--ink-muted)] leading-relaxed break-words">{ev.desc}</div>
                   </div>
-                </motion.div>
+                </div>
               )
             })}
           </div>
         </div>
       )}
 
-      <div className="mt-5 p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 text-[11px] text-slate-500 leading-relaxed flex items-start gap-2">
-        <Zap className="w-3.5 h-3.5 mt-0.5 shrink-0 text-slate-400" />
+      <div className="mt-5 p-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[11px] text-[var(--ink-muted)] leading-relaxed flex items-start gap-2">
+        <Zap className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[var(--ink-secondary)]" />
         <span>
           Report writing tip: a defensible timeline cites the artefact and the reproducible extraction for each step
-          (for example <span className="font-mono text-slate-400">wpa2-handshake.pcapng • frame 4 EAPOL-Key M1</span>),
+          (for example <span className="font-mono text-[var(--ink-secondary)]">wpa2-handshake.pcapng • frame 4 EAPOL-Key M1</span>),
           not the tool that produced it. Export the evidence vault with Reports → Evidence Vault when you attach it.
         </span>
       </div>

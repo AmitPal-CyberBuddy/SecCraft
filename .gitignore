@@ -53,3 +53,7 @@ Thumbs.db
 
 # Local progress
 .wififorge/
+
+# Local browser QA packages, reports and screenshots
+.cache/ui-audit/
+.cache/wireless-qa/

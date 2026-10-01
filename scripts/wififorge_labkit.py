@@ -439,7 +439,9 @@ def mschapv2_challenge_hash(authenticator_challenge: bytes, peer_challenge: byte
     Note the order: the **peer** challenge comes first. Omitting the peer challenge (or the
     username) yields an NT-Response that no standard implementation or hashcat -m 5500 will match.
     """
-    return hashlib.sha1(peer_challenge + authenticator_challenge + username.encode()).digest()[:8]
+    # RFC 2759 section 8.2 excludes a prepended Windows domain from UserName.
+    user_only = username.rsplit("\\", 1)[-1]
+    return hashlib.sha1(peer_challenge + authenticator_challenge + user_only.encode()).digest()[:8]
 
 
 def mschapv2_nt_response(password: str, challenge_hash: bytes) -> Tuple[bytes, bytes]:
@@ -463,19 +465,20 @@ def mschapv2_credentials(password: str, authenticator_challenge: bytes, peer_cha
 
 
 def mschapv2_challenge(challenge: bytes, name: str = "", identifier: int = 1) -> bytes:
-    """MS-CHAPv2 Challenge message: Code, ID, MS-Length, Challenge, Name (RFC 2759 §4.1)."""
+    """EAP-MSCHAPv2 Challenge: OpCode, ID, MS-Length, Value-Size(16), Challenge, Name."""
     assert len(challenge) == 16
-    body = bytes([1, identifier]) + struct.pack("!H", 20 + len(name)) + challenge + name.encode()
-    return body
+    name_bytes = name.encode("utf-8")
+    return bytes([1, identifier]) + struct.pack("!H", 21 + len(name_bytes)) + bytes([16]) + challenge + name_bytes
 
 
 def mschapv2_response(peer_challenge: bytes, nt_response: bytes, name_utf16: bytes = b"",
                       identifier: int = 1, reserved: bytes = b"\x00" * 8,
                       flags: int = 0) -> bytes:
-    """MS-CHAPv2 Response message: Code, ID, MS-Length, PeerChallenge, Reserved, NT-Response, Flags, Name."""
+    """EAP-MSCHAPv2 Response: OpCode, ID, MS-Length, Value-Size(49), PeerChallenge, Reserved, NT-Response, Flags, Name."""
     assert len(peer_challenge) == 16 and len(nt_response) == 24 and len(reserved) == 8
-    body = bytes([2, identifier]) + struct.pack("!H", 53 + len(name_utf16))
-    body += peer_challenge + reserved + nt_response + bytes([flags]) + name_utf16
+    name_bytes = name_utf16.decode("utf-16-le").encode("utf-8") if b"\x00" in name_utf16 else name_utf16
+    body = bytes([2, identifier]) + struct.pack("!H", 54 + len(name_bytes)) + bytes([49])
+    body += peer_challenge + reserved + nt_response + bytes([flags]) + name_bytes
     return body
 
 
@@ -627,7 +630,7 @@ def ie_supported_rates() -> bytes:
 
 
 def ie_extended_rates() -> bytes:
-    return ie(35, bytes([0x30, 0x48, 0x60, 0x6C]))
+    return ie(50, bytes([0x30, 0x48, 0x60, 0x6C]))
 
 
 def ie_ds_param(channel: int) -> bytes:
@@ -646,9 +649,9 @@ def ie_country(country: str = "DE", first_channel: int = 1, bands: Sequence[Tupl
 
 
 def ie_ht_cap() -> bytes:
-    # HT Capabilities: 26 bytes. LDPC + 20/40 MHz + SGI-20 + MCS 0-15 (1 SS).
-    body = struct.pack("<H", 0x016E) + b"\x1b" + b"\x00" * 4 + b"\x00" * 16 + b"\x00"
-    return ie(IE_HT_CAP, body[:26])
+    # HT Capabilities: 26 bytes (2 Cap Info + 1 A-MPDU + 16 MCS + 2 Ext Cap + 4 TxBF + 1 ASEL).
+    body = struct.pack("<H", 0x016E) + b"\x1b" + b"\x00" * 16 + b"\x00" * 2 + b"\x00" * 4 + b"\x00"
+    return ie(IE_HT_CAP, body)
 
 
 def ie_ht_op(primary_channel: int, secondary_offset: int = 1, width_40: bool = True) -> bytes:
@@ -706,7 +709,7 @@ def ie_rsn(group_cipher: int = CIPHER_CCMP_128,
     return ie(IE_RSN, body)
 
 
-def ie_wps(version: bytes = b"\x10\x4a",
+def ie_wps(version: bytes = b"\x10",
            config_methods: int = WPS_CONFIG_LABEL | WPS_CONFIG_DISPLAY | WPS_CONFIG_PUSHBUTTON,
            setup_locked: bool = False,
            selected_registrar: bool = False,
@@ -724,10 +727,8 @@ def ie_wps(version: bytes = b"\x10\x4a",
     body += attr(WSC_ATTR_CONFIG_METHODS, struct.pack("!H", config_methods))
     body += attr(WSC_ATTR_WPS_STATE, bytes([wps_state]))
     body += attr(WSC_ATTR_DEVICE_PASSWORD_ID, struct.pack("!H", device_password_id))
-    if selected_registrar:
-        body += attr(WSC_ATTR_SELECTED_REGISTRAR, b"\x01")
-    if setup_locked:
-        body += attr(WSC_ATTR_AP_SETUP_LOCKED, b"\x01")
+    body += attr(WSC_ATTR_SELECTED_REGISTRAR, bytes([int(selected_registrar)]))
+    body += attr(WSC_ATTR_AP_SETUP_LOCKED, bytes([int(setup_locked)]))
     body += attr(WSC_ATTR_DEVICE_NAME, device_name.encode())
     body += attr(WSC_ATTR_MANUFACTURER, manufacturer.encode())
     body += attr(WSC_ATTR_MODEL_NAME, model.encode())
@@ -743,11 +744,11 @@ def ie_bss_load(stations: int = 3, channel_utilization: int = 42, available_admi
 
 
 def ie_tx_power(dbm: int = 20) -> bytes:
-    return ie(12, bytes([dbm & 0xFF]))
+    return ie(35, bytes([dbm & 0xFF, 0]))
 
 
 def ie_rm_enabled(caps: int = 0x73) -> bytes:
-    return ie(70, struct.pack("<H", caps))
+    return ie(70, struct.pack("<H", caps) + b"\x00\x00\x00")
 
 
 def beacon_body(ssid: str, channel: int, capability: int = 0x0411,
@@ -784,11 +785,11 @@ class LabFrame:
 
 # Radiotap "Channel" flags (radiotap.org/defined-fields/Channel)
 RT_CHAN_2GHZ = 0x0080
-RT_CHAN_5GHZ = 0x0010
-RT_CHAN_6GHZ = 0x1000
-RT_CHAN_OFDM = 0x0004
-RT_CHAN_CCK = 0x0002
-RT_CHAN_GFSK = 0x0040
+RT_CHAN_5GHZ = 0x0100
+RT_CHAN_6GHZ = 0x0000  # no dedicated 6 GHz channel bit; use frequency
+RT_CHAN_OFDM = 0x0040
+RT_CHAN_CCK = 0x0020
+RT_CHAN_GFSK = 0x0800
 
 
 def radiotap(freq_mhz: int, signal_dbm: int, rate: int = 2, antenna: int = 0,
@@ -802,7 +803,7 @@ def radiotap(freq_mhz: int, signal_dbm: int, rate: int = 2, antenna: int = 0,
     present = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 5) | (1 << 11)
     if chan_flags == 0:
         if freq_mhz < 2500:
-            chan_flags = RT_CHAN_2GHZ | RT_CHAN_CCK | RT_CHAN_OFDM | RT_CHAN_GFSK
+            chan_flags = RT_CHAN_2GHZ | (RT_CHAN_CCK if rate in (2, 4, 11, 22) else RT_CHAN_OFDM)
         elif freq_mhz < 5895:
             chan_flags = RT_CHAN_5GHZ | RT_CHAN_OFDM
         else:
@@ -859,7 +860,7 @@ def eapol_eap(eap_payload: bytes, version: int = 2) -> bytes:
 
 
 def eap(code: int, identifier: int, type_: int, data: bytes = b"") -> bytes:
-    return bytes([code, identifier]) + struct.pack("!H", 4 + len(data)) + bytes([type_]) + data
+    return bytes([code, identifier]) + struct.pack("!H", 5 + len(data)) + bytes([type_]) + data
 
 
 EAPOL_KEY_MIC_OFFSET = 81        # 4 EAPOL header + 77 descriptor bytes
@@ -975,6 +976,8 @@ def _block(block_type: int, body: bytes) -> bytes:
 def write_pcapng(path: str, frames: Iterable[LabFrame], snaplen: int = 65535,
                  tsresol: int = 6) -> int:
     """Write a real PCAPNG file (SHB + IDB + one EPB per frame). Returns frame count."""
+    if tsresol != 6:
+        raise ValueError("LabFrame timestamps use microseconds; tsresol must be 6")
     out = bytearray()
     # SHB: byte-order magic, version 1.0, section length -1 (unknown)
     shb_body = struct.pack("<IHHq", 0x1A2B3C4D, 1, 0, -1)
@@ -989,9 +992,9 @@ def write_pcapng(path: str, frames: Iterable[LabFrame], snaplen: int = 65535,
     count = 0
     for frame in frames:
         ts = frame.timestamp_us
-        epb_body = struct.pack("<IIIII", 0, ts // 1_000_000, ts % 1_000_000, len(frame.data), len(frame.data))
-        # EPB fields: interface id, ts high, ts low, captured len, original len
-        epb_body = struct.pack("<IIIII", 0, ts // 1_000_000, ts % 1_000_000,
+        # Timestamp is one 64-bit counter in the interface's resolution, not
+        # separate seconds/microseconds. The high word is the upper 32 bits.
+        epb_body = struct.pack("<IIIII", 0, ts >> 32, ts & 0xffffffff,
                                len(frame.data), len(frame.data))
         padded = frame.data + b"\x00" * ((4 - len(frame.data) % 4) % 4)
         out += _block(ENHANCED_PACKET_BLOCK, epb_body + padded)
@@ -1061,7 +1064,7 @@ def parse_rsn(value: bytes) -> Dict[str, object]:
     out: Dict[str, object] = {}
     if len(value) < 8:
         return out
-    version, group = struct.unpack("<H", value[0:2])[0], value[4]
+    version, group = struct.unpack("<H", value[0:2])[0], value[5]
     off = 6
     pairwise_count = struct.unpack("<H", value[off:off + 2])[0]; off += 2
     pairwise = []
@@ -1203,6 +1206,14 @@ def decode(pkt: bytes) -> Dict[str, object]:
         if IE_EXTENSION in ies and any(v[:1] == b"\x23" for v in ies[IE_EXTENSION]):
             rec["he"] = True
 
+    # Four-address data has no BSSID field; address 4 precedes QoS Control.
+    if type_ == TYPE_DATA and rec["to_ds"] and rec["from_ds"]:
+        if len(body) < 6:
+            rec["frame_type"] = "malformed"
+            return rec
+        rec["addr4"] = _mac(body[:6])
+        body = body[6:]
+
     # Data frames: LLC/SNAP + EAPOL / IP
     if type_ == TYPE_DATA:
         payload = body[2:] if subtype == SUBTYPE_QOS_DATA else body
@@ -1225,6 +1236,13 @@ def decode(pkt: bytes) -> Dict[str, object]:
     rec["bssid"] = rec.get("addr3")
     rec["sa"] = rec.get("addr2")
     rec["da"] = rec.get("addr1")
+    if type_ == TYPE_DATA:
+        if rec["to_ds"] and rec["from_ds"]:
+            rec.update(bssid=None, sa=rec["addr4"], da=rec["addr3"])
+        elif rec["to_ds"]:
+            rec.update(bssid=rec["addr1"], sa=rec["addr2"], da=rec["addr3"])
+        elif rec["from_ds"]:
+            rec.update(bssid=rec["addr2"], sa=rec["addr3"], da=rec["addr1"])
     return rec
 
 
@@ -1261,7 +1279,7 @@ def decode_eap(eap_pkt: bytes) -> Dict[str, object]:
     if len(eap_pkt) < 4:
         return out
     code, identifier, eap_len = eap_pkt[0], eap_pkt[1], struct.unpack("!H", eap_pkt[2:4])[0]
-    eap_type = eap_pkt[4] if len(eap_pkt) > 4 else None
+    eap_type = eap_pkt[4] if code in (EAP_REQUEST, EAP_RESPONSE) and len(eap_pkt) > 4 else None
     out.update(eap_code=code, eap_identifier=identifier, eap_length=eap_len, eap_type=eap_type)
     out["eap_code_name"] = {1: "Request", 2: "Response", 3: "Success", 4: "Failure"}.get(code, f"code {code}")
     out["eap_type_name"] = {
@@ -1275,8 +1293,8 @@ def decode_eap(eap_pkt: bytes) -> Dict[str, object]:
         EAP_TYPE_MSCHAPV2: "MS-CHAPv2",
         EAP_TYPE_FAST: "EAP-FAST",
         EAP_TYPE_WSC: "EAP-WSC (WPS)",
-    }.get(eap_type, f"type {eap_type}")
-    payload = eap_pkt[5:4 + eap_len]
+    }.get(eap_type, f"type {eap_type}" if eap_type is not None else None)
+    payload = eap_pkt[5:eap_len]
     if eap_type == EAP_TYPE_IDENTITY and payload:
         out["eap_identity"] = payload.decode("utf-8", "replace")
     if eap_type == EAP_TYPE_PEAP and payload:
@@ -1293,18 +1311,20 @@ def decode_eap(eap_pkt: bytes) -> Dict[str, object]:
         if len(payload) >= 4:
             out["mschapv2_id"] = payload[1]
             out["mschapv2_message_length"] = struct.unpack("!H", payload[2:4])[0]
-        if payload[0] == 1 and len(payload) >= 20:
-            out["mschapv2_challenge"] = payload[4:20].hex()
-            out["mschapv2_name"] = payload[20:].decode("utf-8", "replace")
-        if payload[0] == 2 and len(payload) >= 53:
-            out["mschapv2_peer_challenge"] = payload[4:20].hex()
-            out["mschapv2_reserved"] = payload[20:28].hex()
-            out["mschapv2_nt_response"] = payload[28:52].hex()
-            out["mschapv2_flags"] = payload[52]
-            out["mschapv2_username"] = payload[53:].decode("utf-16-le", "replace").rstrip("\x00")
+        if payload[0] == 1 and len(payload) >= 21 and payload[4] == 16:
+            out["mschapv2_challenge"] = payload[5:21].hex()
+            out["mschapv2_name"] = payload[21:].decode("utf-8", "replace")
+        if payload[0] == 2 and len(payload) >= 54 and payload[4] == 49:
+            out["mschapv2_peer_challenge"] = payload[5:21].hex()
+            out["mschapv2_reserved"] = payload[21:29].hex()
+            out["mschapv2_nt_response"] = payload[29:53].hex()
+            out["mschapv2_flags"] = payload[53]
+            raw_user = payload[54:]
+            out["mschapv2_username"] = (raw_user.decode("utf-16-le", "replace") if b"\x00" in raw_user else raw_user.decode("utf-8", "replace")).rstrip("\x00")
         if payload[0] == 3:
             out["mschapv2_success"] = True
-            out["mschapv2_message"] = payload[4:].decode("utf-16-le", "replace").rstrip("\x00") or payload[4:].decode("utf-8", "replace")
+            raw_msg = payload[4:]
+            out["mschapv2_message"] = (raw_msg.decode("utf-16-le", "replace") if b"\x00" in raw_msg else raw_msg.decode("utf-8", "replace")).rstrip("\x00")
         if payload[0] == 4:
             out["mschapv2_failure"] = True
     return out

@@ -1,0 +1,53 @@
+/* Graphite + teal: semantic states, not a blanket remapping of legacy utilities.
+   Loaded after component styles. Terminal output retains its self-contained dark palette. */
+.ws-input,
+.ws-legacy :is(input,select,textarea),
+.sc-account-form :is(input,select,textarea),
+.ws-report-editor :is(input,select,textarea),
+.sc-feedback-form :is(input,select,textarea),
+.sc-feedback-filters select { border-color:var(--control-border); }
+.ws-input:hover:not(:disabled) { border-color:var(--learning); }
+.ws-input[aria-invalid="true"] { border-color:var(--danger); }
+.ws-view-switcher button { border-color:var(--control-border); }
+.ws-view-switcher button[aria-pressed="true"] { border-color:var(--learning); }
+.ws-notice-info { --notice-accent:var(--info); }
+.ws-notice-success { --notice-accent:var(--success); background:var(--success-bg); }
+.ws-notice-warning { --notice-accent:var(--attention); background:var(--warning-bg); }
+.ws-notice-error { --notice-accent:var(--danger); background:var(--danger-bg); }
+.ws-text-action { color:var(--link-color); }
+.ws-text-action:hover { color:var(--link-hover); text-decoration:underline; text-underline-offset:3px; }
+.high-contrast { --control-border:var(--ink-primary); }
+/* A real light code surface rather than dark syntax colors inverted piecemeal. */
+.markdown pre,
+.light .markdown pre,
+[data-theme="light"] .markdown pre { background:var(--panel-inset); border-color:var(--line-normal); }
+.markdown pre code,
+.light .markdown pre code,
+[data-theme="light"] .markdown pre code { color:var(--ink-primary); background:transparent; border:0; }
+.markdown pre .hljs { color:var(--ink-primary); background:transparent; }
+.markdown pre :is(.hljs-comment,.hljs-quote) { color:var(--ink-muted); }
+.markdown pre :is(.hljs-keyword,.hljs-selector-tag,.hljs-literal,.hljs-type) { color:var(--owner); }
+.markdown pre :is(.hljs-string,.hljs-regexp,.hljs-addition,.hljs-symbol) { color:var(--success); }
+.markdown pre :is(.hljs-number,.hljs-attr,.hljs-attribute,.hljs-variable,.hljs-template-variable) { color:var(--attention); }
+.markdown pre :is(.hljs-title,.hljs-section,.hljs-built_in,.hljs-name) { color:var(--learning); }
+.markdown pre .hljs-deletion { color:var(--danger); }
+.sc-learning-action { background:var(--action-fill); color:var(--action-ink); }
+.sc-learning-action:not(:disabled):hover { background:var(--action-hover); filter:none; }
+.sc-learning-action:not(:disabled):active { background:var(--action-pressed); }
+
+/* Intentional fixed-dark transcript. Local variables prevent light theme badges
+   and command prompts from inheriting dark ink on a dark background. */
+.ws-terminal-output {
+  --panel-raised:#1d2a3b; --line-strong:#788ca7;
+  --success:#86efac; --ink-muted:#93a4ba;
+}
+/* Functional controls need a boundary; decorative card dividers remain quiet. */
+:where(input:not([type="hidden"]),select,textarea) { border-color:var(--control-border); }
+:where(button,[role="button"]):focus-visible { outline:2px solid var(--focus-color); outline-offset:3px; }
+
+/* Disabled is an interaction state, not permission to fade important labels away. */
+:is(button,input,select,textarea):disabled { opacity:1; }
+:is(.sc-learning-action,.ws-action):disabled {
+  background:var(--panel-raised); color:var(--ink-muted);
+  border:1px solid var(--control-border); cursor:not-allowed;
+}

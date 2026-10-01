@@ -156,7 +156,7 @@ def verify_rsn_and_filters() -> None:
     records = frames_of("captive-portal")
     check(any(r.get("protocol") == "HTTP" and r.get("http_method") == "POST" for r in records), "captive-portal: HTTP POST is decoded")
     check(any(r.get("protocol") == "DHCP" and r.get("dhcp_message_type") == "ACK" for r in records), "captive-portal: DHCP ACK is decoded")
-    check(any(r.get("subtype_name") == "Probe Request" for r in records) or True, "captive-portal: association flow present")
+    check([r.get("subtype") for r in records[:5]] == [8, 11, 11, 0, 1], "captive-portal: beacon, authentication and association sequence present")
 
     records = frames_of("wps-beacon")
     wps_beacons = [r for r in records if r.get("wps")]
@@ -256,60 +256,11 @@ def verify_pmkid() -> None:
 
 
 def verify_radius_authenticators() -> None:
-    print("\n[5] RADIUS Message-Authenticator / Response Authenticator")
-    import json as _json
-    secret = json.load(open(ARTIFACTS))["credentials"]["radius_weak_secret"].encode()
-    records = frames_of("radius")
-    ok_ma = ok_resp = False
-    for record in records:
-        attrs_hex = record.get("radius_attributes", {}).get("Message-Authenticator")  # type: ignore[union-attr]
-        if not attrs_hex:
-            continue
-        # Recompute the Message-Authenticator: zero the attribute, HMAC-MD5 with the secret.
-        packet = rebuild_radius(record, zero_ma=True)
-        recomputed = hmac.new(secret, packet, hashlib.md5).hexdigest()
-        if recomputed == attrs_hex:
-            ok_ma = True
-        else:
-            # A rogue NAS with the wrong shared secret must fail this check.
-            check(recomputed != attrs_hex, "radius: rogue NAS Message-Authenticator does not verify (expected)")
-    check(ok_ma, "radius: at least one Access-Request Message-Authenticator verifies with the lab secret")
-
-    for record in records:
-        if record.get("radius_code") in (RADIUS_ACCESS_ACCEPT, RADIUS_ACCESS_CHALLENGE):
-            ok_resp = True
-    check(ok_resp, "radius: Access-Accept / Access-Challenge present with Response Authenticator")
-
-
-def rebuild_radius(record: Dict[str, object], zero_ma: bool = False) -> bytes:
-    """Rebuild the RADIUS packet from decoded attributes (used for the MA check)."""
-    from wififorge_labkit import radius_attr
-    attrs = bytearray()
-    attrs_map = record.get("radius_attributes", {})  # type: ignore[assignment]
-    for name, value in attrs_map.items():  # type: ignore[union-attr]
-        if name == "User-Name":
-            attrs += radius_attr(1, str(value).encode())
-        elif name == "NAS-IP-Address":
-            attrs += radius_attr(4, bytes.fromhex(str(value)))
-        elif name == "NAS-Identifier":
-            attrs += radius_attr(32, str(value).encode())
-        elif name == "Calling-Station-Id":
-            attrs += radius_attr(31, str(value).encode())
-        elif name == "Called-Station-Id":
-            attrs += radius_attr(30, str(value).encode())
-        elif name == "EAP-Message":
-            values = value if isinstance(value, list) else [value]
-            for item in values:
-                attrs += radius_attr(79, bytes.fromhex(str(item)))
-        elif name == "State":
-            attrs += radius_attr(24, bytes.fromhex(str(value)))
-        elif name == "Message-Authenticator":
-            if zero_ma:
-                attrs += radius_attr(80, b"\x00" * 16)
-    code = int(record.get("radius_code", 1))
-    identifier = int(record.get("radius_id", 1))
-    length = 20 + len(attrs)
-    return struct.pack("!BBH", code, identifier, length) + bytes(16) + bytes(attrs)
+    print("\n[5] Raw RADIUS transaction and authenticator verification")
+    import runpy
+    verifier = runpy.run_path(os.path.join(REPO, "scripts", "verify-radius-wire.py"))
+    check(verifier["verify"]() == 4,
+          "radius: four request/reply pairs with verified Message/Response/Accounting authenticators and wrong-secret control")
 
 
 def verify_mschapv2() -> None:

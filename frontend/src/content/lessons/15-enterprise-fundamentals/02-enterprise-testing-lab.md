@@ -7,11 +7,11 @@
 | # | Question | Method | Artefact |
 | --- | --- | --- | --- |
 | 1 | Which EAP method does the network offer? | read the outer exchange | `eap.pcapng`, frames |
-| 2 | Does the client validate the server certificate? | client profile review / lab client with no `ca_cert` | supplicant log, capture of the inner exchange |
+| 2 | Does the client validate the server certificate? | effective trust/name profile review + controlled wrong-name/untrusted certificate tests | supplicant log, capture of the inner exchange |
 | 3 | Can credentials be captured and cracked? | lab rogue authenticator (authorised) | MS-CHAPv2 challenge/response |
 | 4 | Is the RADIUS shared secret strong and scoped? | verify Message-Authenticator; guess-test offline in the lab | `radius.pcapng` |
 | 5 | Is the assigned VLAN/ACL enforced? | reachability tests from the authenticated client | frame-level reachability + logs |
-| 6 | Is PMF required for authenticated clients? | RSNE check; spoof test if authorised | beacon RSNE, deauth attempt |
+| 6 | Is PMF required for authenticated clients? | RSNE check; spoof test if authorised | advertised + negotiated PMF, client/AP logs and authorized bounded negative control |
 
 ## 2. Lab tasks
 
@@ -23,12 +23,10 @@ tshark -r enterprise.pcapng -Y 'eap' -T fields -e frame.number -e eap.code -e ea
 tshark -r enterprise.pcapng -Y 'eap.type == 1' -T fields -e frame.number -e eap.identity
 
 # 3. RADIUS policy in the reply
-tshark -r radius.pcapng -Y 'radius.code == 2' \
-  -T fields -e frame.number -e radius.tunnel_private_group_id -e radius.eap_message
+tshark -r radius.pcapng -Y 'radius.code == 2' -V
 
 # 4. integrity: is the Message-Authenticator present and valid?
-tshark -r radius.pcapng -Y 'radius.code == 1' \
-  -T fields -e frame.number -e radius.message_authenticator
+tshark -r radius.pcapng -Y 'radius.code == 1' -V
 ```
 
 1. Identify the EAP method labels and visible identities in the fixtures; explain why abbreviated TLS-like bytes do not reveal a complete tunnel or inner identity.

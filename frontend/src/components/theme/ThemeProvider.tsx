@@ -61,7 +61,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         root.setAttribute('data-theme', res)
         root.style.colorScheme = res
         const meta = document.querySelector('meta[name="theme-color"]')
-        if (meta) meta.setAttribute('content', res === 'light' ? '#f4f7fa' : '#080d17')
+        if (meta) meta.setAttribute('content', res === 'light' ? '#f5f7fa' : '#0d141e')
       }
       setResolved(res)
     }

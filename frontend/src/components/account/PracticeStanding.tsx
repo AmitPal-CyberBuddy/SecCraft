@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { Info, ShieldCheck, Sparkles } from 'lucide-react'
 import { useSession } from '@/lib/session'
 import { allows, PRACTICE_XP_NOTE, standingFor, type Standing } from '@/lib/access'
@@ -18,8 +17,8 @@ export function StandingChip({ standing, className = '' }: { standing: Standing;
     <span
       className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide ${
         isPractice
-          ? 'border-slate-700 bg-slate-900 text-slate-400'
-          : 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300'
+          ? 'border-[var(--line-normal)] bg-[var(--panel-raised)] text-[var(--ink-secondary)]'
+          : 'border-[var(--line-normal)] bg-[var(--panel-raised)] text-[var(--success)]'
       } ${className}`}
     >
       {isPractice ? <Sparkles className="h-2.5 w-2.5" aria-hidden="true" /> : <ShieldCheck className="h-2.5 w-2.5" aria-hidden="true" />}
@@ -42,26 +41,23 @@ export function PracticeStandingNotice({ className = '' }: { className?: string 
   const hasRecord = standingFor(userState) === 'record'
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+    <div
       className={`flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between ${
-        hasRecord ? 'border-slate-800 bg-[#020617]/60' : 'border-slate-800 bg-[#020617]/60'
+        hasRecord ? 'border-[var(--line-normal)] bg-[var(--panel-inset)]' : 'border-[var(--line-normal)] bg-[var(--panel-inset)]'
       } ${className}`}
     >
       <div className="flex min-w-0 items-start gap-3">
-        <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" aria-hidden="true" />
-        <p className="min-w-0 text-[12px] leading-relaxed text-slate-400">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-[var(--ink-muted)]" aria-hidden="true" />
+        <p className="min-w-0 text-[12px] leading-relaxed text-[var(--ink-secondary)]">
           {hasRecord ? (
             <>
-              <span className="font-semibold text-slate-300">These figures are practice, kept in this browser.</span>{' '}
+              <span className="font-semibold text-[var(--ink-secondary)]">These figures are practice, kept in this browser.</span>{' '}
               Your account record is separate and is shown on the dashboard — the platform has not
               issued verified XP yet, so it does not appear here.
             </>
           ) : (
             <>
-              <span className="font-semibold text-slate-300">Everything on this screen is practice.</span>{' '}
+              <span className="font-semibold text-[var(--ink-secondary)]">Everything on this screen is practice.</span>{' '}
               {PRACTICE_XP_NOTE}
             </>
           )}
@@ -70,7 +66,7 @@ export function PracticeStandingNotice({ className = '' }: { className?: string 
       {hasRecord ? (
         <Link
           to="/app"
-          className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-xl border border-slate-700 bg-slate-900 px-3.5 text-[12px] font-semibold text-slate-200 transition-colors hover:border-slate-600 hover:bg-slate-800 focus-ring"
+          className="ws-action ws-action-secondary"
         >
           See your account record
         </Link>
@@ -78,12 +74,12 @@ export function PracticeStandingNotice({ className = '' }: { className?: string 
         allows(userState, 'request-account') && (
           <Link
             to="/account"
-            className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-xl border border-slate-700 bg-slate-900 px-3.5 text-[12px] font-semibold text-slate-200 transition-colors hover:border-slate-600 hover:bg-slate-800 focus-ring"
+            className="ws-action ws-action-secondary"
           >
             Get an account record
           </Link>
         )
       )}
-    </motion.div>
+    </div>
   )
 }

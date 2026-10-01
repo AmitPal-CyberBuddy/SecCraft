@@ -184,7 +184,7 @@ test('every account state renders the right surfaces and never drops the learner
         wrap(
           React.createElement(
             MemoryRouter,
-            { initialEntries: ['/app'] },
+            { initialEntries: ['/app?path=wireless-pentesting'] },
             React.createElement(
               Shell,
               null,
@@ -211,8 +211,8 @@ test('every account state renders the right surfaces and never drops the learner
         wrap(React.createElement(MemoryRouter, { initialEntries: ['/'] }, React.createElement(PublicHome))),
       )
       assert.ok(publicText.includes('Preview Curriculum'), `${scenario.label}: public site must describe guest preview access`)
-      assert.ok(publicText.includes('Pending approval'), `${scenario.label}: public site must describe approval honestly`)
-      assert.ok(publicText.includes('unverified'), `${scenario.label}: public site must label imported/practice data`)
+      assert.ok(publicText.includes('Once your account is approved'), `${scenario.label}: public site must describe approval honestly`)
+      assert.ok(publicText.includes('not independently verified'), `${scenario.label}: public site must label imported/practice data`)
       assert.ok(!publicText.includes('Certificate issued'), `${scenario.label}: no issuance claim`)
 
       // The curriculum tier shown must match the product model for this state.
@@ -275,7 +275,7 @@ test('every account state renders the right surfaces and never drops the learner
     backendDown = true
     fakeSession = null
     const text = await render(
-      wrap(React.createElement(MemoryRouter, { initialEntries: ['/app'] }, React.createElement(Shell, null, React.createElement(Dashboard)))),
+      wrap(React.createElement(MemoryRouter, { initialEntries: ['/app?path=wireless-pentesting'] }, React.createElement(Shell, null, React.createElement(Dashboard)))),
     )
     for (const destination of learnerNav) {
       assert.ok(text.includes(destination), `outage: learner navigation lost "${destination}"`)
@@ -361,7 +361,7 @@ test('every account state renders the right surfaces and never drops the learner
       assert.match(text, /Account status unavailable/)
       assert.match(text, /Re-check status/)
       assert.doesNotMatch(text, /Approval pending/)
-      const workspace = await render(wrap(React.createElement(MemoryRouter, { initialEntries: ['/app'] },
+      const workspace = await render(wrap(React.createElement(MemoryRouter, { initialEntries: ['/app?path=wireless-pentesting'] },
         React.createElement(Shell, null, React.createElement(Dashboard)))))
       assert.match(workspace, /Signed in · account status unavailable/)
       assert.match(workspace, /Status unavailable/)
@@ -427,9 +427,17 @@ test('every account state renders the right surfaces and never drops the learner
       const text = await render(wrap(React.createElement(MemoryRouter, { initialEntries: ['/signup'] }, React.createElement(SignupPage))))
       assert.match(text, /Password strength: Not entered/)
       assert.match(text, /Suggest a strong password/)
-      assert.match(text, /Supabase may apply additional rules/)
+      assert.match(text, /Strength is an estimate, not a breach check/)
       assert.equal(passwordGuidance('abc').strength, 'Weak')
       assert.equal(passwordGuidance('Longer7!word').strength, 'Moderate')
+      for (const predictable of ['Password123!Password123!', 'Qwerty123!Qwerty123!', '12345678901234567890', 'a'.repeat(32), 'correct horse battery staple']) {
+        assert.equal(passwordGuidance(predictable).strength, 'Weak', predictable)
+      }
+      assert.equal(passwordGuidance('river lantern copper orbit').strength, 'Strong', 'unrelated words do not need arbitrary uppercase/symbol rules')
+      assert.equal(passwordGuidance('x'.repeat(129)).validLength, false)
+      assert.equal(passwordGuidance('雪山'.repeat(15)).strength, 'Weak')
+      assert.ok(passwordGuidance('avani@example.com', ['avani@example.com']).score < passwordGuidance('avani@example.com').score)
+
       const passwords = new Set(Array.from({ length: 25 }, () => generatePassword()))
       assert.equal(passwords.size, 25, 'fresh secure randomness on each suggestion')
       for (const password of passwords) {

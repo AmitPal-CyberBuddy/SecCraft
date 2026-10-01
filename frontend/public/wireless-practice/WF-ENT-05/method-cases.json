@@ -1,0 +1,9 @@
+{
+  "provenance":"Authored deployment questions; not client configuration or vulnerability findings",
+  "cases":[
+    {"id":"E1","context":"Managed clients and certificate lifecycle available; avoid reusable network passwords","question":"Which certificate-based EAP option fits, and what server/client identity and lifecycle controls remain?"},
+    {"id":"E2","context":"Legacy PEAP-MSCHAPv2 dependency; a broad trusted CA but no expected server name in the supplied profile description","question":"Which validation gap needs review? Can a passive abbreviated capture establish exposed inner material?"},
+    {"id":"E3","context":"An inventory says EAP-PWD and a separate beacon says WPA3-Enterprise","question":"Are those labels interchangeable, and which profile/method/implementation evidence is needed?"},
+    {"id":"E4","context":"The only supplied certificate is a public client certificate","question":"Does this reveal its private key or prove that an authenticated client held it?"}
+  ]
+}

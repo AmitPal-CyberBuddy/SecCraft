@@ -18,16 +18,17 @@ loses the rest of the EAP packet — concat all attributes with type 79 before p
 ## 2. Integrity you can verify in a capture
 
 * **Message-Authenticator (80)**: `HMAC-MD5(packet with the attribute value zeroed, shared secret)`.
-  Offers integrity of the packet *and* proof of knowledge of the secret.
+  Supports integrity under the shared-secret relationship, not unique sender identity. EAP-bearing responses substitute the matching request authenticator for this HMAC calculation and compute the final Response Authenticator afterwards.
 * **Response Authenticator**: `MD5(Code ‖ ID ‖ Length ‖ Request-Authenticator ‖ Attributes ‖ Secret)`
-  for responses; a request's Authenticator field is a random value used as the seed.
+  for responses; an Access-Request uses an unpredictable request authenticator in production (this fixture uses documented deterministic values). Accounting-Request has a separate MD5 authenticator construction.
 * **User-Password (2)** is obfuscated with a keystream derived from the Request Authenticator and shared
   secret. A party holding that secret can recover it; this is not modern end-to-end confidentiality and
   does not protect the password from the NAS or a compromised RADIUS endpoint.
 
 ```bash
-tshark -r radius.pcapng -Y 'radius' -T fields -e frame.number -e radius.code \
-  -e radius.id -e radius.message_authenticator -e radius.tunnel_private_group_id
+tshark -r radius.pcapng -Y 'radius' -V
+# Inspect attributes 79 (EAP-Message), 80 (Message-Authenticator), and 81 (Tunnel-Private-Group-Id).
+# Displaying an authenticator is not cryptographic verification.
 ```
 
 `scripts/verify-lab-artifacts.py` verifies the Message-Authenticator of the constructed requests and the Response
@@ -53,7 +54,7 @@ Authenticator of the constructed replies, and confirms that one deliberately inv
    secret and show the mismatch.
 3. Verify the Access-Accept Response Authenticator using the request's Authenticator field.
 4. Identify the VLAN attribute in the example and distinguish a RADIUS attribute from proof that an AP/switch applied the VLAN. State what infrastructure/log evidence would verify enforcement.
-5. Find the rogue NAS request and explain *precisely* why it fails verification.
+5. Find the deliberately invalid-secret request and explain *precisely* why it fails verification.
 
 ## 5. Decision practice
 

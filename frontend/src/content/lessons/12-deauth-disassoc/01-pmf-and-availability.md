@@ -8,7 +8,7 @@ Deauthentication (subtype 12) and disassociation (subtype 10) frames are managem
 802.11w, they generally lacked cryptographic protection; on a BSS/client association without PMF, a forged frame may be accepted. Acceptance and impact depend on the negotiated policy, frame validity, client/AP behavior and RF delivery. Two possible consequences—not guaranteed outcomes—are:
 
 * **Availability**: repeated accepted deauth frames can disrupt clients; any live test needs explicit authorization and strict scope because it can interrupt service.
-* **Facilitation**: an accepted targeted deauth may lead a client to reconnect. That could expose a handshake to capture (module 09) or affect client selection (module 13); neither result is guaranteed.
+* **Facilitation**: an accepted targeted deauth may lead a client to reconnect. That could expose a handshake to capture (Module 08) or affect client selection (the client-trust lessons in this module); neither result is guaranteed.
 
 ## 2. Reason codes are evidence
 
@@ -30,9 +30,9 @@ Quote codes with frame numbers and inter-frame timing. A code-1 burst can warran
 | --- | --- | --- |
 | neither bit | no PMF advertised | unprotected robust-management frames may be accepted |
 | MFPC only (bit 7 / `0x0080`) | PMF is optional; association negotiation determines whether it is used | clients in the same ESS can have different protection states |
-| MFPC + MFPR (bits 6+7 / `0x00c0`) | PMF required for association; robust management frames are protected | an unprotected forged deauth should be discarded by a PMF-negotiated peer; a valid protected frame needs the IGTK/BIP integrity material |
+| MFPC + MFPR (bits 6+7 / `0x00c0`) | PMF required for association; robust management frames are protected | an unprotected forged deauth should be discarded by a PMF-negotiated peer; valid protection depends on the negotiated pairwise or group-addressed mechanism |
 
-Protected deauth/disassoc frames are **Robust Management Frames** and use BIP integrity protection with IGTK-derived material; a frame with only the Protected bit set is not proof of a valid MIC or of receiver acceptance. Depending on the conditions, SA Query can help a PMF peer verify that a station is still responsive before completing a teardown.
+Deauth/disassoc are **Robust Management Frames**. Unicast robust-management protection uses the negotiated pairwise cipher/key; group-addressed robust-management integrity uses BIP with an IGTK. A frame with only the Protected bit set is not proof of a valid MIC or receiver acceptance. Depending on the conditions, SA Query can help a PMF peer verify that a station is still responsive before completing a teardown.
 
 Artifact boundary: `wpa3-only.pcapng` contains a synthetic protected-bit/BIP-shaped deauth with no validated MIC. `deauth.pcapng` contains scripted frame examples for comparison; neither capture establishes RF delivery, receiver acceptance, disconnection, or availability impact.
 

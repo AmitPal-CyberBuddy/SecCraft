@@ -1,0 +1,68 @@
+{
+  "provenance": "Teaching scope only, not authorization for a real environment",
+  "maximum_requests_per_flow_per_window": 1,
+  "future_window_seconds": 120,
+  "allowed_flows": [
+    {
+      "id": "F1",
+      "source": "guest-A",
+      "destination": "portal-demo",
+      "protocol": "tcp",
+      "port": 443,
+      "direction": "client-to-service"
+    },
+    {
+      "id": "F2",
+      "source": "guest-A",
+      "destination": "public-web-demo",
+      "protocol": "tcp",
+      "port": 443,
+      "direction": "client-to-service"
+    },
+    {
+      "id": "F3",
+      "source": "corp-B",
+      "destination": "internal-api",
+      "protocol": "tcp",
+      "port": 443,
+      "direction": "client-to-service"
+    },
+    {
+      "id": "F4",
+      "source": "guest-A",
+      "destination": "internal-api",
+      "protocol": "tcp",
+      "port": 443,
+      "direction": "client-to-service"
+    },
+    {
+      "id": "F5",
+      "source": "guest-A",
+      "destination": "management-console",
+      "protocol": "tcp",
+      "port": 443,
+      "direction": "client-to-service"
+    },
+    {
+      "id": "F6",
+      "source": "corp-B",
+      "destination": "management-console",
+      "protocol": "tcp",
+      "port": 443,
+      "direction": "client-to-service"
+    },
+    {
+      "id": "F7",
+      "source": "corp-B",
+      "destination": "internal-reports",
+      "protocol": "tcp",
+      "port": 443,
+      "direction": "client-to-service"
+    }
+  ],
+  "stop_on": [
+    "unlisted source, service, protocol, port or direction",
+    "unintended client or service impact",
+    "window or request limit reached"
+  ]
+}

@@ -16,7 +16,7 @@ export function ModuleCard({ id, title, phase, difficulty, estimated_hours, stat
   const labCount = AVAILABLE_LABS.filter(lab => lab.module === id).length
   return <article className="ws-catalog-row">
     <span className="ws-row-number">{moduleOrdinal(id)}</span>
-    <div className="ws-row-main"><div className="ws-row-meta">Phase {phase} · {difficulty} · {estimated_hours}h · {lessonCount} lessons{labCount ? ` · ${labCount} labs` : ''} · {id.startsWith('android-') ? 'Offline source review' : status === 'simulated' ? 'Simulation' : 'RF required'}</div>
+    <div className="ws-row-main"><div className="ws-row-meta">Phase {phase} · {difficulty} · {estimated_hours}h · {lessonCount} lessons{labCount ? ` · ${labCount} labs` : ''} · {id.startsWith('android-') ? 'Offline source review' : status === 'simulated' ? 'Offline evidence' : 'Offline reasoning · optional owned hardware'}</div>
       <h3>{title}</h3>{description && <p>{description}</p>}
       <div className="ws-row-progress"><ProgressBar value={progress} label={`${title} practice progress`} /><span>{progress}% practice</span></div>
     </div>

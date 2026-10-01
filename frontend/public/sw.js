@@ -59,7 +59,9 @@ self.addEventListener('fetch', (e) => {
 
   // Navigations — network-first on the app shell. GitHub Pages answers unknown deep
   // links with its own 404 page, so we always resolve the shell ourselves.
-  if (req.mode === 'navigate') {
+  // Case downloads are files, not SPA routes (also when opened directly while offline).
+  const wirelessCaseFile = ['wireless-foundations/', 'wireless-practice/'].some(prefix => url.pathname.startsWith(`${BASE}${prefix}`))
+  if (req.mode === 'navigate' && !wirelessCaseFile) {
     e.respondWith((async () => {
       try {
         const res = await fetch(INDEX, { cache: 'no-cache' })

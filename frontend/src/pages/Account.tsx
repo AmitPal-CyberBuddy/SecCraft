@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { PasswordFeedback } from '@/components/account/PasswordFeedback'
+import { Notice } from '@/components/common/Controls'
+import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { ArrowLeft, ArrowRight, CheckCircle2, CircleAlert, Compass, Eye, EyeOff, KeyRound, LoaderCircle, LockKeyhole, Mail, RefreshCw, ShieldCheck, Sparkles, UserRound, WifiOff } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, KeyRound, LoaderCircle, LockKeyhole, Mail, RefreshCw, ShieldCheck, Sparkles, UserRound, WifiOff } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
 import { accountRedirect, supabase, supabaseConfigured } from '@/lib/supabase'
 import { useSession } from '@/lib/session'
@@ -20,63 +21,48 @@ function AccountFrame({ title, eyebrow, children }: { title: string; eyebrow: st
   return (
     <div className="ws-account-frame mx-auto max-w-[980px] px-4 py-10 sm:px-6">
       <div className="sc-account-layout grid w-full md:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
+
+        <section className="sc-account-form p-6 sm:p-9">
+          <Link to="/" className="mb-8 inline-flex items-center gap-1.5 text-xs text-[var(--ink-secondary)] hover:text-[var(--ink-primary)]">
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back to SecCraft
+          </Link>
+          <p className="text-[11px] font-bold uppercase tracking-[.2em] text-[var(--learning)]">{eyebrow}</p>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-[var(--ink-primary)]">{title}</h1>
+          <div className="mt-6">{children}</div>
+        </section>
         <aside className="sc-account-context flex flex-col justify-between p-6 md:p-8">
           <div>
             <span className="inline-flex h-11 w-11 items-center justify-center text-[var(--learning)]">
-              <ShieldCheck className="h-5 w-5 text-cyan-200" aria-hidden="true" />
+              <ShieldCheck className="h-5 w-5 text-[var(--learning)]" aria-hidden="true" />
             </span>
-            <div className="mt-5 text-xl font-bold text-white">
-              Sec<span className="text-cyan-300">Craft</span>
+            <div className="mt-5 text-xl font-bold text-[var(--ink-primary)]">
+              Sec<span className="text-[var(--learning)]">Craft</span>
             </div>
-            <p className="mt-3 text-sm leading-6 text-slate-400">Learn and practise as a guest. An account is an optional addition, not a requirement.</p>
+            <p className="mt-3 text-sm leading-6 text-[var(--ink-secondary)]">Learn and practise as a guest. An account is an optional addition, not a requirement.</p>
           </div>
-          <div className="text-xs leading-5 text-slate-500">
-            New accounts verify their email and then wait for owner approval before any account-backed feature is enabled.
-            Preview and Full describe the product experience, not a content security boundary.
+          <div className="text-xs leading-5 text-[var(--ink-muted)]">
+            Verify your email to request an account. You can explore preview lessons while you wait for approval.
           </div>
         </aside>
-        <section className="sc-account-form p-6 sm:p-9">
-          <Link to="/" className="mb-8 inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200">
-            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back to SecCraft
-          </Link>
-          <p className="text-[11px] font-bold uppercase tracking-[.2em] text-cyan-300">{eyebrow}</p>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-white">{title}</h1>
-          <div className="mt-6">{children}</div>
-        </section>
       </div>
     </div>
   )
 }
 
 function ServiceUnavailable({ children }: { children: ReactNode }) {
-  return (
-    <div role="status" className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] p-4 text-sm leading-6 text-amber-100/90">
-      {children}
-    </div>
-  )
+  return <Notice kind="warning" live>{children}</Notice>
 }
 
 function FormAlert({ children, kind = 'error' }: { children: ReactNode; kind?: 'error' | 'success' | 'info' }) {
-  const styles =
-    kind === 'error'
-      ? 'border-rose-300/20 bg-rose-300/[0.06] text-rose-100'
-      : kind === 'success'
-      ? 'border-emerald-300/20 bg-emerald-300/[0.06] text-emerald-100'
-      : 'border-cyan-300/20 bg-cyan-300/[0.06] text-cyan-100'
-  const Icon = kind === 'error' ? CircleAlert : kind === 'success' ? CheckCircle2 : Compass
-  return (
-    <div role={kind === 'error' ? 'alert' : 'status'} className={`flex items-start gap-2 rounded-xl border p-3 text-sm leading-5 ${styles}`}>
-      <Icon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-      {children}
-    </div>
-  )
+  return <Notice kind={kind} live>{children}</Notice>
 }
 
 function SubmitButton({ children, busy, disabled = false }: { children: ReactNode; busy: boolean; disabled?: boolean }) {
   return (
     <button
       disabled={busy || disabled}
-      className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-cyan-300 px-4 text-sm font-bold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-wait disabled:opacity-60"
+      aria-busy={busy}
+      className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl sc-learning-action px-4 text-sm font-bold  transition  disabled:cursor-wait disabled:opacity-60"
     >
       {busy && <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />}
       {children}
@@ -87,8 +73,8 @@ function SubmitButton({ children, busy, disabled = false }: { children: ReactNod
 /** The one thing a person in any state needs: what can I do right now? */
 function NextActions() {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3.5">
-      <p className="text-[10px] font-semibold uppercase tracking-[.16em] text-slate-500">What still works</p>
+    <div className="rounded-xl border border-[var(--line-normal)] bg-[var(--panel-inset)] p-3.5">
+      <p className="text-[10px] font-semibold uppercase tracking-[.16em] text-[var(--ink-muted)]">What still works</p>
       <div className="mt-2.5 flex flex-wrap gap-2">
         {[
           { to: '/app', label: 'Guest workspace' },
@@ -100,13 +86,13 @@ function NextActions() {
           <Link
             key={item.to}
             to={item.to}
-            className="inline-flex min-h-8 items-center rounded-lg border border-slate-700 px-2.5 text-[11.5px] text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-800 hover:text-slate-100"
+            className="inline-flex min-h-8 items-center rounded-lg border border-[var(--line-normal)] px-2.5 text-[11.5px] text-[var(--ink-secondary)] transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--panel-raised)] hover:text-[var(--ink-primary)]"
           >
             {item.label}
           </Link>
         ))}
       </div>
-      <p className="mt-3 text-[11.5px] leading-relaxed text-slate-500">{ACCOUNT_ADDS_NOTE}</p>
+      <p className="mt-3 text-[11.5px] leading-relaxed text-[var(--ink-muted)]">{ACCOUNT_ADDS_NOTE}</p>
     </div>
   )
 }
@@ -141,13 +127,12 @@ export function LoginPage() {
 
   return (
     <AccountFrame eyebrow="Account access" title="Sign in to SecCraft">
-      <p className="mb-5 text-sm leading-6 text-slate-400">
+      <p className="mb-5 text-sm leading-6 text-[var(--ink-secondary)]">
         The Preview Curriculum is available without an account. Sign in if you already have an approved account.
       </p>
       {!supabaseConfigured && (
         <ServiceUnavailable>
-          Account services are not configured for this build. The guest workspace and all static learning content remain
-          available.
+          Sign-in is unavailable right now. You can still explore preview lessons.
         </ServiceUnavailable>
       )}
       {error && (
@@ -156,48 +141,48 @@ export function LoginPage() {
         </div>
       )}
       <form onSubmit={submit} className="space-y-4">
-        <label className="block text-sm text-slate-300">
+        <label className="block text-sm text-[var(--ink-secondary)]">
           Email address
-          <span className="mt-1.5 flex min-h-11 items-center gap-2 rounded-xl border border-slate-700 bg-slate-950/70 px-3 focus-within:border-cyan-300/50">
-            <Mail className="h-4 w-4 text-slate-500" aria-hidden="true" />
+          <span className="sc-input-shell mt-1.5 flex min-h-11 items-center gap-2 rounded-xl border border-[var(--line-normal)] bg-[var(--panel-inset)] px-3 focus-within:border-[var(--accent-border)]">
+            <Mail className="h-4 w-4 text-[var(--ink-muted)]" aria-hidden="true" />
             <input
               autoComplete="email"
               type="email"
               required
               value={email}
               onChange={event => setEmail(event.target.value)}
-              className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-600"
+              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--ink-primary)] outline-none placeholder:text-[var(--ink-muted)]"
               placeholder="you@example.com"
             />
           </span>
         </label>
-        <label className="block text-sm text-slate-300">
+        <label className="block text-sm text-[var(--ink-secondary)]">
           Password
-          <span className="mt-1.5 flex min-h-11 items-center gap-2 rounded-xl border border-slate-700 bg-slate-950/70 px-3 focus-within:border-cyan-300/50">
-            <KeyRound className="h-4 w-4 text-slate-500" aria-hidden="true" />
+          <span className="sc-input-shell mt-1.5 flex min-h-11 items-center gap-2 rounded-xl border border-[var(--line-normal)] bg-[var(--panel-inset)] px-3 focus-within:border-[var(--accent-border)]">
+            <KeyRound className="h-4 w-4 text-[var(--ink-muted)]" aria-hidden="true" />
             <input
               autoComplete="current-password"
               type="password"
               required
               value={password}
               onChange={event => setPassword(event.target.value)}
-              className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-600"
+              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--ink-primary)] outline-none placeholder:text-[var(--ink-muted)]"
               placeholder="Your password"
             />
           </span>
         </label>
         <div className="text-right">
-          <Link to="/reset-password" className="text-xs text-cyan-200 hover:text-cyan-100">
+          <Link to="/reset-password" className="text-xs text-[var(--learning)] hover:text-[var(--learning)]">
             Forgot password?
           </Link>
         </div>
         <SubmitButton busy={busy} disabled={!supabaseConfigured}>
-          Sign in <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          {busy ? 'Signing in…' : 'Sign in'} <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </SubmitButton>
       </form>
-      <p className="mt-5 text-center text-sm text-slate-400">
+      <p className="mt-5 text-center text-sm text-[var(--ink-secondary)]">
         Need access?{' '}
-        <Link to="/signup" className="font-semibold text-cyan-200 hover:text-cyan-100">
+        <Link to="/signup" className="font-semibold text-[var(--learning)] hover:text-[var(--learning)]">
           Request an account
         </Link>
       </p>
@@ -215,7 +200,7 @@ export function SignupPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [copyStatus, setCopyStatus] = useState('')
-  const guidance = passwordGuidance(password)
+  const guidance = useMemo(() => passwordGuidance(password, [email, email.split('@')[0]]), [password, email])
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -295,19 +280,18 @@ export function SignupPage() {
 
   return (
     <AccountFrame eyebrow="Request access" title="Create your account">
-      <p className="mb-5 text-sm leading-6 text-slate-400">
-        First verify your email. Then the account stays pending until the platform owner approves access. Nothing about
-        the learning material waits on that.
+      <p className="mb-5 text-sm leading-6 text-[var(--ink-secondary)]">
+        Verify your email to request access. You can keep exploring preview lessons while your account awaits approval.
       </p>
 
-      {configError && (
+      {configError && supabaseConfigured && (
         <div className="mb-4">
           <ServiceUnavailable>{configError}</ServiceUnavailable>
         </div>
       )}
       {!supabaseConfigured && (
         <div className="mb-4">
-          <ServiceUnavailable>Account services are not configured for this build. Guest learning remains available.</ServiceUnavailable>
+          <ServiceUnavailable>Account registration is unavailable right now. You can still explore preview lessons.</ServiceUnavailable>
         </div>
       )}
       {closed && (
@@ -333,25 +317,25 @@ export function SignupPage() {
       )}
 
       <form onSubmit={submit} className="space-y-4">
-        <label className="block text-sm text-slate-300">
+        <label className="block text-sm text-[var(--ink-secondary)]">
           Email address
-          <span className="mt-1.5 flex min-h-11 items-center gap-2 rounded-xl border border-slate-700 bg-slate-950/70 px-3 focus-within:border-cyan-300/50">
-            <Mail className="h-4 w-4 text-slate-500" aria-hidden="true" />
+          <span className="sc-input-shell mt-1.5 flex min-h-11 items-center gap-2 rounded-xl border border-[var(--line-normal)] bg-[var(--panel-inset)] px-3 focus-within:border-[var(--accent-border)]">
+            <Mail className="h-4 w-4 text-[var(--ink-muted)]" aria-hidden="true" />
             <input
               autoComplete="email"
               type="email"
               required
               value={email}
               onChange={event => setEmail(event.target.value)}
-              className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-600"
+              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--ink-primary)] outline-none placeholder:text-[var(--ink-muted)]"
               placeholder="you@example.com"
             />
           </span>
         </label>
-        <label className="block text-sm text-slate-300">
+        <label className="block text-sm text-[var(--ink-secondary)]">
           Password
-          <span className="mt-1.5 flex min-h-11 items-center gap-2 rounded-xl border border-slate-700 bg-slate-950/70 px-3 focus-within:border-cyan-300/50">
-            <KeyRound className="h-4 w-4 text-slate-500" aria-hidden="true" />
+          <span className="sc-input-shell mt-1.5 flex min-h-11 items-center gap-2 rounded-xl border border-[var(--line-normal)] bg-[var(--panel-inset)] px-3 focus-within:border-[var(--accent-border)]">
+            <KeyRound className="h-4 w-4 text-[var(--ink-muted)]" aria-hidden="true" />
             <input
               autoComplete="new-password"
               type={showPassword ? 'text' : 'password'}
@@ -361,31 +345,29 @@ export function SignupPage() {
               aria-describedby="signup-password-guidance"
               value={password}
               onChange={event => { setPassword(event.target.value); setCopyStatus('') }}
-              className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-600"
+              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--ink-primary)] outline-none placeholder:text-[var(--ink-muted)]"
               placeholder="At least 8 characters"
             />
-            <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} onClick={() => setShowPassword(visible => !visible)} className="shrink-0 rounded p-2 text-slate-300 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300">{showPassword ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}</button>
+            <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} onClick={() => setShowPassword(visible => !visible)} className="shrink-0 rounded p-2 text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-color)]">{showPassword ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}</button>
           </span>
         </label>
-        <div id="signup-password-guidance" className="space-y-2 text-xs text-slate-300">
-          <p role="status" aria-live="polite">Password strength: <strong>{guidance.strength ?? 'Not entered'}</strong>. Estimate only, not a security guarantee.</p>
-          <ul className="grid grid-cols-2 gap-x-3 gap-y-1" aria-label="Suggested password checks">{guidance.checks.map(check => <li key={check.label} className={check.met ? 'text-emerald-300' : 'text-slate-400'}>{check.met ? '✓' : '○'} {check.label}</li>)}</ul>
-          <p>Uppercase, lowercase and a symbol are recommended; a longer unique password is safer. The account service and Supabase may apply additional rules.</p>
-          <button type="button" className="min-h-10 rounded-lg border border-cyan-300/40 px-3 font-semibold text-cyan-200 hover:bg-cyan-300/10" onClick={() => {
+        <div id="signup-password-guidance" className="space-y-2 text-xs text-[var(--ink-secondary)]">
+          <PasswordFeedback guidance={guidance} />
+          <button type="button" className="min-h-10 rounded-lg border border-[var(--accent-border)] px-3 font-semibold text-[var(--learning)] hover:bg-[var(--accent-bg)]" onClick={() => {
             try { setPassword(generatePassword()); setConfirmPassword(''); setShowPassword(true); setCopyStatus(''); setError('') }
             catch { setError('Secure password generation is unavailable in this browser. Please create a unique password yourself.') }
           }}>Suggest a strong password</button>
-          {password && <button type="button" className="ml-2 min-h-10 rounded-lg border border-slate-600 px-3 text-slate-200 hover:bg-slate-800" onClick={async () => {
+          {password && <button type="button" className="ml-2 min-h-10 rounded-lg border border-[var(--line-strong)] px-3 text-[var(--ink-primary)] hover:bg-[var(--panel-raised)]" onClick={async () => {
             try { await navigator.clipboard.writeText(password); setCopyStatus('Copied. Paste into your password manager and the confirmation field.') }
             catch { setCopyStatus('Copy unavailable. Select the shown password to save it yourself.') }
           }}>Copy password</button>}
           {copyStatus && <p role="status">{copyStatus}</p>}
-          <p>Generated passwords are shown so you can save them in a password manager. Re-enter it below to confirm; SecCraft does not store the suggestion.</p>
+          <p>Save the suggestion in your password manager, then re-enter it below.</p>
         </div>
-        <label className="block text-sm text-slate-300">
+        <label className="block text-sm text-[var(--ink-secondary)]">
           Confirm password
-          <span className="mt-1.5 flex min-h-11 items-center gap-2 rounded-xl border border-slate-700 bg-slate-950/70 px-3 focus-within:border-cyan-300/50">
-            <LockKeyhole className="h-4 w-4 text-slate-500" aria-hidden="true" />
+          <span className="sc-input-shell mt-1.5 flex min-h-11 items-center gap-2 rounded-xl border border-[var(--line-normal)] bg-[var(--panel-inset)] px-3 focus-within:border-[var(--accent-border)]">
+            <LockKeyhole className="h-4 w-4 text-[var(--ink-muted)]" aria-hidden="true" />
             <input
               autoComplete="new-password"
               type="password"
@@ -394,26 +376,25 @@ export function SignupPage() {
               required
               value={confirmPassword}
               onChange={event => setConfirmPassword(event.target.value)}
-              className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-600"
+              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--ink-primary)] outline-none placeholder:text-[var(--ink-muted)]"
               placeholder="Re-enter your password"
             />
           </span>
         </label>
-        <p className="text-xs leading-5 text-slate-500">
-          By continuing you accept that an account is optional, and that progress imported from a browser is never treated
-          as a verified result.
+        <p className="text-xs leading-5 text-[var(--ink-muted)]">
+          An account is optional. Imported practice progress remains unverified.
         </p>
         <SubmitButton busy={busy} disabled={!canSubmit}>
           {busy ? 'Submitting request…' : 'Send verification email'} <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </SubmitButton>
         {!canSubmit && !configError && !closed && supabaseConfigured && (
-          <p className="text-center text-xs text-slate-500">The form opens when the account service and the owner's signup setting are both ready.</p>
+          <p className="text-center text-xs text-[var(--ink-muted)]">The form opens when the account service and the owner's signup setting are both ready.</p>
         )}
       </form>
 
-      <p className="mt-5 text-center text-sm text-slate-400">
+      <p className="mt-5 text-center text-sm text-[var(--ink-secondary)]">
         Already registered?{' '}
-        <Link to="/login" className="font-semibold text-cyan-200 hover:text-cyan-100">
+        <Link to="/login" className="font-semibold text-[var(--learning)] hover:text-[var(--learning)]">
           Sign in
         </Link>
       </p>
@@ -449,7 +430,7 @@ export function ResetPasswordPage() {
 
   return (
     <AccountFrame eyebrow="Account recovery" title="Reset your password">
-      <p className="mb-5 text-sm leading-6 text-slate-400">
+      <p className="mb-5 text-sm leading-6 text-[var(--ink-secondary)]">
         Enter the email used for your account. If recovery is available for it, instructions will arrive.
       </p>
       {done && (
@@ -463,27 +444,27 @@ export function ResetPasswordPage() {
         </div>
       )}
       <form onSubmit={submit} className="space-y-4">
-        <label className="block text-sm text-slate-300">
+        <label className="block text-sm text-[var(--ink-secondary)]">
           Email address
-          <span className="mt-1.5 flex min-h-11 items-center gap-2 rounded-xl border border-slate-700 bg-slate-950/70 px-3 focus-within:border-cyan-300/50">
-            <Mail className="h-4 w-4 text-slate-500" aria-hidden="true" />
+          <span className="sc-input-shell mt-1.5 flex min-h-11 items-center gap-2 rounded-xl border border-[var(--line-normal)] bg-[var(--panel-inset)] px-3 focus-within:border-[var(--accent-border)]">
+            <Mail className="h-4 w-4 text-[var(--ink-muted)]" aria-hidden="true" />
             <input
               autoComplete="email"
               type="email"
               required
               value={email}
               onChange={event => setEmail(event.target.value)}
-              className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-600"
+              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--ink-primary)] outline-none placeholder:text-[var(--ink-muted)]"
               placeholder="you@example.com"
             />
           </span>
         </label>
         <SubmitButton busy={busy} disabled={!supabaseConfigured}>
-          Send recovery email
+          {busy ? 'Sending recovery email…' : 'Send recovery email'}
         </SubmitButton>
       </form>
-      <p className="mt-5 text-center text-sm text-slate-400">
-        <Link to="/login" className="font-semibold text-cyan-200 hover:text-cyan-100">
+      <p className="mt-5 text-center text-sm text-[var(--ink-secondary)]">
+        <Link to="/login" className="font-semibold text-[var(--learning)] hover:text-[var(--learning)]">
           Back to sign in
         </Link>
       </p>
@@ -495,7 +476,7 @@ export function UpdatePasswordPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [copyStatus, setCopyStatus] = useState('')
-  const guidance = passwordGuidance(password)
+  const guidance = useMemo(() => passwordGuidance(password), [password])
   const [confirm, setConfirm] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -541,32 +522,30 @@ export function UpdatePasswordPage() {
         </div>
       )}
       <form onSubmit={submit} className="space-y-4">
-        <label className="block text-sm text-slate-300">
+        <label className="block text-sm text-[var(--ink-secondary)]">
           New password
-          <span className="mt-1.5 flex min-h-11 items-center rounded-xl border border-slate-700 bg-slate-950/70 px-3 focus-within:border-cyan-300/50">
+          <span className="sc-input-shell mt-1.5 flex min-h-11 items-center rounded-xl border border-[var(--line-normal)] bg-[var(--panel-inset)] px-3 focus-within:border-[var(--accent-border)]">
             <input autoComplete="new-password" type={showPassword ? 'text' : 'password'} minLength={8} maxLength={128} required
               aria-describedby="recovery-password-guidance" value={password}
               onChange={event => { setPassword(event.target.value); setCopyStatus('') }}
-              className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none" />
-            <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} onClick={() => setShowPassword(visible => !visible)} className="rounded p-2 text-slate-300 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300">{showPassword ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}</button>
+              className="min-w-0 flex-1 bg-transparent text-sm text-[var(--ink-primary)] outline-none" />
+            <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} onClick={() => setShowPassword(visible => !visible)} className="rounded p-2 text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-color)]">{showPassword ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}</button>
           </span>
         </label>
-        <div id="recovery-password-guidance" className="space-y-2 text-xs text-slate-300">
-          <p role="status" aria-live="polite">Password strength: <strong>{guidance.strength ?? 'Not entered'}</strong>. Estimate only, not a security guarantee.</p>
-          <ul className="grid grid-cols-2 gap-x-3 gap-y-1" aria-label="Suggested password checks">{guidance.checks.map(check => <li key={check.label} className={check.met ? 'text-emerald-300' : 'text-slate-400'}>{check.met ? '✓' : '○'} {check.label}</li>)}</ul>
-          <p>Use a long, unique password. Supabase may apply additional project-side rules.</p>
-          <button type="button" className="min-h-10 rounded-lg border border-cyan-300/40 px-3 font-semibold text-cyan-200 hover:bg-cyan-300/10" onClick={() => {
+        <div id="recovery-password-guidance" className="space-y-2 text-xs text-[var(--ink-secondary)]">
+          <PasswordFeedback guidance={guidance} />
+          <button type="button" className="min-h-10 rounded-lg border border-[var(--accent-border)] px-3 font-semibold text-[var(--learning)] hover:bg-[var(--accent-bg)]" onClick={() => {
             try { setPassword(generatePassword()); setConfirm(''); setShowPassword(true); setCopyStatus(''); setError('') }
             catch { setError('Secure password generation is unavailable in this browser. Please create a unique password yourself.') }
           }}>Suggest a strong password</button>
-          {password && <button type="button" className="ml-2 min-h-10 rounded-lg border border-slate-600 px-3 text-slate-200 hover:bg-slate-800" onClick={async () => {
+          {password && <button type="button" className="ml-2 min-h-10 rounded-lg border border-[var(--line-strong)] px-3 text-[var(--ink-primary)] hover:bg-[var(--panel-raised)]" onClick={async () => {
             try { await navigator.clipboard.writeText(password); setCopyStatus('Copied. Paste into your password manager and the confirmation field.') }
             catch { setCopyStatus('Copy unavailable. Select the shown password to save it yourself.') }
           }}>Copy password</button>}
           {copyStatus && <p role="status">{copyStatus}</p>}
           <p>Save a suggested password in your password manager; re-enter it below to confirm.</p>
         </div>
-        <label className="block text-sm text-slate-300">
+        <label className="block text-sm text-[var(--ink-secondary)]">
           Confirm password
           <input
             autoComplete="new-password"
@@ -576,11 +555,11 @@ export function UpdatePasswordPage() {
             required
             value={confirm}
             onChange={event => setConfirm(event.target.value)}
-            className="mt-1.5 min-h-11 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-3 text-sm text-white outline-none focus:border-cyan-300/50"
+            className="mt-1.5 min-h-11 w-full rounded-xl border border-[var(--line-normal)] bg-[var(--panel-inset)] px-3 text-sm text-[var(--ink-primary)] outline-none focus:border-[var(--accent-border)]"
           />
         </label>
         <SubmitButton busy={busy} disabled={!supabaseConfigured}>
-          Update password
+          {busy ? 'Updating password…' : 'Update password'}
         </SubmitButton>
       </form>
     </AccountFrame>
@@ -609,17 +588,17 @@ export function AccountStatusPage() {
 
   const toneBorder =
     userState === 'active' || userState === 'owner'
-      ? 'border-emerald-300/20 bg-emerald-300/[0.06]'
+      ? 'border-[var(--success-border)] bg-[var(--success-bg)]'
       : userState === 'rejected' || userState === 'suspended'
-      ? 'border-rose-300/20 bg-rose-300/[0.06]'
-      : 'border-amber-300/20 bg-amber-300/[0.06]'
+      ? 'border-[var(--danger-border)] bg-[var(--danger-bg)]'
+      : 'border-[var(--warning-border)] bg-[var(--warning-bg)]'
 
   const toneText =
     userState === 'active' || userState === 'owner'
-      ? 'text-emerald-100'
+      ? 'text-[var(--success)]'
       : userState === 'rejected' || userState === 'suspended'
-      ? 'text-rose-100'
-      : 'text-amber-100'
+      ? 'text-[var(--danger)]'
+      : 'text-[var(--attention)]'
 
   const headline = !signedIn
     ? 'Check your account'
@@ -636,16 +615,16 @@ export function AccountStatusPage() {
   return (
     <AccountFrame eyebrow="Account status" title={!ready || accountLoading ? 'Checking account status' : statusUnavailable ? 'Account status unavailable' : signedIn ? headline : 'Check your account'}>
       {!ready || accountLoading ? (
-        <div className="flex items-center gap-2 text-sm text-slate-400" role="status" aria-live="polite">
+        <div className="flex items-center gap-2 text-sm text-[var(--ink-secondary)]" role="status" aria-live="polite">
           <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /> Checking account status…
         </div>
       ) : statusUnavailable ? (
         <div className="space-y-4">
           <ServiceUnavailable>{accountError.message}</ServiceUnavailable>
-          <p className="text-sm text-slate-400">You are signed in, but the account service has not confirmed approval or owner access. This is not an approval decision. Preview learning and browser-local practice remain available.</p>
+          <p className="text-sm text-[var(--ink-secondary)]">You are signed in, but the account service has not confirmed approval or owner access. This is not an approval decision. Preview learning and browser-local practice remain available.</p>
           <div className="flex flex-wrap gap-3">
-            <button type="button" onClick={() => void recheck()} disabled={checking} className="inline-flex min-h-11 items-center rounded-xl border border-slate-700 px-4 text-sm text-slate-200 disabled:opacity-60">{checking ? 'Checking…' : 'Re-check status'}</button>
-            <Link to="/app" className="inline-flex min-h-11 items-center rounded-xl border border-slate-700 px-4 text-sm text-slate-200">Go to workspace</Link>
+            <button type="button" onClick={() => void recheck()} disabled={checking} className="inline-flex min-h-11 items-center rounded-xl border border-[var(--line-normal)] px-4 text-sm text-[var(--ink-primary)] disabled:opacity-60">{checking ? 'Checking…' : 'Re-check status'}</button>
+            <Link to="/app" className="inline-flex min-h-11 items-center rounded-xl border border-[var(--line-normal)] px-4 text-sm text-[var(--ink-primary)]">Go to workspace</Link>
           </div>
         </div>
       ) : !signedIn ? (
@@ -657,25 +636,25 @@ export function AccountStatusPage() {
             </FormAlert>
           )}
           {accountError.kind !== 'none' && <ServiceUnavailable>{accountError.message}</ServiceUnavailable>}
-          <p className="text-sm leading-6 text-slate-400">
+          <p className="text-sm leading-6 text-[var(--ink-secondary)]">
             Sign in after confirming your email to view your account state. New accounts stay pending until the owner
             approves access — and in the meantime you keep the full Preview Curriculum.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link
               to="/login"
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-cyan-300 px-4 text-sm font-bold text-slate-950 transition-colors hover:bg-cyan-200"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl sc-learning-action px-4 text-sm font-bold  transition-colors "
             >
               Sign in <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
-            <Link to="/app" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-700 px-4 text-sm text-slate-200 transition-colors hover:bg-slate-800">
+            <Link to="/app" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--line-normal)] px-4 text-sm text-[var(--ink-primary)] transition-colors hover:bg-[var(--panel-raised)]">
               Continue in the Preview Curriculum
             </Link>
           </div>
           <NextActions />
         </div>
       ) : (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }} className="space-y-4">
+        <div className="space-y-4">
           <div className={`rounded-xl border p-4 ${toneBorder}`}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className={`text-sm font-semibold leading-6 ${toneText}`}>
@@ -686,26 +665,26 @@ export function AccountStatusPage() {
               <StateChip state={userState} size="sm" />
             </div>
             {account?.email && (
-              <p className="mt-3 text-xs text-slate-400">
-                Signed in as <span className="font-medium text-slate-200">{account.email}</span>
+              <p className="mt-3 text-xs text-[var(--ink-secondary)]">
+                Signed in as <span className="font-medium text-[var(--ink-primary)]">{account.email}</span>
               </p>
             )}
-            <p className="mt-3 text-[12.5px] leading-relaxed text-slate-300">{STATE_META[userState].nextAction}</p>
-            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-800/80 pt-3">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <p className="mt-3 text-[12.5px] leading-relaxed text-[var(--ink-secondary)]">{STATE_META[userState].nextAction}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[var(--line-normal)] pt-3">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
                 Your curriculum
               </span>
               <span
                 className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${
                   can('full-curriculum')
-                    ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300'
-                    : 'border-cyan-500/25 bg-cyan-500/10 text-cyan-300'
+                    ? 'border-[var(--success-border)] bg-[var(--success-bg)] text-[var(--success)]'
+                    : 'border-[var(--accent-border)] bg-[var(--accent-bg)] text-[var(--learning)]'
                 }`}
               >
                 {currentCurriculumLabel(userState)}
               </span>
               {!can('full-curriculum') && (
-                <span className="text-[11.5px] leading-relaxed text-slate-500">
+                <span className="text-[11.5px] leading-relaxed text-[var(--ink-muted)]">
                   Approval switches on the Full Curriculum and account-backed records.
                 </span>
               )}
@@ -713,7 +692,7 @@ export function AccountStatusPage() {
           </div>
 
           {accountError.kind !== 'none' && accountError.kind !== 'unverified' && (
-            <div className="flex items-start gap-2 rounded-xl border border-amber-300/20 bg-amber-300/[0.06] p-3 text-[12.5px] leading-6 text-amber-100/90">
+            <div className="flex items-start gap-2 rounded-xl border border-[var(--warning-border)] bg-[var(--warning-bg)] p-3 text-[12.5px] leading-6 text-[var(--attention)]">
               <WifiOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               {accountError.message}
             </div>
@@ -723,14 +702,14 @@ export function AccountStatusPage() {
             {userState === 'owner' && (
               <Link
                 to="/admin"
-                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-cyan-300 px-4 text-sm font-bold text-slate-950 transition-colors hover:bg-cyan-200"
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl sc-learning-action px-4 text-sm font-bold  transition-colors "
               >
                 <Sparkles className="h-4 w-4" aria-hidden="true" /> Open owner console
               </Link>
             )}
             <Link
               to="/app"
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-700 px-4 text-sm text-slate-200 transition-colors hover:bg-slate-800"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--line-normal)] px-4 text-sm text-[var(--ink-primary)] transition-colors hover:bg-[var(--panel-raised)]"
             >
               Go to workspace
             </Link>
@@ -738,21 +717,21 @@ export function AccountStatusPage() {
               type="button"
               onClick={() => void recheck()}
               disabled={checking}
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-700 px-4 text-sm text-slate-300 transition-colors hover:bg-slate-800 disabled:opacity-60"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--line-normal)] px-4 text-sm text-[var(--ink-secondary)] transition-colors hover:bg-[var(--panel-raised)] disabled:opacity-60"
             >
               <RefreshCw className={`h-4 w-4 ${checking ? 'animate-spin' : ''}`} aria-hidden="true" /> Re-check status
             </button>
             <button
               type="button"
               onClick={() => void signOut()}
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-700 px-4 text-sm text-slate-300 transition-colors hover:bg-slate-800"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--line-normal)] px-4 text-sm text-[var(--ink-secondary)] transition-colors hover:bg-[var(--panel-raised)]"
             >
               <UserRound className="h-4 w-4" aria-hidden="true" /> Sign out
             </button>
           </div>
 
           <NextActions />
-        </motion.div>
+        </div>
       )}
     </AccountFrame>
   )

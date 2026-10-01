@@ -17,7 +17,7 @@ Published credentials are lab-only values for reproducing the explicitly documen
 | capture | frames | what is cryptographically real |
 | --- | --- | --- |
 | `wifi-fundamentals/beacon-only.pcapng` | 4 | Beacon/probe fixed fields, IEs, RSNE (AKM, ciphers, MFPC/MFPR bits), country/VHT/HE/capability IEs |
-| `recon/recon-lab.pcapng` | 17 | 6 BSSs incl. an ESS, a hidden BSS revealed in the probe response, directed probes leaking a PNL, randomised client MAC |
+| `recon/recon-lab.pcapng` | 17 | Encoded six-BSS teaching inventory, hidden-name response and directed probes; locally administered address does not prove device identity or randomization |
 | `traffic/traffic-analysis.pcapng` | 21 | Full association state machine, EAPOL-Key M1–M4 with MICs computed from the lab PSK, DHCP/ARP/ICMP/DNS/HTTP payloads |
 | `wpa2/wpa2-handshake.pcapng` | 13 | M1–M4 for one client and M1–M2 for a second; MICs, nonces and replay counters consistent with the lab PSK |
 | `wpa2/pmkid.pcapng` | 6 | PMKID = HMAC-SHA1-128(PMK, "PMK Name" | AA | SPA) inside a real EAPOL-Key M1 header |
@@ -27,7 +27,7 @@ Published credentials are lab-only values for reproducing the explicitly documen
 | `deauth/deauth.pcapng` | 22 | Deauthentication/disassociation frames with reason codes 1/7/8/15, broadcast and directed floods, SA Query action frames |
 | `rogue/rogue-ap.pcapng` | 20 | Same-SSID look-alike fixture with a locally administered BSSID, different AKM/IE profile and 50 TU beacon interval; scripted client association, lab PSK handshake and synthetic DHCP/HTTP sequence. Capture alone does not establish unauthorized ownership or deauthentication causality. |
 | `captive/captive-portal.pcapng` | 17 | Open BSS, DHCP, HTTP 302 redirect to the portal, cleartext POST credentials, session cookie, client-to-client ARP (no isolation) |
-| `radius/radius.pcapng` | 9 | RADIUS over IPv4/UDP 1812-1813 with verifiable Message-Authenticator (Access-Request) and Response Authenticator (Accept/Challenge/Accounting), Tunnel-Private-Group-Id VLAN 100, MS-MPPE keys, a rogue NAS with a wrong Message-Authenticator, and real MS-CHAPv2 challenge/response material |
+| `radius/radius.pcapng` | 10 | Paired RADIUS requests/replies with verifiable Message-Authenticators and Response/Accounting authenticators, VLAN attribute 100, direct MS-CHAPv2 teaching values and a deliberately invalid request |
 | `enterprise/enterprise.pcapng` | 11 | Synthetic EAPOL/EAP method identifiers and an illustrative handshake with MICs consistent with a documented lab MSK; not evidence of a complete PEAP/TLS negotiation or deployed 802.1X policy |
 | `eap/eap.pcapng` | 12 | EAP method identifiers and direct MS-CHAPv2 challenge/response/success fixture values; this is not a complete PEAP inner exchange or EAP-TLS/TTLS session |
 | `corporate/corporate-attacks.pcapng` | 19 | Synthetic 19-frame collection with management frames, a look-alike/weak-PSK practice exchange, direct EAP-MSCHAPv2 packets and an ICMP pair; does not demonstrate successful deauth, PEAP, RADIUS or production segmentation |
@@ -39,8 +39,8 @@ Published credentials are lab-only values for reproducing the explicitly documen
 
 | capture | synthetic / not cryptographically valid |
 | --- | --- |
-| `beacon-only` | nothing cryptographic — passive capture |
-| `recon-lab` | nothing cryptographic — passive capture |
+| `beacon-only` | all frames and radio metadata are generated teaching evidence, not a live passive capture |
+| `recon-lab` | all frames and radio metadata are generated teaching evidence, not a live passive capture |
 | `traffic-analysis` | DHCP option bytes are minimal (fixed-size); HTTP/DNS bodies are lab strings |
 | `wpa2-handshake` | key rsc/key id reserved bytes are zero (normal for a sniffer capture) |
 | `pmkid` | the association exchange around it is minimal |
@@ -50,7 +50,7 @@ Published credentials are lab-only values for reproducing the explicitly documen
 | `deauth` | frames are synthetic teaching examples; no receiver acceptance or availability impact is established |
 | `rogue-ap` | captive portal HTML payload is a lab string |
 | `captive-portal` | portal HTML/HTTP bodies are lab strings |
-| `radius` | MS-MPPE key material is a lab value (the real keys are encrypted with the shared secret) |
+| `radius` | No PEAP/TLS session, real EAP peer, key transport or enforced VLAN; nonces are deterministic teaching values |
 | `enterprise` | TLS records are abbreviated structural bytes; the MSK is an inserted lab value, not derived from a TLS master secret or PEAP exchange |
 | `eap` | TLS payloads are abbreviated structural bytes; the direct MS-CHAPv2 exchange is intentionally visible and must not be described as a passive PEAP capture |
 | `corporate-attacks` | EAP/TLS payloads are abbreviated structural fixtures; no complete PEAP tunnel, RADIUS exchange, production configuration or live network path is represented |

@@ -10,12 +10,12 @@
 
 | Type (2 bits) | Subtype | Name | Security relevance |
 | --- | --- | --- | --- |
-| 0 management | 4 / 5 | Probe Request / Response | client PNL; hidden SSID reveal |
+| 0 management | 4 / 5 | Probe Request / Response | directed-name interest; possible hidden SSID reveal |
 | 0 | 8 | Beacon | full policy advertisement (RSNE, WPS, caps) |
 | 0 | 11 | Authentication | open/SAE/FT exchange; auth algorithm tells you which |
 | 0 | 0 / 1 | Association Request / Response | negotiated policy; status codes |
 | 0 | 10 / 12 | Disassociation / Deauthentication | unauthenticated unless PMF protects them |
-| 0 | 13 | Action | SA Query (category 8), RRM (5), BSS transition (6) |
+| 0 | 13 | Action | SA Query (category 8), Radio Measurement (5), WNM/BSS transition (10); category 6 is Fast BSS Transition |
 | 1 control | — | ACK/RTS/CTS/BlockAck | reliability, airtime, hidden-node analysis |
 | 2 data | 0 / 8 | Data / QoS Data | EAPOL, IP payloads (protected once keys exist) |
 
@@ -34,11 +34,11 @@ wlan.bssid == 00:11:22:33:44:55       # one BSS
 
 ## 2. The information elements that matter
 
-* **SSID (0)** — length 0 means hidden.
+* **SSID (0)** — zero length in a beacon may indicate a hidden name; in a probe request it indicates wildcard discovery. Interpret it in frame context.
 * **Supported Rates / Extended Supported Rates (1, 50)** — legacy rates; keep for completeness, not for decisions.
 * **DS Parameter (3)** — 2.4 GHz channel.
 * **TIM (5)** — DTIM/beacon count; useful when you interpret power-save client wake-ups.
-* **Country (7)** — the regulatory triplet the AP claims to use (channel ranges and EIRP limits).
+* **Country (7)** — the country string and channel/power triplets the AP advertises; not permission to override local radio rules.
 * **RSN (48)** — cipher/AKM suites + capabilities (see module 02).
 * **Extended Capabilities (127)** — capabilities such as BSS Transition (802.11v); check the appropriate RSN/management elements separately for OCV-related policy.
 * **HT/VHT/HE (45/61, 191/192, ext 35)** — channel width, MCS, spatial streams, OFDMA.
@@ -69,8 +69,8 @@ The RSNE advertises security options; association selects a compatible option, a
 What each step proves:
 
 * **Probe**: a directed SSID can indicate interest, not proof the client will join or trusts that BSS.
-* **Authentication (open, algorithm 0)**: nothing. It is a formality; do not report it as "authentication".
-* **Association**: which capabilities the AP and client agreed on (RSNE is echoed here).
+* **Authentication (open, algorithm 0)**: a MAC-layer exchange with an explicit algorithm/sequence/status. It does not validate a WPA password or establish an authorized data session.
+* **Association**: inspect requested parameters and response status. Do not assume every RSNE is echoed identically or that the keys/controlled port are already established.
 * **4-way handshake**: when valid and completed, both peers prove PMK possession and install session keys; a captured M1/M2 alone permits offline candidate verification but does not prove successful completion or acceptance.
 * **Status/reason codes**: protocol-level reasons for the frame outcome, not necessarily the underlying cause. Quote the code and correlate it with supplicant/AP logs and other evidence.
 
@@ -85,9 +85,7 @@ claims about user data require keys (lab PSK, or a live client you are authorise
 association (2 frames) → 4-way handshake → DHCP/ARP/ICMP/DNS/HTTP:
 
 ```bash
-tshark -r traffic-analysis.pcapng -Y 'wlan.fc.type_subtype==8 || wlan.fc.type_subtype==4 || \
-  wlan.fc.type_subtype==5 || wlan.fc.type_subtype==11 || wlan.fc.type_subtype==0 || \
-  wlan.fc.type_subtype==1 || eapol' -T fields -e frame.number -e wlan.fc.type_subtype -e wlan.sa -e wlan.da
+tshark -r traffic-analysis.pcapng -Y 'wlan.fc.type == 0 || eapol' -T fields -e frame.number -e wlan.fc.type_subtype -e wlan.sa -e wlan.da
 ```
 
 Deliverable: a table `frame | step | what it proves` plus the RSNE decoded from the association request.

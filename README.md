@@ -26,8 +26,9 @@ Guest learning is the default: authored content, local progress, and the offline
 
 **Wireless Pentesting — available, synthetic/offline-first**
 
-- 15 modules across 6 phases, with 32 authored lessons
-- 19 available wireless labs (plus one planned entry); 18 integrity-checked synthetic PCAP artifacts across the wireless case pack
+- 15 available modules across 7 competency phases, with 35 authored lessons
+- 19 available wireless labs (plus one planned entry); 18 integrity-checked synthetic PCAP artifacts in the lab catalogue
+- WF-FND-01 foundations evidence pack: two additional generated captures, owner inventory, scope, worksheet and public self-review; no live AP/client outcome
 - 22 local self-review challenges with 66 tasks, plus 35 decision scenarios
 - A 42-item engagement checklist and the `ENG-01` assessment pack
 - Reference material, evidence collection, reporting, CVSS calculation, and printable local completion records
@@ -128,3 +129,14 @@ The active identity and migration record are retained for maintainers; supersede
 ## License
 
 This repository currently has no `LICENSE` file. Do not assume reuse terms; contact the repository owner before redistributing it.
+
+### Contact and feedback
+
+The optional `/feedback` form sends private messages to the owner-only `/admin/feedback` inbox.
+It requires a migrated API database and a dedicated server-side `FEEDBACK_HMAC_SECRET`; static-only
+learning continues to work without it. See [feedback setup, quotas and retention](docs/FEEDBACK.md)
+before enabling public intake. Do not report vulnerabilities through the general feedback form.
+
+### Wireless curriculum redesign
+
+See [the phased redesign plan](docs/WIRELESS_REDESIGN_PLAN.md), [repository review](docs/WIRELESS_REDESIGN_AUDIT.md), and [Phase 1 release](docs/WIRELESS_REDESIGN_PHASE1.md). The eventual twenty-module map is a roadmap, not twenty available modules or a professional credential.

@@ -62,6 +62,15 @@ test('owner console retains unsaved policy edits, isolates filters and confirms 
   assert.ok(!container.textContent.includes('active@example.test'))
   assert.ok(calls.some(c => c.request.includes('status=pending&limit=200')))
 
+  const search = container.querySelector('input[type="search"]')
+  assert.ok(search.labels.length, 'loaded-account search has a visible label')
+  const setter = Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set
+  await act(async () => { setter.call(search, 'missing@example.test'); search.dispatchEvent(new dom.window.Event('input', { bubbles: true })) })
+  assert.match(container.textContent, /No loaded accounts match/)
+  assert.ok(!container.textContent.includes('pending@example.test'))
+  await click(button('Clear search'))
+  assert.match(container.textContent, /pending@example\.test/)
+
   const toggle = container.querySelector('.sc-owner-toggle input')
   await act(async () => { toggle.click() })
   assert.match(container.textContent, /Unsaved changes/)

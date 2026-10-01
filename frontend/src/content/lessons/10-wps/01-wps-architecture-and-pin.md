@@ -12,7 +12,7 @@ one of several methods advertised in the WPS IE:
 | --- | --- | --- |
 | Label / PIN | 0x0004 | 8-digit PIN printed on the device — the weak method |
 | Display | 0x0008 | AP shows a PIN the client types |
-| Push button (PBC) | 0x0080 | no PIN; vulnerable to *physical* window abuse, not to math |
+| Push button (PBC) | 0x0080 | no split-PIN search; consider nearby unauthorized enrollment during the active window |
 | NFC / USB | other bits | out of scope for RF testing |
 
 The WPS IE (vendor ID 221, OUI `00:50:F2`, OUI type `04`) carries attributes you can read from a beacon:
@@ -23,7 +23,7 @@ version, config methods, **AP setup locked**, **selected registrar**, device pas
 The PIN is 8 digits: `D1 D2 D3 D4 D5 D6 D7 C`, where the last digit `C` is a **checksum** of the first
 seven. WPS also validates the PIN in two halves:
 
-* the AP tells the enrollee whether the **first half** (D1–D4) is correct — 10^4 = 10 000 possibilities;
+* a vulnerable validation path reveals whether the **first half** (D1–D4) is correct — 10^4 = 10 000 possibilities;
 * then whether the **second half** (D5–D7) is correct — 10^3 = 1 000 possibilities.
 
 So the effective search space is ~11 000 attempts, not 10^7 — and each half can be attacked
@@ -32,11 +32,11 @@ generates its own nonces and can be faster, but they are implementation-specific
 
 ## 3. What actually stops it
 
-* **Disable WPS** (`wps_state=0`). This is the only complete fix for the PIN method.
+* **Disable WPS** (`wps_state=0`). Remove unused enrollment exposure; confirm all PIN/registrar paths in the actual product.
 * If a product requires WPS: enforce **attempt lockout** and lock the registrar aggressively, and use PBC
   only when physically attended.
 * WPS 2.0 does **not** by itself mean the PIN method is absent. Implementations may enforce lockout/rate limits, but behavior varies; NFC is an enrollment method, not proof that PIN is disabled. Check the advertised methods, setup-lock state, vendor configuration and authorized behavior rather than trusting a version label.
-* Monitoring: repeated WSC exchanges (`EAP-WSC`, type 254) against the same BSSID is a strong WIDS signal.
+* Monitoring: repeated WSC exchanges (Expanded EAP type 254 with the WFA vendor/type identifying WSC; 254 alone is not WPS) against the same BSSID is a strong WIDS signal.
 
 ## 4. Lab
 

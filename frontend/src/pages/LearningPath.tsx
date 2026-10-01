@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { useProgressStore } from '@/store/useProgressStore'
-import { motion } from 'framer-motion'
 import modules from '@/content/modules.json'
 import { TOTAL_MODULES } from '@/content/stats'
 import { CheckCircle, Circle, Loader2, Lock, Sparkles, Target, BookOpen, Award, Zap, ChevronRight } from 'lucide-react'
@@ -9,179 +8,163 @@ export function LearningPath() {
   const getProgress = useProgressStore(s => s.getModuleProgress)
 
   const phases = [
-    { id: 1, name: 'Foundations', desc: 'Wireless fundamentals & 802.11 architecture', color: 'cyan', gradient: 'from-cyan-500/10 to-cyan-600/5', border: 'border-cyan-500/20', text: 'text-cyan-400', glow: 'shadow-glow-cyan', modules: modules.filter(m => m.phase === 1) },
-    { id: 2, name: 'Reconnaissance', desc: 'Wireless recon & traffic analysis', color: 'violet', gradient: 'from-violet-500/10 to-violet-600/5', border: 'border-violet-500/20', text: 'text-violet-400', glow: 'shadow-glow-violet', modules: modules.filter(m => m.phase === 2) },
-    { id: 3, name: 'Wi-Fi Security', desc: 'WEP, WPA/WPA2, WPS, WPA3 deep dive', color: 'amber', gradient: 'from-amber-500/10 to-amber-600/5', border: 'border-amber-500/20', text: 'text-amber-400', glow: '', modules: modules.filter(m => m.phase === 3) },
-    { id: 4, name: 'Attack Techniques', desc: 'Deauth, Rogue AP, Captive Portals', color: 'emerald', gradient: 'from-emerald-500/10 to-emerald-600/5', border: 'border-emerald-500/20', text: 'text-emerald-400', glow: 'shadow-glow-emerald', modules: modules.filter(m => m.phase === 4) },
-    { id: 5, name: 'Enterprise Wi-Fi', desc: 'Enterprise, EAP, RADIUS, Corporate', color: 'pink', gradient: 'from-pink-500/10 to-pink-600/5', border: 'border-pink-500/20', text: 'text-pink-400', glow: '', modules: modules.filter(m => m.phase === 5) },
-    { id: 6, name: 'Professional', desc: 'Methodology & Final Assessment', color: 'slate', gradient: 'from-slate-500/10 to-slate-600/5', border: 'border-slate-500/20', text: 'text-slate-400', glow: '', modules: modules.filter(m => m.phase === 6) },
+    { id: 1, name: 'Foundations', desc: 'Wireless fundamentals & 802.11 architecture', color: 'cyan', gradient: 'from-[var(--accent-bg)] to-[var(--accent-bg)]', border: 'border-[var(--accent-border)]', text: 'text-[var(--learning)]', shadow: 'shadow-soft', modules: modules.filter(m => m.phase === 1) },
+    { id: 2, name: 'Reconnaissance', desc: 'Wireless recon & traffic analysis', color: 'violet', gradient: 'from-[var(--owner-bg)] to-[var(--owner-bg)]', border: 'border-[var(--owner-border)]', text: 'text-[var(--owner)]', shadow: 'shadow-soft', modules: modules.filter(m => m.phase === 2) },
+    { id: 3, name: 'Wi-Fi Security', desc: 'WEP, WPA/WPA2, WPS, WPA3 deep dive', color: 'amber', gradient: 'from-[var(--warning-bg)] to-[var(--warning-bg)]', border: 'border-[var(--warning-border)]', text: 'text-[var(--attention)]', shadow: '', modules: modules.filter(m => m.phase === 3) },
+    { id: 4, name: 'Attack Techniques', desc: 'Deauth, Rogue AP, Captive Portals', color: 'emerald', gradient: 'from-[var(--success-bg)] to-[var(--success-bg)]', border: 'border-[var(--success-border)]', text: 'text-[var(--success)]', shadow: 'shadow-soft', modules: modules.filter(m => m.phase === 4) },
+    { id: 5, name: 'Enterprise Wi-Fi', desc: 'Enterprise, EAP, RADIUS, Corporate', color: 'pink', gradient: 'from-[var(--owner-bg)] to-[var(--owner-bg)]', border: 'border-[var(--owner-border)]', text: 'text-[var(--owner)]', shadow: '', modules: modules.filter(m => m.phase === 5) },
+    { id: 6, name: 'Professional', desc: 'Methodology & Final Assessment', color: 'slate', gradient: 'from-[var(--panel-raised)] to-[var(--panel-raised)]', border: 'border-[var(--line-strong)]', text: 'text-[var(--ink-secondary)]', shadow: '', modules: modules.filter(m => m.phase === 6) },
   ]
 
   return (
     <div className="ws-legacy max-w-[1000px] mx-auto space-y-6 md:space-y-8">
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      <div
         className="flex items-center gap-2 xs:gap-3 min-w-0"
       >
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/15 to-cyan-500/10 border border-violet-500/20 flex items-center justify-center">
-          <Target className="w-5 h-5 text-violet-400" />
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--owner-bg)] to-[var(--accent-bg)] border border-[var(--owner-border)] flex items-center justify-center">
+          <Target className="w-5 h-5 text-[var(--owner)]" />
         </div>
         <div>
           <h1 className="font-heading font-bold text-[28px] md:text-[32px] text-[var(--ink-primary)] tracking-tight leading-none sc-page-title">Learning Path</h1>
-          <p className="text-[13px] text-slate-400 mt-1.5">{TOTAL_MODULES} modules • 6 phases • From fundamentals to professional assessment • Zero-cost</p>
+          <p className="text-[13px] text-[var(--ink-secondary)] mt-1.5">{TOTAL_MODULES} modules • 6 phases • From fundamentals to professional assessment • Zero-cost</p>
         </div>
-      </motion.div>
+      </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-6 md:p-8 relative overflow-hidden group hover:border-[var(--line-strong)]/60 transition-all duration-300"
+      <div
+        className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-6 md:p-8 relative overflow-hidden group hover:border-[var(--line-strong)] sc-surface-transition"
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/[0.02] via-transparent to-cyan-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
         <div className="relative">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-2 xs:gap-3 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
-                <BookOpen className="w-4 h-4 text-violet-400" />
+              <div className="w-8 h-8 rounded-xl bg-[var(--owner-bg)] border border-[var(--owner-border)] flex items-center justify-center">
+                <BookOpen className="w-4 h-4 text-[var(--owner)]" />
               </div>
               <div>
                 <div className="font-heading font-bold text-[16px] text-[var(--ink-primary)]">Visual Progression</div>
-                <div className="text-[11px] font-mono text-slate-500 tracking-widest uppercase">Simplified • Interactive • Premium</div>
+                <div className="text-[11px] font-mono text-[var(--ink-muted)] tracking-widest uppercase">Simplified • Interactive • Premium</div>
               </div>
             </div>
-            <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono text-slate-500">
-              <div className="w-2 h-2 rounded-full bg-emerald-400" />
+            <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono text-[var(--ink-muted)]">
+              <div className="w-2 h-2 rounded-full bg-[var(--success)]" />
               <span>Complete</span>
-              <span className="w-1 h-1 rounded-full bg-slate-700" />
-              <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              <span className="w-1 h-1 rounded-full bg-[var(--panel-raised)]" />
+              <div className="w-2 h-2 rounded-full bg-[var(--action-fill)] " />
               <span>In Progress</span>
-              <span className="w-1 h-1 rounded-full bg-slate-700" />
-              <div className="w-2 h-2 rounded-full bg-slate-600" />
+              <span className="w-1 h-1 rounded-full bg-[var(--panel-raised)]" />
+              <div className="w-2 h-2 rounded-full bg-[var(--panel-raised)]" />
               <span>Not Started</span>
             </div>
           </div>
 
           <div className="space-y-8">
-            {phases.map((phase, phaseIdx) => (
-              <motion.div
+            {phases.map(phase => (
+              <div
                 key={phase.id}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 + phaseIdx * 0.05, ease: [0.16, 1, 0.3, 1] }}
                 className="relative"
               >
                 <div className="flex items-center gap-4 mb-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-[13px] font-bold border backdrop-blur-sm transition-all duration-300 hover:scale-110 bg-gradient-to-br ${phase.gradient} ${phase.border} ${phase.text} ${phase.glow}`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-[13px] font-bold border backdrop-blur-sm sc-surface-transition  bg-gradient-to-br ${phase.gradient} ${phase.border} ${phase.text} ${phase.shadow}`}>
                     {phase.id}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
                       <span className="text-[14px] font-bold text-[var(--ink-primary)]">Phase {phase.id} — {phase.name}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-mono ${phase.border} ${phase.text} bg-[var(--panel-inset)]/60`}>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-mono ${phase.border} ${phase.text} bg-[var(--panel-inset)]`}>
                         {phase.modules.length} modules
                       </span>
                     </div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">{phase.desc}</div>
+                    <div className="text-[11px] text-[var(--ink-muted)] mt-0.5">{phase.desc}</div>
                   </div>
                   <div className="hidden sm:flex items-center gap-2">
-                    <div className="w-16 h-1 bg-[var(--panel-inset)] rounded-full overflow-hidden border border-[var(--line-normal)]/30">
-                      <div className={`h-full bg-gradient-to-r rounded-full ${phase.color === 'cyan' ? 'from-cyan-400 to-cyan-500' : phase.color === 'violet' ? 'from-violet-400 to-violet-500' : phase.color === 'amber' ? 'from-amber-400 to-amber-500' : phase.color === 'emerald' ? 'from-emerald-400 to-emerald-500' : phase.color === 'pink' ? 'from-pink-400 to-pink-500' : 'from-slate-400 to-slate-500'}`} style={{ width: `${(phase.modules.filter(m => getProgress(m.id) === 100).length / phase.modules.length) * 100}%` }} />
+                    <div className="w-16 h-1 bg-[var(--panel-inset)] rounded-full overflow-hidden border border-[var(--line-normal)]">
+                      <div className={`h-full bg-gradient-to-r rounded-full ${phase.color === 'cyan' ? 'from-[var(--action-fill)] to-[var(--action-fill)]' : phase.color === 'violet' ? 'from-[var(--owner)] to-[var(--owner)]' : phase.color === 'amber' ? 'from-[var(--attention)] to-[var(--attention)]' : phase.color === 'emerald' ? 'from-[var(--success)] to-[var(--success)]' : phase.color === 'pink' ? 'from-[var(--owner)] to-[var(--owner)]' : 'from-[var(--panel-raised)] to-[var(--panel-raised)]'}`} style={{ width: `${(phase.modules.filter(m => getProgress(m.id) === 100).length / phase.modules.length) * 100}%` }} />
                     </div>
-                    <span className="text-[11px] font-mono text-slate-500">{phase.modules.filter(m => getProgress(m.id) === 100).length}/{phase.modules.length}</span>
+                    <span className="text-[11px] font-mono text-[var(--ink-muted)]">{phase.modules.filter(m => getProgress(m.id) === 100).length}/{phase.modules.length}</span>
                   </div>
                 </div>
 
-                <div className="ml-5 border-l-2 border-[var(--line-normal)]/60 pl-6 space-y-2.5 relative">
-                  <div className={`absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b opacity-30 ${phase.color === 'cyan' ? 'from-cyan-500/50 to-transparent' : phase.color === 'violet' ? 'from-violet-500/50 to-transparent' : phase.color === 'amber' ? 'from-amber-500/50 to-transparent' : phase.color === 'emerald' ? 'from-emerald-500/50 to-transparent' : phase.color === 'pink' ? 'from-pink-500/50 to-transparent' : 'from-slate-500/50 to-transparent'}`} />
-                  {phase.modules.map((m, idx) => {
+                <div className="ml-5 border-l-2 border-[var(--line-normal)] pl-6 space-y-2.5 relative">
+                  <div className={`absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b opacity-30 ${phase.color === 'cyan' ? 'from-[var(--accent-bg)] to-transparent' : phase.color === 'violet' ? 'from-[var(--owner-bg)] to-transparent' : phase.color === 'amber' ? 'from-[var(--warning-bg)] to-transparent' : phase.color === 'emerald' ? 'from-[var(--success-bg)] to-transparent' : phase.color === 'pink' ? 'from-[var(--owner-bg)] to-transparent' : 'from-[var(--panel-raised)] to-transparent'}`} />
+                  {phase.modules.map(m => {
                     const prog = getProgress(m.id)
                     const isLocked = phase.id > 1 && m.id !== '05-wireless-recon' && prog === 0 && getProgress(modules[0].id) === 0
                     return (
-                      <motion.div
+                      <div
                         key={m.id}
-                        initial={{ opacity: 0, x: -8 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 + phaseIdx * 0.05 + idx * 0.02 }}
-                        whileHover={{ x: 4, scale: 1.01 }}
                       >
                         <Link
                           to={`/modules/${m.id}`}
-                          className={`group/module flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 backdrop-blur-sm ${
+                          className={`group/module flex items-center gap-3 p-3 rounded-xl border sc-surface-transition backdrop-blur-sm ${
                             isLocked
-                              ? 'bg-[var(--panel-inset)]/40 border-[var(--line-normal)]/30 opacity-60'
+                              ? 'bg-[var(--panel-inset)] border-[var(--line-normal)] '
                               : prog === 100
-                                ? 'bg-emerald-500/[0.03] border-emerald-500/15 hover:bg-emerald-500/[0.05] hover:border-emerald-500/20'
+                                ? 'bg-[var(--success-bg)] border-[var(--success-border)] hover:bg-[var(--success-bg)] hover:border-[var(--success-border)]'
                                 : prog > 0
-                                  ? 'bg-cyan-500/[0.03] border-cyan-500/15 hover:bg-cyan-500/[0.05] hover:border-cyan-500/20'
-                                  : 'bg-[var(--panel-inset)]/60 border-[var(--line-normal)]/60 hover:bg-[var(--panel-inset)]/80 hover:border-[var(--line-strong)]/60 hover:shadow-soft'
+                                  ? 'bg-[var(--accent-bg)] border-[var(--accent-border)] hover:bg-[var(--accent-bg)] hover:border-[var(--accent-border)]'
+                                  : 'bg-[var(--panel-inset)] border-[var(--line-normal)] hover:bg-[var(--panel-inset)] hover:border-[var(--line-strong)] hover:shadow-soft'
                           }`}
                         >
                           <div className="flex-shrink-0">
-                            {prog === 100 ? <div className="w-6 h-6 rounded-full bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center"><CheckCircle className="w-4 h-4 text-emerald-400" /></div> :
-                             prog > 0 ? <div className="w-6 h-6 rounded-full bg-cyan-500/15 border border-cyan-500/20 flex items-center justify-center"><Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin" /></div> :
-                             isLocked ? <div className="w-6 h-6 rounded-full bg-[#1e293b] border border-[var(--line-strong)] flex items-center justify-center"><Lock className="w-3 h-3 text-slate-400" /></div> :
-                             <div className="w-6 h-6 rounded-full bg-[#1e293b] border border-[var(--line-strong)] flex items-center justify-center group-hover/module:bg-[#25354f] group-hover/module:border-[#475569] transition-colors"><Circle className="w-3.5 h-3.5 text-slate-400 group-hover/module:text-slate-400 transition-colors" /></div>}
+                            {prog === 100 ? <div className="w-6 h-6 rounded-full bg-[var(--success-bg)] border border-[var(--success-border)] flex items-center justify-center"><CheckCircle className="w-4 h-4 text-[var(--success)]" /></div> :
+                             prog > 0 ? <div className="w-6 h-6 rounded-full bg-[var(--accent-bg)] border border-[var(--accent-border)] flex items-center justify-center"><Loader2 className="w-3.5 h-3.5 text-[var(--learning)] " /></div> :
+                             isLocked ? <div className="w-6 h-6 rounded-full bg-[var(--panel-raised)] border border-[var(--line-strong)] flex items-center justify-center"><Lock className="w-3 h-3 text-[var(--ink-secondary)]" /></div> :
+                             <div className="w-6 h-6 rounded-full bg-[var(--panel-raised)] border border-[var(--line-strong)] flex items-center justify-center group-hover/module:bg-[var(--panel-raised)] group-hover/module:border-[var(--line-strong)] transition-colors"><Circle className="w-3.5 h-3.5 text-[var(--ink-secondary)] group-hover/module:text-[var(--ink-secondary)] transition-colors" /></div>}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-[13px] font-medium text-slate-200 truncate group-hover/module:text-[var(--ink-primary)] transition-colors">{m.title}</div>
-                            <div className="text-[11px] text-slate-500 font-mono flex items-center gap-1.5 mt-0.5">
+                            <div className="text-[13px] font-medium text-[var(--ink-primary)] truncate group-hover/module:text-[var(--ink-primary)] transition-colors">{m.title}</div>
+                            <div className="text-[11px] text-[var(--ink-muted)] font-mono flex items-center gap-1.5 mt-0.5">
                               <span>{m.id}</span>
-                              <span className="w-1 h-1 rounded-full bg-slate-700" />
+                              <span className="w-1 h-1 rounded-full bg-[var(--panel-raised)]" />
                               <span>{m.difficulty}</span>
-                              <span className="w-1 h-1 rounded-full bg-slate-700" />
+                              <span className="w-1 h-1 rounded-full bg-[var(--panel-raised)]" />
                               <span>{m.estimated_hours}h</span>
-                              <span className={`hidden sm:inline-flex px-1.5 py-0 rounded-full border text-[9px] font-mono ml-1 ${m.status === 'simulated' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>{m.status.toUpperCase()}</span>
+                              <span className={`hidden sm:inline-flex px-1.5 py-0 rounded-full border text-[9px] font-mono ml-1 ${m.status === 'simulated' ? 'bg-[var(--success-bg)] text-[var(--success)] border-[var(--success-border)]' : 'bg-[var(--warning-bg)] text-[var(--attention)] border-[var(--warning-border)]'}`}>{m.status.toUpperCase()}</span>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            <div className="text-[11px] text-slate-400 font-mono px-2 py-1 rounded-full bg-[var(--panel-inset)] border border-[var(--line-normal)] group-hover/module:border-[var(--line-strong)] transition-colors">{prog}%</div>
-                            <ChevronRight className="w-4 h-4 text-slate-400 group-hover/module:text-slate-400 group-hover/module:translate-x-0.5 transition-all duration-200" />
+                            <div className="text-[11px] text-[var(--ink-secondary)] font-mono px-2 py-1 rounded-full bg-[var(--panel-inset)] border border-[var(--line-normal)] group-hover/module:border-[var(--line-strong)] transition-colors">{prog}%</div>
+                            <ChevronRight className="w-4 h-4 text-[var(--ink-secondary)] group-hover/module:text-[var(--ink-secondary)]  sc-surface-transition" />
                           </div>
                         </Link>
-                      </motion.div>
+                      </div>
                     )
                   })}
                 </div>
 
                 {phase.id < 6 && (
                   <div className="ml-5 mt-6 flex items-center gap-3">
-                    <div className="w-px h-8 bg-gradient-to-b from-[#1e293b] to-transparent ml-5" />
-                    <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400 px-3 py-1.5 rounded-full bg-[var(--panel-inset)]/60 border border-[var(--line-normal)]/40">
-                      <div className="w-1.5 h-1.5 rounded-full bg-slate-600 animate-pulse" />
+                    <div className="w-px h-8 bg-gradient-to-b from-[var(--panel-raised)] to-transparent ml-5" />
+                    <div className="flex items-center gap-2 text-[11px] font-mono text-[var(--ink-secondary)] px-3 py-1.5 rounded-full bg-[var(--panel-inset)] border border-[var(--line-normal)]">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[var(--panel-raised)] " />
                       next phase
                       <ChevronRight className="w-3 h-3" />
                     </div>
                   </div>
                 )}
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
-      </motion.div>
+      </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-        className="rounded-2xl bg-[var(--panel-inset)]/60 border border-[var(--line-normal)]/40 p-5 backdrop-blur-sm"
+      <div
+        className="rounded-2xl bg-[var(--panel-inset)] border border-[var(--line-normal)] p-5 backdrop-blur-sm"
       >
-        <div className="flex flex-wrap items-center gap-4 text-[11px] font-mono text-slate-500">
-          <span className="flex items-center gap-1.5 xs:gap-2 min-w-0"><CheckCircle className="w-4 h-4 text-emerald-400" /> Completed</span>
-          <span className="w-1 h-1 rounded-full bg-slate-700" />
-          <span className="flex items-center gap-1.5 xs:gap-2 min-w-0"><Loader2 className="w-4 h-4 text-cyan-400" /> In Progress</span>
-          <span className="w-1 h-1 rounded-full bg-slate-700" />
-          <span className="flex items-center gap-1.5 xs:gap-2 min-w-0"><Circle className="w-4 h-4 text-slate-400" /> Not Started</span>
-          <span className="w-1 h-1 rounded-full bg-slate-700" />
-          <span className="flex items-center gap-1.5 xs:gap-2 min-w-0"><Lock className="w-4 h-4 text-slate-400" /> Locked</span>
-          <span className="w-1 h-1 rounded-full bg-slate-700" />
-          <span className="text-emerald-400">SIMULATED</span> = No hardware
-          <span className="w-1 h-1 rounded-full bg-slate-700" />
-          <span className="text-amber-400">HARDWARE</span> = RF adapter
+        <div className="flex flex-wrap items-center gap-4 text-[11px] font-mono text-[var(--ink-muted)]">
+          <span className="flex items-center gap-1.5 xs:gap-2 min-w-0"><CheckCircle className="w-4 h-4 text-[var(--success)]" /> Completed</span>
+          <span className="w-1 h-1 rounded-full bg-[var(--panel-raised)]" />
+          <span className="flex items-center gap-1.5 xs:gap-2 min-w-0"><Loader2 className="w-4 h-4 text-[var(--learning)]" /> In Progress</span>
+          <span className="w-1 h-1 rounded-full bg-[var(--panel-raised)]" />
+          <span className="flex items-center gap-1.5 xs:gap-2 min-w-0"><Circle className="w-4 h-4 text-[var(--ink-secondary)]" /> Not Started</span>
+          <span className="w-1 h-1 rounded-full bg-[var(--panel-raised)]" />
+          <span className="flex items-center gap-1.5 xs:gap-2 min-w-0"><Lock className="w-4 h-4 text-[var(--ink-secondary)]" /> Locked</span>
+          <span className="w-1 h-1 rounded-full bg-[var(--panel-raised)]" />
+          <span className="text-[var(--success)]">SIMULATED</span> = No hardware
+          <span className="w-1 h-1 rounded-full bg-[var(--panel-raised)]" />
+          <span className="text-[var(--attention)]">HARDWARE</span> = RF adapter
         </div>
-      </motion.div>
+      </div>
     </div>
   )
 }

@@ -6,10 +6,10 @@
 | --- | --- | --- |
 | Rogue beaconing | WIDS sees a duplicate SSID/BSSID not in the authorised list | if WIDS has no baseline or the twin uses the same BSSID |
 | Deauth flood | rate of unprotected deauth frames per BSSID | SA Query is conditional; effect needs client/AP state |
-| Client association to a rogue | client seen with an unknown BSSID (AP-side telemetry, NAC) | client-side only; the wired side often cannot see it |
-| PEAP credential capture | duplicate/hostile EAP authenticator, invalid certificate on the wire | encrypted inner exchange looks normal |
+| Client association to an unlisted BSS | client seen with an unknown BSSID (AP-side telemetry, NAC) | client-side only; the wired side often cannot see it |
+| PEAP credential capture | duplicate/hostile EAP authenticator, client validation failures and authorized server/endpoint telemetry | encrypted inner exchange looks normal |
 | Credential replay | authentication anomalies on VPN/SSO/other SSO-reachable systems | use of captured credentials in the same WLAN |
-| Cross-segment movement | firewall/ACL deny logs (if the path is denied) | permitted paths are invisible by design |
+| Cross-segment movement | firewall/ACL deny logs (if the path is denied) | permitted paths need configured allow/flow logs and endpoint telemetry; visibility depends on deployment |
 
 ## 2. Containment playbook
 

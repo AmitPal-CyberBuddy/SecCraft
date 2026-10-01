@@ -1,78 +1,54 @@
-import { useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useRef, useState } from 'react'
 import { useProgressStore } from '@/store/useProgressStore'
-import { Trophy, X, Sparkles, Zap } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 
+/** A new local event gets one checkmark, never a bouncing card or a replayed total. */
 export function PointsToast() {
-  const lastEarned = useProgressStore(s => s.lastEarnedPoints)
-  // Derive visibility from the store; only the timer synchronizes with the outside world.
-  const visible = Boolean(lastEarned)
+  const earned = useProgressStore(s => s.lastEarnedPoints)
+  const toast = useRef<HTMLDivElement>(null)
+  const returnFocus = useRef<HTMLElement | null>(null)
+  const [hovered, setHovered] = useState(false)
+  const [focused, setFocused] = useState(false)
+  const [hidden, setHidden] = useState(() => document.visibilityState === 'hidden')
 
   useEffect(() => {
-    if (!lastEarned) return
-    const t = setTimeout(() => {
-      try { useProgressStore.getState().clearLastEarnedPoints() } catch {}
-    }, 4000)
-    return () => clearTimeout(t)
-  }, [lastEarned])
+    const update = () => setHidden(document.visibilityState === 'hidden')
+    document.addEventListener('visibilitychange', update)
+    return () => document.removeEventListener('visibilitychange', update)
+  }, [])
 
-  return (
-    <AnimatePresence>
-      {visible && lastEarned && (
-        <motion.div
-          initial={{ opacity: 0, y: 50, scale: 0.9, x: '-50%' }}
-          animate={{ opacity: 1, y: 0, scale: 1, x: '-50%' }}
-          exit={{ opacity: 0, y: 20, scale: 0.9, x: '-50%' }}
-          transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-          className="fixed bottom-4 sm:bottom-6 left-1/2 z-[200] pointer-events-auto"
-        >
-          <div className="relative rounded-2xl bg-[#0f172a] border border-cyan-500/30 shadow-[0_0_0_1px_rgba(34,211,238,0.15),0_0_32px_rgba(34,211,238,0.2),0_8px_32px_rgba(0,0,0,0.5)] px-4 sm:px-5 py-3.5 sm:py-4 flex items-center gap-3 sm:gap-4 w-[min(420px,calc(100vw-24px))] backdrop-blur-xl overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-violet-500/5 to-transparent opacity-80" />
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-            
-            <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-violet-500 flex items-center justify-center shadow-glow-cyan shrink-0">
-              <Trophy className="w-6 h-6 text-white" />
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: 'spring', stiffness: 400 }}
-                className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-400 border-2 border-[#0f172a] flex items-center justify-center"
-              >
-                <span className="text-[10px] font-bold text-[#020617]">+</span>
-              </motion.div>
-            </div>
+  useEffect(() => {
+    const active = document.activeElement
+    if (earned && active instanceof HTMLElement && !toast.current?.contains(active)) returnFocus.current = active
+  }, [earned])
 
-            <div className="relative flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-[13px] font-bold text-slate-100 flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-amber-400" />
-                  +{lastEarned.amount} XP
-                </span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/20 font-mono">EARNED</span>
-              </div>
-              <div className="text-[12px] text-slate-300 mt-1 truncate font-medium">{lastEarned.reason}</div>
-              <div className="text-[11px] text-slate-500 font-mono mt-0.5">Added to your learning total</div>
-            </div>
+  useEffect(() => {
+    if (!earned || hovered || focused || hidden) return
+    const timer = setTimeout(() => {
+      // A stale dismissal can never clear the next achievement/event.
+      if (useProgressStore.getState().lastEarnedPoints === earned) useProgressStore.getState().clearLastEarnedPoints()
+    }, 8000)
+    return () => clearTimeout(timer)
+  }, [earned, hovered, focused, hidden])
 
-            <div className="relative flex items-center gap-2">
-              <div className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/10 border border-amber-500/20" aria-hidden="true">
-                <Sparkles className="w-3 h-3 text-amber-400" />
-                <span className="text-[10px] font-bold text-amber-300">PROGRESS</span>
-              </div>
-              <button
-                onClick={() => { setTimeout(() => { try { useProgressStore.getState().clearLastEarnedPoints() } catch {} }, 300) }}
-                aria-label="Dismiss XP earned notification"
-                className="w-8 h-8 rounded-lg bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] transition-colors shrink-0"
-              >
-                <X className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  )
+  const dismiss = () => {
+    const hadFocus = toast.current?.contains(document.activeElement)
+    if (useProgressStore.getState().lastEarnedPoints === earned) useProgressStore.getState().clearLastEarnedPoints()
+    setHovered(false)
+    setFocused(false)
+    if (hadFocus && returnFocus.current?.isConnected) returnFocus.current.focus({ preventScroll: true })
+  }
+
+  return <div ref={toast} className="sc-earned-toast"
+    onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+    onFocus={() => setFocused(true)} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false) }}>
+    {/* The live region exists before its text changes. The dismiss control is not announced as a status. */}
+    <div role="status" aria-live="polite" aria-atomic="true">
+      {earned && <div className="sc-earned-message">
+        <span key={`${earned.at}:${earned.reason}`} className="sc-earned-mark" aria-hidden="true"><Check size={20} /></span>
+        <div><strong>+{earned.amount} XP</strong><p>{earned.reason}</p><small>Browser-local practice progress · unverified</small></div>
+      </div>}
+    </div>
+    {earned && <button type="button" onClick={dismiss} aria-label="Dismiss XP earned notification"><X size={18} aria-hidden="true" /></button>}
+  </div>
 }

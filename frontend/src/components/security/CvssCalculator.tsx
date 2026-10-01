@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
 import { AlertTriangle, Calculator, Info, ShieldCheck, Target } from 'lucide-react'
 
 /**
@@ -28,11 +27,11 @@ function roundUp(value: number): number {
 }
 
 function severityOf(score: number) {
-  if (score === 0) return { label: 'None', color: 'text-slate-400', border: 'border-slate-500/25', bg: 'bg-slate-500/10' }
-  if (score < 4) return { label: 'Low', color: 'text-emerald-400', border: 'border-emerald-500/25', bg: 'bg-emerald-500/10' }
-  if (score < 7) return { label: 'Medium', color: 'text-amber-400', border: 'border-amber-500/25', bg: 'bg-amber-500/10' }
-  if (score < 9) return { label: 'High', color: 'text-orange-400', border: 'border-orange-500/25', bg: 'bg-orange-500/10' }
-  return { label: 'Critical', color: 'text-rose-400', border: 'border-rose-500/25', bg: 'bg-rose-500/10' }
+  if (score === 0) return { label: 'None', color: 'text-[var(--ink-secondary)]', border: 'border-[var(--line-strong)]', bg: 'bg-[var(--panel-raised)]' }
+  if (score < 4) return { label: 'Low', color: 'text-[var(--success)]', border: 'border-[var(--success-border)]', bg: 'bg-[var(--success-bg)]' }
+  if (score < 7) return { label: 'Medium', color: 'text-[var(--attention)]', border: 'border-[var(--warning-border)]', bg: 'bg-[var(--warning-bg)]' }
+  if (score < 9) return { label: 'High', color: 'text-[var(--attention)]', border: 'border-[var(--warning-border)]', bg: 'bg-[var(--warning-bg)]' }
+  return { label: 'Critical', color: 'text-[var(--danger)]', border: 'border-[var(--danger-border)]', bg: 'bg-[var(--danger-bg)]' }
 }
 
 const METRIC_HELP: Record<string, string> = {
@@ -60,16 +59,17 @@ function MetricRow({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-2">
-        <span className="text-[11px] font-mono font-semibold text-slate-300 w-8">{code}</span>
+        <span className="text-[11px] font-mono font-semibold text-[var(--ink-secondary)] w-8">{code}</span>
         <div className="flex flex-wrap gap-1.5">
           {options.map(o => (
             <button
               key={o.id}
+              aria-pressed={value === o.id}
               onClick={() => onChange(o.id)}
               className={`px-2.5 py-1 rounded-lg text-[11px] font-mono border transition-colors ${
                 value === o.id
-                  ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300'
-                  : 'bg-[#020617]/60 border-[#1e293b] text-slate-400 hover:border-[#334155]'
+                  ? 'bg-[var(--accent-bg)] border-[var(--accent-border)] text-[var(--learning)]'
+                  : 'bg-[var(--panel-inset)] border-[var(--line-normal)] text-[var(--ink-secondary)] hover:border-[var(--line-strong)]'
               }`}
               title={o.label}
             >
@@ -78,7 +78,7 @@ function MetricRow({
           ))}
         </div>
       </div>
-      <p className="text-[11px] text-slate-500 leading-relaxed pl-10">{METRIC_HELP[code]}</p>
+      <p className="text-[11px] text-[var(--ink-muted)] leading-relaxed pl-10">{METRIC_HELP[code]}</p>
     </div>
   )
 }
@@ -107,24 +107,24 @@ export function CvssCalculator({ className = '' }: { className?: string }) {
 
   return (
     <div className={`space-y-4 ${className}`}>
-      <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 sm:p-5">
+      <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-4 sm:p-5">
         <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
-            <Calculator className="w-4 h-4 text-orange-400" />
+          <div className="w-9 h-9 rounded-xl bg-[var(--warning-bg)] border border-[var(--warning-border)] flex items-center justify-center shrink-0">
+            <Calculator className="w-4 h-4 text-[var(--attention)]" />
           </div>
           <div className="min-w-0">
-            <h3 className="text-[14px] font-semibold text-slate-100">CVSS 3.1 base score — a calculation, not a label</h3>
-            <p className="mt-1 text-[12px] text-slate-400 leading-relaxed">
+            <h3 className="text-[14px] font-semibold text-[var(--ink-primary)]">CVSS 3.1 base score — a calculation, not a label</h3>
+            <p className="mt-1 text-[12px] text-[var(--ink-secondary)] leading-relaxed">
               A technique does not have a CVSS score. Only a finding does — with this environment's
               exploitability, impact and scope. Rate each metric from evidence, write the justification, and
-              label the result as an <span className="font-mono text-slate-300">example vector</span> derived from the stated assumptions.
+              label the result as an <span className="font-mono text-[var(--ink-secondary)]">example vector</span> derived from the stated assumptions.
             </p>
           </div>
         </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 sm:p-5 space-y-4">
+        <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-4 sm:p-5 space-y-4">
           <MetricRow code="AV" value={m.AV} onChange={v => setM(s => ({ ...s, AV: v }))}
             options={[{ id: 'N', label: 'Network' }, { id: 'A', label: 'Adjacent (RF)' }, { id: 'L', label: 'Local' }, { id: 'P', label: 'Physical' }]} />
           <MetricRow code="AC" value={m.AC} onChange={v => setM(s => ({ ...s, AC: v }))}
@@ -142,8 +142,8 @@ export function CvssCalculator({ className = '' }: { className?: string }) {
           <MetricRow code="A" value={m.A} onChange={v => setM(s => ({ ...s, A: v }))}
             options={[{ id: 'H', label: 'High' }, { id: 'L', label: 'Low' }, { id: 'N', label: 'None' }]} />
 
-          <div className="pt-3 border-t border-[#1e293b]">
-            <label className="text-[10px] font-mono uppercase tracking-widest text-slate-500">
+          <div className="pt-3 border-t border-[var(--line-normal)]">
+            <label className="text-[10px] font-mono uppercase tracking-widest text-[var(--ink-muted)]">
               Justify each metric (this text belongs in the report)
             </label>
             <textarea
@@ -151,46 +151,45 @@ export function CvssCalculator({ className = '' }: { className?: string }) {
               onChange={e => setContext(e.target.value)}
               rows={4}
               placeholder={'e.g. AV:A — attacker within RF range of the store front; AC:L — one unauthorised deauth and the client auto-reconnects to the twin; S:C — guest VLAN reaches the server VLAN (demonstrated); A:N — availability not tested.'}
-              className="mt-2 w-full rounded-xl bg-[#020617]/60 border border-[#1e293b] p-3 text-[12px] text-slate-300 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30 leading-relaxed"
+              className="mt-2 w-full rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] p-3 text-[12px] text-[var(--ink-secondary)] placeholder:text-[var(--ink-secondary)] focus:outline-none focus:border-[var(--accent-border)] leading-relaxed"
             />
           </div>
         </div>
 
         <div className="space-y-3">
-          <motion.div
-            layout
+          <div
             className={`rounded-2xl border ${severity.border} ${severity.bg} p-5 text-center`}
           >
-            <div className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Example base score</div>
+            <div className="text-[10px] font-mono uppercase tracking-widest text-[var(--ink-secondary)]">Example base score</div>
             <div className={`mt-2 text-[40px] font-bold font-mono leading-none ${severity.color}`}>{score.toFixed(1)}</div>
             <div className={`mt-2 text-[12px] font-semibold uppercase tracking-widest ${severity.color}`}>{severity.label}</div>
-            <div className="mt-3 text-[10.5px] font-mono text-slate-400 break-all">{vector}</div>
-          </motion.div>
+            <div className="mt-3 text-[10.5px] font-mono text-[var(--ink-secondary)] break-all">{vector}</div>
+          </div>
 
-          <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 space-y-2.5">
-            <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400">
-              <Target className="w-3.5 h-3.5 text-cyan-400" /> Impact sub-score: <span className="text-slate-200">{impact.toFixed(2)}</span>
+          <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-4 space-y-2.5">
+            <div className="flex items-center gap-2 text-[11px] font-mono text-[var(--ink-secondary)]">
+              <Target className="w-3.5 h-3.5 text-[var(--learning)]" /> Impact sub-score: <span className="text-[var(--ink-primary)]">{impact.toFixed(2)}</span>
             </div>
-            <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400">
-              <ShieldCheck className="w-3.5 h-3.5 text-violet-400" /> Exploitability sub-score: <span className="text-slate-200">{exploitability.toFixed(2)}</span>
+            <div className="flex items-center gap-2 text-[11px] font-mono text-[var(--ink-secondary)]">
+              <ShieldCheck className="w-3.5 h-3.5 text-[var(--owner)]" /> Exploitability sub-score: <span className="text-[var(--ink-primary)]">{exploitability.toFixed(2)}</span>
             </div>
-            <p className="text-[11px] text-slate-500 leading-relaxed">
+            <p className="text-[11px] text-[var(--ink-muted)] leading-relaxed">
               Scope changes affect both the impact and the privilege-required weights (CVSS 3.1 §7.1). Compare with
               the client's own scoring conventions before quoting a number, and never quote a score without the
               environment assumptions behind it.
             </p>
           </div>
 
-          <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 space-y-2">
-            <div className="flex items-center gap-2 text-[11px] font-mono text-amber-400">
+          <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-4 space-y-2">
+            <div className="flex items-center gap-2 text-[11px] font-mono text-[var(--attention)]">
               <AlertTriangle className="w-3.5 h-3.5" /> Do not do this
             </div>
-            <ul className="text-[11.5px] text-slate-400 leading-relaxed space-y-1.5 list-disc pl-4">
+            <ul className="text-[11.5px] text-[var(--ink-secondary)] leading-relaxed space-y-1.5 list-disc pl-4">
               <li>"WPS enabled = 7.4" — the score depends on whether the PIN is reachable, locked out, and what the PSK grants.</li>
               <li>"WEP = 7.5" — RC4/IV reuse is a certainty, but impact depends on the segment's isolation and data value.</li>
               <li>Copying the CVSS of a CVE onto a configuration finding.</li>
             </ul>
-            <p className="text-[11px] text-slate-500 leading-relaxed flex items-start gap-1.5">
+            <p className="text-[11px] text-[var(--ink-muted)] leading-relaxed flex items-start gap-1.5">
               <Info className="w-3 h-3 mt-0.5 shrink-0" />
               When the environment is unknown, state the assumption and give a range with the reasoning — that is
               more useful than a false-precision number.

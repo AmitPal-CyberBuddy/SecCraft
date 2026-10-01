@@ -1,0 +1,9 @@
+{
+  "provenance": "Fictional model observations, not collected endpoint logs; not synchronized with any supplied capture",
+  "runtime": "NOT TESTED",
+  "cases": [
+    {"id":"M0","observation":"An unprotected deauthentication frame is encoded in a capture","client_state":null,"application_check":null,"negotiated_pmf":null},
+    {"id":"M1","observation":"A hypothetical permitted unprotected-frame test is attempted","negotiated_pmf":true,"client_state_before":"associated","client_state_after":"associated","receiver_validation":"model says unprotected robust management rejected","application_before":"approved service responsive","application_after":"approved service responsive","limits":"authored model, not a measured RF control"},
+    {"id":"M2","observation":"A hypothetical client disconnects near a frame observation","negotiated_pmf":null,"client_state_before":"associated","client_state_after":"disconnected","application_after":"unavailable","alternative":"AP restart also recorded in the hypothetical window","clock_uncertainty_ms":500,"limits":"no isolated intervention or repeatable negative control"}
+  ]
+}

@@ -1,9 +1,9 @@
-import { motion } from 'framer-motion'
 import { Radio, FlaskConical, Wifi, ShieldAlert } from 'lucide-react'
 
 export type LabTier = 'SIMULATION' | 'HYBRID' | 'RF_REQUIRED'
 
 const TIERS: Record<LabTier, {
+  label: string
   dot: string
   text: string
   border: string
@@ -13,28 +13,31 @@ const TIERS: Record<LabTier, {
   oneLiner: string
 }> = {
   SIMULATION: {
+    label: 'Offline evidence',
     dot: '🟢',
-    text: 'text-emerald-400',
-    border: 'border-emerald-500/25',
-    bg: 'bg-emerald-500/10',
+    text: 'text-[var(--success)]',
+    border: 'border-[var(--success-border)]',
+    bg: 'bg-[var(--success-bg)]',
     icon: FlaskConical,
     title: 'SIMULATION — activity uses bundled teaching artefacts',
     oneLiner: 'Offline artifact review; lab grading is labeled separately as Answer-Checked or Self-Review. A capture never proves live RF behavior.',
   },
   HYBRID: {
+    label: 'Offline + optional hardware',
     dot: '🟡',
-    text: 'text-amber-400',
-    border: 'border-amber-500/25',
-    bg: 'bg-amber-500/10',
+    text: 'text-[var(--attention)]',
+    border: 'border-[var(--warning-border)]',
+    bg: 'bg-[var(--warning-bg)]',
     icon: Radio,
-    title: 'HYBRID — the concept is provable offline, confidence needs real hardware',
-    oneLiner: 'Artefact analysis works; validate on your own AP/adapter when you have one.',
+    title: 'Offline reasoning with optional owned-hardware validation',
+    oneLiner: 'Supplied evidence supports reasoning, not live execution. Validate physical behavior only on isolated, authorized equipment. No hosted lab is supplied.',
   },
   RF_REQUIRED: {
+    label: 'RF validation needs hardware',
     dot: '🔴',
-    text: 'text-rose-400',
-    border: 'border-rose-500/25',
-    bg: 'bg-rose-500/10',
+    text: 'text-[var(--danger)]',
+    border: 'border-[var(--danger-border)]',
+    bg: 'bg-[var(--danger-bg)]',
     icon: ShieldAlert,
     title: 'RF_REQUIRED — the air is the subject of the test',
     oneLiner: 'A PCAP simulation cannot substitute for RF testing (injection, client behaviour, interference).',
@@ -70,7 +73,7 @@ export function TierBadge({
       } ${className}`}
     >
       <Icon className={size === 'xs' ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
-      {showLabel ? normaliseTier(tier).replace('_', ' ') : normaliseTier(tier).slice(0, 1)}
+      {showLabel ? t.label : normaliseTier(tier).slice(0, 1)}
     </span>
   )
 }
@@ -83,18 +86,16 @@ export function TierLegend({ className = '' }: { className?: string }) {
         const t = TIERS[key]
         const Icon = t.icon
         return (
-          <motion.div
+          <div
             key={key}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
             className={`rounded-xl border ${t.border} ${t.bg} p-3.5`}
           >
             <div className={`flex items-center gap-2 text-[11px] font-mono font-semibold ${t.text}`}>
               <Icon className="w-3.5 h-3.5" />
-              <span>{t.dot} {key.replace('_', ' ')}</span>
+              <span>{t.dot} {t.label}</span>
             </div>
-            <p className="mt-2 text-[12px] text-slate-300 leading-relaxed">{t.oneLiner}</p>
-          </motion.div>
+            <p className="mt-2 text-[12px] text-[var(--ink-secondary)] leading-relaxed">{t.oneLiner}</p>
+          </div>
         )
       })}
     </div>
@@ -103,9 +104,9 @@ export function TierLegend({ className = '' }: { className?: string }) {
 
 export function HarwareModeNote({ className = '' }: { className?: string }) {
   return (
-    <p className={`text-[11px] text-slate-500 leading-relaxed ${className}`}>
+    <p className={`text-[11px] text-[var(--ink-muted)] leading-relaxed ${className}`}>
       <Wifi className="inline w-3 h-3 mr-1 -mt-0.5" />
-      Simulations never claim to be RF testing. When a lesson is marked <span className="font-mono text-rose-400">RF_REQUIRED</span>,
+      Offline evidence is not RF testing. When a lesson is marked <span className="font-mono text-[var(--danger)]">RF validation needs hardware</span>,
       the lesson explains what a capture can and cannot establish, and what to run on your own hardware if you have it.
     </p>
   )

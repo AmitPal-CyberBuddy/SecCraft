@@ -59,10 +59,12 @@ const server = await createServer({
 
 try {
   const { useProgressStore, MAX_XP, CERT_PROGRESS_THRESHOLD } = await server.ssrLoadModule('/src/store/useProgressStore.ts')
+  const { resolveModuleView } = await server.ssrLoadModule('/src/lib/learningNavigation.ts')
+  assert.equal(resolveModuleView(new URLSearchParams('tab=theory&lesson=02-evidence-severity-reporting'), ['01-methodology-and-roe', '02-independent-capture-case', '03-independent-attempt-and-decision-log', '04-findings-non-findings-and-review', '05-client-handoff-and-retest-closure'], [], true, true).lesson, 3, 'retired lesson deep link resolves to current replacement without granting completion')
   let state = useProgressStore.getState()
 
-  assert.equal(state.currentModule, '01-intro-wireless', 'migration replaces an unknown resume module with the first module')
-  assert.equal(state.currentLearningPathId, 'wireless-pentesting', 'migration replaces an unknown path with the available path')
+  assert.equal(state.currentModule, null, 'migration does not invent a resume module for invalid context')
+  assert.equal(state.currentLearningPathId, null, 'invalid legacy context does not silently choose Wireless')
   assert.equal(state.completedLessons.length, 1, 'migration deduplicates valid lessons')
   assert.equal(state.completedLessons[0].points, 10, 'lesson credit uses the current award')
   assert.equal(state.completedLabs.length, 1, 'migration drops removed labs')
@@ -77,7 +79,7 @@ try {
 
   state.resetProgress()
   assert.equal(useProgressStore.getState().getTotalXp(), 0, 'reset clears all progress credit')
-  assert.equal(useProgressStore.getState().currentModule, '01-intro-wireless', 'a fresh learner starts at the first module')
+  assert.equal(useProgressStore.getState().currentModule, null, 'a reset learner chooses their path')
 
   let result = useProgressStore.getState().completeQuiz('02-wifi-fundamentals', 'quiz-01', 4, 5)
   assert.equal(result.points, 20, 'a passing quiz earns base XP once')
@@ -137,6 +139,70 @@ try {
     server.ssrLoadModule('/src/content/labs.ts'),
     server.ssrLoadModule('/src/content/challenges.json'),
   ])
+  // Phase-1 redesign adds lessons, never silently upgrades previous participation.
+  const foundations = moduleContent.default.find(module => module.id === '03-80211-architecture')
+  const oldLessons = foundations.lessons.filter(lesson => lesson.id !== '03-foundations-independent-case')
+  values.set('platform-progress', JSON.stringify({ version: 7, state: {
+    currentModule: foundations.id, currentLearningPathId: 'wireless-pentesting', pathChosen: true,
+    completedLessons: oldLessons.map(lesson => ({ moduleId: foundations.id, lessonId: lesson.id, points: 10, completedAt: '2026-09-01T00:00:00Z' })),
+    completedLabs: [], completedChallenges: [], achievements: [], retiredRecords: [],
+    quizScores: [{ moduleId: foundations.id, quizId: 'quiz-01', score: 5, total: 5, points: 30, completed: true }],
+  } }))
+  await useProgressStore.persist.rehydrate()
+  state = useProgressStore.getState()
+  assert.equal(state.completedLessons.length, 2, 'old foundation participation is retained')
+  assert.equal(state.quizScores.length, 1, 'unchanged foundation quiz remains valid local history')
+  assert.equal(state.getTotalXp(), 50, 'adding a case awards no automatic XP')
+  assert.equal(state.isLessonCompleted(foundations.id, '03-foundations-independent-case'), false, 'new case requires fresh participation')
+  assert.ok(state.getModuleProgress(foundations.id) < 100, 'new work changes the current denominator without deleting old work')
+
+  // Phases 2–3 must preserve old activity without granting the new units or extra XP.
+  for (const [mid, added] of [
+    ['04-kali-wireless-setup', '03-capability-troubleshooting'],
+    ['05-wireless-recon', '02-coverage-and-inventory'],
+    ['06-traffic-analysis', '02-timeline-and-evidence-handoff'],
+    ['08-wpa-wpa2', '04-bounded-candidate-audit'],
+    ['10-wps', '02-applicability-lockout-and-budget'],
+    ['11-wpa3', '02-policy-negotiation-and-negative-controls'],
+  ]) {
+    const module = moduleContent.default.find(m => m.id === mid)
+    const previous = module.lessons.filter(l => l.id !== added)
+    values.set('platform-progress', JSON.stringify({ version: 7, state: {
+      currentModule: mid, currentLearningPathId: 'wireless-pentesting', pathChosen: true,
+      completedLessons: previous.map(l => ({ moduleId: mid, lessonId: l.id, points: 10, completedAt: '2026-09-01T00:00:00Z' })),
+      completedLabs: [], completedChallenges: [], achievements: [], retiredRecords: [], quizScores: [],
+    } }))
+    await useProgressStore.persist.rehydrate()
+    state = useProgressStore.getState()
+    assert.equal(state.completedLessons.length, previous.length, mid + ' preserves previous lessons')
+    assert.equal(state.isLessonCompleted(mid, added), false, mid + ' new lesson not auto-completed')
+    assert.equal(state.getTotalXp(), previous.length * 10, mid + ' no automatic XP')
+    assert.ok(state.getModuleProgress(mid) < 100, mid + ' new denominator includes added work')
+  }
+
+  // Phase 4 adds two units to one module: neither may inherit earlier credit.
+  for (const [mid, added] of [
+    ['12-deauth-disassoc', ['03-management-effects-and-controls', '04-client-trust-and-attribution']],
+    ['14-captive-portals', ['02-session-and-boundary-evidence']],
+    ['15-enterprise-fundamentals', ['04-method-selection-and-trust-boundaries', '05-certificate-identity-validation', '06-radius-to-applied-policy']],
+    ['20-final-assessment', ['03-independent-attempt-and-decision-log', '04-findings-non-findings-and-review', '05-client-handoff-and-retest-closure']],
+    ['18-corporate-attacks', ['03-boundary-map-and-test-scope', '04-policy-order-and-evidence-controls', '05-retest-and-supported-impact']],
+  ]) {
+    const module = moduleContent.default.find(m => m.id === mid)
+    const previous = module.lessons.filter(l => !added.includes(l.id))
+    values.set('platform-progress', JSON.stringify({ version: 7, state: {
+      currentModule: mid, currentLearningPathId: 'wireless-pentesting', pathChosen: true,
+      completedLessons: previous.map(l => ({ moduleId: mid, lessonId: l.id, points: 10 })),
+      completedLabs: [], completedChallenges: [], achievements: [], retiredRecords: [], quizScores: [],
+    } }))
+    await useProgressStore.persist.rehydrate()
+    state = useProgressStore.getState()
+    assert.equal(state.completedLessons.length, previous.length)
+    for (const id of added) assert.equal(state.isLessonCompleted(mid, id), false, id + ' not inherited')
+    assert.equal(state.getTotalXp(), previous.length * 10)
+    assert.ok(state.getModuleProgress(mid) < 100)
+  }
+
   useProgressStore.getState().resetProgress()
   for (const module of moduleContent.default) {
     for (const lesson of module.lessons) useProgressStore.getState().completeLesson(module.id, lesson.id)
@@ -155,9 +221,9 @@ try {
   assert.equal(state.getPathProgress('wireless-pentesting'), 100, 'the full recorded journey completes its path')
   assert.ok(moduleContent.default.every(module => state.getModuleProgress(module.id) === 100), 'every module reaches 100% when all shipped activities are recorded')
   assert.ok(state.getTotalXp() <= MAX_XP, 'earned XP stays within its content-derived ceiling')
-  assert.ok(state.getOverallProgress() >= CERT_PROGRESS_THRESHOLD && state.getPathProgress('wireless-pentesting') >= CERT_PROGRESS_THRESHOLD, 'the local record unlock conditions are reachable')
+  assert.ok(state.getOverallProgress() >= CERT_PROGRESS_THRESHOLD && state.getPathProgress('wireless-pentesting') >= CERT_PROGRESS_THRESHOLD, 'the local record threshold is reachable; it does not issue a certificate')
 
-  console.log('Progress migration, reset, retry/score upgrade, duplicate rewards, and a full local journey through certificate eligibility passed.')
+  console.log('Progress migration, reset, retry/score upgrade, duplicate rewards, and a full browser-local practice journey passed (no certificate or verified competence).')
 } finally {
   await server.close()
 }

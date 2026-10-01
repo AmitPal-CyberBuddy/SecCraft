@@ -36,8 +36,8 @@ For every report claim, record the smallest reproducible evidence set:
 ```bash
 tshark -r traffic-analysis.pcapng -Y 'wlan.bssid == 00:11:22:33:44:55'
 tshark -r traffic-analysis.pcapng -Y 'eapol.type == 3' \
-  -T fields -e frame.number -e eapol.keydes.key_info -e eapol.keydes.replay_counter
-tshark -r traffic-analysis.pcapng -Y 'bootp' -T fields -e frame.number -e bootp.option.dhcp
+  -T fields -e frame.number -e wlan_rsna_eapol.keydes.key_info -e eapol.keydes.replay_counter
+tshark -r traffic-analysis.pcapng -Y 'dhcp' -T fields -e frame.number -e dhcp.option.dhcp
 tshark -r traffic-analysis.pcapng -Y 'wlan.fc.protected == 1' -T fields -e frame.number -e wlan.fc.protected
 ```
 

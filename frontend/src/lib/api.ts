@@ -12,13 +12,18 @@ export function apiUrl(path: string): string {
 
 function requiresAccountToken(path: string): boolean {
   const pathname = path.split(/[?#]/, 1)[0]
-  return pathname === '/api/v1/account'
+  return pathname === '/api/v1/feedback'
+    || pathname === '/api/v1/account'
     || pathname === '/api/v1/progress'
     || pathname.startsWith('/api/v1/progress/')
     || pathname === '/api/v1/attempts'
     || pathname.startsWith('/api/v1/attempts/')
     || pathname === '/api/v1/admin'
     || pathname.startsWith('/api/v1/admin/')
+    || pathname.startsWith('/api/v1/content/lessons/')
+    || pathname.startsWith('/api/v1/content/quizzes/')
+    || pathname.startsWith('/api/v1/content/labs/')
+    || pathname.startsWith('/api/v1/content/artifacts/')
 }
 
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
@@ -206,18 +211,110 @@ export async function fetchLearningPath(id: string): Promise<LearningPath | null
   }
 }
 
-export async function fetchLessonContent(moduleId: string, lessonId: string): Promise<string> {
+export interface LessonContentResult {
+  ok: boolean
+  moduleId: string
+  lessonId: string
+  title: string
+  content: string
+  status?: number
+  code?: string
+  message?: string
+}
+
+export async function fetchLesson(moduleId: string, lessonId: string): Promise<LessonContentResult> {
   try {
-    const res = await apiFetch(`/api/content/${encodeURIComponent(moduleId)}/${encodeURIComponent(lessonId)}`)
-    if (res.ok) return await res.text()
+    const res = await apiFetch(`/api/v1/content/lessons/${encodeURIComponent(moduleId)}/${encodeURIComponent(lessonId)}`)
+    if (res.ok) {
+      const data = await res.json()
+      return {
+        ok: true,
+        moduleId: data.module_id || moduleId,
+        lessonId: data.lesson_id || lessonId,
+        title: data.title || lessonId,
+        content: data.content || '',
+        status: res.status,
+      }
+    }
+    let code: string | undefined
+    let message: string | undefined
+    try {
+      const err = await res.json()
+      if (err?.detail?.code) code = err.detail.code
+      if (err?.detail?.message) message = err.detail.message
+      else if (typeof err?.detail === 'string') message = err.detail
+    } catch {
+      await discardResponseBody(res)
+    }
+    return {
+      ok: false,
+      moduleId,
+      lessonId,
+      title: lessonId,
+      content: '',
+      status: res.status,
+      code,
+      message,
+    }
+  } catch (err) {
+    return {
+      ok: false,
+      moduleId,
+      lessonId,
+      title: lessonId,
+      content: '',
+      status: 0,
+      message: err instanceof Error ? err.message : 'Network failure',
+    }
+  }
+}
+
+export async function fetchLessonContent(moduleId: string, lessonId: string): Promise<string> {
+  const result = await fetchLesson(moduleId, lessonId)
+  if (result.ok) {
+    return result.content
+  }
+  if (result.status === 401) {
+    return `# Account Required\n\nFull lesson curriculum and technical walkthroughs require an approved learner account.\n\nPlease [sign in or register](/account) to access lesson materials and retain your progress.`
+  }
+  if (result.status === 403) {
+    if (result.code === 'account_pending') {
+      return `# Account Approval Pending\n\nYour SecCraft account has been registered and is currently awaiting administrator review.\n\nOnce approved, you will have immediate access to all technical walkthroughs, scenario challenges, and lab fixtures. You can check your account status anytime in [Account Settings](/account).`
+    }
+    if (result.code === 'account_rejected') {
+      return `# Account Not Approved\n\nYour account registration was not approved for platform access.\n\nPlease review your status in [Account Settings](/account) or contact platform administration via the feedback form.`
+    }
+    if (result.code === 'account_suspended') {
+      return `# Account Suspended\n\nThis account is currently suspended from accessing platform learning materials.\n\nPlease check [Account Settings](/account) for details.`
+    }
+    return `# Access Restricted\n\n${result.message || 'Approved account privileges are required to view this lesson.'}`
+  }
+  if (result.status === 404) {
+    return `# Lesson Not Found\n\nThe requested lesson \`${lessonId}\` could not be located in module \`${moduleId}\`. Please select another lesson from the curriculum outline.`
+  }
+  return `# Lesson Content Unavailable\n\nUnable to load lesson content (${result.message || 'API connection failed'}). If you are practicing offline, ensure the local API server is active.`
+}
+
+export async function fetchModuleQuiz(moduleId: string): Promise<any | null> {
+  try {
+    const res = await apiFetch(`/api/v1/content/quizzes/${encodeURIComponent(moduleId)}`)
+    if (res.ok) {
+      return await res.json()
+    }
     await discardResponseBody(res)
   } catch {}
+  return null
+}
+
+export async function fetchLabDetails(labId: string): Promise<any | null> {
   try {
-    const mod = await import(`../content/lessons/${moduleId}/${lessonId}.md?raw`)
-    return mod.default
-  } catch {
-    return `# ${lessonId}\n\nContent not yet available. This lesson is part of the upcoming module.`
-  }
+    const res = await apiFetch(`/api/v1/content/labs/${encodeURIComponent(labId)}`)
+    if (res.ok) {
+      return await res.json()
+    }
+    await discardResponseBody(res)
+  } catch {}
+  return null
 }
 
 export async function fetchPlatform() {

@@ -1,5 +1,7 @@
+import { useMotionPolicy } from '@/components/animations/motionPolicy'
+import { panelMotion, motionTiming } from '@/lib/motion'
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Search, BookOpen, FlaskConical, Swords, Terminal, FileText, Command, ArrowRight, Zap, Map, Layers, Target } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import modules from '@/content/modules.json'
@@ -164,6 +166,8 @@ function buildIndex(): SearchItem[] {
 const searchData: SearchItem[] = buildIndex()
 
 export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const policy = useMotionPolicy()
+  const entrance = panelMotion('search', policy)
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -265,44 +269,40 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
 
   const getTypeColor = (type: string) => {
     switch(type) {
-      case 'path': return 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
-      case 'module': return 'bg-violet-500/10 text-violet-400 border-violet-500/20'
-      case 'lesson': return 'bg-violet-500/10 text-violet-400 border-violet-500/20'
-      case 'lab': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-      case 'challenge': return 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-      case 'skill': return 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
-      case 'command': return 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-      case 'filter': return 'bg-pink-500/10 text-pink-400 border-pink-500/20'
-      case 'tool': return 'bg-slate-500/10 text-slate-400 border-slate-500/20'
-      default: return 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+      case 'path': return 'bg-[var(--accent-bg)] text-[var(--learning)] border-[var(--accent-border)]'
+      case 'module': return 'bg-[var(--owner-bg)] text-[var(--owner)] border-[var(--owner-border)]'
+      case 'lesson': return 'bg-[var(--owner-bg)] text-[var(--owner)] border-[var(--owner-border)]'
+      case 'lab': return 'bg-[var(--success-bg)] text-[var(--success)] border-[var(--success-border)]'
+      case 'challenge': return 'bg-[var(--warning-bg)] text-[var(--attention)] border-[var(--warning-border)]'
+      case 'skill': return 'bg-[var(--accent-bg)] text-[var(--learning)] border-[var(--accent-border)]'
+      case 'command': return 'bg-[var(--warning-bg)] text-[var(--attention)] border-[var(--warning-border)]'
+      case 'filter': return 'bg-[var(--owner-bg)] text-[var(--owner)] border-[var(--owner-border)]'
+      case 'tool': return 'bg-[var(--panel-raised)] text-[var(--ink-secondary)] border-[var(--line-strong)]'
+      default: return 'bg-[var(--panel-raised)] text-[var(--ink-secondary)] border-[var(--line-strong)]'
     }
   }
 
   if (!open) return null
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[10vh] xs:pt-[15vh] p-3 xs:p-4">
+      <div className="ws-search-overlay">
         <motion.div
-          initial={{ opacity: 0 }}
+          initial={policy.reduced || policy.paused ? false : { opacity: 0 }}
+          transition={{ type: 'tween', duration: policy.reduced || policy.paused ? 0 : motionTiming.control }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="search-backdrop absolute inset-0 bg-black/65"
+          className="search-backdrop absolute inset-0 bg-[var(--scrim)]"
           onClick={closeSearch}
         />
         <motion.div
           role="dialog"
           aria-modal="true"
           aria-label={`${platform.name} search`}
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className="search-dialog relative w-full max-w-[680px] rounded-xl bg-[var(--overlay-bg)] border border-[var(--line-normal)] shadow-lg overflow-hidden max-h-[min(80vh,760px)] flex flex-col"
+          {...entrance}
+          className="search-dialog relative w-full max-w-[680px] rounded-xl bg-[var(--overlay-bg)] border border-[var(--line-normal)] shadow-lg overflow-hidden  flex flex-col"
         >
           {/* Search Input — platform-level */}
-          <div className="relative flex items-center gap-3 p-4 border-b border-[#1e293b]/60">
-            <Search className="w-5 h-5 text-slate-500 shrink-0" />
+          <div className="relative flex items-center gap-3 p-4 border-b border-[var(--line-normal)]">
+            <Search className="w-5 h-5 text-[var(--ink-muted)] shrink-0" />
             <input
               ref={inputRef}
               id="global-search-input"
@@ -315,64 +315,61 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
               value={query}
               onChange={e => { setQuery(e.target.value); setActiveIndex(0) }}
               placeholder="Search paths, modules, labs, commands…"
-              className="flex-1 bg-transparent text-[14px] text-slate-200 placeholder:text-slate-500 focus:outline-none min-w-0"
+              className="flex-1 bg-transparent text-[14px] text-[var(--ink-primary)] placeholder:text-[var(--ink-muted)] focus:outline-none min-w-0"
             />
             <div className="flex items-center gap-1.5 shrink-0">
-              <kbd className="hidden xs:flex items-center gap-1 px-2 py-1 rounded-md bg-[#1e293b] border border-[#334155] text-[10px] font-mono text-slate-400">
+              <kbd className="hidden xs:flex items-center gap-1 px-2 py-1 rounded-md bg-[var(--panel-raised)] border border-[var(--line-strong)] text-[10px] font-mono text-[var(--ink-secondary)]">
                 <Command className="w-3 h-3" />K
               </kbd>
-              <button onClick={closeSearch} aria-label="Close search" className="w-9 h-9 rounded-lg bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-[#25354f] transition-colors">
-                <span className="text-[12px] text-slate-400">✕</span>
+              <button onClick={closeSearch} aria-label="Close search" className="w-9 h-9 rounded-lg bg-[var(--panel-raised)] border border-[var(--line-strong)] flex items-center justify-center hover:bg-[var(--panel-raised)] transition-colors">
+                <span className="text-[12px] text-[var(--ink-secondary)]">✕</span>
               </button>
             </div>
           </div>
 
           {/* Results — generic */}
-          <div className="flex-1 overflow-y-auto p-2 scrollbar-thin">
+          <div role="region" aria-label="Search suggestions and results" tabIndex={0} className="flex-1 overflow-y-auto p-2 scrollbar-thin">
             {results.length === 0 ? (
               <div className="p-8 text-center">
-                <div className="w-12 h-12 rounded-xl bg-[#1e293b] border border-[#334155] flex items-center justify-center mx-auto mb-3">
-                  <Search className="w-6 h-6 text-slate-500" />
+                <div className="w-12 h-12 rounded-xl bg-[var(--panel-raised)] border border-[var(--line-strong)] flex items-center justify-center mx-auto mb-3">
+                  <Search className="w-6 h-6 text-[var(--ink-muted)]" />
                 </div>
-                <div className="text-[13px] text-slate-400">No results for "{query}" in {platform.name}</div>
-                <div className="text-[11px] text-slate-400 mt-1">Try: wireless, web, api, WPA3, handshake, deauth, hashcat, reconnaissance, evidence</div>
+                <div className="text-[13px] text-[var(--ink-secondary)]">No results for "{query}" in {platform.name}</div>
+                <div className="text-[11px] text-[var(--ink-secondary)] mt-1">Try: wireless, web, api, WPA3, handshake, deauth, hashcat, reconnaissance, evidence</div>
               </div>
             ) : (
               <div id="global-search-results" role="listbox" aria-label="Search results" className="space-y-1">
                 {results.map((item, idx) => {
                   const Icon = getIcon(item.type)
                   return (
-                    <motion.div
+                    <div
                       id={`search-result-${idx}`}
                       role="option"
                       tabIndex={-1}
                       aria-selected={activeIndex === idx}
                       key={`${item.type}-${item.id}-${idx}`}
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.02 }}
                       onMouseDown={e => e.preventDefault()}
                       onMouseEnter={() => setActiveIndex(idx)}
                       onClick={() => {
                         navigate(item.path)
                         onClose()
                       }}
-                      className={`w-full text-left p-3 rounded-xl flex items-center gap-3 border transition-all duration-200 group min-w-0 ${activeIndex === idx ? 'bg-[#1e293b]/90 border-cyan-400/25 shadow-[inset_2px_0_0_rgba(83,215,209,.8)]' : 'hover:bg-[#1e293b]/65 border-transparent hover:border-[#334155]/60'}`}
+                      className={`w-full text-left p-3 rounded-xl flex items-center gap-3 border sc-surface-transition group min-w-0 ${activeIndex === idx ? 'bg-[var(--panel-raised)] border-[var(--accent-border)] shadow-soft' : 'hover:bg-[var(--panel-raised)] border-transparent hover:border-[var(--line-strong)]'}`}
                     >
-                      <div className="w-9 h-9 rounded-xl bg-[#020617] border border-[#1e293b] flex items-center justify-center group-hover:border-[#334155] transition-colors shrink-0">
-                        <Icon className="w-4 h-4 text-slate-400 group-hover:text-slate-200" />
+                      <div className="w-9 h-9 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] flex items-center justify-center group-hover:border-[var(--line-strong)] transition-colors shrink-0">
+                        <Icon className="w-4 h-4 text-[var(--ink-secondary)] group-hover:text-[var(--ink-primary)]" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                          <span className="text-[13px] font-medium text-slate-200 truncate group-hover:text-slate-100">{item.title}</span>
+                          <span className="text-[13px] font-medium text-[var(--ink-primary)] truncate group-hover:text-[var(--ink-primary)]">{item.title}</span>
                           <span className={`hidden xs:inline-flex text-[9px] px-1.5 py-0.5 rounded-full border font-mono shrink-0 ${getTypeColor(item.type)}`}>{item.type.toUpperCase()}</span>
-                          {item.badge && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#020617] border border-[#1e293b] text-slate-500 font-mono shrink-0">{item.badge}</span>}
-                          {item.xp ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono shrink-0">+{item.xp} XP</span> : null}
+                          {item.badge && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[var(--ink-muted)] font-mono shrink-0">{item.badge}</span>}
+                          {item.xp ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--warning-bg)] text-[var(--attention)] border border-[var(--warning-border)] font-mono shrink-0">+{item.xp} XP</span> : null}
                         </div>
-                        <div className="text-[11px] text-slate-500 truncate mt-0.5">{item.description}</div>
+                        <div className="text-[11px] text-[var(--ink-muted)] truncate mt-0.5">{item.description}</div>
                       </div>
-                      <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-400 group-hover:translate-x-0.5 transition-all duration-200 shrink-0 hidden xs:block" />
-                    </motion.div>
+                      <ArrowRight className="w-4 h-4 text-[var(--ink-secondary)] group-hover:text-[var(--ink-secondary)] sc-surface-transition shrink-0 hidden xs:block" />
+                    </div>
                   )
                 })}
               </div>
@@ -380,19 +377,18 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
           </div>
 
           {/* Footer — platform */}
-          <div className="p-3 border-t border-[#1e293b]/60 bg-[#020617]/40 flex flex-col xs:flex-row items-center justify-between gap-2 text-[11px] font-mono text-slate-500">
+          <div className="p-3 border-t border-[var(--line-normal)] bg-[var(--panel-inset)] flex flex-col xs:flex-row items-center justify-between gap-2 text-[11px] font-mono text-[var(--ink-muted)]">
             <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1.5"><kbd className="px-1.5 py-0.5 rounded bg-[#1e293b] border border-[#334155] text-[10px]">↑↓</kbd> Navigate</span>
-              <span className="flex items-center gap-1.5"><kbd className="px-1.5 py-0.5 rounded bg-[#1e293b] border border-[#334155] text-[10px]">↵</kbd> Select</span>
-              <span className="flex items-center gap-1.5"><kbd className="px-1.5 py-0.5 rounded bg-[#1e293b] border border-[#334155] text-[10px]">ESC</kbd> Close</span>
+              <span className="flex items-center gap-1.5"><kbd className="px-1.5 py-0.5 rounded bg-[var(--panel-raised)] border border-[var(--line-strong)] text-[10px]">↑↓</kbd> Navigate</span>
+              <span className="flex items-center gap-1.5"><kbd className="px-1.5 py-0.5 rounded bg-[var(--panel-raised)] border border-[var(--line-strong)] text-[10px]">↵</kbd> Select</span>
+              <span className="flex items-center gap-1.5"><kbd className="px-1.5 py-0.5 rounded bg-[var(--panel-raised)] border border-[var(--line-strong)] text-[10px]">ESC</kbd> Close</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Zap className="w-3 h-3 text-amber-400" />
+              <Zap className="w-3 h-3 text-[var(--attention)]" />
               <span>{searchData.length} items • {platform.name} • local index • {platform.tagline}</span>
             </div>
           </div>
         </motion.div>
       </div>
-    </AnimatePresence>
   )
 }

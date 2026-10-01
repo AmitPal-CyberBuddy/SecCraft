@@ -101,6 +101,33 @@ test('guest content falls back for HTTP errors and bounded API timeouts', async 
     })
     await apiFetch('/api/v1/account')
     assert.equal(forwardedAuthorization, 'Bearer unit-test-access-token')
+
+    const { fetchLesson, fetchLessonContent } = await vite.ssrLoadModule('/src/lib/api.ts')
+    let lessonAuthHeader = null
+    globalThis.fetch = async (_input, init) => {
+      lessonAuthHeader = new Headers(init.headers).get('authorization')
+      return new Response(JSON.stringify({
+        module_id: 'android-01-platform',
+        lesson_id: '01-architecture',
+        content: '# Android Architecture\n\nVerified lesson content.',
+      }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    const lessonRes = await fetchLesson('android-01-platform', '01-architecture')
+    assert.equal(lessonRes.ok, true)
+    assert.equal(lessonAuthHeader, 'Bearer unit-test-access-token', 'lesson endpoint must receive active bearer token')
+
+    const lessonText = await fetchLessonContent('android-01-platform', '01-architecture')
+    assert.ok(lessonText.includes('Verified lesson content.'))
+
+    // 401 unauthenticated
+    globalThis.fetch = async () => new Response(JSON.stringify({ detail: 'Authentication required' }), { status: 401 })
+    const unauthText = await fetchLessonContent('android-01-platform', '01-architecture')
+    assert.ok(unauthText.includes('Account Required'))
+
+    // 403 pending
+    globalThis.fetch = async () => new Response(JSON.stringify({ detail: { code: 'account_pending', message: 'Pending' } }), { status: 403 })
+    const pendingText = await fetchLessonContent('android-01-platform', '01-architecture')
+    assert.ok(pendingText.includes('Account Approval Pending'))
   } finally {
     globalThis.setTimeout = savedSetTimeout
   }

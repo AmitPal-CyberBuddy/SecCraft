@@ -1,0 +1,77 @@
+{
+  "provenance": "Authored requests for a policy calculation, not sent packets",
+  "flows": [
+    {
+      "id": "F1",
+      "source": "guest-A",
+      "destination": "portal-demo",
+      "protocol": "tcp",
+      "port": 443,
+      "direction": "client-to-service",
+      "intended": "allow"
+    },
+    {
+      "id": "F2",
+      "source": "guest-A",
+      "destination": "public-web-demo",
+      "protocol": "tcp",
+      "port": 443,
+      "direction": "client-to-service",
+      "intended": "allow"
+    },
+    {
+      "id": "F3",
+      "source": "corp-B",
+      "destination": "internal-api",
+      "protocol": "tcp",
+      "port": 443,
+      "direction": "client-to-service",
+      "intended": "allow"
+    },
+    {
+      "id": "F4",
+      "source": "guest-A",
+      "destination": "internal-api",
+      "protocol": "tcp",
+      "port": 443,
+      "direction": "client-to-service",
+      "intended": "deny"
+    },
+    {
+      "id": "F5",
+      "source": "guest-A",
+      "destination": "management-console",
+      "protocol": "tcp",
+      "port": 443,
+      "direction": "client-to-service",
+      "intended": "deny"
+    },
+    {
+      "id": "F6",
+      "source": "corp-B",
+      "destination": "management-console",
+      "protocol": "tcp",
+      "port": 443,
+      "direction": "client-to-service",
+      "intended": "deny"
+    },
+    {
+      "id": "F7",
+      "source": "corp-B",
+      "destination": "internal-reports",
+      "protocol": "tcp",
+      "port": 443,
+      "direction": "client-to-service",
+      "intended": "allow"
+    },
+    {
+      "id": "F8",
+      "source": "guest-A",
+      "destination": "internal-api",
+      "protocol": "udp",
+      "port": 53,
+      "direction": "client-to-service",
+      "intended": "deny"
+    }
+  ]
+}

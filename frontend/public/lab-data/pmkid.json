@@ -32,7 +32,7 @@
    "ds_channel": 6,
    "rsn": {
     "version": 1,
-    "group": 172,
+    "group": 4,
     "pairwise": [
      4
     ],
@@ -55,7 +55,9 @@
    "bssid": "00:11:22:33:44:55",
    "sa": "00:11:22:33:44:55",
    "da": "ff:ff:ff:ff:ff:ff",
-   "number": 1
+   "number": 1,
+   "capture_timestamp_us": 1700000000002000,
+   "relative_time_ms": 0.0
   },
   {
    "frame_type": "mgmt",
@@ -84,7 +86,9 @@
    "bssid": "00:11:22:33:44:55",
    "sa": "44:55:66:77:88:99",
    "da": "00:11:22:33:44:55",
-   "number": 2
+   "number": 2,
+   "capture_timestamp_us": 1700000000004000,
+   "relative_time_ms": 2.0
   },
   {
    "frame_type": "mgmt",
@@ -113,7 +117,9 @@
    "bssid": "00:11:22:33:44:55",
    "sa": "00:11:22:33:44:55",
    "da": "44:55:66:77:88:99",
-   "number": 3
+   "number": 3,
+   "capture_timestamp_us": 1700000000006000,
+   "relative_time_ms": 4.0
   },
   {
    "frame_type": "mgmt",
@@ -141,7 +147,7 @@
    "ssid_len": 8,
    "rsn": {
     "version": 1,
-    "group": 172,
+    "group": 4,
     "pairwise": [
      4
     ],
@@ -163,7 +169,9 @@
    "bssid": "00:11:22:33:44:55",
    "sa": "44:55:66:77:88:99",
    "da": "00:11:22:33:44:55",
-   "number": 4
+   "number": 4,
+   "capture_timestamp_us": 1700000000008000,
+   "relative_time_ms": 6.0
   },
   {
    "frame_type": "mgmt",
@@ -191,7 +199,9 @@
    "bssid": "00:11:22:33:44:55",
    "sa": "00:11:22:33:44:55",
    "da": "44:55:66:77:88:99",
-   "number": 5
+   "number": 5,
+   "capture_timestamp_us": 1700000000010000,
+   "relative_time_ms": 8.0
   },
   {
    "frame_type": "data",
@@ -231,7 +241,9 @@
    "bssid": "00:11:22:33:44:55",
    "sa": "00:11:22:33:44:55",
    "da": "44:55:66:77:88:99",
-   "number": 6
+   "number": 6,
+   "capture_timestamp_us": 1700000000012000,
+   "relative_time_ms": 10.0
   }
  ],
  "summary": {
@@ -256,5 +268,6 @@
   "assoc": 2,
   "wps": 0
  },
- "module": "wpa2"
+ "module": "wpa2",
+ "provenance": "Generated offline teaching capture; not a hosted environment or live RF observation"
 }

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
 import { Download, FileText, Shield, CheckCircle, Hash, Info, AlertTriangle } from 'lucide-react'
 import jsPDF from 'jspdf'
 import { useProgressStore } from '@/store/useProgressStore'
@@ -189,14 +188,14 @@ export function ReportPdfExport({ className = '' }: { className?: string }) {
   }
 
   return (
-    <div className={`rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 sm:p-6 min-w-0 w-full ${className}`}>
+    <div className={`sc-technical-surface rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-4 xs:p-5 sm:p-6 min-w-0 w-full ${className}`}>
       <div className="flex items-center gap-3 mb-5 min-w-0">
-        <div className="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
-          <FileText className="w-5 h-5 text-violet-400" />
+        <div className="w-9 h-9 rounded-xl bg-[var(--owner-bg)] border border-[var(--owner-border)] flex items-center justify-center shrink-0">
+          <FileText className="w-5 h-5 text-[var(--owner)]" />
         </div>
         <div className="min-w-0">
-          <h3 className="font-heading font-bold text-[14px] xs:text-[15px] text-slate-100">Export your records as PDF</h3>
-          <p className="text-[11px] text-slate-500 font-mono">jsPDF • your evidence vault + finding draft • hash of the exported file itself</p>
+          <h3 className="font-heading font-bold text-[14px] xs:text-[15px] text-[var(--ink-primary)]">Export your records as PDF</h3>
+          <p className="text-[11px] text-[var(--ink-muted)] font-mono">jsPDF • your evidence vault + finding draft • hash of the exported file itself</p>
         </div>
       </div>
 
@@ -207,18 +206,18 @@ export function ReportPdfExport({ className = '' }: { className?: string }) {
           { label: 'Lessons', value: `${completedLessons}/${TOTAL_LESSONS}`, desc: 'local progress', icon: CheckCircle },
           { label: 'Labs', value: `${completedLabs}/${TOTAL_LABS}`, desc: 'local progress', icon: Hash },
         ].map(item => (
-          <div key={item.label} className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50">
-            <div className="flex items-center gap-1.5 text-[10px] text-slate-500 uppercase tracking-widest font-semibold mb-1.5">
+          <div key={item.label} className="p-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)]">
+            <div className="flex items-center gap-1.5 text-[10px] text-[var(--ink-muted)] uppercase tracking-widest font-semibold mb-1.5">
               <item.icon className="w-3 h-3" /> {item.label}
             </div>
-            <div className="text-[15px] font-mono font-bold text-slate-100">{item.value}</div>
-            <div className="text-[10px] text-slate-400 mt-0.5">{item.desc}</div>
+            <div className="text-[15px] font-mono font-bold text-[var(--ink-primary)]">{item.value}</div>
+            <div className="text-[10px] text-[var(--ink-secondary)] mt-0.5">{item.desc}</div>
           </div>
         ))}
       </div>
 
       {!hasContent && (
-        <div className="mb-4 p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/20 text-[11.5px] text-amber-300/90 flex items-start gap-2">
+        <div className="mb-4 p-3.5 rounded-xl bg-[var(--warning-bg)] border border-[var(--warning-border)] text-[11.5px] text-[var(--attention)] flex items-start gap-2">
           <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
           <span>
             Nothing to export yet. Add artefacts in Reports → Evidence Vault and write at least one finding in the
@@ -230,40 +229,41 @@ export function ReportPdfExport({ className = '' }: { className?: string }) {
 
       <button
         onClick={generatePdf}
+        aria-busy={generating}
         disabled={generating || !hasContent}
-        className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-[13px] flex items-center justify-center gap-2 shadow-glow-violet disabled:opacity-40 disabled:cursor-not-allowed touch-manipulation min-h-[44px]"
+        className="sc-learning-action w-full sm:w-auto px-5 py-3 rounded-xl font-semibold text-[13px] flex items-center justify-center gap-2 shadow-soft disabled:opacity-40 disabled:cursor-not-allowed touch-manipulation min-h-[44px]"
       >
         {generating ? (
-          <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Building PDF…</>
+          <><div className="w-4 h-4 border-2 border-[var(--line-strong)] border-t-[var(--action-ink)] rounded-full animate-spin" />Building PDF…</>
         ) : (
           <><Download className="w-4 h-4" />Generate PDF from my records</>
         )}
       </button>
 
       {generated && (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-4 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+        <div className="mt-4 p-4 rounded-xl bg-[var(--success-bg)] border border-[var(--success-border)]">
           <div className="flex items-start gap-2.5">
-            <CheckCircle className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
-            <div className="min-w-0 text-[11.5px] text-slate-300 leading-relaxed">
-              <div className="font-semibold text-emerald-300">PDF built — {generated.pages} page{generated.pages === 1 ? '' : 's'}, {generated.size}</div>
-              <div className="mt-1 font-mono text-[10.5px] text-slate-400 break-all">
+            <CheckCircle className="w-4 h-4 text-[var(--success)] mt-0.5 shrink-0" />
+            <div className="min-w-0 text-[11.5px] text-[var(--ink-secondary)] leading-relaxed">
+              <div className="font-semibold text-[var(--success)]">PDF built — {generated.pages} page{generated.pages === 1 ? '' : 's'}, {generated.size}</div>
+              <div className="mt-1 font-mono text-[10.5px] text-[var(--ink-secondary)] break-all">
                 file SHA-256: {generated.sha256 || 'unavailable in this browser context'}
               </div>
-              <div className="mt-1 text-slate-500">
+              <div className="mt-1 text-[var(--ink-muted)]">
                 {generated.itemCount} vault record{generated.itemCount === 1 ? '' : 's'} included. The hash above identifies the
                 exported file itself — record it next to your evidence if you need a chain of custody.
               </div>
-              <button onClick={downloadPdf} className="mt-3 px-4 py-2 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] text-slate-200 hover:border-[#475569] transition-colors">
+              <button onClick={downloadPdf} className="mt-3 px-4 py-2 rounded-xl bg-[var(--panel-raised)] border border-[var(--line-strong)] text-[12px] text-[var(--ink-primary)] hover:border-[var(--line-strong)] transition-colors">
                 Download {`platform-notes-${generated.id}.pdf`}
               </button>
             </div>
           </div>
-        </motion.div>
+        </div>
       )}
 
-      <div className="mt-4 p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/50 flex items-start gap-2.5">
-        <Info className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" />
-        <div className="text-[11px] text-slate-400 leading-relaxed min-w-0">
+      <div className="mt-4 p-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] flex items-start gap-2.5">
+        <Info className="w-4 h-4 text-[var(--learning)] mt-0.5 shrink-0" />
+        <div className="text-[11px] text-[var(--ink-secondary)] leading-relaxed min-w-0">
           Keep the evidence vault JSON export next to this PDF: the vault holds the machine-checkable part
           (hash, filter, frame numbers), the PDF holds the narrative your reader needs. For CVSS scoring use the
           calculator in Reports → CVSS 3.1 — the numbers there are computed, not typed.

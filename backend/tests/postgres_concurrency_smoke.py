@@ -51,6 +51,7 @@ def run() -> None:
                 "SUPABASE_JWT_ISSUER": "https://auth-test.invalid/auth/v1",
                 "SUPABASE_JWT_SECRET": "test-only-secret-not-for-use",
                 "SUPABASE_REQUIRE_VERIFIED_EMAIL": "false",
+                "FEEDBACK_HMAC_SECRET": "disposable-feedback-test-key-32-bytes-minimum",
             }
         )
         if "app.core.config" in sys.modules:
@@ -79,6 +80,8 @@ def run() -> None:
             "xp_events",
             "achievement_awards",
             "admin_audit_events",
+            "feedback",
+            "feedback_quotas",
         }
         with admin_engine.connect() as connection:
             rls_rows = connection.execute(
@@ -154,6 +157,21 @@ def run() -> None:
             )
         if active_learners != 1:
             raise AssertionError(f"Approved-user limit was exceeded or no user was approved: {active_learners}.")
+        from app.models.feedback import Feedback, FeedbackQuota
+        def submit_feedback(_):
+            with TestClient(app, raise_server_exceptions=False) as client:
+                return client.post('/api/v1/feedback', json={
+                    'request_id': str(uuid.uuid4()), 'category': 'bug',
+                    'subject': 'Disposable concurrency test', 'message': 'This is a test in an isolated schema.',
+                }).status_code
+        with ThreadPoolExecutor(max_workers=8) as workers:
+            feedback_statuses = list(workers.map(submit_feedback, range(12)))
+        if feedback_statuses.count(201) != config.FEEDBACK_GUEST_HOUR or any(status not in (201, 429) for status in feedback_statuses):
+            raise AssertionError(f'PostgreSQL feedback quota failed: {feedback_statuses}')
+        with SessionLocal() as db:
+            assert db.query(Feedback).count() == config.FEEDBACK_GUEST_HOUR
+            assert {row.count for row in db.query(FeedbackQuota)} == {config.FEEDBACK_GUEST_HOUR}
+        print('PostgreSQL feedback concurrent quota and transaction rollback checks passed.')
         print("PostgreSQL concurrent approval test passed: one approval, one capacity rejection, active learner count = 1.")
     finally:
         if app_engine is not None:

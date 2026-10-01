@@ -1,3 +1,4 @@
+from .feedback import Feedback, FeedbackQuota
 from .platform import (
     AchievementAward,
     AdminAuditEvent,
@@ -10,6 +11,8 @@ from .platform import (
 )
 
 __all__ = [
+    "Feedback",
+    "FeedbackQuota",
     "AchievementAward",
     "AdminAuditEvent",
     "AssessmentAttempt",

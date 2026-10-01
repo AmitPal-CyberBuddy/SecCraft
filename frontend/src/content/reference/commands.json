@@ -208,5 +208,159 @@
   "command": "tshark -r before.pcapng -Y '<same filter>' > before.txt; tshark -r after.pcapng -Y '<same filter>' > after.txt; diff before.txt after.txt",
   "proves": "the retest delta using an identical extraction",
   "notes": "the retest is evidence, not a promise"
+ },
+ {
+  "category": "Device & ADB Setup",
+  "command": "adb devices -l",
+  "proves": "device enumeration, authorized USB debugging state, and target hardware architecture",
+  "notes": "check for unauthorized state; device prompt must be accepted",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Device & ADB Setup",
+  "command": "adb shell getprop ro.build.version.release && adb shell getprop ro.build.version.sdk",
+  "proves": "Android OS release version and API level to evaluate OS security boundary changes",
+  "notes": "API 24, 28, 31, 33, 34 introduce major platform breaking changes",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Device & ADB Setup",
+  "command": "adb install -r -g target.apk",
+  "proves": "installs package with reinstall (-r) and grants all declared runtime permissions (-g)",
+  "notes": "simplifies dynamic triage baseline setup on test devices",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Device & ADB Setup",
+  "command": "adb forward tcp:8080 tcp:8080",
+  "proves": "forwards workstation TCP port to emulator/device socket for local proxying",
+  "notes": "used for intercepting non-proxy-aware traffic or local test services",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Device & ADB Setup",
+  "command": "adb shell pm list packages -f | grep <pattern>",
+  "proves": "locates base APK filesystem path in /data/app/ for pulling without root",
+  "notes": "use adb pull to download the installed APK for static analysis",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Static APK Triage",
+  "command": "apkanalyzer manifest print target.apk",
+  "proves": "prints binary AndroidManifest.xml without requiring full decompilation",
+  "notes": "fastest way to inspect exported components and permissions in CI/CLI",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Static APK Triage",
+  "command": "apktool d target.apk -o output_dir/",
+  "proves": "disassembles DEX bytecode to smali and decodes XML resources into human-readable files",
+  "notes": "essential for modifying manifests, repacking, or auditing raw XML assets",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Static APK Triage",
+  "command": "jadx target.apk -d src/ --no-src",
+  "proves": "decompiles Dalvik bytecode directly into Java source files for static triage",
+  "notes": "prefer jadx-gui for interactive cross-reference (XRef) call-site tracking",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Static APK Triage",
+  "command": "apksigner verify --verbose --print-certs target.apk",
+  "proves": "verifies APK signature scheme compliance (v1, v2, v3, v4) and certificate fingerprints",
+  "notes": "v1-only APKs are susceptible to Janus APK-DEX concatenation vulnerability",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Static APK Triage",
+  "command": "keytool -printcert -jarfile target.apk",
+  "proves": "prints signer certificate validity dates, subject DN, and public key algorithm",
+  "notes": "audits whether debug keystores (CN=Android Debug) were accidentally released",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Component & IPC Probing",
+  "command": "adb shell am start -n com.example.app/.TargetActivity -d \"notavault://notes/view?id=1\"",
+  "proves": "invokes exported Activity with an explicit intent carrying a custom deep-link URI",
+  "notes": "tests whether Activity validates URI authority and path before loading sensitive data",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Component & IPC Probing",
+  "command": "adb shell am broadcast -a com.example.app.ACTION_SYNC -e token \"test_val\"",
+  "proves": "sends an explicit or implicit broadcast intent with string extras to BroadcastReceivers",
+  "notes": "unprotected receivers allow external apps to trigger internal state transitions",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Component & IPC Probing",
+  "command": "adb shell am startservice -n com.example.app/.SyncService",
+  "proves": "starts a background Service across application boundaries",
+  "notes": "exported services without signature permissions allow unauthorized operations",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Component & IPC Probing",
+  "command": "adb shell content query --uri content://com.example.app.provider/notes",
+  "proves": "queries exposed ContentProvider table data directly from terminal",
+  "notes": "demonstrates missing android:permission or path-permission protections",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Runtime Observation & Storage",
+  "command": "adb logcat -s NoteVault ActivityManager:I *:S",
+  "proves": "filters runtime system logs to target application tags and lifecycle events",
+  "notes": "identifies sensitive credentials, tokens, or PII leaked to system logcat",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Runtime Observation & Storage",
+  "command": "adb shell pidof com.example.app",
+  "proves": "retrieves current Linux process ID assigned to the running application package",
+  "notes": "required for attaching Frida, ltrace, or inspecting /proc/<pid>/ maps",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Runtime Observation & Storage",
+  "command": "adb shell run-as com.example.app ls -la /data/data/com.example.app/shared_prefs/",
+  "proves": "inspects private application sandbox files without needing a rooted device",
+  "notes": "works only if android:debuggable=true is declared in the target build manifest",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Runtime Observation & Storage",
+  "command": "adb shell dumpsys package com.example.app | grep -A 10 \"requested permissions:\"",
+  "proves": "dumps all permissions requested, granted, and revoked for the target package",
+  "notes": "identifies whether dangerous permissions were granted by user or system",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Frida & Instrumentation",
+  "command": "frida-ps -Uai",
+  "proves": "enumerates all installed applications and active runtime PIDs on connected USB device",
+  "notes": "verifies that frida-server is running on the device with matching architecture",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Frida & Instrumentation",
+  "command": "frida -U -f com.example.app -l hook.js",
+  "proves": "spawns target application and injects custom JavaScript hooks at early initialization",
+  "notes": "use %resume in frida console to proceed after early hooks are placed",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Frida & Instrumentation",
+  "command": "objection -g com.example.app explore",
+  "proves": "attaches interactive mobile security assessment framework to target process",
+  "notes": "provides high-level commands for memory search, clipboard, and hook automation",
+  "learningPathId": "android-pentesting"
+ },
+ {
+  "category": "Frida & Instrumentation",
+  "command": "objection -g com.example.app android sslpinning disable",
+  "proves": "runtime hook disabling TrustManager, OkHttp, and Network Security Config pinning",
+  "notes": "hooking does not prove vulnerability; assess backend trust boundaries after bypass",
+  "learningPathId": "android-pentesting"
  }
 ]

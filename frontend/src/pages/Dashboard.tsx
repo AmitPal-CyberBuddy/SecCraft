@@ -1,3 +1,5 @@
+import { LearningPathScope } from '@/components/common/LearningPathScope'
+import { moduleLink } from '@/lib/learningNavigation'
 import { moduleOrdinal } from '@/content/module-ordinal'
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
@@ -6,14 +8,13 @@ import { AVAILABLE_LABS } from '@/content/labs'
 import modules from '@/content/modules.json'
 import learningPaths from '@/content/learning-paths.json'
 import challenges from '@/content/challenges.json'
-import { AccountBanner, OwnerNotice } from '@/components/account/AccountBanner'
+import { OwnerNotice } from '@/components/account/AccountBanner'
 import { StateChip, UnavailableStatusChip, ProvenanceChip } from '@/components/account/StateChip'
 import { StandingChip } from '@/components/account/PracticeStanding'
 import { PageHeader, Panel, ActionLink, ProgressBar } from '@/components/common/Workspace'
 import { currentCurriculumLabel, canAccessTier } from '@/lib/contentAccess'
 import { useSession } from '@/lib/session'
 import { useServerProgress } from '@/lib/useServerProgress'
-import { STATE_META } from '@/lib/access'
 
 type Lesson = { id: string; title?: string }
 
@@ -24,12 +25,13 @@ type Lesson = { id: string; title?: string }
  * lesson in the current module, else the first lab with artifacts, else the next module. It is never
  * invented, never personalized beyond the learner's own record, and never gated on an account.
  */
-function useNextAction(currentModuleId: string) {
-  const isLessonCompleted = useProgressStore(s => s.isLessonCompleted)
+function useNextAction(currentModuleId: string, currentPathId: string) {
+  const completedLessons = useProgressStore(s => s.completedLessons)
   const completedLabs = useProgressStore(s => s.completedLabs)
   const completedChallenges = useProgressStore(s => s.completedChallenges)
 
   return useMemo(() => {
+    const isLessonCompleted = (moduleId: string, lessonId: string) => completedLessons.some(record => record.moduleId === moduleId && record.lessonId === lessonId)
     const currentModule = modules.find(m => m.id === currentModuleId) || modules[0]
     const lessons = (currentModule.lessons ?? []) as Lesson[]
     const nextLesson = lessons.find(lesson => !isLessonCompleted(currentModule.id, lesson.id))
@@ -40,8 +42,8 @@ function useNextAction(currentModuleId: string) {
         moduleTitle: currentModule.title as string,
         title: nextLesson.title ?? nextLesson.id,
         detail: `${lessons.length - lessons.filter(l => isLessonCompleted(currentModule.id, l.id)).length} lesson(s) left in this module`,
-        to: `/modules/${currentModule.id}`,
-        cta: nextLesson.title ? `Open “${nextLesson.title}”` : 'Continue this module',
+        to: moduleLink(currentModule.id, 'theory', nextLesson.id, currentPathId),
+        cta: 'Continue lesson',
       }
     }
 
@@ -53,8 +55,8 @@ function useNextAction(currentModuleId: string) {
         moduleTitle: currentModule.title as string,
         title: nextLab.title,
         detail: 'The module lessons are done — practise against the supplied artifacts next.',
-        to: '/labs',
-        cta: 'Open the labs',
+        to: moduleLink(currentModule.id, 'lab', nextLab.id, currentPathId),
+        cta: 'Open this lab',
       }
     }
 
@@ -68,12 +70,14 @@ function useNextAction(currentModuleId: string) {
         moduleTitle: currentModule.title as string,
         title: nextChallenge.title,
         detail: 'Lessons and labs are complete — close the module out with its challenge.',
-        to: '/challenges',
+        to: `/paths/${currentPathId}/challenges/${nextChallenge.id}`,
         cta: 'Open the challenge',
       }
     }
 
+    const path = learningPaths.find(item => item.id === currentPathId)
     const nextModule = modules.find(m => {
+      if (!path?.modules.some(moduleId => moduleId === m.id)) return false
       const moduleLessons = (m.lessons ?? []) as Lesson[]
       return moduleLessons.length > 0 && moduleLessons.some(lesson => !isLessonCompleted(m.id, lesson.id))
     })
@@ -84,7 +88,7 @@ function useNextAction(currentModuleId: string) {
         moduleTitle: nextModule.title as string,
         title: nextModule.title as string,
         detail: 'This module is complete. The next one with unfinished lessons is waiting.',
-        to: `/modules/${nextModule.id}`,
+        to: moduleLink(nextModule.id, 'overview', undefined, currentPathId),
         cta: 'Start the next module',
       }
     }
@@ -98,7 +102,7 @@ function useNextAction(currentModuleId: string) {
       to: '/achievements',
       cta: 'Review achievements',
     }
-  }, [currentModuleId, isLessonCompleted, completedLabs, completedChallenges])
+  }, [currentModuleId, currentPathId, completedLessons, completedLabs, completedChallenges])
 }
 
 function ago(at: string) {
@@ -112,10 +116,14 @@ function ago(at: string) {
 }
 
 export function Dashboard() {
+  return <LearningPathScope area="app">{id => <DashboardContent key={id} currentPathId={id} />}</LearningPathScope>
+}
+function DashboardContent({ currentPathId }: { currentPathId: string }) {
   const getModuleProgress = useProgressStore(s => s.getModuleProgress)
   const getPathProgress = useProgressStore(s => s.getPathProgress)
-  const currentModuleId = useProgressStore(s => s.currentModule) || '01-intro-wireless'
-  const currentPathId = useProgressStore(s => s.currentLearningPathId) || 'wireless-pentesting'
+  const storedModuleId = useProgressStore(s => s.currentModule)
+  const selectedPath = learningPaths.find(path => path.id === currentPathId) || learningPaths[0]
+  const currentModuleId = selectedPath.modules.some(moduleId => moduleId === storedModuleId) ? storedModuleId! : selectedPath.modules[0]
   const completedLessons = useProgressStore(s => s.completedLessons)
   const completedLabs = useProgressStore(s => s.completedLabs)
   const completedChallenges = useProgressStore(s => s.completedChallenges)
@@ -124,21 +132,21 @@ export function Dashboard() {
   const { userState, can, account, accountError, hasSession } = useSession()
   const statusUnavailable = hasSession && !account && (accountError.kind === 'unavailable' || accountError.kind === 'unknown')
   const server = useServerProgress()
-  const nextAction = useNextAction(currentModuleId)
+  const nextAction = useNextAction(currentModuleId, currentPathId)
   const currentModule = modules.find(m => m.id === currentModuleId) || modules[0]
   const currentPath = learningPaths.find(p => p.id === currentPathId) || learningPaths[0]
   const currentProgress = getModuleProgress(currentModule.id)
   const pathProgress = getPathProgress(currentPath.id)
   const recentActivity = useMemo(() => [
-    ...completedLessons.map(l => ({ id: `lesson-${l.moduleId}-${l.lessonId}`, type: 'Lesson', title: l.lessonId, at: l.completedAt || '' })),
-    ...completedLabs.map(l => ({ id: `lab-${l.moduleId}-${l.labId}`, type: 'Lab', title: l.labId, at: l.completedAt || '' })),
-    ...completedChallenges.map(c => ({ id: `challenge-${c.challengeId}`, type: 'Challenge', title: c.challengeId, at: c.completedAt || '' })),
-    ...quizScores.map(q => ({ id: `quiz-${q.moduleId}-${q.quizId}`, type: 'Quiz', title: q.quizId, at: q.completedAt || '' })),
+    ...completedLessons.map(l => ({ id: `lesson-${l.moduleId}-${l.lessonId}`, type: 'Lesson', title: modules.find(m => m.id === l.moduleId)?.lessons.find(lesson => lesson.id === l.lessonId)?.title || 'Lesson practice', at: l.completedAt || '' })),
+    ...completedLabs.map(l => ({ id: `lab-${l.moduleId}-${l.labId}`, type: 'Lab', title: AVAILABLE_LABS.find(lab => lab.id === l.labId)?.title || 'Lab practice', at: l.completedAt || '' })),
+    ...completedChallenges.map(c => ({ id: `challenge-${c.challengeId}`, type: 'Challenge', title: challenges.find(challenge => challenge.id === c.challengeId)?.title || 'Challenge practice', at: c.completedAt || '' })),
+    ...quizScores.map(q => ({ id: `quiz-${q.moduleId}-${q.quizId}`, type: 'Quiz', title: `${modules.find(m => m.id === q.moduleId)?.title || 'Module'} quiz`, at: q.completedAt || '' })),
   ].filter(item => item.at).sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 5), [completedLessons, completedLabs, completedChallenges, quizScores])
   const accountBacked = can('account-progress')
   return <div className="ws-dashboard ws-dashboard-reset">
-    <AccountBanner /><OwnerNotice />
-    <div className="sc-workspace-intro"><PageHeader eyebrow={currentCurriculumLabel(userState)} title={canAccessTier(userState, 'full') ? 'Your learning workspace' : 'Explore the preview'} description={statusUnavailable ? 'Signed in, but your account status cannot be confirmed. Preview learning remains available; re-check your status when the service responds.' : STATE_META[userState].nextAction} action={statusUnavailable ? <UnavailableStatusChip /> : <StateChip state={userState} />} /><div className="sc-workspace-intro-foot"><p>{canAccessTier(userState, 'full') ? 'Full Curriculum · your account can hold records. Practice in this browser remains unverified.' : 'Preview Curriculum · real lessons and labs, with practice saved only in this browser.'}</p><Link to={canAccessTier(userState, 'full') ? '/sync' : userState === 'guest' ? '/signup' : '/account'}>{canAccessTier(userState, 'full') ? 'View account records' : userState === 'guest' ? 'Learn about accounts' : 'View account status'} →</Link></div></div>
+    <OwnerNotice />
+    <PageHeader eyebrow={currentCurriculumLabel(userState)} title={canAccessTier(userState, 'full') ? 'Your learning workspace' : 'Explore the preview'} description={statusUnavailable ? 'Account status is unavailable. Preview learning and local practice remain available.' : 'Pick up where you left off. Your practice stays in this browser and is unverified.'} action={statusUnavailable ? <UnavailableStatusChip /> : <StateChip state={userState} />} />
 
     <section className="ws-focus" aria-labelledby="ws-next-title">
       <div className="ws-focus-main">
@@ -179,9 +187,9 @@ export function Dashboard() {
       </section>
       <div className="ws-support-column">
         <section className="ws-dashboard-section ws-records" aria-labelledby="ws-records-heading"><div className="ws-section-head"><div><span className="ws-kicker">03 / Records</span><h2 id="ws-records-heading">Practice & account</h2></div></div>
-          <div className="ws-record-row"><div><h3>Practice XP (this browser)</h3><StandingChip standing="practice" /><p>Local and unverified · never a server award.</p></div><strong>{totalXp} <small>XP</small></strong></div>
+          <div className="ws-record-row"><div><h3>Practice XP (this browser)</h3><StandingChip standing="practice" /><p>Saved in this browser · unverified.</p></div><strong>{totalXp} <small>XP</small></strong></div>
           <div className="ws-record-row"><div><h3>Account snapshot</h3><ProvenanceChip provenance="server" /><p>{accountBacked ? server.data ? `${server.data.records.length} records · ${server.data.imported} imported · ${server.data.verified} verified` : server.state === 'loading' ? 'Reading account record…' : server.message : 'Available for approved accounts. Local practice remains available.'}</p></div><strong>{accountBacked && server.data ? server.data.xp : '—'} <small>XP</small></strong></div>
-          <p className="ws-record-note">Imported progress and assessment attempts are unverified; no trusted grader issues XP or certificates yet.</p>
+          <p className="ws-record-note">Imported progress and assessment attempts remain unverified. Independent grading and certificates are not available.</p>
         </section>
         <Panel title="Recent practice" aside={<ProvenanceChip provenance="local" />} className="ws-recent-panel">
           {recentActivity.length ? <ul className="ws-activity">{recentActivity.map(item => <li key={item.id}><span>{item.title}<small>{item.type}</small></span><time dateTime={item.at}>{ago(item.at)} ago</time></li>)}</ul> : <p className="ws-muted">Your practice log starts here. Complete a lesson, lab or challenge to see it in this browser.</p>}

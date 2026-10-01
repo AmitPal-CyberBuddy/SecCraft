@@ -131,3 +131,16 @@ PLATFORM_NAME = _env_first("PLATFORM_NAME", default="SecCraft")
 PLATFORM_LEGACY_NAME = _env_first("PLATFORM_LEGACY_NAME", "WIFIFORGE_LEGACY_NAME", default="WiFiForge")
 
 SIGNUP_LIMIT_PER_MINUTE = int(_env_first("PLATFORM_SIGNUP_LIMIT_PER_MINUTE", default="5"))
+
+# Feedback is disabled until a dedicated stable secret is supplied. Never put this in VITE_*.
+FEEDBACK_HMAC_SECRET = _env_first("FEEDBACK_HMAC_SECRET")
+FEEDBACK_USER_HOUR = int(_env_first("FEEDBACK_USER_HOUR", default="5"))
+FEEDBACK_USER_DAY = int(_env_first("FEEDBACK_USER_DAY", default="15"))
+FEEDBACK_GUEST_HOUR = int(_env_first("FEEDBACK_GUEST_HOUR", default="3"))
+FEEDBACK_GUEST_DAY = int(_env_first("FEEDBACK_GUEST_DAY", default="10"))
+FEEDBACK_IP_HOUR = int(_env_first("FEEDBACK_IP_HOUR", default="30"))
+FEEDBACK_IP_DAY = int(_env_first("FEEDBACK_IP_DAY", default="100"))
+FEEDBACK_RETENTION_DAYS = int(_env_first("FEEDBACK_RETENTION_DAYS", default="180"))
+if min(FEEDBACK_USER_HOUR, FEEDBACK_USER_DAY, FEEDBACK_GUEST_HOUR, FEEDBACK_GUEST_DAY,
+       FEEDBACK_IP_HOUR, FEEDBACK_IP_DAY, FEEDBACK_RETENTION_DAYS) < 1:
+    raise ValueError("Feedback limits and retention must be positive integers")

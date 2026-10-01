@@ -7,6 +7,7 @@ from app.api.v1.dependencies import auth_is_configured
 from app.api.v1.router import router as v1_router
 from app.core import config
 from app.core.database import init_db
+from app.core.feedback_body_limit import FeedbackBodyLimit
 from app.routers import content, learning_paths, pcaps
 
 
@@ -30,6 +31,8 @@ app = FastAPI(
     openapi_url="/api/openapi.json" if config.ENABLE_API_DOCS else None,
 )
 
+app.add_middleware(FeedbackBodyLimit)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.ALLOWED_ORIGINS,
@@ -37,6 +40,7 @@ app.add_middleware(
     allow_methods=config.ALLOWED_METHODS,
     allow_headers=config.ALLOWED_HEADERS,
     max_age=600,
+    expose_headers=["Retry-After"],
 )
 
 

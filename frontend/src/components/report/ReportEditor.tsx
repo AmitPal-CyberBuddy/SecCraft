@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react'
-import { FileText, Download, Save, Eye, Code, Sparkles, Shield, Target, Award, CheckCircle, Zap } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { UnsavedChangesGuard } from '@/components/common/UnsavedChangesGuard'
+import { ViewSwitcher, Notice } from '@/components/common/Controls'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import { useEffect, useRef, useState } from 'react'
+import { FileText, Download, Save, Sparkles, Shield } from 'lucide-react'
 
 interface Finding {
   title: string
@@ -61,38 +64,35 @@ export function ReportEditor() {
   const [saveMessage, setSaveMessage] = useState('')
   const dirty = JSON.stringify(finding) !== savedSnapshot
 
-  useEffect(() => {
-    if (!dirty) return
-    const beforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
-    const guardLink = (event: MouseEvent) => {
-      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
-      const anchor = (event.target as Element)?.closest?.('a[href]') as HTMLAnchorElement | null
-      if (!anchor || anchor.download || anchor.target === '_blank' || anchor.hash && anchor.pathname === location.pathname && anchor.search === location.search) return
-      if (!window.confirm('Your finding has unsaved changes. Leave without saving?')) {
-        event.preventDefault()
-        event.stopImmediatePropagation()
-      }
-    }
-    window.addEventListener('beforeunload', beforeUnload)
-    document.addEventListener('click', guardLink, true)
-    return () => { window.removeEventListener('beforeunload', beforeUnload); document.removeEventListener('click', guardLink, true) }
-  }, [dirty])
+  const latestFinding = useRef(finding)
+  const latestSaved = useRef(savedSnapshot)
+  const exampleRequest = useRef<AbortController | null>(null)
+  useEffect(() => () => exampleRequest.current?.abort(), [])
   const [preview, setPreview] = useState(false)
   const [exampleState, setExampleState] = useState<'idle' | 'loading' | 'error'>('idle')
 
   /** Fill the form from the real beacon-only.pcapng in this build — no invented values. */
   const loadWorkedExample = async () => {
+    if (exampleRequest.current) return
+    const controller = new AbortController()
+    exampleRequest.current = controller
+    const startedSnapshot = JSON.stringify(latestFinding.current)
     setExampleState('loading')
     try {
-      const res = await fetch(`${import.meta.env.BASE_URL}lab-data/beacon-only.json`)
+      const res = await fetch(`${import.meta.env.BASE_URL}lab-data/beacon-only.json`, { signal: controller.signal })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json() as { frames: LabFrame[] }
       const beacon = data.frames.find(f => f.bssid) || data.frames[0]
       const akms = beacon.akm_names?.join(' + ') || 'none advertised'
       const ciphers = beacon.cipher_names?.join(' + ') || 'none advertised'
       const pmf = beacon.mfpr ? 'required (MFPR=1)' : beacon.mfpc ? 'capable only (MFPC=1, MFPR=0)' : 'not advertised'
-      if (dirty && !window.confirm('Replace unsaved finding changes with the worked example?')) { setExampleState('idle'); return }
-      setFinding({
+      if (controller.signal.aborted) return
+      if (JSON.stringify(latestFinding.current) !== startedSnapshot) {
+        setSaveMessage('The worked example was not applied because you edited the finding while it loaded. Your edits are preserved.')
+        setExampleState('idle'); return
+      }
+      if (JSON.stringify(latestFinding.current) !== latestSaved.current && !window.confirm('Replace unsaved finding changes with the worked example?')) { setExampleState('idle'); return }
+      const example: Finding = {
         title: `PMF capable but not required on ${beacon.ssid || '(hidden SSID)'}`,
         severity: 'Medium',
         description: `The beacon for ${beacon.ssid || '(hidden)'} (BSSID ${beacon.bssid}, channel ${beacon.channel}) advertises RSN with ${akms} / ${ciphers} and PMF ${pmf}. The beacon alone does not establish whether a client negotiated PMF or whether spoofed management frames affected a client.`,
@@ -103,16 +103,20 @@ export function ReportEditor() {
         recommendation: 'If clients support it, set ieee80211w=2 (PMF required) in hostapd; otherwise document the capability gap and the compensating controls (WIDS, MFP-capable clients, WPA3-only where possible).',
         references: 'IEEE 802.11-2020 §9.4.2.24 (RSN capabilities), hostapd.conf ieee80211w, NIST SP 800-153',
         retest: 'Re-capture a beacon and an association exchange after the change: MFPR must be 1 and the association response must show PMF negotiated; confirm a spoofed deauth no longer terminates the session in the RF lab.',
-      })
+      }
+      latestFinding.current = example
+      setFinding(example)
       setExampleState('idle')
     } catch {
-      setExampleState('error')
-    }
+      if (!controller.signal.aborted) setExampleState('error')
+    } finally { exampleRequest.current = null }
   }
 
   const update = (field: keyof Finding, value: string) => {
     setSaveMessage('')
-    setFinding({...finding, [field]: value})
+    const next = { ...latestFinding.current, [field]: value }
+    latestFinding.current = next
+    setFinding(next)
   }
 
   const markdown = `# Finding: ${finding.title}
@@ -164,7 +168,8 @@ ${finding.retest}
     try {
       localStorage.setItem('platform-report-draft', JSON.stringify(finding))
       localStorage.setItem('wififorge-report-draft', JSON.stringify(finding))
-      setSavedSnapshot(JSON.stringify(finding))
+      latestSaved.current = JSON.stringify(finding)
+      setSavedSnapshot(latestSaved.current)
       setSaveMessage('Draft saved in this browser only. It is not synced to your account or independently reviewed.')
     } catch {
       setSaveMessage('Could not save in this browser. Export the draft before leaving this page.')
@@ -172,87 +177,66 @@ ${finding.retest}
   }
 
   return (
-    <div className="space-y-5">
+    <div className="sc-technical-surface ws-report-editor space-y-5">
+      <UnsavedChangesGuard when={dirty} message="Your finding has unsaved changes. Leave without saving?" />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
-            <FileText className="w-5 h-5 text-violet-400" />
+          <div className="w-9 h-9 rounded-xl bg-[var(--owner-bg)] border border-[var(--owner-border)] flex items-center justify-center">
+            <FileText className="w-5 h-5 text-[var(--owner)]" />
           </div>
           <div>
-            <h3 className="font-heading font-bold text-[16px] text-slate-100">Finding Editor</h3>
-            <p className="text-[11px] text-slate-500 font-mono">VAPT finding structure • your words, your evidence</p>
+            <h3 className="font-heading font-bold text-[16px] text-[var(--ink-primary)]">Finding Editor</h3>
+            <p className="text-sm text-[var(--ink-muted)] font-mono">VAPT finding structure • your words, your evidence</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setPreview(!preview)}
-            className={`px-4 py-2 rounded-xl border text-[12px] font-medium flex items-center gap-2 transition-all duration-200 ${
-              preview 
-                ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400 shadow-glow-cyan' 
-                : 'bg-[#1e293b] border-[#334155] text-slate-400 hover:text-slate-200 hover:bg-[#25354f]'
-            }`}
-          >
-            {preview ? <Eye className="w-4 h-4" /> : <Code className="w-4 h-4" />}
-            {preview ? 'Preview' : 'Edit'}
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+        <div className="ws-tool-actions">
+          <ViewSwitcher label="Finding view" value={preview ? 'preview' : 'edit'} onChange={value => setPreview(value === 'preview')} options={[{ id: 'edit', label: 'Edit' }, { id: 'preview', label: 'Preview' }]} />
+          <button
             onClick={loadWorkedExample}
+            disabled={exampleState === 'loading'}
             title="Fill the form from the beacon-only.pcapng that ships with this build"
-            className="px-4 py-2 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] font-medium text-slate-300 hover:text-slate-100 hover:bg-[#25354f] flex items-center gap-2 transition-all duration-200"
+            className="px-4 py-2 rounded-xl bg-[var(--panel-raised)] border border-[var(--line-strong)] text-sm font-medium text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--panel-raised)] flex items-center gap-2 sc-technical-transition"
           >
             <Sparkles className="w-4 h-4" />
             {exampleState === 'loading' ? 'Loading…' : exampleState === 'error' ? 'Example unavailable' : 'Load worked example (lab data)'}
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+          </button>
+          <button
             onClick={save}
-            className="px-4 py-2 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] font-medium text-slate-300 hover:text-slate-100 hover:bg-[#25354f] flex items-center gap-2 transition-all duration-200"
+            className="px-4 py-2 rounded-xl bg-[var(--panel-raised)] border border-[var(--line-strong)] text-sm font-medium text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--panel-raised)] flex items-center gap-2 sc-technical-transition"
           >
             <Save className="w-4 h-4" /> Save
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+          </button>
+          <button
             onClick={download}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-violet-500 hover:from-cyan-400 hover:to-violet-400 text-white text-[12px] font-bold flex items-center gap-2 shadow-glow-cyan hover:shadow-glow-violet transition-all duration-300"
+            className="ws-action"
           >
             <Download className="w-4 h-4" /> Export MD
-          </motion.button>
+          </button>
         </div>
       </div>
 
-      <p role="status" aria-live="polite" className="text-xs text-slate-300">{saveMessage || (dirty ? 'Unsaved changes in this browser. Save or export before leaving.' : 'Draft loaded from this browser or ready to edit.')}</p>
-      <AnimatePresence mode="wait">
-        {!preview ? (
-          <motion.div
+      <Notice live>{saveMessage || (dirty ? 'Unsaved changes in this browser. Save or export before leaving.' : 'Draft loaded from this browser or ready to edit.')}</Notice>
+          <div
+            hidden={preview} inert={preview}
             key="edit"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.3 }}
             className="grid grid-cols-1 lg:grid-cols-2 gap-5"
           >
             <div className="space-y-4">
-              <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-5 space-y-4 hover:border-[#334155]/60 transition-all duration-300">
-                <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                  <div className="w-5 h-5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-                    <FileText className="w-3 h-3 text-cyan-400" />
+              <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-5 space-y-4 hover:border-[var(--line-strong)] sc-technical-transition">
+                <div className="flex items-center gap-2 text-sm font-bold text-[var(--ink-secondary)] uppercase tracking-widest">
+                  <div className="w-5 h-5 rounded-lg bg-[var(--accent-bg)] border border-[var(--accent-border)] flex items-center justify-center">
+                    <FileText className="w-3 h-3 text-[var(--learning)]" />
                   </div>
                   Basic Info
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="sm:col-span-2">
-                    <label htmlFor="finding-title" className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Title</label>
-                    <input id="finding-title" value={finding.title} onChange={e => update('title', e.target.value)} placeholder="Finding title — state the weakness, not the tool" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:bg-[#0a1020] focus:outline-none hover:border-[#334155]/60 transition-all duration-200" />
+                    <label htmlFor="finding-title" className="text-sm font-medium text-[var(--ink-muted)] uppercase tracking-widest">Title</label>
+                    <input id="finding-title" value={finding.title} onChange={e => update('title', e.target.value)} placeholder="Finding title — state the weakness, not the tool" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-sm text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:bg-[var(--panel-inset)] focus:outline-none hover:border-[var(--line-strong)] sc-technical-transition" />
                   </div>
                   <div>
-                    <label htmlFor="finding-severity" className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Severity</label>
-                    <select id="finding-severity" value={finding.severity} onChange={e => update('severity', e.target.value)} className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none hover:border-[#334155]/60 transition-all duration-200">
+                    <label htmlFor="finding-severity" className="text-sm font-medium text-[var(--ink-muted)] uppercase tracking-widest">Severity</label>
+                    <select id="finding-severity" value={finding.severity} onChange={e => update('severity', e.target.value)} className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-sm text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none hover:border-[var(--line-strong)] sc-technical-transition">
                       <option>Low</option>
                       <option>Medium</option>
                       <option>High</option>
@@ -262,90 +246,85 @@ ${finding.retest}
                 </div>
 
                 <div>
-                  <label htmlFor="finding-description" className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Description</label>
-                  <textarea id="finding-description" value={finding.description} onChange={e => update('description', e.target.value)} rows={3} placeholder="What is the weakness, on which BSSID/SSID, observed how?" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
+                  <label htmlFor="finding-description" className="text-sm font-medium text-[var(--ink-muted)] uppercase tracking-widest">Description</label>
+                  <textarea id="finding-description" value={finding.description} onChange={e => update('description', e.target.value)} rows={3} placeholder="What is the weakness, on which BSSID/SSID, observed how?" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-sm text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none resize-none hover:border-[var(--line-strong)] sc-technical-transition leading-relaxed" />
                 </div>
 
                 <div>
-                  <label htmlFor="finding-technical-details" className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Technical Details</label>
-                  <textarea id="finding-technical-details" value={finding.technicalDetails} onChange={e => update('technicalDetails', e.target.value)} rows={3} placeholder="Protocol detail: frame numbers, fields, config lines" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
+                  <label htmlFor="finding-technical-details" className="text-sm font-medium text-[var(--ink-muted)] uppercase tracking-widest">Technical Details</label>
+                  <textarea id="finding-technical-details" value={finding.technicalDetails} onChange={e => update('technicalDetails', e.target.value)} rows={3} placeholder="Protocol detail: frame numbers, fields, config lines" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-sm text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none resize-none hover:border-[var(--line-strong)] sc-technical-transition leading-relaxed" />
                 </div>
 
                 <div>
-                  <label htmlFor="finding-affected-component" className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Affected Component</label>
-                  <input id="finding-affected-component" value={finding.affectedComponent} onChange={e => update('affectedComponent', e.target.value)} placeholder="SSID / BSSID / channel / hostapd.conf line" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[12px] font-mono text-slate-200 focus:border-cyan-500/30 focus:outline-none hover:border-[#334155]/60 transition-all duration-200" />
+                  <label htmlFor="finding-affected-component" className="text-sm font-medium text-[var(--ink-muted)] uppercase tracking-widest">Affected Component</label>
+                  <input id="finding-affected-component" value={finding.affectedComponent} onChange={e => update('affectedComponent', e.target.value)} placeholder="SSID / BSSID / channel / hostapd.conf line" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-sm font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none hover:border-[var(--line-strong)] sc-technical-transition" />
                 </div>
               </div>
             </div>
 
             <div className="space-y-4">
-              <div className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-5 space-y-4 hover:border-[#334155]/60 transition-all duration-300">
-                <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                  <div className="w-5 h-5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                    <Shield className="w-3 h-3 text-emerald-400" />
+              <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-5 space-y-4 hover:border-[var(--line-strong)] sc-technical-transition">
+                <div className="flex items-center gap-2 text-sm font-bold text-[var(--ink-secondary)] uppercase tracking-widest">
+                  <div className="w-5 h-5 rounded-lg bg-[var(--success-bg)] border border-[var(--success-border)] flex items-center justify-center">
+                    <Shield className="w-3 h-3 text-[var(--success)]" />
                   </div>
                   Evidence & Remediation
                 </div>
-                
+
                 <div>
-                  <label htmlFor="finding-evidence" className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Evidence</label>
-                  <textarea id="finding-evidence" value={finding.evidence} onChange={e => update('evidence', e.target.value)} rows={4} placeholder="Artifact + SHA-256 + filter + frame numbers + what it does NOT prove" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[11px] font-mono text-slate-300 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
+                  <label htmlFor="finding-evidence" className="text-sm font-medium text-[var(--ink-muted)] uppercase tracking-widest">Evidence</label>
+                  <textarea id="finding-evidence" value={finding.evidence} onChange={e => update('evidence', e.target.value)} rows={4} placeholder="Artifact + SHA-256 + filter + frame numbers + what it does NOT prove" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-sm font-mono text-[var(--ink-secondary)] focus:border-[var(--accent-border)] focus:outline-none resize-none hover:border-[var(--line-strong)] sc-technical-transition leading-relaxed" />
                 </div>
 
                 <div>
-                  <label htmlFor="finding-impact" className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Impact</label>
-                  <textarea id="finding-impact" value={finding.impact} onChange={e => update('impact', e.target.value)} rows={2} placeholder="What an attacker gains — data, access, availability" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
+                  <label htmlFor="finding-impact" className="text-sm font-medium text-[var(--ink-muted)] uppercase tracking-widest">Impact</label>
+                  <textarea id="finding-impact" value={finding.impact} onChange={e => update('impact', e.target.value)} rows={2} placeholder="What an attacker gains — data, access, availability" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-sm text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none resize-none hover:border-[var(--line-strong)] sc-technical-transition leading-relaxed" />
                 </div>
 
                 <div>
-                  <label htmlFor="finding-recommendation" className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Recommendation</label>
-                  <textarea id="finding-recommendation" value={finding.recommendation} onChange={e => update('recommendation', e.target.value)} rows={2} placeholder="Exact change plus the standard/property it maps to" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 focus:border-cyan-500/30 focus:outline-none resize-none hover:border-[#334155]/60 transition-all duration-200 leading-relaxed" />
+                  <label htmlFor="finding-recommendation" className="text-sm font-medium text-[var(--ink-muted)] uppercase tracking-widest">Recommendation</label>
+                  <textarea id="finding-recommendation" value={finding.recommendation} onChange={e => update('recommendation', e.target.value)} rows={2} placeholder="Exact change plus the standard/property it maps to" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-sm text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none resize-none hover:border-[var(--line-strong)] sc-technical-transition leading-relaxed" />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label htmlFor="finding-references" className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">References</label>
-                    <input id="finding-references" value={finding.references} onChange={e => update('references', e.target.value)} placeholder="Spec section, vendor doc, framework control" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[11px] text-slate-400 focus:border-cyan-500/30 focus:outline-none hover:border-[#334155]/60 transition-all duration-200" />
+                    <label htmlFor="finding-references" className="text-sm font-medium text-[var(--ink-muted)] uppercase tracking-widest">References</label>
+                    <input id="finding-references" value={finding.references} onChange={e => update('references', e.target.value)} placeholder="Spec section, vendor doc, framework control" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-sm text-[var(--ink-secondary)] focus:border-[var(--accent-border)] focus:outline-none hover:border-[var(--line-strong)] sc-technical-transition" />
                   </div>
                   <div>
-                    <label htmlFor="finding-retest" className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Retest</label>
-                    <input id="finding-retest" value={finding.retest} onChange={e => update('retest', e.target.value)} placeholder="The exact check that proves the fix (command, filter, expected output)" className="mt-2 w-full px-4 py-3 rounded-xl bg-[#020617] border border-[#1e293b] text-[11px] text-slate-400 focus:border-cyan-500/30 focus:outline-none hover:border-[#334155]/60 transition-all duration-200" />
+                    <label htmlFor="finding-retest" className="text-sm font-medium text-[var(--ink-muted)] uppercase tracking-widest">Retest</label>
+                    <input id="finding-retest" value={finding.retest} onChange={e => update('retest', e.target.value)} placeholder="The exact check that proves the fix (command, filter, expected output)" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-sm text-[var(--ink-secondary)] focus:border-[var(--accent-border)] focus:outline-none hover:border-[var(--line-strong)] sc-technical-transition" />
                   </div>
                 </div>
               </div>
             </div>
-          </motion.div>
-        ) : (
-          <motion.div
+          </div>
+        {preview && (
+          <div
             key="preview"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.3 }}
-            className="rounded-2xl bg-[#0f172a] border border-[#1e293b] p-8 relative overflow-hidden group hover:border-[#334155]/60 transition-all duration-300"
+            className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-8 relative overflow-hidden group hover:border-[var(--line-strong)] sc-technical-transition"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-violet-500/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
             <div className="relative">
               <div className="flex items-center gap-2 mb-6">
-                <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
-                  <FileText className="w-4 h-4 text-violet-400" />
+                <div className="w-8 h-8 rounded-xl bg-[var(--owner-bg)] border border-[var(--owner-border)] flex items-center justify-center">
+                  <FileText className="w-4 h-4 text-[var(--owner)]" />
                 </div>
-                <span className="text-[13px] font-bold text-slate-200">Markdown Preview</span>
-                <span className="ml-auto text-[11px] px-2.5 py-1 rounded-full bg-[#020617] border border-[#1e293b] text-slate-500 font-mono">Professional Report</span>
+                <span className="text-sm font-bold text-[var(--ink-primary)]">Finding preview</span>
+                <span className="ml-auto text-sm px-2.5 py-1 rounded-full bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[var(--ink-muted)] font-mono">Unverified draft</span>
               </div>
-              <pre className="whitespace-pre-wrap font-mono text-[12px] text-slate-300 leading-relaxed p-6 rounded-xl bg-[#020617] border border-[#1e293b]/60 overflow-x-auto scrollbar-thin">{markdown}</pre>
+              <div className="ws-reading-prose ws-report-preview"><ReactMarkdown remarkPlugins={[remarkGfm]} components={{ pre: ({ children }) => <pre tabIndex={0}>{children}</pre>, table: ({ children }) => <table tabIndex={0} aria-label="Finding data table">{children}</table> }}>{markdown}</ReactMarkdown></div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="rounded-2xl bg-[#020617]/60 border border-[#1e293b]/40 p-4 backdrop-blur-sm">
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
-            <Sparkles className="w-4 h-4 text-cyan-400" />
           </div>
-          <div className="text-[11px] text-slate-500 leading-relaxed">
-            <span className="font-bold text-slate-400">Template:</span> Title, Severity, Description, Technical Details, Affected Component, Evidence, Impact, Recommendation, References, Retest — Professional VAPT structure. Export as MD for report. Always include PCAP frame numbers, config snippets, BSSID, SSID, channel for reproducibility.
+        )}
+
+      <div className="rounded-2xl bg-[var(--panel-inset)] border border-[var(--line-normal)] p-4 backdrop-blur-sm">
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 rounded-xl bg-[var(--accent-bg)] border border-[var(--accent-border)] flex items-center justify-center shrink-0">
+            <Sparkles className="w-4 h-4 text-[var(--learning)]" />
+          </div>
+          <div className="text-sm text-[var(--ink-muted)] leading-relaxed">
+            <span className="font-bold text-[var(--ink-secondary)]">Template:</span> Title, Severity, Description, Technical Details, Affected Component, Evidence, Impact, Recommendation, References, Retest — Professional VAPT structure. Export as MD for report. Always include PCAP frame numbers, config snippets, BSSID, SSID, channel for reproducibility.
           </div>
         </div>
       </div>

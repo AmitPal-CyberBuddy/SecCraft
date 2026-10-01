@@ -20,10 +20,10 @@ What that means in practice:
 | --- | --- | --- |
 | SSID / BSSID / channel / band | no | beacon or probe response |
 | Security policy (RSNE: AKM, ciphers, PMF) | no | beacon / probe response / association request |
-| Vendor (OUI) and, sometimes, model | no | BSSID prefix, WPS IE, HT/VHT/HE capability sets |
-| Client presence and preferred networks | no | probe requests, association requests |
+| Advertised vendor/model clues, not proven ownership | no | address allocation where applicable, WPS IE and capability sets |
+| Station-address observations and requested SSIDs | no | probes/association requests; not physical identity or a complete preferred-network list |
 | 4-way handshake material | no (but needs a client to connect) | EAPOL-Key M1–M4 |
-| Inside encrypted traffic | yes (key required) | decrypted payload after PTK is known |
+| Interpreting protected payload | not necessarily observer association; relevant keying material is needed | successful decryption under the negotiated cipher with session evidence |
 
 ## 2. The attack surface is four different surfaces
 

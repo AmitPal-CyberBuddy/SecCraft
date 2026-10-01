@@ -1,6 +1,6 @@
 # Monitor Mode, Injection and the Toolchain
 
-> Lab tier: **HYBRID** — the reasoning is learnable from captures; the mechanics need a real adapter.
+> **Offline reasoning + optional owned hardware.** Captures and capability records are available now. Physical reception/injection needs authorized isolated equipment; SecCraft provides no hosted live lab. Hardware is not required to finish the offline lessons.
 
 ## What you must be able to do
 
@@ -12,31 +12,37 @@
 
 | Mode | Sees | Can transmit | Typical use |
 | --- | --- | --- | --- |
-| managed | only its own BSS's frames | normal traffic | using a network |
+| managed | normal traffic for its associated BSS; selected management observations exposed by the OS | normal traffic | using a network |
 | monitor | frames it can receive on the tuned channel | hardware/driver dependent; injection may be supported | capture, recon, analysis, authorized frame-injection tests |
 | AP / master | — | beacons, serves clients | running a test AP (authorised lab only) |
 | mesh / IBSS | mesh/adhoc frames | mesh | specific topologies, rarely needed |
 
 Monitor mode is a **per-radio** capability: the driver must support it and the firmware must allow it.
-Most integrated laptop cards cannot inject; USB adapters with supported chipsets can.
+Do not infer injection support from an integrated-versus-USB label. Chipset, driver, firmware, band and operating-system versions matter; verify the required behavior on the actual authorized setup.
 
-## 2. Capability checks (do these first, on your own hardware)
+## 2. Capability checks (optional, on your own hardware)
 
 ```bash
 iw dev                     # interfaces, modes, channels
 iw dev wlan0 info          # mode, channel, txpower
 iw phy phy0 info | grep -A6 'Supported interface modes'   # does the driver expose monitor?
 rfkill list                # is the radio soft/hard blocked?
+```
+
+The following changes are separate from diagnosis. Use only a correctly identified owned interface after scope, legal channel, recovery and capture limits are agreed. Do not switch the interface providing your only connectivity. `wlan0` is an example, not an instruction to change every device.
+
+```bash
 sudo ip link set wlan0 down
 sudo iw dev wlan0 set type monitor
 sudo ip link set wlan0 up
 sudo iw dev wlan0 set channel 6            # 2.4 GHz example
-sudo aireplay-ng --test wlan0              # injection test (lab hardware, own AP)
 ```
 
 * Keep a **managed** interface for the internet/tooling and put the adapter in monitor mode.
 * If `iw dev wlan0 set type monitor` fails, that is evidence about your hardware — record it rather than
-  fighting it; several labs in this academy are explicitly marked `RF_REQUIRED` for this reason.
+  fighting it. Check permissions, interface state, driver/firmware and supported modes before diagnosing the hardware as incompatible.
+
+An injection test is **not part of this readiness exercise**. It needs a separately approved isolated AP/client setup, transmit/impact limits and endpoint evidence; monitor mode is not proof it works. Stop on unintended traffic or connectivity loss. Restore the original interface mode/channel and any owner-approved network-manager changes, then verify ordinary connectivity; consult the prior configuration rather than assuming defaults. Keep unavailable capabilities marked **NOT TESTED**.
 
 ## 3. Regulatory domain
 
@@ -57,7 +63,7 @@ iw reg get | grep -A3 global
 
 | Job | Tool | Why |
 | --- | --- | --- |
-| enumerate networks/clients, capture to pcapng | `airodump-ng` / `kismet` | structured capture with per-AP context |
+| enumerate networks/clients, collect captures | `airodump-ng` / `kismet` | structured capture with per-AP context |
 | analyse frames, follow conversations, decode EAPOL/RADIUS | Wireshark / `tshark` | dissection + fields you can cite as evidence |
 | discover WPS-enabled BSSs | `wash` (+ beacon IE) | WPS attributes at a glance |
 | rogue AP / enterprise rogue authenticator | `hostapd`, `eaphammer` (authorised lab only) | acts as the authenticator/AP |
@@ -87,6 +93,6 @@ not an adapter-capability file. Pick `deauth.pcapng`, `wpa2-handshake.pcapng` an
 `enterprise.pcapng`: for each, identify one claim the stored frames can support and one claim
 requiring a real radio/client or configuration. Compare the module's `lab_requirement` in
 `modules.json` and justify any difference between learning a mechanism and proving an RF outcome.
-Do not run the injection test above without an owned, isolated test AP and written scope.
+No injection command is supplied here; any later test needs an owned, isolated test AP and separate written scope.
 Record the adapter/driver, supported bands/modes and regulatory domain only if using your own hardware;
 otherwise write “not tested” rather than inventing capability.

@@ -83,12 +83,12 @@ export function Profile() {
         <>
           <section className="sc-profile-section">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="flex items-center gap-2 font-heading text-[14px] font-bold text-slate-100">
-                <ShieldCheck className="h-4 w-4 text-cyan-400" aria-hidden="true" /> Account
+              <h2 className="flex items-center gap-2 font-heading text-[14px] font-bold text-[var(--ink-primary)]">
+                <ShieldCheck className="h-4 w-4 text-[var(--learning)]" aria-hidden="true" /> Account
               </h2>
               <ProvenanceChip provenance="server" />
             </div>
-            <p className="mt-2 text-[12px] leading-relaxed text-slate-400">
+            <p className="mt-2 text-sm leading-relaxed text-[var(--ink-secondary)]">
               Held on the platform and returned by the account service. The browser cannot change any of it.
             </p>
 
@@ -103,7 +103,7 @@ export function Profile() {
                 value={apiState === 'reachable' ? 'Reachable' : apiState === 'unreachable' ? 'Not reachable' : 'Checking…'}
                 chip={
                   <span
-                    className={`h-1.5 w-1.5 rounded-full ${apiState === 'reachable' ? 'bg-emerald-400' : apiState === 'unreachable' ? 'bg-rose-400' : 'bg-amber-400'}`}
+                    className={`h-1.5 w-1.5 rounded-full ${apiState === 'reachable' ? 'bg-[var(--success)]' : apiState === 'unreachable' ? 'bg-[var(--danger)]' : 'bg-[var(--attention)]'}`}
                     aria-hidden="true"
                   />
                 }
@@ -111,35 +111,35 @@ export function Profile() {
             </div>
 
             {accountError.kind !== 'none' && (
-              <p className="mt-3 flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] p-3 text-[12px] leading-relaxed text-amber-100/90">
+              <p className="mt-3 flex items-start gap-2 rounded-lg border border-[var(--warning-border)] bg-[var(--warning-bg)] p-3 text-sm leading-relaxed text-[var(--attention)]">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 {accountError.message}
               </p>
             )}
 
             {userState === 'owner' && (
-              <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-violet-300/20 bg-violet-300/[0.06] p-3.5">
-                <Sparkles className="h-4 w-4 shrink-0 text-violet-200" aria-hidden="true" />
-                <p className="min-w-0 flex-1 text-[12px] leading-relaxed text-violet-100/90">
+              <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-[var(--owner-border)] bg-[var(--owner-bg)] p-3.5">
+                <Sparkles className="h-4 w-4 shrink-0 text-[var(--owner)]" aria-hidden="true" />
+                <p className="min-w-0 flex-1 text-sm leading-relaxed text-[var(--owner)]">
                   This account is on the server-controlled owner allowlist.
                 </p>
-                <Link to="/admin" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-violet-300 px-3 text-[12px] font-bold text-slate-950 transition-colors hover:bg-violet-200">
+                <Link to="/admin" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-[var(--owner)] px-3 text-sm font-bold text-[var(--on-owner)] transition-colors hover:bg-[var(--owner)]">
                   Owner console <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </Link>
               </div>
             )}
 
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link to="/account" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#334155] px-3 text-[12px] text-slate-200 transition-colors hover:bg-[#1e293b]">
+              <Link to="/account" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[var(--line-strong)] px-3 text-sm text-[var(--ink-primary)] transition-colors hover:bg-[var(--panel-raised)]">
                 Account status <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
-              <Link to="/reset-password" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#334155] px-3 text-[12px] text-slate-200 transition-colors hover:bg-[#1e293b]">
+              <Link to="/reset-password" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[var(--line-strong)] px-3 text-sm text-[var(--ink-primary)] transition-colors hover:bg-[var(--panel-raised)]">
                 <KeyRound className="h-3.5 w-3.5" aria-hidden="true" /> Change password
               </Link>
               <button
                 type="button"
                 onClick={() => void signOut()}
-                className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#334155] px-3 text-[12px] text-slate-300 transition-colors hover:bg-[#1e293b] hover:text-slate-100"
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[var(--line-strong)] px-3 text-sm text-[var(--ink-secondary)] transition-colors hover:bg-[var(--panel-raised)] hover:text-[var(--ink-primary)]"
               >
                 <LogOut className="h-3.5 w-3.5" aria-hidden="true" /> Sign out
               </button>
@@ -150,18 +150,18 @@ export function Profile() {
         <>
           <section className="sc-profile-section">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="flex items-center gap-2 font-heading text-[14px] font-bold text-slate-100">
-                <LogIn className="h-4 w-4 text-cyan-400" aria-hidden="true" /> Platform account
+              <h2 className="flex items-center gap-2 font-heading text-[14px] font-bold text-[var(--ink-primary)]">
+                <LogIn className="h-4 w-4 text-[var(--learning)]" aria-hidden="true" /> Platform account
               </h2>
               <ProvenanceChip provenance="local" />
             </div>
-            <p className="mt-2 text-[12.5px] leading-relaxed text-slate-400">
-              You are learning on the <span className="text-slate-200">{CONTENT_TIER_META.preview.label}</span>. Your
+            <p className="mt-2 text-sm leading-relaxed text-[var(--ink-secondary)]">
+              You are learning on the <span className="text-[var(--ink-primary)]">{CONTENT_TIER_META.preview.label}</span>. Your
               progress, XP, and achievements stay in this browser — they are practice, not a record.
               An approved account is a different learning experience, not a bigger one.
             </p>
             <div className="mt-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <p className="text-sm font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
                 What an approved account changes
               </p>
               <ul className="ws-account-benefits mt-2">
@@ -171,26 +171,26 @@ export function Profile() {
                   'Account-held XP and achievement records are distinct from local practice; without a trusted grader they are not proof of mastery.',
                   'Assessment attempt history, and a manual way to move a progress file between devices.',
                 ].map(item => (
-                  <li key={item} className="flex items-start gap-2 text-[12px] leading-relaxed text-slate-300">
-                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" aria-hidden="true" />
+                  <li key={item} className="flex items-start gap-2 text-sm leading-relaxed text-[var(--ink-secondary)]">
+                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--success)]" aria-hidden="true" />
                     {item}
                   </li>
                 ))}
               </ul>
-              <p className="mt-3 text-[11.5px] leading-relaxed text-slate-500">{CONTENT_NOT_ENFORCED_NOTE}</p>
+              <p className="mt-3 text-sm leading-relaxed text-[var(--ink-muted)]">{CONTENT_NOT_ENFORCED_NOTE}</p>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link to="/login" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#334155] px-3 text-[12px] text-slate-200 transition-colors hover:bg-[#1e293b]">
+              <Link to="/login" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[var(--line-strong)] px-3 text-sm text-[var(--ink-primary)] transition-colors hover:bg-[var(--panel-raised)]">
                 <LogIn className="h-3.5 w-3.5" aria-hidden="true" /> Log in
               </Link>
               {can('request-account') && authAvailability === 'ready' && (
-                <Link to="/signup" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-cyan-500 px-3 text-[12px] font-bold text-slate-950 transition-colors hover:bg-cyan-400">
+                <Link to="/signup" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg sc-learning-action px-3 text-sm font-bold  transition-colors ">
                   Request an account <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </Link>
               )}
             </div>
             {authAvailability === 'unavailable' && (
-              <p className="mt-3 text-[12px] leading-relaxed text-slate-500">
+              <p className="mt-3 text-sm leading-relaxed text-[var(--ink-muted)]">
                 Account services are not configured in this build, so sign-in is unavailable. The Preview Curriculum
                 works on its own.
               </p>
@@ -203,12 +203,12 @@ export function Profile() {
       <>
         <section className="sc-profile-section">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="flex items-center gap-2 font-heading text-[14px] font-bold text-slate-100">
-              <Eye className="h-4 w-4 text-cyan-400" aria-hidden="true" /> This browser&rsquo;s practice record
+            <h2 className="flex items-center gap-2 font-heading text-[14px] font-bold text-[var(--ink-primary)]">
+              <Eye className="h-4 w-4 text-[var(--learning)]" aria-hidden="true" /> This browser&rsquo;s practice record
             </h2>
             <StandingChip standing="practice" />
           </div>
-          <p className="mt-2 text-[12px] leading-relaxed text-slate-400">
+          <p className="mt-2 text-sm leading-relaxed text-[var(--ink-secondary)]">
             {PRACTICE_XP_NOTE} Nothing here is confirmed by the platform, and it does not follow you to another device
             unless you export it yourself.
           </p>
@@ -231,28 +231,28 @@ export function Profile() {
       <>
         <section className="sc-profile-section">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="flex items-center gap-2 font-heading text-[14px] font-bold text-slate-100">
-              <UserRound className="h-4 w-4 text-violet-400" aria-hidden="true" /> Guest display name
+            <h2 className="flex items-center gap-2 font-heading text-[14px] font-bold text-[var(--ink-primary)]">
+              <UserRound className="h-4 w-4 text-[var(--owner)]" aria-hidden="true" /> Guest display name
             </h2>
-            {hasProfile && <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 font-mono text-[10px] text-emerald-400">saved locally</span>}
+            {hasProfile && <span className="rounded-full border border-[var(--success-border)] bg-[var(--success-bg)] px-2 py-0.5 font-mono text-[10px] text-[var(--success)]">saved locally</span>}
           </div>
-          <p className="mt-2 text-[12.5px] leading-relaxed text-slate-400">
+          <p className="mt-2 text-sm leading-relaxed text-[var(--ink-secondary)]">
             A label for this browser only. It is not an account, it is not a role, and it grants nothing — it cannot sign
             you in, reach the account service, or unlock a feature. It stays useful after you sign in, and it is never
             merged with your account identity.
           </p>
 
           {hasProfile ? (
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] p-3.5">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--success-border)] bg-[var(--success-bg)] p-3.5">
               <div className="min-w-0">
-                <div className="truncate text-[14px] font-bold text-slate-100">{profile?.displayName}</div>
-                <div className="truncate text-[11px] font-mono text-slate-400">Stored in this browser only</div>
+                <div className="truncate text-[14px] font-bold text-[var(--ink-primary)]">{profile?.displayName}</div>
+                <div className="truncate text-sm font-mono text-[var(--ink-secondary)]">Stored in this browser only</div>
               </div>
               <div className="flex shrink-0 gap-2">
                 <button
                   type="button"
                   onClick={() => setName(profile?.displayName ?? '')}
-                  className="inline-flex min-h-9 items-center rounded-lg border border-[#334155] px-3 text-[12px] text-slate-200 transition-colors hover:bg-[#1e293b]"
+                  className="inline-flex min-h-9 items-center rounded-lg border border-[var(--line-strong)] px-3 text-sm text-[var(--ink-primary)] transition-colors hover:bg-[var(--panel-raised)]"
                 >
                   Rename
                 </button>
@@ -262,7 +262,7 @@ export function Profile() {
                     clear()
                     setName('')
                   }}
-                  className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#334155] px-3 text-[12px] text-slate-300 transition-colors hover:bg-[#1e293b]"
+                  className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[var(--line-strong)] px-3 text-sm text-[var(--ink-secondary)] transition-colors hover:bg-[var(--panel-raised)]"
                 >
                   <LogOut className="h-3.5 w-3.5" aria-hidden="true" /> Clear
                 </button>
@@ -284,7 +284,7 @@ export function Profile() {
               onChange={event => setName(event.target.value)}
               placeholder="Display name (optional)"
               maxLength={64}
-              className="min-h-11 min-w-0 flex-1 rounded-xl border border-[#1e293b] bg-[#020617] px-3.5 text-[13px] text-slate-200 outline-none transition-colors placeholder:text-slate-500 focus:border-violet-500/40"
+              className="min-h-11 min-w-0 flex-1 rounded-xl border border-[var(--line-normal)] bg-[var(--panel-inset)] px-3.5 text-sm text-[var(--ink-primary)] outline-none transition-colors placeholder:text-[var(--ink-muted)] focus:border-[var(--owner-border)]"
             />
             <button
               type="submit"
@@ -300,23 +300,23 @@ export function Profile() {
       <>
         <section className="sc-profile-section">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="flex items-center gap-2 font-heading text-[14px] font-bold text-slate-100">
-              <Database className="h-4 w-4 text-emerald-400" aria-hidden="true" /> Synchronization
+            <h2 className="flex items-center gap-2 font-heading text-[14px] font-bold text-[var(--ink-primary)]">
+              <Database className="h-4 w-4 text-[var(--success)]" aria-hidden="true" /> Synchronization
             </h2>
-            <Link to="/sync" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#334155] px-3 text-[12px] text-slate-200 transition-colors hover:bg-[#1e293b]">
+            <Link to="/sync" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[var(--line-strong)] px-3 text-sm text-[var(--ink-primary)] transition-colors hover:bg-[var(--panel-raised)]">
               Open progress sync <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
           </div>
-          <p className="mt-2 text-[12.5px] leading-relaxed text-slate-400">{ACCOUNT_SYNC_NOTE}</p>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--ink-secondary)]">{ACCOUNT_SYNC_NOTE}</p>
 
           <div className="mt-4">
             {can('account-progress') ? (
               server.state === 'loading' ? (
-                <p className="flex items-center gap-2 text-[12px] text-slate-400" role="status" aria-live="polite">
-                  <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-400" aria-hidden="true" /> Checking what the platform holds…
+                <p className="flex items-center gap-2 text-sm text-[var(--ink-secondary)]" role="status" aria-live="polite">
+                  <span className="h-2 w-2  rounded-full bg-[var(--action-fill)]" aria-hidden="true" /> Checking what the platform holds…
                 </p>
               ) : server.data ? (
-                <div className="rounded-xl border border-[#1e293b] bg-[#020617]/50 p-3.5">
+                <div className="rounded-xl border border-[var(--line-normal)] bg-[var(--panel-inset)] p-3.5">
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {[
                       { label: 'Server records', value: server.data.records.length, chip: 'server' as const },
@@ -325,21 +325,21 @@ export function Profile() {
                       { label: 'Server XP ledger', value: server.data.xp, chip: 'server' as const },
                     ].map(stat => (
                       <div key={stat.label}>
-                        <div className="font-mono text-[18px] font-bold text-slate-100">{stat.value}</div>
+                        <div className="font-mono text-[18px] font-bold text-[var(--ink-primary)]">{stat.value}</div>
                         <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                          <span className="text-[10px] text-slate-400">{stat.label}</span>
+                          <span className="text-[10px] text-[var(--ink-secondary)]">{stat.label}</span>
                           <ProvenanceChip provenance={stat.chip} />
                         </div>
                       </div>
                     ))}
                   </div>
-                  <p className="mt-3 text-[11px] text-slate-500">Read from the platform at {server.data.checkedAt}.</p>
+                  <p className="mt-3 text-sm text-[var(--ink-muted)]">Read from the platform at {server.data.checkedAt}.</p>
                 </div>
               ) : (
-                <p className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06] p-3 text-[12px] leading-relaxed text-amber-100/90">{server.message}</p>
+                <p className="rounded-lg border border-[var(--warning-border)] bg-[var(--warning-bg)] p-3 text-sm leading-relaxed text-[var(--attention)]">{server.message}</p>
               )
             ) : (
-              <p className="rounded-lg border border-[#1e293b] bg-[#020617]/50 p-3 text-[12px] leading-relaxed text-slate-400">
+              <p className="rounded-lg border border-[var(--line-normal)] bg-[var(--panel-inset)] p-3 text-sm leading-relaxed text-[var(--ink-secondary)]">
                 Account-backed progress is not available in this state. {STATE_META[userState].summary}
               </p>
             )}
@@ -348,9 +348,9 @@ export function Profile() {
       </>
 
       <>
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-[#1e293b] bg-[#020617]/50 p-4 text-center">
-          <CloudUpload className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
-          <p className="text-[12px] leading-relaxed text-slate-400">
+        <div className="flex flex-col items-center gap-2 rounded-2xl border border-[var(--line-normal)] bg-[var(--panel-inset)] p-4 text-center">
+          <CloudUpload className="h-4 w-4 shrink-0 text-[var(--ink-secondary)]" aria-hidden="true" />
+          <p className="text-sm leading-relaxed text-[var(--ink-secondary)]">
             Changing your display name, signing in, or signing out never changes your learning record, your XP, or your
             notes. Those live in this browser and only move when you export and import a progress file.
           </p>

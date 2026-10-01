@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import { StickyNote, Bookmark, Search, Trash2, Edit3, Save, X, Star, Clock, Tag } from 'lucide-react'
 
 interface Note {
@@ -60,14 +59,14 @@ export function NotesBookmarks({ moduleId, lessonId, className = '' }: { moduleI
   const isBookmarked = bookmarks.some(b => b.moduleId === moduleId && b.title.includes(lessonId))
 
   return (
-    <div className={`rounded-2xl bg-[#0f172a] border border-[#1e293b] p-4 xs:p-5 min-w-0 w-full ${className}`}>
+    <div className={`rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-4 xs:p-5 min-w-0 w-full ${className}`}>
       <div className="flex items-center gap-2 mb-4">
-        <div className="flex gap-1 p-1 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40">
-          <button onClick={() => setActiveTab('notes')} className={`px-3 py-1.5 rounded-lg text-[12px] font-medium flex items-center gap-1.5 transition-colors ${activeTab === 'notes' ? 'bg-[#1e293b] text-slate-100 border border-[#334155]' : 'text-slate-500 hover:text-slate-300'}`}><StickyNote className="w-4 h-4" />Notes {notes.length > 0 && `(${notes.length})`}</button>
-          <button onClick={() => setActiveTab('bookmarks')} className={`px-3 py-1.5 rounded-lg text-[12px] font-medium flex items-center gap-1.5 transition-colors ${activeTab === 'bookmarks' ? 'bg-[#1e293b] text-slate-100 border border-[#334155]' : 'text-slate-500 hover:text-slate-300'}`}><Bookmark className="w-4 h-4" />Bookmarks {bookmarks.length > 0 && `(${bookmarks.length})`}</button>
+        <div className="flex gap-1 p-1 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)]">
+          <button onClick={() => setActiveTab('notes')} className={`px-3 py-1.5 rounded-lg text-[12px] font-medium flex items-center gap-1.5 transition-colors ${activeTab === 'notes' ? 'bg-[var(--panel-raised)] text-[var(--ink-primary)] border border-[var(--line-strong)]' : 'text-[var(--ink-muted)] hover:text-[var(--ink-secondary)]'}`}><StickyNote className="w-4 h-4" />Notes {notes.length > 0 && `(${notes.length})`}</button>
+          <button onClick={() => setActiveTab('bookmarks')} className={`px-3 py-1.5 rounded-lg text-[12px] font-medium flex items-center gap-1.5 transition-colors ${activeTab === 'bookmarks' ? 'bg-[var(--panel-raised)] text-[var(--ink-primary)] border border-[var(--line-strong)]' : 'text-[var(--ink-muted)] hover:text-[var(--ink-secondary)]'}`}><Bookmark className="w-4 h-4" />Bookmarks {bookmarks.length > 0 && `(${bookmarks.length})`}</button>
         </div>
-        <button onClick={toggleBookmark} className={`ml-auto w-9 h-9 rounded-xl border flex items-center justify-center transition-colors touch-manipulation ${isBookmarked ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-[#1e293b] border-[#334155] text-slate-500 hover:text-slate-300'}`}>
-          <Star className={`w-4 h-4 ${isBookmarked ? 'fill-amber-400' : ''}`} />
+        <button aria-label={isBookmarked ? 'Remove module bookmark' : 'Bookmark module'} aria-pressed={isBookmarked} onClick={toggleBookmark} className={`ml-auto w-11 h-11 rounded-xl border flex items-center justify-center transition-colors touch-manipulation ${isBookmarked ? 'bg-[var(--warning-bg)] border-[var(--warning-border)] text-[var(--attention)]' : 'bg-[var(--panel-raised)] border-[var(--line-strong)] text-[var(--ink-muted)] hover:text-[var(--ink-secondary)]'}`}>
+          <Star className={`w-4 h-4 ${isBookmarked ? 'fill-[var(--attention)]' : ''}`} />
         </button>
       </div>
 
@@ -75,41 +74,41 @@ export function NotesBookmarks({ moduleId, lessonId, className = '' }: { moduleI
         <div className="space-y-3">
           <div className="flex gap-2">
             <div className="flex-1 relative">
-              <StickyNote className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input value={newNote} onChange={e => setNewNote(e.target.value)} onKeyDown={e => e.key === 'Enter' && addNote()} placeholder="Add note for this lesson — markdown supported — e.g., WPS 11k PIN flaw" className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#020617] border border-[#1e293b] text-[13px] text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500/30" />
+              <StickyNote className="w-4 h-4 text-[var(--ink-muted)] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input value={newNote} onChange={e => setNewNote(e.target.value)} onKeyDown={e => e.key === 'Enter' && addNote()} placeholder="Add note for this lesson — markdown supported — e.g., WPS 11k PIN flaw" className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] text-[var(--ink-primary)] placeholder:text-[var(--ink-secondary)] focus:outline-none focus:border-[var(--accent-border)]" />
             </div>
-            <button onClick={addNote} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-cyan-500 text-white font-semibold text-[12px] flex items-center gap-1.5 shadow-glow-violet touch-manipulation min-h-[40px]"><Save className="w-4 h-4" />Save</button>
+            <button onClick={addNote} className="sc-learning-action px-4 py-2.5 rounded-xl font-semibold text-[12px] flex items-center gap-1.5 shadow-soft touch-manipulation min-h-[40px]"><Save className="w-4 h-4" />Save</button>
           </div>
 
           <div className="relative">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search notes..." className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 text-[12px] text-slate-300 placeholder:text-slate-400 focus:outline-none focus:border-[#334155]/60" />
+            <Search className="w-4 h-4 text-[var(--ink-muted)] absolute left-3 top-1/2 -translate-y-1/2" />
+            <input aria-label="Search module notes" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search notes..." className="w-full pl-10 pr-4 py-2 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[12px] text-[var(--ink-secondary)] placeholder:text-[var(--ink-secondary)] focus:outline-none focus:border-[var(--line-strong)]" />
           </div>
 
           <div className="space-y-2 max-h-[300px] overflow-y-auto scrollbar-thin pr-1">
             {filteredNotes.length === 0 ? (
-              <div className="p-6 text-center rounded-xl bg-[#020617]/40 border border-dashed border-[#1e293b]/40">
-                <StickyNote className="w-6 h-6 text-slate-400 mx-auto mb-2" />
-                <div className="text-[13px] text-slate-500">No notes yet</div>
-                <div className="text-[11px] text-slate-400 mt-1">Add your first note — searchable, exportable, synced localStorage + backend ready</div>
+              <div className="p-6 text-center rounded-xl bg-[var(--panel-inset)] border border-dashed border-[var(--line-normal)]">
+                <StickyNote className="w-6 h-6 text-[var(--ink-secondary)] mx-auto mb-2" />
+                <div className="text-[13px] text-[var(--ink-muted)]">No notes yet</div>
+                <div className="text-[11px] text-[var(--ink-secondary)] mt-1">Add your first note — searchable, exportable, saved in this browser</div>
               </div>
-            ) : filteredNotes.map((note, idx) => (
-              <motion.div key={note.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }} className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 hover:bg-[#020617]/80 hover:border-[#334155]/40 group">
-                <div className="text-[13px] text-slate-300 leading-relaxed">{note.content}</div>
+            ) : filteredNotes.map(note => (
+              <div key={note.id} className="p-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] hover:bg-[var(--panel-inset)] hover:border-[var(--line-strong)] group">
+                <div className="text-[13px] text-[var(--ink-secondary)] leading-relaxed">{note.content}</div>
                 <div className="mt-2 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-[10px] font-mono text-slate-500">
+                  <div className="flex items-center gap-2 text-[10px] font-mono text-[var(--ink-muted)]">
                     <Clock className="w-3 h-3" />{new Date(note.createdAt).toLocaleString()} • {note.moduleId}/{note.lessonId}
                   </div>
-                  <button onClick={() => deleteNote(note.id)} className="w-6 h-6 rounded-lg bg-[#1e293b] border border-[#334155] flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 transition-all">
+                  <button onClick={() => deleteNote(note.id)} className="w-6 h-6 rounded-lg bg-[var(--panel-raised)] border border-[var(--line-strong)] flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-[var(--danger-bg)] hover:border-[var(--danger-border)] hover:text-[var(--danger)] sc-surface-transition">
                     <Trash2 className="w-3 h-3" />
                   </button>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
 
           {notes.length > 0 && (
-            <button onClick={() => { const blob = new Blob([JSON.stringify(notes, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `platform-notes-${Date.now()}.json`; a.click(); URL.revokeObjectURL(url) }} className="w-full py-2.5 rounded-xl bg-[#1e293b] border border-[#334155] text-[12px] text-slate-400 hover:text-slate-200 transition-colors">Export Notes JSON • {notes.length} notes</button>
+            <button onClick={() => { const blob = new Blob([JSON.stringify(notes, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `platform-notes-${Date.now()}.json`; a.click(); URL.revokeObjectURL(url) }} className="w-full py-2.5 rounded-xl bg-[var(--panel-raised)] border border-[var(--line-strong)] text-[12px] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] transition-colors">Export Notes JSON • {notes.length} notes</button>
           )}
         </div>
       )}
@@ -117,19 +116,19 @@ export function NotesBookmarks({ moduleId, lessonId, className = '' }: { moduleI
       {activeTab === 'bookmarks' && (
         <div className="space-y-2 max-h-[300px] overflow-y-auto scrollbar-thin pr-1">
           {bookmarks.length === 0 ? (
-            <div className="p-6 text-center rounded-xl bg-[#020617]/40 border border-dashed border-[#1e293b]/40">
-              <Bookmark className="w-6 h-6 text-slate-400 mx-auto mb-2" />
-              <div className="text-[13px] text-slate-500">No bookmarks yet</div>
-              <div className="text-[11px] text-slate-400 mt-1">Bookmark lessons, labs, commands and filters — kept in this browser</div>
+            <div className="p-6 text-center rounded-xl bg-[var(--panel-inset)] border border-dashed border-[var(--line-normal)]">
+              <Bookmark className="w-6 h-6 text-[var(--ink-secondary)] mx-auto mb-2" />
+              <div className="text-[13px] text-[var(--ink-muted)]">No bookmarks yet</div>
+              <div className="text-[11px] text-[var(--ink-secondary)] mt-1">Bookmark lessons, labs, commands and filters — kept in this browser</div>
             </div>
           ) : bookmarks.map(b => (
-            <div key={b.id} className="p-3 rounded-xl bg-[#020617]/60 border border-[#1e293b]/40 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0"><Bookmark className="w-4 h-4 text-amber-400" /></div>
+            <div key={b.id} className="p-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-[var(--warning-bg)] border border-[var(--warning-border)] flex items-center justify-center shrink-0"><Bookmark className="w-4 h-4 text-[var(--attention)]" /></div>
               <div className="flex-1 min-w-0">
-                <div className="text-[12px] font-medium text-slate-200 truncate">{b.title}</div>
-                <div className="text-[10px] font-mono text-slate-500">{b.type} • {new Date(b.createdAt).toLocaleDateString()}</div>
+                <div className="text-[12px] font-medium text-[var(--ink-primary)] truncate">{b.title}</div>
+                <div className="text-[10px] font-mono text-[var(--ink-muted)]">{b.type} • {new Date(b.createdAt).toLocaleDateString()}</div>
               </div>
-              <button onClick={() => saveBookmarks(bookmarks.filter(x => x.id !== b.id))} className="w-7 h-7 rounded-lg bg-[#1e293b] border border-[#334155] flex items-center justify-center hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 transition-colors"><X className="w-4 h-4" /></button>
+              <button onClick={() => saveBookmarks(bookmarks.filter(x => x.id !== b.id))} className="w-7 h-7 rounded-lg bg-[var(--panel-raised)] border border-[var(--line-strong)] flex items-center justify-center hover:bg-[var(--danger-bg)] hover:border-[var(--danger-border)] hover:text-[var(--danger)] transition-colors"><X className="w-4 h-4" /></button>
             </div>
           ))}
         </div>

@@ -1,0 +1,56 @@
+{
+  "provenance": "Deterministic synthetic teaching frames, not a field capture. Derived read-only view; no execution or grading.",
+  "frames": [
+    {
+      "frame": 1,
+      "timestamp_epoch_us": 1788253260002000,
+      "type": 0,
+      "subtype": 8,
+      "source": "02:00:00:00:10:01",
+      "destination": "ff:ff:ff:ff:ff:ff",
+      "bssid_field": "02:00:00:00:10:01",
+      "frequency_mhz": 2437,
+      "signal_dbm": -47,
+      "ssid": "Aster-Lab",
+      "advertised_channel": 6,
+      "group_cipher": 4,
+      "pairwise_cipher": 4,
+      "akm": 2,
+      "rsn_capabilities": 128
+    },
+    {
+      "frame": 2,
+      "timestamp_epoch_us": 1788253260004000,
+      "type": 0,
+      "subtype": 8,
+      "source": "02:00:00:00:10:02",
+      "destination": "ff:ff:ff:ff:ff:ff",
+      "bssid_field": "02:00:00:00:10:02",
+      "frequency_mhz": 2437,
+      "signal_dbm": -47,
+      "ssid": "Aster-Lab",
+      "advertised_channel": 6,
+      "group_cipher": 4,
+      "pairwise_cipher": 4,
+      "akm": 2,
+      "rsn_capabilities": 192
+    },
+    {
+      "frame": 3,
+      "timestamp_epoch_us": 1788253260006000,
+      "type": 0,
+      "subtype": 8,
+      "source": "02:00:00:00:10:03",
+      "destination": "ff:ff:ff:ff:ff:ff",
+      "bssid_field": "02:00:00:00:10:03",
+      "frequency_mhz": 2437,
+      "signal_dbm": -47,
+      "ssid": "Aster-Lab",
+      "advertised_channel": 6,
+      "group_cipher": 4,
+      "pairwise_cipher": 4,
+      "akm": 2,
+      "rsn_capabilities": 128
+    }
+  ]
+}
