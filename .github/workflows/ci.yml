@@ -94,6 +94,11 @@ jobs:
         run: npm run build
         working-directory: frontend
 
+      - name: Verify dry-run migration manifest against built output
+        run: |
+          node scripts/generate-content-migration-manifest.mjs
+          git diff --exit-code -- content/migration/CONTENT_MIGRATION_MANIFEST.json
+
       - name: Report protected-content exposure in built output
         run: node scripts/verify-no-private-content.mjs
 

@@ -264,7 +264,7 @@ All 25 `GET` routes in the OpenAPI schema, requested with no credentials (sample
 | `api-resilience` | keep; extend for new endpoints | P3–P4 |
 | `admin-console`, `feedback-reliability`, `dense-workflows`, `motion-system`, `responsive-foundations`, `shared-controls`, `tour-contract` | keep (tour contract updates with the tour) | – |
 | 22 browser scripts | per-script API stubs; nearly all open guest routes; 9 assert local progress. `scripts/lib/ui-audit-fixtures.mjs` (approved-learner lesson fixture) is a stopgap | P4: authenticated end-to-end stack |
-| 38 of 59 `scripts/` files, 22 `verify-*` CI invocations | content tooling that reads content under `frontend/` | P3.5: move to the content repository |
+| 38 of 59 `scripts/` files, 22 `verify-*` CI invocations | content tooling that reads content under `frontend/` | P3.5: retarget to the protected authoring area in this same repository |
 | CI | `frontend`, `backend`, `secrets`, 3 × browser, `postgres-concurrency` | add leak check, content verification, end-to-end stack |
 
 ---
@@ -276,7 +276,7 @@ The repository-level split, with every top-level path and all 59 scripts assigne
 | Destination | What |
 |---|---|
 | **Application repository** | frontend and backend code, the importer and schemas, the generated public catalogue and the two samples, fixtures, 21 scripts, platform docs, `tools/browser-qa`, `assets/`, deployment files |
-| **Content repository (private)** | 99 lessons, items and answer keys, lab instructions, about 165 artifact files (1.1 MB), `content/`, `android-labs/`, the instructor key, 38 scripts, `tools/android-triage`, `tools/wireless-qa`, the Android demo workflow; about 2.3 MB of content in total |
+| **Protected authoring area (inside this existing repository after it becomes private)** | 99 lessons, items and answer keys, lab instructions, reviewed protected artifacts, `content/`, `android-labs/`, the instructor key, content-aware scripts, `tools/android-triage`, `tools/wireless-qa`, and the Android demo workflow; exact migration scope is governed by `content/migration/CONTENT_MIGRATION_MANIFEST.json` |
 | **Decide** | `reference/*.json`, the report template, the local lab stack under `docker/` |
 | **Housekeeping** | `NextTaskForYou`, `VisualUpdates`, `requirement.md`, `mobile/README.md` |
 

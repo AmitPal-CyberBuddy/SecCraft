@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
-import { importPlan, paths, validateCatalogue, validateDocument, validateRelease } from '../../tools/content/contract.mjs'
+import { importPlan, paths, validateCatalogue, validateDocument, validateMigrationManifest, validateRelease } from '../../tools/content/contract.mjs'
 import { scan } from '../verify-no-private-content.mjs'
 
 const releaseFixture = path.join(paths.repoRoot, 'content/fixtures/synthetic-release.json')
@@ -74,6 +74,22 @@ test('public catalogue schema rejects private body and key fields', () => {
   const result = validateDocument(paths.catalogueSchema, temporaryJson(catalogue))
   assert.equal(result.valid, false)
   assert.match(JSON.stringify(result.errors), /additional properties/)
+})
+
+test('migration manifest classifies all 317 post-build findings without production writes', () => {
+  const result = validateMigrationManifest()
+  assert.equal(result.valid, true)
+  assert.equal(result.document.productionWrites, false)
+  assert.equal(result.document.summary.findings, 317)
+  assert.equal(result.document.summary.unmappedFindings, 0)
+  assert.ok(result.document.entries.every(entry => ['KEEP_PUBLIC', 'MOVE_TO_PROTECTED_CONTENT', 'REVIEW_CLASSIFY'].includes(entry.classification)))
+})
+
+test('only the four approved Wireless files are public sample artifacts', () => {
+  const manifest = JSON.parse(fs.readFileSync(paths.migrationManifest))
+  const wirelessSamples = manifest.entries.filter(entry => entry.target.kind === 'public-sample-object')
+  assert.deepEqual(wirelessSamples.map(entry => entry.artifact.filename).sort(), ['README.md', 'authorized-inventory.csv', 'scope.md', 'worksheet.md'])
+  assert.equal(manifest.entries.some(entry => entry.sourcePath.endsWith('WF-FND-01.zip') && entry.classification === 'KEEP_PUBLIC'), false)
 })
 
 test('leak scanner covers every protected class and report-only findings are expected', () => {

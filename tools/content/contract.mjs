@@ -12,6 +12,8 @@ export const paths = {
   repoRoot,
   releaseSchema: path.join(repoRoot, 'content/schemas/content-release.schema.json'),
   catalogueSchema: path.join(repoRoot, 'content/schemas/public-catalogue.schema.json'),
+  migrationSchema: path.join(repoRoot, 'content/schemas/content-migration-manifest.schema.json'),
+  migrationManifest: path.join(repoRoot, 'content/migration/CONTENT_MIGRATION_MANIFEST.json'),
 }
 
 export function loadJson(file) {
@@ -46,6 +48,41 @@ export function validateCatalogue(documentFile) {
     const expected = cataloguePath.maturity === 'coming-soon' ? 0 : 1
     if (sampleCount !== expected) errors.push(error(`/paths/${cataloguePath.id}`, `expected ${expected} public sample lesson(s), found ${sampleCount}`))
   }
+  return { ...result, valid: errors.length === 0, errors }
+}
+
+export function validateMigrationManifest(documentFile = paths.migrationManifest) {
+  const result = validateDocument(paths.migrationSchema, documentFile)
+  if (!result.valid) return result
+  const manifest = result.document
+  const errors = []
+  const entryIds = new Set()
+  const stableIds = new Set()
+  for (const entry of manifest.entries) {
+    if (entryIds.has(entry.id)) errors.push(error(`/entries/${entry.id}`, `duplicate entry id ${entry.id}`))
+    entryIds.add(entry.id)
+    const stableId = [entry.learningPath, entry.module, entry.contentType, entry.contentId].join(':')
+    if (stableIds.has(stableId)) errors.push(error(`/entries/${entry.id}`, `duplicate stable content identity ${stableId}`))
+    stableIds.add(stableId)
+    const source = path.join(repoRoot, entry.sourcePath)
+    if (!fs.existsSync(source)) errors.push(error(`/entries/${entry.id}/sourcePath`, `source does not exist: ${entry.sourcePath}`))
+    if (entry.publicAccess !== (entry.classification === 'KEEP_PUBLIC')) errors.push(error(`/entries/${entry.id}/publicAccess`, 'publicAccess must match KEEP_PUBLIC classification'))
+    if (entry.release !== manifest.release) errors.push(error(`/entries/${entry.id}/release`, `expected release ${manifest.release}`))
+    if (entry.artifact && fs.existsSync(source)) {
+      const bytes = fs.readFileSync(source)
+      const digest = crypto.createHash('sha256').update(bytes).digest('hex')
+      if (entry.artifact.size !== bytes.length) errors.push(error(`/entries/${entry.id}/artifact/size`, 'artifact size no longer matches source'))
+      if (entry.artifact.sha256 !== digest) errors.push(error(`/entries/${entry.id}/artifact/sha256`, 'artifact digest no longer matches source'))
+    }
+  }
+  for (const finding of manifest.leakAuditBaseline.findings) {
+    if (!entryIds.has(finding.migrationEntryId)) errors.push(error(`/leakAuditBaseline/${finding.id}`, `unknown migration entry ${finding.migrationEntryId}`))
+  }
+  const classified = Object.fromEntries(['KEEP_PUBLIC', 'MOVE_TO_PROTECTED_CONTENT', 'REVIEW_CLASSIFY'].map(kind => [kind, manifest.entries.filter(entry => entry.classification === kind).length]))
+  if (JSON.stringify(classified) !== JSON.stringify(manifest.summary.byClassification)) errors.push(error('/summary/byClassification', 'classification counts do not match entries'))
+  if (manifest.summary.entries !== manifest.entries.length) errors.push(error('/summary/entries', 'entry count does not match entries'))
+  if (manifest.summary.findings !== manifest.leakAuditBaseline.findings.length) errors.push(error('/summary/findings', 'finding count does not match baseline'))
+  if (manifest.summary.findings !== 317) errors.push(error('/summary/findings', `expected approved post-build baseline of 317, found ${manifest.summary.findings}`))
   return { ...result, valid: errors.length === 0, errors }
 }
 
