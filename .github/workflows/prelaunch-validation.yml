@@ -1,0 +1,150 @@
+name: Pre-launch Supabase validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_id:
+        description: Immutable release ID (for example prelaunch-20261002-n1)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seccraft-prelaunch-content
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Existing Supabase project — external validation
+    runs-on: ubuntu-latest
+    environment: prelaunch
+    timeout-minutes: 45
+    services:
+      recovery-postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: recovery
+          POSTGRES_PASSWORD: recovery-only-disposable
+          POSTGRES_DB: seccraft_recovery
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U recovery -d seccraft_recovery"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      PLATFORM_ENV: prelaunch
+      PLATFORM_DATABASE_URL: ${{ secrets.PRELAUNCH_DATABASE_URL }}
+      CONTENT_MIGRATION_DATABASE_URL: ${{ secrets.PRELAUNCH_MIGRATION_DATABASE_URL }}
+      CONTENT_BACKUP_DATABASE_URL: ${{ secrets.PRELAUNCH_BACKUP_DATABASE_URL }}
+      CONTENT_DATABASE_RUNTIME_ROLE: ${{ vars.CONTENT_DATABASE_RUNTIME_ROLE }}
+      PLATFORM_ALLOWED_ORIGINS: http://127.0.0.1:5173
+      PLATFORM_AUTO_CREATE_TABLES: "false"
+      PLATFORM_ENABLE_API_DOCS: "false"
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_JWT_AUDIENCE: authenticated
+      SUPABASE_REQUIRE_VERIFIED_EMAIL: "true"
+      CONTENT_STORAGE_BACKEND: supabase
+      CONTENT_STORAGE_BUCKET: seccraft-content-staging
+      CONTENT_IMPORT_ALLOW_NONLOCAL: "true"
+      CONTENT_RELEASE_ID: ${{ inputs.release_id }}
+      STAGING_API_URL: http://127.0.0.1:8000
+      VITE_API_BASE: http://127.0.0.1:8000/api/v1
+      VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Verify secret and configuration presence without printing values
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(PLATFORM_DATABASE_URL CONTENT_MIGRATION_DATABASE_URL CONTENT_BACKUP_DATABASE_URL CONTENT_DATABASE_RUNTIME_ROLE SUPABASE_URL SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY)
+          for name in "${required[@]}"; do
+            [[ -n "${!name:-}" ]] || { echo "::error::Missing prelaunch environment value: $name"; exit 1; }
+          done
+          bash scripts/verify-no-sensitive-files-tracked.sh
+
+      - name: Install validation dependencies
+        run: |
+          pip install -r backend/requirements.txt
+          npm ci --prefix frontend
+
+      - name: Obtain short-lived tokens for synthetic test accounts
+        env:
+          PENDING_EMAIL: ${{ secrets.PRELAUNCH_PENDING_EMAIL }}
+          PENDING_PASSWORD: ${{ secrets.PRELAUNCH_PENDING_PASSWORD }}
+          APPROVED_NEW_EMAIL: ${{ secrets.PRELAUNCH_APPROVED_NEW_EMAIL }}
+          APPROVED_NEW_PASSWORD: ${{ secrets.PRELAUNCH_APPROVED_NEW_PASSWORD }}
+          APPROVED_PROGRESS_EMAIL: ${{ secrets.PRELAUNCH_APPROVED_PROGRESS_EMAIL }}
+          APPROVED_PROGRESS_PASSWORD: ${{ secrets.PRELAUNCH_APPROVED_PROGRESS_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          token() {
+            local email="$1" password="$2" response access
+            response="$(curl --fail --silent --show-error -X POST "$SUPABASE_URL/auth/v1/token?grant_type=password" \
+              -H "apikey: $SUPABASE_ANON_KEY" -H 'Content-Type: application/json' \
+              --data "$(jq -cn --arg email "$email" --arg password "$password" '{email:$email,password:$password}')")"
+            access="$(jq -er '.access_token' <<<"$response")"
+            echo "::add-mask::$access" >&2
+            printf '%s' "$access"
+          }
+          pending="$(token "$PENDING_EMAIL" "$PENDING_PASSWORD")"
+          approved="$(token "$APPROVED_NEW_EMAIL" "$APPROVED_NEW_PASSWORD")"
+          progress="$(token "$APPROVED_PROGRESS_EMAIL" "$APPROVED_PROGRESS_PASSWORD")"
+          {
+            echo "STAGING_PENDING_JWT=$pending"
+            echo "STAGING_APPROVED_JWT=$approved"
+            echo "STAGING_APPROVED_WITH_PROGRESS_JWT=$progress"
+          } >> "$GITHUB_ENV"
+
+      - name: Start unchanged FastAPI binary locally
+        working-directory: backend
+        run: |
+          uvicorn app.main:app --host 127.0.0.1 --port 8000 > "$RUNNER_TEMP/seccraft-api.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/seccraft-api.pid"
+
+      - name: Run external PostgreSQL, Storage, Auth, importer and leak validation
+        run: bash tools/content/run_external_staging.sh
+
+      - name: Validate N/N+1, concurrent activation, rollback and content update without backend restart
+        run: python tools/content/validate_external_lifecycle.py
+
+      - name: Validate pending, no-history and existing-progress compatibility
+        run: python tools/content/verify_external_progress.py
+
+      - name: Back up existing Supabase content and restore to disposable PostgreSQL/filesystem
+        env:
+          CONTENT_RECOVERY_DATABASE_URL: postgresql://recovery:recovery-only-disposable@127.0.0.1:55432/seccraft_recovery
+          CONTENT_RECOVERY_STORAGE_ROOT: ${{ runner.temp }}/seccraft-recovery-storage
+        run: |
+          backup="$RUNNER_TEMP/seccraft-prelaunch-backup"
+          python tools/content/backup_external_staging.py backup "$backup"
+          python tools/content/backup_external_staging.py restore "$backup"
+          test -s "$backup/database.dump"
+          test -s "$backup/objects.json"
+          rm -rf "$backup" "$CONTENT_RECOVERY_STORAGE_ROOT"
+
+      - name: Confirm no secret-bearing artifacts are retained
+        if: always()
+        run: |
+          rm -rf "$RUNNER_TEMP/seccraft-prelaunch-backup" "$RUNNER_TEMP/seccraft-recovery-storage"
+          bash scripts/verify-no-sensitive-files-tracked.sh
+
+      - name: Show API diagnostics on failure
+        if: failure()
+        run: tail -200 "$RUNNER_TEMP/seccraft-api.log" | sed -E 's#(postgres(ql)?(\+psycopg)?://)[^[:space:]]+#\1[REDACTED]#g'

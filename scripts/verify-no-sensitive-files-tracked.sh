@@ -7,7 +7,7 @@ if [[ -n "$bad" ]]; then
   exit 1
 fi
 # Detect common live credential shapes. Placeholder examples intentionally use REPLACE.
-matches="$(git grep -I -n -E '(postgres(ql)?(\+psycopg)?://[^:/[:space:]]+:[^@[:space:]]+@|SUPABASE_SERVICE_ROLE_KEY=[^[:space:]]+|STAGING_(PENDING|APPROVED)_JWT=[^[:space:]]+)' -- ':!*.env.example' ':!scripts/verify-no-sensitive-files-tracked.sh' || true)"
+matches="$(git grep -I -n -E '(postgres(ql)?(\+psycopg)?://[^:/[:space:]]+:[^@[:space:]]+@|SUPABASE_SERVICE_ROLE_KEY=[^[:space:]]+|STAGING_[A-Z_]*JWT=[^[:space:]]+)' -- ':!*.env.example' ':!scripts/verify-no-sensitive-files-tracked.sh' || true)"
 matches="$(printf '%s\n' "$matches" | grep -vE 'disposable-ci-only@localhost|@(db|pooler)\.example\.test' || true)"
 if [[ -n "$matches" ]]; then
   echo "$matches" >&2

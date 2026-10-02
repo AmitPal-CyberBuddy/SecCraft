@@ -16,7 +16,15 @@ def req(method, base, bucket, key, service_key, data=None):
 
 def backup(dest: Path):
     dest.mkdir(parents=True,exist_ok=False); db=os.environ["CONTENT_BACKUP_DATABASE_URL"]
-    subprocess.run(["pg_dump","--format=custom","--file",str(dest/"database.dump"),db],check=True)
+    # Back up only SecCraft-owned schemas/tables, never Supabase-managed auth/storage internals.
+    app_tables = [
+        "user_profiles", "platform_admins", "platform_settings", "progress_records",
+        "assessment_attempts", "xp_events", "achievement_awards", "admin_audit_events",
+        "feedback", "feedback_quotas", "alembic_version",
+    ]
+    command = ["pg_dump", "--format=custom", "--no-owner", "--schema=content"]
+    command += [item for table in app_tables for item in ("--table", f"public.{table}")]
+    subprocess.run(command + ["--file", str(dest/"database.dump"), db], check=True)
     engine=create_engine(os.environ["PLATFORM_DATABASE_URL"])
     with engine.connect() as c: rows=[dict(r) for r in c.execute(text("SELECT object_key,sha256,size FROM content.content_artifacts")).mappings()]
     base=os.environ["SUPABASE_URL"]; bucket=os.environ["CONTENT_STORAGE_BUCKET"]; service=os.environ["SUPABASE_SERVICE_ROLE_KEY"]
@@ -42,7 +50,12 @@ def restore(src: Path):
         if local_root:
             destination=Path(local_root)/row["object_key"]; destination.parent.mkdir(parents=True,exist_ok=True); destination.write_bytes(data)
         else: req("POST",base,bucket,row["object_key"],service,data)
-    print(f"restore complete: database and {len(rows)} verified objects restored to isolated recovery target")
+    recovery=create_engine(db)
+    with recovery.connect() as connection:
+        restored=connection.execute(text("SELECT object_key,sha256,size FROM content.content_artifacts")).mappings().all()
+        assert len(restored)==len(rows) and connection.execute(text("SELECT count(*) FROM content.content_releases")).scalar_one()>0
+    assert {(r["object_key"],r["sha256"],r["size"]) for r in restored} == {(r["object_key"],r["sha256"],r["size"]) for r in rows}
+    print(f"restore complete: release metadata and {len(rows)} verified objects restored to isolated recovery target")
 
 if __name__=="__main__":
     if len(sys.argv)!=3 or sys.argv[1] not in {"backup","restore"}: raise SystemExit("usage: backup_external_staging.py backup|restore PATH")
