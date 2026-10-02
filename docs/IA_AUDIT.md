@@ -1,6 +1,6 @@
 # SecCraft information-architecture audit (Phase 2)
 
-*Status: draft for owner review · 2 October 2026 · source inspection of the repository at `main` (`72cb1ad`) plus the changes on this branch. Companion to [`ACCESS_AND_LEARNING_MODEL.md`](ACCESS_AND_LEARNING_MODEL.md), which defines the target model and the phases referred to here as **P1–P7**. This is a source audit, not a rendered or visual review. It supersedes the 46-line stub in `FRONTEND_PAGE_AUDIT.md`.*
+*Status: updated after the owner confirmed the decisions (URLs, samples, repositories, hosting) · 2 October 2026 · source inspection of the repository at `main` (`72cb1ad`) plus the changes on this branch. Companion to [`ACCESS_AND_LEARNING_MODEL.md`](ACCESS_AND_LEARNING_MODEL.md), which defines the target model and the phases referred to here as **P1–P7**, [`CONTENT_PIPELINE.md`](CONTENT_PIPELINE.md) (the repository split, file by file) and [`HOSTING_AND_REPOSITORIES.md`](HOSTING_AND_REPOSITORIES.md). This is a source audit, not a rendered or visual review. It supersedes the 46-line stub in `FRONTEND_PAGE_AUDIT.md`.*
 
 ## How to read this
 
@@ -28,16 +28,16 @@ Numbers come from the code (route table, import graph, file sizes) and from runn
 5. **The navigation is built on the principle the new model reverses.** `navModel.ts`: *"identical for every user state by design: the product does not remove learning surfaces to push registration."*
 6. **Seven routes render the same `Engagement` page, including `/assessments`.** There is no assessment concept in the UI yet, only the ENG-01 engagement.
 7. **The local-first machinery is large.** 31 files import `useProgressStore` (614 lines); 35 mention XP/gamification/achievements; 9 routes are built around it (`/sync`, `/progress`, `/analytics`, `/achievements`, `/badges`, `/daily`, `/streak`, `/profile`, `/progress/sync`).
-8. **The content boundary is not real yet** (details in §6 and §7): quizzes, scenarios and challenges ship their answer keys in the client bundle; lab answers are hard-coded in `ModuleDetail.tsx`; ~1.1 MB of practice artifacts are served statically; the repository is public and contains all 99 lessons; the legacy API served every lesson anonymously (**fixed on this branch**) and still serves capture analysis anonymously.
+8. **The content boundary is not real yet** (details in §6 and §7): quizzes, scenarios and challenges ship their answer keys in the client bundle; lab answers are hard-coded in `ModuleDetail.tsx`; ~1.1 MB of practice artifacts are served statically; the repository is public and contains all 99 lessons **and an instructor answer key (`docs/instructors/ENG-01_answer_key.md`)**; the legacy API served every lesson anonymously (**fixed on this branch**) and still serves capture analysis anonymously.
 9. **Login and signup carry no return destination.** The two `redirect` hits in `Account.tsx` are Supabase email-link settings, not return-to.
 10. **Dead code candidates:** `pages/LearningPath.tsx` (170 lines), `components/certificate/Certificate.tsx` (240), `components/admin/CustomModuleCreator.tsx` (75), `lib/platform.ts` (144), `hooks/useReducedMotion.ts` (19), `lib/utils.ts` (10) have no importers. Confirm each by deleting it and running `tsc`.
-11. **Test coupling:** 22 browser scripts use per-script API stubs and nearly all open guest routes; 9 assert local progress. Two unit tests (`access-matrix`, `account-states`) pin the old tier model line by line. 39 of 56 files in `scripts/` read the content paths that will move.
+11. **Test coupling:** 22 browser scripts use per-script API stubs and nearly all open guest routes; 9 assert local progress. Two unit tests (`access-matrix`, `account-states`) pin the old tier model line by line. 38 of the 59 files in `scripts/` are content tooling that moves with the content.
 
 ---
 
 ## 1. Routes (49 entries)
 
-Target URLs are *proposals* (see plan §4): the catalogue keeps its current `/paths/…` URLs; the authenticated experience moves under `/learn/…`.
+Target URLs follow the owner's decisions (plan §4): the catalogue keeps `/paths/…`; authenticated learning is `/learn/<pathId>/…`. The route structure is a UX distinction; authorization is enforced by the API.
 
 ### 1a. Public layout (`PublicLayout`)
 
@@ -60,7 +60,7 @@ Target URLs are *proposals* (see plan §4): the catalogue keeps its current `/pa
 | `/paths` | `LearningPaths` + local progress | **Public** Learning Paths index, public layout, prerendered | 2 | layout change | P5 |
 | `/paths/:pathId` | `PathDetail`: phases, modules with local progress, "Open … case →" links straight into lessons | **Public** Path Overview: purpose, what you will learn, journey, practical experience, prerequisites, tools, outcomes, assessment, Start Learning | 3 | layout change; lesson deep links removed | P5 |
 | `/paths/:pathId/modules`, `/modules` | `Modules` + tier banner + local progress | Public module list (folded into the Path Overview journey); decide whether a cross-path `/modules` stays | 2 | – | P5 |
-| `/paths/:pathId/modules/:id` | `ModuleDetail` (overview / theory / lab / quiz / report tabs) | **Split:** public Module Overview here; authenticated lesson/lab/quiz experience at `/learn/…` | 2 + 5 | **Yes** | P3, P5, P6 |
+| `/paths/:pathId/modules/:id` | `ModuleDetail` (overview / theory / lab / quiz / report tabs) | **Split:** public Module Overview here; the authenticated lesson, lab and scenario experience at `/learn/:pathId/:moduleId/…` | 2 + 5 | **Yes** | P3, P5, P6 |
 | `/modules/:id` | `ModuleDetail`, path-less | redirect to the path-qualified URL | 4 | **Yes** | P5 |
 | `/path`, `/learning-path`, `/legacy/path` | redirects → wireless | Keep as redirects (or prune later) | 1 | – | – |
 | `/labs`, `/paths/:pathId/labs` | `Labs`: capture library, artifacts, terminal, evidence vault, scoring tabs | Public Labs catalogue (metadata) + authenticated lab workspace | 2 | **Yes** | P5, P6 |
@@ -81,6 +81,22 @@ Target URLs are *proposals* (see plan §4): the catalogue keeps its current `/pa
 | Route | Today | Target | Class | Phase |
 |---|---|---|---|---|
 | `/admin`, `/admin/feedback` | owner console, feedback inbox | Keep. Later: content-import status, approval policy | 1 | – |
+
+### 1d. The journey, stage by stage
+
+| Stage | Page | URL | Exists today? | Class | Phase |
+|---|---|---|---|---|---|
+| Discover | Home | `/` | `PublicHome` | 3 | P5 |
+| Explore a path | Learning Paths; Path Overview | `/paths`, `/paths/:pathId` | `LearningPaths`, `PathDetail` (inside the workspace chrome, with local progress) | 2 / 3 | P5 |
+| Explore a module | Module Overview | `/paths/:pathId/modules/:moduleId` | only the *overview tab* of `ModuleDetail` | 5, reusing that content | P5 |
+| Review objectives | Lesson Overview (a sample shows its body) | `/paths/:pathId/modules/:moduleId/lessons/:lessonId` | none | 5 | P5 |
+| Start Learning | the call to action, carrying the destination | → `/sign-in?next=/learn/…` | none (no return-to anywhere) | 5 + 6 | P4 |
+| Login / Sign up | Sign in; Request access | `/sign-in`, `/request-access` | `LoginPage`, `SignupPage` | 2 | P4 |
+| Approval | Account and approval status | `/account` | `AccountStatusPage` | 3 | P4 |
+| Learn | Lesson | `/learn/:pathId/:moduleId/lessons/:lessonId` | the theory tab of `ModuleDetail` | 2 (extract) | P6 |
+| Practice | Lab; scenario | `/learn/:pathId/:moduleId/labs/:labId`, `…/scenarios/:id` | `Labs`, `DecisionPractice`, `ChallengeDetail` | 2 | P3.4, P6 |
+| Prove | Assessment; evidence; skills | `/learn/assessments/:id`, `/learn/evidence`, `/learn/skills` | `Engagement` (it renders every assessment route), `Reports`, `EvidenceVault` | 2 + 5 | P7 |
+| Continue | Workspace home | `/learn` | `Dashboard` | 3 | P6 |
 
 ---
 
@@ -196,12 +212,16 @@ So nothing is built twice. "Exists" means a page or component to reuse, not that
 | `lab-artifacts.json` | public manifest | private manifest |
 | `reference/*.json` (29 KB) | public | *decision:* public Resources vs private |
 | `achievements.ts` | gamification | remove (P4) |
-| `public/wireless-practice` (97 files, 649 KB), `wireless-foundations` (11), `lab-data` (18), `pcaps` (20), `android-*` (12) | **served statically, no auth**; the gated `/artifacts` endpoint exists but the UI never calls it | private object storage, served through the authenticated API; designated sample artifacts only stay public |
+| `public/wireless-practice` (97 files, 649 KB), `wireless-foundations` (11), `lab-data` (18), `pcaps` (20), `android-*` (12) | **served statically, no auth**; the gated `/artifacts` endpoint exists but the UI never calls it | private object storage, served through the authenticated API; only the wireless sample's four scope-exercise files (plus a reduced zip) stay public |
 | `public/` icons, manifest, `sw.js` | – | keep |
+| `docs/instructors/ENG-01_answer_key.md` | **an instructor answer key in the public repository** | private (key class) |
+| `android-labs/notes-boundary/` (10 files) and `public/android-demos/*.zip` | intentionally vulnerable demo app, source and built zip, public | private artifact source and builds; `android-demo.yml` moves with it |
+| `content/` (lab configs, README) | public | private (artifacts) |
+| `tools/android-triage/`, `tools/wireless-qa/` | learner toolkit source; capture verification | private (content tooling) |
 
 All private content totals about **2.3 MB** (lessons 0.85 MB, structured items 0.35 MB, artifacts 1.1 MB): Postgres for text and structured items plus object storage for binaries is more than enough, with no CDN or search service.
 
-**Where it is coupled:** 39 of the 56 files in `scripts/` (generators, packagers, verifiers, QA runners) read `frontend/src/content` or `frontend/public/…`, and CI makes 22 `verify-*` invocations against them. Moving content to a private location moves that tooling with it (plan §5.6).
+**Where it is coupled:** 38 of the 59 files in `scripts/` (generators, packagers, verifiers, the lesson-reading QA runners) are content tooling that reads `frontend/src/content` or `frontend/public/…`, and CI makes 22 `verify-*` invocations against them. Moving content to a private location moves that tooling with it ([`CONTENT_PIPELINE.md`](CONTENT_PIPELINE.md) §2.4).
 
 ---
 
@@ -244,11 +264,20 @@ All 25 `GET` routes in the OpenAPI schema, requested with no credentials (sample
 | `api-resilience` | keep; extend for new endpoints | P3–P4 |
 | `admin-console`, `feedback-reliability`, `dense-workflows`, `motion-system`, `responsive-foundations`, `shared-controls`, `tour-contract` | keep (tour contract updates with the tour) | – |
 | 22 browser scripts | per-script API stubs; nearly all open guest routes; 9 assert local progress. `scripts/lib/ui-audit-fixtures.mjs` (approved-learner lesson fixture) is a stopgap | P4: authenticated end-to-end stack |
-| 39 of 56 `scripts/` files, 22 `verify-*` CI invocations | read content under `frontend/` | P3: move with the content |
+| 38 of 59 `scripts/` files, 22 `verify-*` CI invocations | content tooling that reads content under `frontend/` | P3.5: move to the content repository |
 | CI | `frontend`, `backend`, `secrets`, 3 × browser, `postgres-concurrency` | add leak check, content verification, end-to-end stack |
 
 ---
 
-## 9. Reading order for the decisions
+## 9. Repository structure and open decisions
 
-The classifications above are mostly mechanical once the target is fixed. The decisions that change them are in the plan's *Open decisions*: the `/learn/…` URL scheme, where `Reference` content lives, notes/bookmarks/flashcards, which modules are *Preview* maturity, and the public sample per path.
+The repository-level split, with every top-level path and all 59 scripts assigned, is in [`CONTENT_PIPELINE.md`](CONTENT_PIPELINE.md) §2. In summary:
+
+| Destination | What |
+|---|---|
+| **Application repository** | frontend and backend code, the importer and schemas, the generated public catalogue and the two samples, fixtures, 21 scripts, platform docs, `tools/browser-qa`, `assets/`, deployment files |
+| **Content repository (private)** | 99 lessons, items and answer keys, lab instructions, about 165 artifact files (1.1 MB), `content/`, `android-labs/`, the instructor key, 38 scripts, `tools/android-triage`, `tools/wireless-qa`, the Android demo workflow; about 2.3 MB of content in total |
+| **Decide** | `reference/*.json`, the report template, the local lab stack under `docker/` |
+| **Housekeeping** | `NextTaskForYou`, `VisualUpdates`, `requirement.md`, `mobile/README.md` |
+
+The open decisions that change these classifications are in the plan §12.
