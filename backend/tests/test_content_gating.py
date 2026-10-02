@@ -1,7 +1,9 @@
 """Tests for the authenticated content delivery and public catalogue boundary."""
 from __future__ import annotations
 
+import json
 import os
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -177,6 +179,81 @@ def test_authenticated_lesson_gating(client: TestClient) -> None:
         "/api/v1/content/lessons/..%2F..%2Fetc/passwd",
         headers={"Authorization": f"Bearer {active_token}"},
     ).status_code in {404, 422}
+
+
+def _lesson_sentinels() -> dict[str, str]:
+    """One distinctive body line per lesson file, as a key into the lesson it came from.
+
+    Each sentinel is a 50-character run of plain letters, digits, spaces and commas (so JSON escaping can
+    never hide it). Phrases that also appear in the public catalogue JSON are dropped: those are public
+    by design and would make the check report false positives.
+    """
+    content_dir = config.CONTENT_DIR
+    public_text = "".join((content_dir / name).read_text(encoding="utf-8") for name in ("modules.json", "learning-paths.json", "skills.json"))
+    sentinels: dict[str, str] = {}
+    for lesson_file in sorted((content_dir / "lessons").glob("*/*.md")):
+        for line in lesson_file.read_text(encoding="utf-8").splitlines():
+            if line.lstrip().startswith(("#", "|", "-", "*", ">", "`")):
+                continue
+            match = re.search(r"[A-Za-z0-9 ,]{50,}", line)
+            if match and match.group(0)[:50] not in public_text:
+                sentinels[match.group(0)[:50]] = f"{lesson_file.parent.name}/{lesson_file.stem}"
+                break
+    return sentinels
+
+
+def test_anonymous_requests_never_receive_lesson_text(client: TestClient) -> None:
+    """No route may hand lesson text to a caller without an approved account.
+
+    An anonymous lesson route once sat in the legacy /api router and bypassed the authenticated one.
+    This requests every GET route in the OpenAPI schema with no credentials, using every real module,
+    lesson and path id, so a route added later is covered automatically.
+    """
+    sentinels = _lesson_sentinels()
+    assert len(sentinels) >= 90, "the check needs a distinctive line from (nearly) every lesson to mean anything"
+
+    # Control: the detector does find lesson text when an approved learner asks for it.
+    target_mod, target_lesson = "android-01-platform", "01-architecture-sandbox-and-trust-boundaries"
+    set_user_status("user-active-sentinel", "active")
+    control = client.get(
+        f"/api/v1/content/lessons/{target_mod}/{target_lesson}",
+        headers={"Authorization": f"Bearer {make_token('user-active-sentinel')}"},
+    )
+    assert control.status_code == 200
+    assert any(key in control.text for key, lesson in sentinels.items() if lesson == f"{target_mod}/{target_lesson}"), "detector must see lesson text it is meant to find"
+
+    content_dir = config.CONTENT_DIR
+    modules = json.loads((content_dir / "modules.json").read_text(encoding="utf-8"))
+    paths = json.loads((content_dir / "learning-paths.json").read_text(encoding="utf-8"))
+    lesson_pairs = [(m["id"], lesson["id"]) for m in modules for lesson in m.get("lessons", [])]
+
+    anonymous = TestClient(client.app, raise_server_exceptions=False)  # no Authorization header, ever
+    leaks: list[str] = []
+    requested = 0
+    for template, operations in client.app.openapi()["paths"].items():
+        if "get" not in operations:
+            continue
+        params = set(re.findall(r"\{(\w+)\}", template))
+        if {"module_id", "lesson_id"} <= params:
+            combos = [{"module_id": m, "lesson_id": lesson} for m, lesson in lesson_pairs]
+        elif "module_id" in params:
+            combos = [{"module_id": m["id"]} for m in modules]
+        elif "path_id" in params:
+            combos = [{"path_id": p["id"]} for p in paths]
+        else:
+            combos = [{}]
+        for combo in combos:
+            url = re.sub(r"\{(\w+)\}", lambda found: combo.get(found.group(1), "x"), template)
+            response = anonymous.get(url)
+            requested += 1
+            hits = [lesson for key, lesson in sentinels.items() if key in response.text]
+            if response.status_code < 400 and hits:
+                leaks.append(f"{url} -> {response.status_code} returned lesson text of {hits[0]}")
+    assert requested > len(lesson_pairs), "the whole route surface must have been exercised"
+    assert not leaks, "anonymous lesson text leak(s):\n" + "\n".join(leaks[:10])
+
+    # The retired legacy route stays gone rather than merely unmatched.
+    assert anonymous.get(f"/api/content/{target_mod}/{target_lesson}").status_code == 404
 
 
 def test_authenticated_quizzes_and_labs(client: TestClient) -> None:
