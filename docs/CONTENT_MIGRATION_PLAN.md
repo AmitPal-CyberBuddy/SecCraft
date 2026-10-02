@@ -113,6 +113,8 @@ Access expectations are invariant: unauthenticated and pending accounts receive 
 
 ## 9. Owner decisions required
 
+The human-readable review package is [`CONTENT_MIGRATION_REVIEW.md`](CONTENT_MIGRATION_REVIEW.md), including all 159 item-level rows, grouped leak findings, proposed runtime schema, authorization model, mixed-source split, Practice/Verified treatment, and retention proposal.
+
 The manifest contains all 159 item-level questions. They group into:
 
 1. **154 current public artifacts:** decide public resource, authenticated learner artifact, or server-only material. This includes all PCAPs, `lab-data`, Android packs/source, Wireless practice packs, reference guides, checksums, answers/self-review files, and downloadable zips.
