@@ -1,6 +1,6 @@
 # SecCraft access and learning model: public catalogue, authenticated learning
 
-*Status: plan, with the owner's decisions confirmed on 2 October 2026 (two rounds). This document changes no infrastructure and migrates no content. Detail lives in [`CONTENT_PIPELINE.md`](CONTENT_PIPELINE.md) (private content repository, importer, schema, leak check), [`HOSTING_AND_REPOSITORIES.md`](HOSTING_AND_REPOSITORIES.md) (Render static site, repository privacy, sequence) and [`IA_AUDIT.md`](IA_AUDIT.md) (page-by-page classification). Supersedes [`PREVIEW_VS_APPROVED_PLAN.md`](PREVIEW_VS_APPROVED_PLAN.md).*
+*Status: plan, with the owner's decisions confirmed on 2 October 2026 (two rounds). This document changes no infrastructure and migrates no content. Detail lives in [`CONTENT_PIPELINE.md`](CONTENT_PIPELINE.md) (protected authoring area, importer, schema, leak check), [`HOSTING_AND_REPOSITORIES.md`](HOSTING_AND_REPOSITORIES.md) (Render static site, repository privacy, sequence) and [`IA_AUDIT.md`](IA_AUDIT.md) (page-by-page classification). Supersedes [`PREVIEW_VS_APPROVED_PLAN.md`](PREVIEW_VS_APPROVED_PLAN.md).*
 
 > **Publicly discoverable curriculum, privately delivered learning content, account-backed progress, and eventually evidence-backed competency.**
 
@@ -23,7 +23,7 @@ This is one coordinated product change: backend, content, access control, inform
 |---|---|
 | D1 | The gate exists for **record integrity and controlled access to the practical learning environment**. Content secrecy is secondary but required: protected material must not be in the public build or any public surface. |
 | D2 | Access has three states: **public** (catalogue), **pending** (catalogue + account status), **active** (full learning). Signed in is not approved. |
-| D3 | **Authoring source: a private repository plus an importer into PostgreSQL.** The repository is the source of truth for protected instructional content; PostgreSQL is the runtime delivery layer. Direct or manual database editing is not the primary workflow. The private repository must never be exposed through the public frontend or bundled into the Vite build. |
+| D3 | **Authoring source: a protected area of this repository, once this repository is private, plus an importer into PostgreSQL.** The repository is the source of truth for protected instructional content; PostgreSQL is the runtime delivery layer. Direct or manual database editing is not the primary workflow. The private repository must never be exposed through the public frontend or bundled into the Vite build. |
 | D4 | Large binary lab resources (PCAPs, APKs, datasets) go to **private object storage**, not PostgreSQL. |
 | D5 | **One public sample per Learning Path:** Wireless `01-intro-wireless/02-scope-and-assessment-decisions`; Android `android-01-platform/01-architecture-sandbox-and-trust-boundaries`. They are *public samples*, not a "Preview Curriculum" access tier. |
 | D6 | Vocabulary: **access** (Public Catalogue / Pending / Active) is separate from **content maturity** (Preview / Published / Coming soon). |
@@ -31,13 +31,14 @@ This is one coordinated product change: backend, content, access control, inform
 | D8 | Existing quizzes, scenarios and challenges are **practice material only**. Their answer keys have been public, so they are never treated as verified evidence. |
 | D9 | **Demonstrated** and **Verified** require **new private verification items**, authored initially by the owner and maintained through the private authoring workflow (never hard-coded in the frontend). The rubric is defined with the competency model (P7). |
 | D10 | Stack: **FastAPI on Render; Supabase Auth; Supabase PostgreSQL** for application and learning data. |
-| D11 | The **frontend will move from GitHub Pages to a Render Static Site**, and the main repository will become **private**, both later. The content repository stays separate from the application repository where that separation is useful (it is: [`CONTENT_PIPELINE.md`](CONTENT_PIPELINE.md) §2). |
+| D11 | The **frontend will move from GitHub Pages to a Render Static Site**, and the main repository will become **private**, both later. The existing SecCraft repository remains the sole repository; no second repository is planned ([`CONTENT_PIPELINE.md`](CONTENT_PIPELINE.md) §2). |
 | D12 | **For now:** do not break the Pages deployment, do not migrate the frontend, do not change the existing Render or Supabase configuration unnecessarily, and make no destructive infrastructure change or bulk content migration. |
 | D13 | Progress belongs to the account. No guest learning, browser-local learning record, XP, or progress import/export (P4). |
 | D14 | Career Paths and Skill Tracks exist **in the data model now**; no large empty interfaces until there is content. |
 | D15 | Path and Module Overview pages are real discovery pages, prerendered where appropriate; `robots.txt` and the Pages deep-link 404 are revisited. |
 | D16 | The page structure is **not fixed**: audit, then restructure, redesign, remove or create pages as the new journey requires. |
 | D17 | The leak check covers **lesson content, lab instructions, answer keys, assessment solutions, private verification material, and other protected artifacts**. |
+| D18 | The Wireless public sample exposes exactly four scope-exercise files: `README.md`, `authorized-inventory.csv`, `scope.md`, and `worksheet.md`; no zip or full pack. |
 
 ---
 
@@ -148,17 +149,17 @@ The projection is **generated** from the private repository and published to the
 
 ### 5.2 The public samples
 
-Both are conceptual and neither contains an attack procedure. **Android** is self-contained (public OWASP links only; three read-only inspection commands for an owned device). **Wireless links to four files from the `WF-FND-01` pack**, and the full pack also holds the captures and `self-review.md` that the later independent case (`03-foundations-independent-case`) is built on. Recommendation: publish only the four scope-exercise files plus a reduced zip as *sample artifacts*, and keep the rest private. A sample may only link to sample artifacts, catalogue pages and external URLs.
+Both are conceptual and neither contains an attack procedure. **Android** is self-contained (public OWASP links only; three read-only inspection commands for an owned device). **Wireless links to four files from the `WF-FND-01` pack**, and the full pack also holds the captures and `self-review.md` that the later independent case (`03-foundations-independent-case`) is built on. The confirmed public artifact set is exactly the four scope-exercise files (`README.md`, `authorized-inventory.csv`, `scope.md`, `worksheet.md`); no zip, capture, self-review, checksum manifest, or full pack is public. A sample may only link to sample artifacts, catalogue pages and external URLs.
 
 ### 5.3 Private content and where it lives
 
 ```text
-Private content repository ──importer──► PostgreSQL (schema `content`, private) ──► FastAPI ──► approved learner
+Private SecCraft repo / `protected-content/` ──importer──► PostgreSQL (`content`, private) ──► FastAPI ──► approved learner
         │                                 Storage (private buckets): PCAPs, archives, datasets, APK source ──┘
 ```
 
 * Every import is an immutable **release**; attempts and progress record the release used; rollback is a pointer change.
-* The repository split (two repositories, and exactly what moves) is in [`CONTENT_PIPELINE.md`](CONTENT_PIPELINE.md) §2.
+* The single-repository protected-area model and build safeguards are in [`CONTENT_PIPELINE.md`](CONTENT_PIPELINE.md) §2.
 
 ### 5.4 What counts as protected
 
@@ -179,7 +180,7 @@ The browser carries the project's public key, and Supabase exposes `public` (and
 
 ### 5.6 Practice and verified
 
-Items carry `grading: practice | verified`, and the rule is structural: items under `items/` in the content repository can only be `practice`; only files under `verification/` can be `verified`; a database `CHECK` and the importer enforce it. Practice items are graded **server-side from the private key** and recorded as practice; they never contribute to *Demonstrated* or *Verified*. Existing quizzes, scenarios and challenges are `practice` by classification and need no re-authoring.
+Items carry `grading: practice | verified`, and the rule is structural: items under `protected-content/items/` can only be `practice`; only files under `verification/` can be `verified`; a database `CHECK` and the importer enforce it. Practice items are graded **server-side from the private key** and recorded as practice; they never contribute to *Demonstrated* or *Verified*. Existing quizzes, scenarios and challenges are `practice` by classification and need no re-authoring.
 
 | Item kind | Grader | Recorded as |
 |---|---|---|
@@ -256,7 +257,7 @@ The API paths stay under `/api/v1/…`. `/learn` is a frontend namespace only.
 ## 9. Deployment architecture
 
 ```text
-Private repositories:  SecCraft (application)    SecCraft-content (private from day one)
+Private repository: SecCraft (application + protected authoring source)
                           │        │                    │ importer
                           ▼        ▼                    ▼
               Render Static Site   Render Web Service ─► Supabase: Auth · PostgreSQL · Storage
@@ -273,7 +274,7 @@ Private repositories:  SecCraft (application)    SecCraft-content (private from 
 
 ## 10. Testing strategy
 
-* **Two repositories, two CIs** ([`CONTENT_PIPELINE.md`](CONTENT_PIPELINE.md) §10). The application repo runs on fixtures (a small synthetic content set with canary markers); the content repo runs validation, artifact verification, the importer, and **content QA** (the lesson-reading browser scripts) against the real content with the application checked out at a pinned ref.
+* **One repository with path-aware CI** ([`CONTENT_PIPELINE.md`](CONTENT_PIPELINE.md) §10). Application tests use synthetic fixtures; protected-content changes run schema validation, artifact verification, importer planning and content QA without exposing authoring source to the frontend build.
 * **An authenticated end-to-end stack** replaces per-script API stubs in P4: FastAPI with `PLATFORM_ENV=test`, seeded users (visitor, pending, active, rejected, owner), the frontend proxying `/api` to it. The first task is a spike on injecting a Supabase-shaped session or providing a test shim. The approved-learner fixture (`scripts/lib/ui-audit-fixtures.mjs`) is the stopgap.
 * **Contract tests:** whitelist schema for the public JSON, the anonymous and active-learner sweeps, the database privilege test, the live probe, the leak check.
 * Unit tests that pin the old model are rewritten with the phase that removes it ([`IA_AUDIT.md`](IA_AUDIT.md) §8).
@@ -288,18 +289,18 @@ Sizes are relative (S/M/L). A step is done when its acceptance checks pass in CI
 |---|---|---|---|
 | **P1** Terminology | access vs maturity; remove the contradictory copy; source-scan test | S | **done** |
 | **P2** Audit and IA design | `IA_AUDIT.md`, this plan, the two design documents | S | **this change** |
-| **P3** Content boundary | slices P3.1–P3.6 below | L | next, after approval |
+| **P3** Content boundary | P3.1 complete; P3.2–P3.6 remain separately gated | L | in controlled slices |
 | **P4** Account-backed learning | `POST /progress/events`; `/learn` guard with `next`; account status page; collapse `UserState`; delete local progress, XP, achievements, daily, streak, sync and local profile; authenticated end-to-end stack | L | |
 | **P5** Public catalogue and discovery | public layout for catalogue routes; Path, Module and Lesson Overview; samples; data-driven nav; prerender, sitemap, robots, service worker | M | needs the domain decision |
 | **P6** Learning workspace | `/learn` home, module and lab workspaces, scenarios and assessments hubs, Progress, Skills, Evidence | M–L | |
 | **P7** Competency and evidence | evidence storage, the owner's verification rubric, competency states, Skills pages, review for *Verified* | M | needs the owner's verification items |
 | **Hosting track H0–H4** | staging site on Render, parity, cutover, private repository | M | independent of P3; see the hosting document |
 
-**P3 in controlled slices** ([`CONTENT_PIPELINE.md`](CONTENT_PIPELINE.md) §11): P3.1 contract (schemas, fixtures, whitelist test, leak check in report-only mode; additive) → P3.2 schema and API (migration on local and CI Postgres only; file fallback) → P3.3 importer and the private repository (owner creates it; bootstrap from a filtered clone; dry run into staging) → *gate: first production import* → P3.4 frontend (`/learn`, items and labs from the API, public pages from the projection) → *gate: contract* → P3.5 contract (remove private content from the application repo and bundle; enforce the leak check; update the Dockerfile; move scripts) → P3.6 cleanup (legacy `/api/pcaps/*`, unmounted routers).
+**P3 in controlled slices** ([`CONTENT_PIPELINE.md`](CONTENT_PIPELINE.md) §11): P3.1 contract (schemas, fixtures, whitelist test, leak check in report-only mode; additive) → P3.2 schema and API (migration on local and CI Postgres only; file fallback) → P3.3 importer and protected source (after this repository is private, convert current content in place; dry run into staging) → *gate: first production import* → P3.4 frontend (`/learn`, items and labs from the API, public pages from the projection) → *gate: contract* → P3.5 contract (remove private content from the application repo and bundle; enforce the leak check; update the Dockerfile; move scripts) → P3.6 cleanup (legacy `/api/pcaps/*`, unmounted routers).
 
-**Acceptance for P3:** the leak check passes in enforce mode; both sweeps pass; `anon` and `authenticated` have no privilege on `content.*`; `dist/` contains no private marker; every item kind is graded server-side; a verification item cannot be recorded as practice or the reverse; the application CI is green without private content; content QA is green in the content repository.
+**Acceptance for P3:** the leak check passes in enforce mode; both sweeps pass; `anon` and `authenticated` have no privilege on `content.*`; `dist/` contains no private marker; every item kind is graded server-side; a verification item cannot be recorded as practice or the reverse; application CI is green without protected authoring inputs; protected-content QA is green in the same repository.
 
-**Gates that wait for explicit approval:** creating the private repository; the first production import; the contract step; the Render staging site; the cutover; the repository visibility change.
+**Gates that wait for explicit approval:** creating the protected authoring area after repository privacy; the first production import; the contract step; the Render staging site; the cutover; the repository visibility change.
 
 **Dependencies:** P3 → P4 (a progress write is only meaningful once grading is server-side) → P6 → P7. P5 needs P3's projection and the domain decision, and can run beside P4. Do the H3 cutover after P4.
 
@@ -309,7 +310,6 @@ Sizes are relative (S/M/L). A step is done when its acceptance checks pass in CI
 
 | # | Decision | Recommendation |
 |---|---|---|
-| O1 | Wireless sample: publish the whole `WF-FND-01` pack, or only the four scope-exercise files plus a reduced zip | Only the scope-exercise files (§5.2) |
 | O2 | URL slug for the Android path: keep `android-pentesting`, or `android-security` with a redirect | Keep the id; add a slug only if you want the new URL |
 | O3 | Reference commands, filters, checklist: public *Resources* or private | Public, if you consider them generic |
 | O4 | Notes, bookmarks, flashcards | Account-backed notes if wanted; otherwise drop |
@@ -330,9 +330,9 @@ Sizes are relative (S/M/L). A step is done when its acceptance checks pass in CI
 | Answer enumeration through repeated attempts | attempt limits, no pre-submission feedback, rate limits, audit trail |
 | An approved account scraping everything it can read | per-account rate limits; the value is practice, assessment and records, not secrecy |
 | A new route leaking content | the anonymous and active-learner sweeps cover every route automatically |
-| Private content reaching a frontend build | the application repository never contains it; the build never fetches it |
+| Private content reaching a frontend build | the frontend build has no access to `protected-content/`; allowlists and bundle scans enforce this |
 | **Pages goes down if the repository is made private on a Free plan** | Render move first (H3 before H4), or a paid plan |
-| **CI minutes exhausted on a private repository** (about 61 minutes per full run against a 2,000-minute allowance) | cancel superseded runs, run heavy jobs on pull requests, move content QA out, path filters, or a paid plan |
+| **CI minutes exhausted on a private repository** (about 61 minutes per full run against a 2,000-minute allowance) | cancel superseded runs, run heavy jobs on pull requests, use content-only path filters, or a paid plan |
 | **API cold start versus the 8-second client deadline** | paid compute plan, or a retry state |
 | **Supabase Free: no backups, pauses after a week idle** | Pro before real learner records |
 | **A Blueprint adopts a live service by name** | no `render.yaml` until reviewed; new names only |

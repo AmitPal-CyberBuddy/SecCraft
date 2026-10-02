@@ -1,0 +1,1 @@
+{"schemaVersion":1,"paths":[{"id":"synthetic-security","slug":"synthetic-security","title":"Synthetic Security (test only)","description":"Invented public metadata used only by contract tests.","maturity":"preview","modules":[{"id":"synthetic-boundaries","title":"Synthetic boundaries","description":"Invented module metadata.","maturity":"preview","lessonCount":1}]}]}

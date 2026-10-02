@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "releaseId": "synthetic-contract-v1",
+  "synthetic": true,
+  "paths": [{"id":"synthetic-security","title":"Synthetic Security (test only)","maturity":"preview","moduleIds":["synthetic-boundaries"]}],
+  "lessons": [{"id":"synthetic-boundary-basics","pathId":"synthetic-security","moduleId":"synthetic-boundaries","title":"Synthetic boundary basics (test only)","body":"SC-PRIVATE:lesson:synthetic-boundary-basics\nEntirely invented contract-test prose. Do not publish or teach from this fixture.","access":"learning-content"}],
+  "labs": [{"id":"synthetic-lab","pathId":"synthetic-security","moduleId":"synthetic-boundaries","title":"Synthetic lab (test only)","instructions":"SC-PRIVATE:lab:synthetic-lab\nUse the invented fixture artifact.","artifactIds":["synthetic-evidence"]}],
+  "items": [
+    {"id":"synthetic-practice","pathId":"synthetic-security","moduleId":"synthetic-boundaries","kind":"practice","grading":"practice","prompt":"SC-PRIVATE:prompt:synthetic-practice\nChoose the invented safe option.","privateKey":"SC-PRIVATE:key:synthetic-practice\nB","solution":"SC-PRIVATE:solution:synthetic-practice\nB is correct only in this synthetic fixture."},
+    {"id":"synthetic-verification","pathId":"synthetic-security","moduleId":"synthetic-boundaries","kind":"verification","grading":"verified","prompt":"SC-PRIVATE:verification:synthetic-verification\nSubmit invented evidence.","privateKey":"SC-PRIVATE:key:synthetic-verification\nfixture-digest","solution":"SC-PRIVATE:solution:synthetic-verification\nFixture-only verification logic."}
+  ],
+  "artifacts": [{"id":"synthetic-evidence","filename":"synthetic-evidence.txt","mediaType":"text/plain","sha256":"2052fe7d2ce146f4d84f4ea6a4db3261f789b7b8c153ed9d59f0153d378db40e","size":19,"access":"learning-content"}]
+}

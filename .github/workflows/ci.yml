@@ -41,6 +41,16 @@ jobs:
       - name: Verify local progress migration and reward semantics
         run: node scripts/verify-progress-state.mjs
 
+      - name: Validate P3.1 content and catalogue contracts
+        run: |
+          node scripts/verify-content-contract.mjs
+          node --test scripts/tests/content-contract.test.mjs
+
+      # P3.1 is intentionally report-only: current protected-content exposure is known and reviewed
+      # before the P3.5 contract gate switches this command to --enforce.
+      - name: Report protected-content exposure (non-blocking findings)
+        run: node scripts/verify-no-private-content.mjs
+
       - name: Verify learning journey content contracts
         run: node scripts/verify-learning-data.mjs
 
@@ -83,6 +93,9 @@ jobs:
       - name: Build (also runs the third-party request audit)
         run: npm run build
         working-directory: frontend
+
+      - name: Report protected-content exposure in built output
+        run: node scripts/verify-no-private-content.mjs
 
       - name: Upload dist
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.1

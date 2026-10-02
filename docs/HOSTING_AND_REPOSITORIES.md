@@ -3,12 +3,10 @@
 *Status: design for owner review · 2 October 2026 · **nothing here is applied.** The decisions were: plan the move of the frontend from GitHub Pages to a Render Static Site, make the application repository private later, and for now do not break the existing deployment, migrate the frontend, or change the existing Render and Supabase configuration. Part of [`ACCESS_AND_LEARNING_MODEL.md`](ACCESS_AND_LEARNING_MODEL.md); the content side is in [`CONTENT_PIPELINE.md`](CONTENT_PIPELINE.md).*
 
 ```text
-Private GitHub repositories
-   SecCraft (application)           SecCraft-content (private from day one)
-        │                                   │
-        ├───────────────┐                   │  importer
-        ▼               ▼                   ▼
- Render Static Site   Render Web Service ──► Supabase
+Private GitHub repository: SecCraft
+   ├─ application ───────► Render Static Site (frontend)
+   ├─ backend ───────────► Render Web Service (FastAPI)
+   └─ protected source ──► controlled importer ──► Supabase
    (frontend)           (FastAPI)           ├─ Auth
                                             ├─ PostgreSQL (app data + private `content` schema)
                                             └─ Storage (private buckets)
@@ -34,7 +32,7 @@ Checked against current documentation on 2 October 2026; re-verify at the time o
 | Render rewrite rules **never override a path that exists as a resource**, then apply the first matching rule top to bottom, otherwise return 404. Rules cannot target the domain root alone (`/*` is valid) | A `/* → /index.html` rewrite gives the SPA fallback with status 200, and prerendered pages (real files) win over it. **A missing hashed asset would also be rewritten to the HTML shell**: test stale-chunk behaviour on staging. |
 | Blueprint: a static site is `type: web` with `runtime: static`; it supports `staticPublishPath`, `routes` (redirect or rewrite), `headers`, `rootDir`, `buildFilter`; `previews.generation` controls previews | The static site can be declared as code |
 | **Free web services spin down after 15 minutes idle and take about a minute to start**; Render says not to use free instances for production | The client gives API calls an **8-second deadline** (`API_REQUEST_TIMEOUT_MS` in `lib/api.ts`). After an idle period the first learner request would time out. Use a paid compute plan for the API, or add a "waking the service" state with retries. |
-| Supabase Free: projects pause after a week of inactivity; **no automatic backups**; no point-in-time recovery | Learner records and evidence must not live on Free. Content is reconstructible from the private repo; attempts and progress are not. |
+| Supabase Free: projects pause after a week of inactivity; **no automatic backups**; no point-in-time recovery | Learner records and evidence must not live on Free. Content is reconstructible from the protected authoring area; attempts and progress are not. |
 | Supabase's REST API exposes only `public` (and `graphql_public`, `storage`) unless more schemas are listed; Storage buckets are private by default and files leave them through RLS-checked downloads or signed URLs with an expiry in seconds | Supports the private `content` schema and private buckets |
 
 Sources: GitHub Docs, *About GitHub Pages* and *GitHub Pages limits*; GitHub plan tables; Render Docs, *Static Sites*, *Redirects and rewrites*, *Blueprint YAML reference*, *Deploy for Free*; Supabase *pricing*, *Production checklist*, *Storage buckets* and *createSignedUrl* reference, *Using custom schemas*.
@@ -113,7 +111,7 @@ Measured from the last two fully completed runs (REST job timestamps; `gh run vi
 At 2,000 minutes a month a Free private repository allows about **30 full runs**. Every push to `main` or `arena/*` and every pull request event triggers a run, and a branch with an open PR triggers two. Options, in the order I would apply them:
 
 1. **Cancel superseded runs** with `concurrency` per ref, and run the heavy browser jobs on pull requests to `main` plus a nightly or manual run, not on every push (halves usage).
-2. **Move the lesson-reading job to content CI** ([`CONTENT_PIPELINE.md`](CONTENT_PIPELINE.md) §10): about 22 minutes off every application push; it runs only when content changes.
+2. **Use protected-content path filters for lesson-reading QA** ([`CONTENT_PIPELINE.md`](CONTENT_PIPELINE.md) §10): avoid about 22 minutes on application-only pushes; run it when content or delivery code changes.
 3. **Path filters** so docs-only changes skip the browser jobs.
 4. **A paid plan.** For a personal account GitHub Pro also restores Pages for private repositories (a rollback path during the move), raises the allowance to 3,000 minutes, and enables protected branches on private repositories.
 5. A self-hosted runner (free minutes, you operate the machine).
@@ -130,7 +128,7 @@ Each step is additive until H4, and each has a rollback. None starts without app
 | **H3 Cutover** | point the custom domain (or announce the new URL); turn the Pages deploy into a redirect stub; update `platform.json` and the docs | owner (DNS, Render), me (code) | revert DNS; redeploy the normal Pages build |
 | **H4 Make the repository private** | after H3 has been stable for an agreed period: replace the UI's GitHub links, disable the Pages workflow, apply the CI changes in §7, review secrets and Dependabot settings, then change visibility | owner (GitHub settings), me (code, docs) | make the repo public again (history stays as it was) |
 
-Ordering with the content work: the move is independent of P3, but **the repository should not go private before P3 completes the content move** unless you accept private history as the only protection. The privacy of the repository protects history going forward; it does not recall what has been public. This repository has **0 forks, 0 stars and 0 watchers**, so there are no public forks holding copies, but clones and crawler caches cannot be enumerated.
+Ordering with the content work: the move is independent of P3, but **the repository must become private before protected content is added under `protected-content/`** unless you accept private history as the only protection. The privacy of the repository protects history going forward; it does not recall what has been public. This repository has **0 forks, 0 stars and 0 watchers**, so there are no public forks holding copies, but clones and crawler caches cannot be enumerated.
 
 ## 9. Pre-privacy checklist (H4)
 

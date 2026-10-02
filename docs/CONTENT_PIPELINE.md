@@ -1,9 +1,10 @@
-# Content pipeline: private authoring repository → importer → PostgreSQL
+# Content pipeline: private authoring source → importer → PostgreSQL
 
-*Status: design for owner review · 2 October 2026 · nothing described here is built or applied yet. Part of [`ACCESS_AND_LEARNING_MODEL.md`](ACCESS_AND_LEARNING_MODEL.md); hosting and repository privacy are in [`HOSTING_AND_REPOSITORIES.md`](HOSTING_AND_REPOSITORIES.md). Numbers come from inspecting this repository.*
+*Status: approved design · 2 October 2026 · P3.1 contract tooling is implemented additively; no database, storage, hosting, visibility, or production-content change is applied. Part of [`ACCESS_AND_LEARNING_MODEL.md`](ACCESS_AND_LEARNING_MODEL.md); hosting and repository privacy are in [`HOSTING_AND_REPOSITORIES.md`](HOSTING_AND_REPOSITORIES.md). Numbers come from inspecting this repository.*
 
 ```text
-Private content repository (SecCraft-content)      authoring source of truth for protected instructional content
+SecCraft repository (private before protected content is added)
+  protected-content/                                 authoring source of truth for protected instructional content
         │   importer: validate → plan → import      versioned · reviewed · CI-verified
         ▼
 Supabase PostgreSQL, schema `content` (private)    runtime delivery data; every import is an immutable release
@@ -18,8 +19,8 @@ Approved learner  →  /learn/…                      authorization is enforced
 
 ## 1. Principles
 
-1. **The private repository is the source of truth; the database is a deployment artifact.** Nobody edits content rows by hand.
-2. **Nothing in the frontend build chain can see private content.** The application repository never contains it, never fetches it at build time, and the importer is not part of any frontend build.
+1. **The protected authoring area in the private SecCraft repository is the source of truth; the database is a deployment artifact.** Nobody edits content rows by hand.
+2. **Nothing in the frontend build chain can see protected content.** It lives outside `frontend/`; build inputs are explicitly allowlisted; the importer is not part of a frontend build; leak and bundle scans independently verify the boundary.
 3. **Metadata is public and generated; bodies, keys and artifacts are private.** They join on stable ids.
 4. **Every import is an immutable release.** Attempts and progress record the release they used, so grading is reproducible and rollback is a pointer change.
 5. **Practice and verified are different classes**, enforced by the schema and the importer, not by convention.
@@ -27,32 +28,29 @@ Approved learner  →  /learn/…                      authorization is enforced
 
 ---
 
-## 2. Repository split
+## 2. One repository with a protected authoring area
 
-### 2.1 Recommendation: two repositories
+### 2.1 Confirmed model
 
-| | Application repo (`SecCraft`, public now, private later) | Content repo (`SecCraft-content`, private from day one) |
-|---|---|---|
-| Holds | frontend, backend, importer and schemas, the generated public catalogue, the two public samples, fixtures, application QA | lessons, labs, items (practice and verification), artifacts, catalogue sources, content tooling and content QA |
-| Review | code review | content review (CODEOWNERS: you) |
-| CI | lint, typecheck, unit, backend, privilege tests, leak check, chrome QA on fixtures | schema validation, artifact verification, content QA against the real content |
-| Secrets | none for content | importer credentials (staging, production) |
+The existing **SecCraft repository remains the only repository**. It becomes private, after the frontend has moved off GitHub Pages, before any new protected material is authored there. Protected source then lives under a top-level `protected-content/` area; application code, schemas, importer tooling, generated public catalogue data and synthetic fixtures remain in their existing areas. PostgreSQL is runtime delivery, not an authoring interface.
 
-Why separate even though the application repo will also become private:
+The boundary must not rely on the directory name alone:
 
-1. **A structural guarantee, not a convention.** A Render static-site build clones only the application repo. Private content cannot be bundled because it is not on the disk.
-2. **Independent cadence.** Today a lesson typo triggers the full application CI (about 61 runner-minutes). Content PRs would run content CI only.
-3. **Smaller secret scope.** Importer credentials live only in the repository that already has authority over content.
-4. **Different access later** (an instructor with content access but no code access, or the reverse).
+1. Vite and Render builds use explicit frontend inputs and never copy `protected-content/`.
+2. Docker stops copying authored content at the P3.5 contract gate.
+3. The generated public catalogue is schema-whitelisted and cannot contain bodies, prompts, keys, solutions or rubrics.
+4. Source and built-output leak scans cover every protected class.
+5. Content-only path filters avoid spending the full application CI budget for prose-only changes where practical.
+6. Import credentials are environment-scoped and used only by the importer workflow.
 
-Costs to accept: two repositories; the importer and schema are pinned across them (§7.1); content QA must check out the application at a pinned ref (§10).
+No second repository is planned. Creating one would require a concrete technical limitation and a new owner decision.
 
 ### 2.2 Alternatives considered
 
 | Option | Verdict |
 |---|---|
-| One private repo with a `content/` directory | Workable once the repo is private, but nothing structural stops a build from bundling `content/`, and every content change still runs the application CI. Rejected as the end state; acceptable as an interim. |
-| Private content repo as a git submodule of the application repo | The submodule pointer and every build clone it; the Render build would need credentials for it. Rejected: it recreates the bundling risk. |
+| Existing SecCraft repo, later private, with `protected-content/` | **Confirmed.** One history and review surface; reinforced by build allowlists, schema projection and leak scans. |
+| A second content repository | Rejected for now: extra repository, duplicated CI/release coordination and access management without a demonstrated requirement. |
 | Content edited directly in the database | Rejected by decision: no review, history, or verification. |
 
 ### 2.3 What goes where
@@ -98,10 +96,11 @@ The backend image **bakes the lessons, items and captures into the container** t
 
 ---
 
-## 3. Content repository layout and formats
+## 3. Protected authoring layout and formats
 
 ```text
-SecCraft-content/                                     (private)
+SecCraft/                                             (private before this area is populated)
+└─ protected-content/
 ├─ catalogue/                                         authoritative metadata → public projection
 │   ├─ paths/<pathId>.yaml          title, slug, summary, phases, outcomes, prerequisites, tools, maturity
 │   ├─ modules/<moduleId>.yaml      title, description, objectives, skills, lessons[], labs[], maturity
@@ -130,9 +129,9 @@ SecCraft-content/                                     (private)
 
 `content publish-catalogue` renders `catalogue/` into the JSON files the frontend already imports (`modules.json`, `learning-paths.json`, `skills.json`, `labs.json` metadata, `platform.json`), plus `catalogue.manifest.json` (source commit, timestamp, file hashes), plus the sample files. Only whitelisted keys are written; forbidden keys (`body`, `content`, `correct`, `answer`, `answer_basis`, `flag`, `best`, `rationale`, `tasks`, `rubric`) fail the run.
 
-### 4.2 How it reaches the application repo
+### 4.2 How the public projection is reviewed
 
-As a **pull request opened by automation** against the application repository (or the same command run locally by you). Review is the publication gate: the diff shows exactly what becomes public. The application CI validates it (§9.2). The application build never reads the content repository.
+The projection command writes only schema-approved public fields to frontend catalogue files in the same checkout. A pull request is the publication gate: the diff shows exactly what becomes public, and CI validates both the projection and the absence of protected markers. The frontend build never reads `protected-content/`.
 
 During the transition the current files stay hand-edited and are replaced by generated ones in P3.5. Until then nothing about the public build changes.
 
@@ -143,15 +142,15 @@ During the transition the current files stay hand-edited and are replaced by gen
 | Wireless | `01-intro-wireless` / `02-scope-and-assessment-decisions` | **No.** It links to four files and a zip from the `WF-FND-01` pack |
 | Android | `android-01-platform` / `01-architecture-sandbox-and-trust-boundaries` | **Yes.** Its only links are public OWASP pages; its three shell snippets are read-only inspection commands for an owned device |
 
-**The wireless sample needs a decision.** The pack contains ten files: the four the lesson links to (`README.md`, `authorized-inventory.csv`, `scope.md`, `worksheet.md`), plus `baseline.pcapng`, `follow-up.pcapng`, their frame JSON, `self-review.md` and `SHA256SUMS`. The captures and self-review are the basis of a *later* independent exercise (lesson `03-foundations-independent-case`). Publishing the whole pack would spoil it.
+**The wireless sample artifact set is confirmed.** The pack contains ten files: the four the lesson links to (`README.md`, `authorized-inventory.csv`, `scope.md`, `worksheet.md`), plus `baseline.pcapng`, `follow-up.pcapng`, their frame JSON, `self-review.md` and `SHA256SUMS`. The captures and self-review are the basis of a *later* independent exercise (lesson `03-foundations-independent-case`). Publishing the whole pack would spoil it.
 
-Recommendation: designate the **four scope-exercise files plus a reduced zip** as *sample artifacts*; keep the captures, `self-review.md` and the full zip private. Then the sample lesson is complete for a visitor and the later exercise keeps its value. A sample lesson may only link to sample artifacts, catalogue pages, or external URLs; the validator enforces that.
+Designate exactly the **four scope-exercise files** (`README.md`, `authorized-inventory.csv`, `scope.md`, `worksheet.md`) as *sample artifacts*; do not publish a reduced zip, captures, `self-review.md`, checksums, or the full pack. Then the sample lesson is complete for a visitor and the later exercise keeps its value. A sample lesson may only link to sample artifacts, catalogue pages, or external URLs; the validator enforces that.
 
 Sample rules: exactly one per published path; carries `SC-PUBLIC-SAMPLE` instead of a private marker; its artifacts are the only files besides icons and the manifest allowed in `frontend/public`.
 
 ### 4.4 Fixtures for the application repository
 
-The application repo keeps a tiny synthetic content set (two modules, three lessons, one lab with a small artifact, a practice item, a verification item, one sample) with canary markers. Backend tests, importer tests, the leak sweeps and chrome QA run on it, so the application CI no longer needs real content.
+The repository keeps a tiny, clearly test-only synthetic set with canary markers. Contract, importer-planning and leak-boundary tests run on it without production content or database writes. P3.1 starts with one path/module/lesson/lab/artifact and practice/verification items; later phases may expand it only when a test needs another shape.
 
 ---
 
@@ -191,7 +190,7 @@ schema content  (not exposed)
 
 ### 7.1 Where it lives
 
-`tools/content/` **in the application repo**, versioned with the schema it writes. The content repo's workflows check out the application repo at a **pinned ref** (`SECCRAFT_APP_REF`) to get the importer and JSON Schemas, so content CI always validates against a specific contract. Bumping the pin is a reviewed change.
+`tools/content/` **in the application repo**, versioned with the schema it writes. Schemas and importer tooling are versioned in this repository alongside the protected authoring source. A content change and any required contract change can therefore be reviewed atomically.
 
 ### 7.2 Commands
 
@@ -213,7 +212,7 @@ Nothing is updated in place, so a failed import leaves the previous release serv
 
 ### 7.4 Credentials and approval
 
-* Importer uses a **restricted database role** (`content_writer`) so a compromised content workflow can write content, not accounts. A connection string per environment is stored as an environment secret in the content repo.
+* Importer uses a **restricted database role** (`content_writer`) so a compromised content workflow can write content, not accounts. A connection string per environment is stored as a GitHub environment secret in this repository.
 * Storage credentials are the most powerful secret in the pipeline; keep them only in the `production` environment, behind a required reviewer where the plan supports it, otherwise behind a manual `workflow_dispatch`.
 * Rejected for now: importing through an owner-authenticated admin endpoint. It would put owner capabilities (approving accounts) into the content workflow's blast radius.
 
@@ -265,7 +264,7 @@ This needs **no access to private content**: it looks for markers and for files 
 
 With the project's public key, request every private table and bucket path through the Data API and Storage endpoints (including the `content` profile) and require a refusal. This catches the case where the exposed-schema setting and the running configuration diverge.
 
-### 9.5 Content repository CI
+### 9.5 Protected-content CI
 
 The validator requires a marker on every private file and the sample marker on every sample; `publish-catalogue` output is re-scanned with §9.2.
 
@@ -283,16 +282,11 @@ Report-only until P3.5: the script prints today's leaks (answer keys in the bund
 
 ---
 
-## 10. CI in the two repositories
+## 10. CI in the single repository
 
-| Repository | Runs | Triggers |
-|---|---|---|
-| Application | lint, typecheck, unit tests, backend tests, Postgres privilege tests, leak check, chrome QA on fixtures, production-subpath job | push to `main`, pull requests |
-| Content | `content validate`, artifact verification (the moved verifiers), importer dry run, **content QA** | pull requests; on merge to `main`, import to staging |
+One workflow validates code and content, with path filters and reusable jobs to control the approximately 61 runner-minute full-suite cost. Schema validation, artifact verification, importer dry runs and content QA run when protected authoring inputs or their tooling change. Application changes run normal unit/backend/browser checks against synthetic fixtures. Cross-boundary changes run both groups. No job makes protected files available to the Vite build context.
 
-**Content QA** is the nine lesson-reading browser scripts. They check every lesson for rendering, overflow, accessibility and download bytes, so they need the real content and the application. The content workflow checks out the application at `SECCRAFT_APP_REF`, starts a Postgres service, runs migrations and the importer into it, starts the API and the dev server, and runs the scripts. Until the P4 authenticated end-to-end stack exists, they keep using the approved-learner fixture, parameterised to read from `SECCRAFT_CONTENT_DIR`.
-
-**Cost:** one full CI run today is about 61 runner-minutes across seven jobs; the lesson-reading job is about 22 of them. Moving it to content CI takes that cost out of every application push.
+**Content QA** remains the lesson-reading browser suite. After P3.4 it reads imported content through the authenticated API; until then its current approved-learner fixtures remain a stopgap.
 
 ---
 
@@ -302,9 +296,9 @@ Each slice is reviewable on its own. "Applied" means it touches shared infrastru
 
 | Slice | Content | Touches | Reversible |
 |---|---|---|---|
-| **P3.1 Contract** | JSON Schemas, fixture set, whitelist test, leak check in report-only mode | application repo only, additive | yes |
+| **P3.1 Contract** | JSON Schemas, synthetic fixture set, whitelist test, import planner with no writes, leak check in report-only mode | existing repository only, additive; **implemented** | yes |
 | **P3.2 Schema and API** | `content` schema migration, repository layer with file fallback, labs/items/artifacts endpoints without keys, graders and `grading` rule | application repo; migration runs on local/CI Postgres only | yes |
-| **P3.3 Importer and content repo** | `tools/content`; owner creates the private repo; bootstrap it from this repo's content using a filtered clone (history of those paths preserved, original untouched); dry-run import into a staging database | new private repo; staging database | yes |
+| **P3.3 Importer and protected source** | complete `tools/content`; after this repository is private, create `protected-content/`, convert current authored material in place, and dry-run import into staging | existing private repository; staging database | yes |
 | **Gate: first production import** | additive: new schema and a release; no frontend change | production database and storage | rollback = pointer |
 | **P3.4 Frontend** | `/learn/…` routes and guard, items and labs from the API, public pages from the projection, old URLs redirect | application repo, deployed after the import | yes (flag) |
 | **Gate: contract** | remove private content from the application repo and bundle, flip the leak check to enforce, update the Dockerfile, move scripts | application repo, **destructive** | git history only |
@@ -318,5 +312,4 @@ The expand phase keeps production working at every step: the production backend 
 * Whether the importer uploads with a service key or signed upload URLs (P3.3).
 * Which Supabase project hosts staging (a second project is possible on the free plan, which allows two) or whether staging is a local/CI Postgres until the first production import.
 * How migrations are applied in production today. CI smoke-tests Alembic on SQLite, but I have not seen where production runs `alembic upgrade`. Confirm before P3.2 ships.
-* The wireless sample pack split (§4.3).
 * `reference/*.json`, `reporting/templates/finding.md` and the local lab stack under `docker/` (§2.3).
