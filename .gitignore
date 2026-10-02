@@ -16,6 +16,17 @@ backend/wififorge.db
 backend/seccraft.db
 *.sqlite
 *.sqlite3
+*.db
+*.dump
+*.backup
+*.bak
+*.sql.gz
+*.dump.gz
+staging-backup*/
+prelaunch-backup*/
+storage-export*/
+recovery-export*/
+/tmp/
 *.pyc
 *.pyo
 *.pyd

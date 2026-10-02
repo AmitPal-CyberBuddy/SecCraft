@@ -21,13 +21,13 @@ from sqlalchemy.orm import Session  # noqa: E402
 from app.models.content import ContentArtifact, ContentPrivateMaterial, ContentPublicSample, ContentRecord, ContentRelease  # noqa: E402
 from app.services.content_storage import put_verified, using_supabase  # noqa: E402
 
-ALLOWED_ENVS = {"test", "integration-test", "development", "staging"}
+ALLOWED_ENVS = {"test", "integration-test", "development", "staging", "prelaunch"}
 
 
 def safety_guard(database_url: str, storage_root: Path) -> None:
     env = os.getenv("PLATFORM_ENV", "").lower()
     if env not in ALLOWED_ENVS:
-        raise SystemExit("refusing content import: PLATFORM_ENV must be test, development, or staging")
+        raise SystemExit("refusing content import: PLATFORM_ENV must be test, development, staging, or prelaunch")
     lowered = database_url.lower()
     if any(token in lowered for token in ("prod", "production")):
         raise SystemExit("refusing content import: database URL looks like production")

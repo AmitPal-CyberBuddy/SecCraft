@@ -22,7 +22,18 @@ const instructor = fs.readFileSync('docs/instructors/ENG-01_answer_key.md', 'utf
 if (instructor) fingerprints.push(['instructor key', instructor])
 const leaks = fingerprints.filter(([, value]) => searchable.includes(value)).slice(0, 20)
 if (leaks.length) throw new Error(`protected content fingerprints in public build:\n${leaks.map(([kind, value]) => `${kind}: ${value.slice(0, 100)}`).join('\n')}`)
-console.log(`Public boundary build passed: ${files.length} files; exactly four Wireless sample files; 0 protected fingerprints; 0 unapproved artifacts.`)
+if (/postgres(?:ql)?(?:\+psycopg)?:\/\/[^\s"']+:[^\s"']+@/i.test(searchable) || /SUPABASE_SERVICE_ROLE_KEY|CONTENT_(?:MIGRATION|BACKUP)_DATABASE_URL/.test(searchable)) {
+  throw new Error('database or backend-only credential material found in public build')
+}
+for (const token of searchable.matchAll(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g)) {
+  try {
+    const payload = JSON.parse(Buffer.from(token[0].split('.')[1], 'base64url').toString('utf8'))
+    if (payload.role === 'service_role') throw new Error('Supabase service-role token found in public build')
+  } catch (error) {
+    if (error.message.includes('service-role')) throw error
+  }
+}
+console.log(`Public boundary build passed: ${files.length} files; exactly four Wireless sample files; 0 protected fingerprints; 0 backend credentials; 0 unapproved artifacts.`)
 
 function json(file) { return JSON.parse(fs.readFileSync(file, 'utf8')) }
 function rel(file) { return path.relative(root, file).split(path.sep).join('/') }

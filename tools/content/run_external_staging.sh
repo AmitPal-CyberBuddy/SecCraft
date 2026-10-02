@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 required=(PLATFORM_ENV PLATFORM_DATABASE_URL CONTENT_MIGRATION_DATABASE_URL CONTENT_DATABASE_RUNTIME_ROLE CONTENT_STORAGE_BACKEND SUPABASE_URL SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY CONTENT_STORAGE_BUCKET CONTENT_RELEASE_ID STAGING_API_URL STAGING_PENDING_JWT STAGING_APPROVED_JWT)
 for name in "${required[@]}"; do [[ -n "${!name:-}" ]] || { echo "missing required staging variable: $name" >&2; exit 2; }; done
-[[ "$PLATFORM_ENV" == staging ]] || { echo "PLATFORM_ENV must be staging" >&2; exit 2; }
+[[ "$PLATFORM_ENV" == prelaunch ]] || { echo "PLATFORM_ENV must be prelaunch" >&2; exit 2; }
 [[ "$CONTENT_STORAGE_BACKEND" == supabase ]] || { echo "external staging requires CONTENT_STORAGE_BACKEND=supabase" >&2; exit 2; }
 case "${PLATFORM_DATABASE_URL,,}${CONTENT_MIGRATION_DATABASE_URL,,}${SUPABASE_URL,,}" in *prod*|*production*) echo "refusing production-looking target" >&2; exit 2;; esac
 [[ "$PLATFORM_DATABASE_URL" == postgresql* && "$CONTENT_MIGRATION_DATABASE_URL" == postgresql* ]] || { echo "external staging requires PostgreSQL" >&2; exit 2; }

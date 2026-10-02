@@ -1,6 +1,6 @@
-# External staging deployment contract
+# Existing Supabase pre-launch validation contract
 
-This is the executable contract for the **dedicated, non-production** validation environment. Use `deploy/staging.env.example`; secrets belong only in the staging secret manager. Never commit them. The scripts reject non-staging and production-looking targets.
+This contract validates SecCraft against its one existing, currently unused Supabase project. It does not require another project or hosted staging deployment. Run FastAPI and the boundary frontend locally when needed. Use `deploy/staging.env.example`; load real secrets only from a file outside the repository. The scripts require `PLATFORM_ENV=prelaunch` and reject production-looking targets.
 
 ## Components and configuration
 
@@ -17,7 +17,7 @@ PostgreSQL tables use schema `content`; all five tables require RLS enabled. Pos
 
 ## Ordered deployment and validation
 
-1. Provision dedicated staging PostgreSQL, Supabase project/Auth, private Storage, FastAPI, and frontend; create the three DB roles above.
+1. In the existing Supabase project, create the private bucket and the `seccraft_app` database role; use the project `postgres` role for migrations/backups. Run FastAPI and the frontend locally—do not provision another hosted environment.
 2. Load secrets outside Git, then run `tools/content/run_external_staging.sh`. It preflights all configuration before writes.
 3. The script creates/verifies the private bucket, applies Alembic with the migrator, verifies schema/RLS, stages twice (idempotency), activates, validates Storage hashes, runs API authorization probes, and builds/audits the boundary frontend.
 4. Run lifecycle acceptance using two immutable IDs/manifests:
@@ -33,9 +33,9 @@ PostgreSQL tables use schema `content`; all five tables require RLS enabled. Pos
 6. Back up, restore, and validate using isolated recovery resources:
    ```bash
    python tools/content/backup_external_staging.py backup /secure/path/staging-backup-N
-   # Set CONTENT_RECOVERY_DATABASE_URL, CONTENT_RECOVERY_SUPABASE_URL,
-   # CONTENT_RECOVERY_STORAGE_BUCKET, CONTENT_RECOVERY_SERVICE_ROLE_KEY.
-   python tools/content/backup_external_staging.py restore /secure/path/staging-backup-N
+   # Set CONTENT_RECOVERY_DATABASE_URL to disposable/local PostgreSQL and
+   # CONTENT_RECOVERY_STORAGE_ROOT to a disposable local directory.
+   python tools/content/backup_external_staging.py restore /secure/path/prelaunch-backup-N
    ```
    Run database/Storage hash checks against recovery, activate/rollback there, and record evidence. Documentation alone is not completion.
 

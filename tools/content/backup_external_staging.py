@@ -29,15 +29,20 @@ def backup(dest: Path):
 
 def restore(src: Path):
     # Restoration must target isolated recovery resources, never the live staging DB/bucket.
-    db=os.environ["CONTENT_RECOVERY_DATABASE_URL"]; base=os.environ["CONTENT_RECOVERY_SUPABASE_URL"]
-    bucket=os.environ["CONTENT_RECOVERY_STORAGE_BUCKET"]; service=os.environ["CONTENT_RECOVERY_SERVICE_ROLE_KEY"]
-    if any(x in (db+base+bucket).lower() for x in ("prod","production")): raise SystemExit("refusing production-looking recovery target")
+    db=os.environ["CONTENT_RECOVERY_DATABASE_URL"]
+    local_root=os.getenv("CONTENT_RECOVERY_STORAGE_ROOT")
+    base=os.getenv("CONTENT_RECOVERY_SUPABASE_URL",""); bucket=os.getenv("CONTENT_RECOVERY_STORAGE_BUCKET",""); service=os.getenv("CONTENT_RECOVERY_SERVICE_ROLE_KEY","")
+    target=db+(local_root or base+bucket)
+    if any(x in target.lower() for x in ("prod","production")): raise SystemExit("refusing production-looking recovery target")
+    if not local_root and not all((base,bucket,service)): raise SystemExit("set CONTENT_RECOVERY_STORAGE_ROOT or all recovery Supabase variables")
     subprocess.run(["pg_restore","--clean","--if-exists","--no-owner","--dbname",db,str(src/"database.dump")],check=True)
     rows=json.loads((src/"objects.json").read_text())
     for row in rows:
-        data=(src/"objects"/row["object_key"]).read_bytes(); assert hashlib.sha256(data).hexdigest()==row["sha256"]
-        req("POST",base,bucket,row["object_key"],service,data)
-    print(f"restore complete: database and {len(rows)} objects restored to isolated recovery target")
+        data=(src/"objects"/row["object_key"]).read_bytes(); assert len(data)==row["size"] and hashlib.sha256(data).hexdigest()==row["sha256"]
+        if local_root:
+            destination=Path(local_root)/row["object_key"]; destination.parent.mkdir(parents=True,exist_ok=True); destination.write_bytes(data)
+        else: req("POST",base,bucket,row["object_key"],service,data)
+    print(f"restore complete: database and {len(rows)} verified objects restored to isolated recovery target")
 
 if __name__=="__main__":
     if len(sys.argv)!=3 or sys.argv[1] not in {"backup","restore"}: raise SystemExit("usage: backup_external_staging.py backup|restore PATH")

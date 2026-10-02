@@ -175,6 +175,9 @@ jobs:
           fi
           echo "No tracked .env files."
 
+      - name: Fail if credentials, backups, exports, or runtime databases are tracked
+        run: bash scripts/verify-no-sensitive-files-tracked.sh
+
   # The browser suites run as three parallel jobs. As one serial job they took over an hour, which left
   # almost no headroom under the timeout and made every push wait for all of it. Each job is independent;
   # the first keeps the original job id and name.
