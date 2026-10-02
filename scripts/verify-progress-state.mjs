@@ -211,7 +211,7 @@ try {
     }
   }
   for (const lab of labContent.AVAILABLE_LABS) {
-    useProgressStore.getState().completeLab(lab.module, lab.id, lab.grading === 'verified' ? 100 : undefined)
+    useProgressStore.getState().completeLab(lab.module, lab.id, lab.grading === 'answer-checked' ? 100 : undefined)
   }
   for (const challenge of challengeContent.default) useProgressStore.getState().completeChallenge(challenge.id)
   await new Promise(resolve => setTimeout(resolve, 160))

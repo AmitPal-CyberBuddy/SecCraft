@@ -108,6 +108,11 @@ jobs:
           name: frontend-dist
           path: frontend/dist
 
+      - name: Build and enforce the staging public-content boundary
+        run: |
+          CONTENT_BOUNDARY_BUILD=1 npm run build --prefix frontend
+          node scripts/verify-public-boundary-build.mjs
+
   backend:
     name: Backend — imports and tests
     runs-on: ubuntu-latest

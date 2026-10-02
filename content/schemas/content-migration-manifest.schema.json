@@ -15,8 +15,8 @@
     "approvedPublicSamples": { "type": "object" },
     "summary": {
       "type": "object",
-      "required": ["entries", "byClassification", "findings", "findingsByClassification", "unmappedFindings"],
-      "properties": { "entries": { "type": "integer" }, "byClassification": { "type": "object" }, "findings": { "type": "integer" }, "findingsByClassification": { "type": "object" }, "unmappedFindings": { "const": 0 } }
+      "required": ["entries", "byClassification", "byDeliveryClass", "unresolvedClassifications", "findings", "findingsByClassification", "unmappedFindings"],
+      "properties": { "entries": { "type": "integer" }, "byClassification": { "type": "object" }, "byDeliveryClass": { "type": "object" }, "unresolvedClassifications": { "const": 0 }, "findings": { "type": "integer" }, "findingsByClassification": { "type": "object" }, "unmappedFindings": { "const": 0 } }
     },
     "entries": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/entry" } },
     "leakAuditBaseline": {
@@ -35,11 +35,11 @@
     },
     "entry": {
       "type": "object", "additionalProperties": false,
-      "required": ["id", "sourcePath", "contentType", "careerPath", "learningPath", "module", "contentId", "classification", "publicAccess", "target", "release", "classificationReason"],
+      "required": ["id", "sourcePath", "contentType", "careerPath", "learningPath", "module", "contentId", "classification", "deliveryClass", "publicAccess", "target", "release", "classificationReason"],
       "properties": {
         "id": { "type": "string", "pattern": "^migration-[0-9]{4}$" }, "sourcePath": { "$ref": "#/$defs/nonempty" }, "contentType": { "$ref": "#/$defs/nonempty" },
         "careerPath": { "$ref": "#/$defs/nullableString" }, "learningPath": { "$ref": "#/$defs/nullableString" }, "module": { "$ref": "#/$defs/nullableString" }, "contentId": { "$ref": "#/$defs/nonempty" },
-        "classification": { "$ref": "#/$defs/classification" }, "publicAccess": { "type": "boolean" },
+        "classification": { "$ref": "#/$defs/classification" }, "deliveryClass": { "enum": ["public", "protected-learner", "server-only", "instructor-only"] }, "publicAccess": { "type": "boolean" },
         "target": { "type": "object", "additionalProperties": false, "required": ["kind", "locator"], "properties": { "kind": { "$ref": "#/$defs/nonempty" }, "locator": { "$ref": "#/$defs/nonempty" } } },
         "release": { "$ref": "#/$defs/nonempty" }, "artifact": { "$ref": "#/$defs/artifact" }, "classificationReason": { "$ref": "#/$defs/nonempty" }
       }

@@ -67,6 +67,8 @@ export function validateMigrationManifest(documentFile = paths.migrationManifest
     const source = path.join(repoRoot, entry.sourcePath)
     if (!fs.existsSync(source)) errors.push(error(`/entries/${entry.id}/sourcePath`, `source does not exist: ${entry.sourcePath}`))
     if (entry.publicAccess !== (entry.classification === 'KEEP_PUBLIC')) errors.push(error(`/entries/${entry.id}/publicAccess`, 'publicAccess must match KEEP_PUBLIC classification'))
+    if ((entry.deliveryClass === 'public') !== entry.publicAccess) errors.push(error(`/entries/${entry.id}/deliveryClass`, 'public delivery class must match publicAccess'))
+    if (entry.classification === 'REVIEW_CLASSIFY') errors.push(error(`/entries/${entry.id}/classification`, 'owner decisions are complete; unresolved classification is forbidden'))
     if (entry.release !== manifest.release) errors.push(error(`/entries/${entry.id}/release`, `expected release ${manifest.release}`))
     if (entry.artifact && fs.existsSync(source)) {
       const bytes = fs.readFileSync(source)

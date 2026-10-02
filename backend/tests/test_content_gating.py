@@ -119,6 +119,24 @@ def test_public_catalog_endpoints(client: TestClient) -> None:
     assert client.get("/api/v1/content/modules/nonexistent-mod/overview").status_code == 404
 
 
+def test_exact_public_samples_and_no_pack_expansion(client: TestClient) -> None:
+    for module_id, lesson_id in (
+        ("01-intro-wireless", "02-scope-and-assessment-decisions"),
+        ("android-01-platform", "01-architecture-sandbox-and-trust-boundaries"),
+    ):
+        response = client.get(f"/api/v1/content/samples/lessons/{module_id}/{lesson_id}")
+        assert response.status_code == 200
+        assert response.json()["access"] == "public-sample"
+        assert len(response.json()["content"]) > 1000
+    assert client.get("/api/v1/content/samples/lessons/android-01-platform/02-components-binder-and-permissions").status_code == 404
+
+    approved = ("README.md", "authorized-inventory.csv", "scope.md", "worksheet.md")
+    for filename in approved:
+        assert client.get(f"/api/v1/content/samples/wireless/{filename}").status_code == 200
+    for forbidden in ("WF-FND-01.zip", "self-review.md", "baseline.pcapng", "baseline-frames.json", "SHA256SUMS"):
+        assert client.get(f"/api/v1/content/samples/wireless/{forbidden}").status_code == 404
+
+
 def test_authenticated_lesson_gating(client: TestClient) -> None:
     target_mod = "android-01-platform"
     target_lesson = "01-architecture-sandbox-and-trust-boundaries"
@@ -247,6 +265,9 @@ def test_anonymous_requests_never_receive_lesson_text(client: TestClient) -> Non
             response = anonymous.get(url)
             requested += 1
             hits = [lesson for key, lesson in sentinels.items() if key in response.text]
+            # The two explicit public-sample lesson responses are tested against an exact allow-list above.
+            if template.startswith("/api/v1/content/samples/lessons/"):
+                continue
             if response.status_code < 400 and hits:
                 leaks.append(f"{url} -> {response.status_code} returned lesson text of {hits[0]}")
     assert requested > len(lesson_pairs), "the whole route surface must have been exercised"
@@ -272,7 +293,9 @@ def test_authenticated_quizzes_and_labs(client: TestClient) -> None:
     assert auth_quiz.status_code == 200
     quiz_data = auth_quiz.json()
     assert quiz_data["module_id"] == "android-01-platform"
+    assert quiz_data["grading_class"] == "practice"
     assert len(quiz_data["questions"]) == 6
+    assert all(not ({"correct", "answer", "explanation", "solution", "rationale"} & set(question)) for question in quiz_data["questions"])
 
     # 2. Labs require auth
     anon_lab = client.get("/api/v1/content/labs/lab-05-recon")
@@ -312,6 +335,16 @@ def test_authenticated_quizzes_and_labs(client: TestClient) -> None:
     )
     assert android_ref.status_code == 200
     assert b"MASVS" in android_ref.content
+
+    # Imported object IDs still require active authorization before release/object lookup.
+    assert client.get("/api/v1/content/artifacts/by-id/frontend-public-pcaps-recon-recon-lab-pcapng").status_code == 401
+    pending_id = "artifact-pending-123"
+    set_user_status(pending_id, "pending")
+    pending_artifact = client.get(
+        "/api/v1/content/artifacts/by-id/frontend-public-pcaps-recon-recon-lab-pcapng",
+        headers={"Authorization": f"Bearer {make_token(pending_id)}"},
+    )
+    assert pending_artifact.status_code == 403
 
     # 4. Artifact traversal / invalid category rejected
     assert client.get(

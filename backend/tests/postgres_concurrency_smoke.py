@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import sys
 import time
+import tempfile
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -83,6 +84,9 @@ def run() -> None:
             "feedback",
             "feedback_quotas",
         }
+        protected_content_tables = {
+            "content_releases", "content_records", "content_private_material", "content_artifacts", "content_public_samples",
+        }
         with admin_engine.connect() as connection:
             rls_rows = connection.execute(
                 text(
@@ -95,6 +99,14 @@ def run() -> None:
         rls_enabled = {name for name, enabled in rls_rows if enabled}
         if not protected_tables.issubset(rls_enabled):
             raise AssertionError(f"PostgreSQL RLS is not enabled on all account tables: {protected_tables - rls_enabled}")
+        with admin_engine.connect() as connection:
+            content_rls = dict(connection.execute(text(
+                "SELECT c.relname, c.relrowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace "
+                "WHERE n.nspname='content' AND c.relkind='r'"
+            )).all())
+        missing_content_rls = {name for name in protected_content_tables if not content_rls.get(name)}
+        if missing_content_rls:
+            raise AssertionError(f"Private content schema/RLS missing: {missing_content_rls}")
 
         import jwt
         from fastapi.testclient import TestClient
@@ -105,6 +117,16 @@ def run() -> None:
         from app.models.platform import PlatformAdmin, PlatformSettings, UserProfile
 
         app_engine = engine
+        tools_dir = BACKEND_DIR.parent / "tools" / "content"
+        sys.path.insert(0, str(tools_dir))
+        from import_content import activate as activate_content, stage as stage_content
+        manifest = BACKEND_DIR.parent / "content" / "migration" / "CONTENT_MIGRATION_MANIFEST.json"
+        with tempfile.TemporaryDirectory(prefix="seccraft-storage-") as storage_dir, SessionLocal() as content_db:
+            imported = stage_content(content_db, manifest, Path(storage_dir), "postgres-staging-smoke")
+            assert imported["records"] == 363 and imported["artifacts"] == 173 and imported["publicSamples"] == 6
+            assert stage_content(content_db, manifest, Path(storage_dir), "postgres-staging-smoke")["idempotent"] is True
+            assert activate_content(content_db, "postgres-staging-smoke")["status"] == "current"
+
         owner, learner_a, learner_b = (str(uuid.uuid4()) for _ in range(3))
         with SessionLocal() as db:
             db.add_all(
@@ -178,6 +200,7 @@ def run() -> None:
             app_engine.dispose()
         with admin_engine.begin() as connection:
             connection.execute(text(f'DROP SCHEMA IF EXISTS "{schema}" CASCADE'))
+            connection.execute(text('DROP SCHEMA IF EXISTS content CASCADE'))
         admin_engine.dispose()
 
 

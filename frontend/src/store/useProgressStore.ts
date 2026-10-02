@@ -76,10 +76,10 @@ export const POINTS = {
  * one quiz per authored module (perfect-score bonus included), and every achievement. Progress percentages and certificate thresholds divide by this — never by a number
  * typed into a component.
  */
-const VERIFIED_LABS = AVAILABLE_LABS.filter(lab => lab.grading === 'verified').length
+const ANSWER_CHECKED_LABS = AVAILABLE_LABS.filter(lab => lab.grading === 'answer-checked').length
 export const MAX_XP =
   TOTAL_LESSONS * POINTS.LESSON +
-  VERIFIED_LABS * POINTS.LAB +
+  ANSWER_CHECKED_LABS * POINTS.LAB +
   TOTAL_CHALLENGE_POINTS +
   Object.keys(quizData).length * (POINTS.QUIZ + POINTS.QUIZ_PERFECT_BONUS) +
   ACHIEVEMENT_POINTS
@@ -115,7 +115,7 @@ function normalizePersistedProgress(source: any, discardLegacyLabScores = false,
   ).map((item: any) => {
     const lab = AVAILABLE_LABS.find(entry => entry.id === item.labId && entry.module === item.moduleId)
     const score = discardLegacyLabScores ? undefined : item.score
-    const points = lab?.grading === 'verified' && score === 100 ? POINTS.LAB : 0
+    const points = lab?.grading === 'answer-checked' && score === 100 ? POINTS.LAB : 0
     return { ...item, completed: true, score, points }
   })
   const quizCandidates = (Array.isArray(input.quizScores) ? input.quizScores : []).filter((item: any) =>
@@ -268,7 +268,7 @@ export const useProgressStore = create<ProgressState>()(
       completeLab: (moduleId, labId, score) => {
         const exists = get().completedLabs.find(l => l.moduleId === moduleId && l.labId === labId)
         const lab = LABS.find(item => item.id === labId && item.module === moduleId)
-        const points = lab?.grading === 'verified' && score === 100 ? POINTS.LAB : 0
+        const points = lab?.grading === 'answer-checked' && score === 100 ? POINTS.LAB : 0
         if (exists) {
           if (points > 0 && exists.score !== 100) {
             set(state => ({
@@ -444,7 +444,7 @@ export const useProgressStore = create<ProgressState>()(
         const lessonXp = state.completedLessons.reduce((s, l) => s + (l.points ?? POINTS.LESSON), 0)
         const labXp = state.completedLabs.reduce((s, l) => {
           const lab = LABS.find(item => item.id === l.labId && item.module === l.moduleId)
-          return s + (lab?.grading === 'verified' && l.score === 100 ? POINTS.LAB : 0)
+          return s + (lab?.grading === 'answer-checked' && l.score === 100 ? POINTS.LAB : 0)
         }, 0)
         const quizXp = state.quizScores.reduce((s, q) => s + (q.points ?? POINTS.QUIZ), 0)
         const challengeXp = state.completedChallenges.reduce((s, c) => s + c.points, 0)

@@ -26,12 +26,13 @@ const pathByModule = new Map()
 for (const learningPath of learningPaths) for (const moduleId of learningPath.modules ?? []) pathByModule.set(moduleId, learningPath.id)
 
 const entries = []
-function add({ sourcePath, contentType, classification, reason, learningPath = null, module = null, contentId = null, targetKind, target, artifact = false, careerPath = null, publicAccess = null }) {
+function add({ sourcePath, contentType, classification, reason, learningPath = null, module = null, contentId = null, targetKind, target, artifact = false, careerPath = null, publicAccess = null, deliveryClass = null }) {
   const id = `migration-${String(entries.length + 1).padStart(4, '0')}`
   entries.push({
     id, sourcePath, contentType, careerPath, learningPath, module,
     contentId: contentId ?? slug(sourcePath),
     classification,
+    deliveryClass: deliveryClass ?? (classification === 'KEEP_PUBLIC' ? 'public' : 'protected-learner'),
     publicAccess: publicAccess ?? classification === 'KEEP_PUBLIC',
     target: { kind: targetKind, locator: target },
     release,
@@ -74,7 +75,8 @@ const protectedCollections = [
 ]
 for (const [sourcePath, contentType, target] of protectedCollections) {
   if (!fs.existsSync(path.join(root, sourcePath))) continue
-  add({ sourcePath, contentType, classification: 'MOVE_TO_PROTECTED_CONTENT', reason: 'File-level boundary entry: contains learner-only instructions, prompts, expected answers, grading data, solutions, credentials, or instructor material. Child records below preserve logical IDs.', careerPath: 'cybersecurity', learningPath: sourcePath.includes('android') ? 'android-pentesting' : sourcePath.includes('instructor') ? 'wireless-pentesting' : null, targetKind: 'postgres-record', target })
+  const deliveryClass = sourcePath.includes('instructor') ? 'instructor-only' : ['labs.ts', 'labs.json', 'engagements.json'].some(name => sourcePath.endsWith(name)) ? 'protected-learner' : 'server-only'
+  add({ sourcePath, contentType, classification: 'MOVE_TO_PROTECTED_CONTENT', deliveryClass, reason: 'File-level migration source contains mixed learner and restricted fields. Child records preserve logical IDs; raw mixed files are never returned to learners.', careerPath: 'cybersecurity', learningPath: sourcePath.includes('android') ? 'android-pentesting' : sourcePath.includes('instructor') ? 'wireless-pentesting' : null, targetKind: 'postgres-record', target })
 }
 
 function addProtectedRecord(sourcePath, contentType, record, module, target, reason) {
@@ -102,14 +104,15 @@ for (const sourcePath of artifactPaths) {
   const basename = path.basename(sourcePath)
   const artifactMeta = Object.entries(readJson('frontend/src/content/lab-artifacts.json').artifacts).find(([, value]) => path.basename(value.path) === basename)
   const module = sourcePath.includes('/wireless-foundations/WF-FND-01/') ? '01-intro-wireless' : null
-  add({ sourcePath, contentType: 'artifact', classification: approved ? 'KEEP_PUBLIC' : 'REVIEW_CLASSIFY', reason: approved ? 'One of exactly four owner-approved Wireless scope-exercise sample files; the zip, captures, checksums, frame JSON, and self-review are excluded.' : 'Currently public artifact. Intent is not safe to infer from location; owner must decide public resource versus authenticated learner artifact before migration.', careerPath: 'cybersecurity', learningPath: sourcePath.includes('/android-') ? 'android-pentesting' : 'wireless-pentesting', module: module ?? (artifactMeta ? null : null), contentId: slug(sourcePath), targetKind: approved ? 'public-sample-object' : 'decision-required', target: approved ? `public-samples/wireless/${basename}` : `storage://protected-artifacts/${sourcePath.replace('frontend/public/', '')}`, artifact: true })
+  const serverOnly = /(?:self-review|reference-results|reference-review|answer|solution)/i.test(sourcePath) || /\.(?:zip|tar|gz)$/i.test(sourcePath)
+  add({ sourcePath, contentType: 'artifact', classification: approved ? 'KEEP_PUBLIC' : 'MOVE_TO_PROTECTED_CONTENT', deliveryClass: approved ? 'public' : serverOnly ? 'server-only' : 'protected-learner', reason: approved ? 'One of exactly four owner-approved Wireless scope-exercise sample files.' : serverOnly ? 'Owner decision: protected supporting/answer-bearing material or mixed archive; never delivered directly as a learner artifact.' : 'Owner decision: protected learner artifact; accessible only to approved learners after FastAPI authorization.', careerPath: 'cybersecurity', learningPath: sourcePath.includes('/android-') ? 'android-pentesting' : 'wireless-pentesting', module: module ?? (artifactMeta ? null : null), contentId: slug(sourcePath), targetKind: approved ? 'public-sample-object' : 'supabase-storage-object', target: approved ? `public-samples/wireless/${basename}` : `protected-artifacts/${sourcePath.replace('frontend/public/', '')}`, artifact: true })
 }
 
 for (const sourcePath of walk(path.join(root, 'android-labs')).filter(file => fs.statSync(file).isFile()).map(file => normalize(path.relative(root, file))).sort()) {
   add({ sourcePath, contentType: 'lab-source-artifact', classification: 'MOVE_TO_PROTECTED_CONTENT', reason: 'Buildable lab source supports learner exercises and must be delivered only to authorized learners unless separately approved as a public resource.', careerPath: 'cybersecurity', learningPath: 'android-pentesting', module: 'android-04-components', contentId: slug(sourcePath), targetKind: 'supabase-storage-object', target: `protected-artifacts/${sourcePath}`, artifact: true })
 }
 for (const sourcePath of walk(path.join(root, 'content/configs')).filter(file => fs.statSync(file).isFile()).map(file => normalize(path.relative(root, file))).sort()) {
-  add({ sourcePath, contentType: 'lab-config-artifact', classification: 'REVIEW_CLASSIFY', reason: 'Teaching configuration may be a public reference or a learner-only lab artifact; owner intent is required before publication or protected migration.', careerPath: 'cybersecurity', learningPath: 'wireless-pentesting', targetKind: 'decision-required', target: `storage://protected-artifacts/${sourcePath}`, artifact: true })
+  add({ sourcePath, contentType: 'lab-config-artifact', classification: 'MOVE_TO_PROTECTED_CONTENT', deliveryClass: 'protected-learner', reason: 'Owner decision: labelled good/bad hostapd configuration is protected learner-only lab input.', careerPath: 'cybersecurity', learningPath: 'wireless-pentesting', targetKind: 'supabase-storage-object', target: `protected-artifacts/${sourcePath}`, artifact: true })
 }
 
 const entryBySource = new Map(entries.map(entry => [entry.sourcePath, entry]))
@@ -132,7 +135,15 @@ const manifest = {
     wirelessFiles: [...approvedWirelessFiles].sort(),
     androidLesson: 'android-01-platform/01-architecture-sandbox-and-trust-boundaries',
   },
-  summary: { entries: entries.length, byClassification: counts(entries.map(item => item.classification)), findings: findings.length, findingsByClassification: counts(findings.map(item => item.classification)), unmappedFindings: findings.filter(item => !item.migrationEntryId).length },
+  summary: {
+    entries: entries.length,
+    byClassification: Object.fromEntries(['KEEP_PUBLIC', 'MOVE_TO_PROTECTED_CONTENT', 'REVIEW_CLASSIFY'].map(kind => [kind, entries.filter(item => item.classification === kind).length])),
+    byDeliveryClass: Object.fromEntries(['public', 'protected-learner', 'server-only', 'instructor-only'].map(kind => [kind, entries.filter(item => item.deliveryClass === kind).length])),
+    unresolvedClassifications: entries.filter(item => item.classification === 'REVIEW_CLASSIFY').length,
+    findings: findings.length,
+    findingsByClassification: Object.fromEntries(['KEEP_PUBLIC', 'MOVE_TO_PROTECTED_CONTENT', 'REVIEW_CLASSIFY'].map(kind => [kind, findings.filter(item => item.classification === kind).length])),
+    unmappedFindings: findings.filter(item => !item.migrationEntryId).length,
+  },
   entries,
   leakAuditBaseline: { target: 'Zero unintended protected-content exposure in public build/API; approved catalogue and samples remain legitimate.', findings },
   manualDecisions: entries.filter(item => item.classification === 'REVIEW_CLASSIFY').map(item => ({ migrationEntryId: item.id, sourcePath: item.sourcePath, question: 'Should this be intentionally public, an authenticated learner artifact, or server-only material?' })),

@@ -82,7 +82,9 @@ test('migration manifest classifies all 317 post-build findings without producti
   assert.equal(result.document.productionWrites, false)
   assert.equal(result.document.summary.findings, 317)
   assert.equal(result.document.summary.unmappedFindings, 0)
-  assert.ok(result.document.entries.every(entry => ['KEEP_PUBLIC', 'MOVE_TO_PROTECTED_CONTENT', 'REVIEW_CLASSIFY'].includes(entry.classification)))
+  assert.equal(result.document.summary.unresolvedClassifications, 0)
+  assert.equal(result.document.summary.byClassification.REVIEW_CLASSIFY, 0)
+  assert.ok(result.document.entries.every(entry => ['KEEP_PUBLIC', 'MOVE_TO_PROTECTED_CONTENT'].includes(entry.classification)))
 })
 
 test('only the four approved Wireless files are public sample artifacts', () => {

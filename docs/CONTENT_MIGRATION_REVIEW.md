@@ -1,6 +1,6 @@
 # Content migration owner-review package
 
-*Status: decision package · 2 October 2026 · architecture only, no implementation. This package makes no production import, database/Storage write, content conversion, hosting change, visibility change, or infrastructure upgrade.*
+*Status: owner decisions approved · 2 October 2026. The 159-row table below is retained as the historical review record; final classifications live in the manifest. No production import, Supabase/Storage write, hosting change, visibility change, or infrastructure upgrade has occurred.*
 
 The source of truth for item mapping remains [`../content/migration/CONTENT_MIGRATION_MANIFEST.json`](../content/migration/CONTENT_MIGRATION_MANIFEST.json). The table in §1 is generated from its 159 `REVIEW_CLASSIFY` entries. For efficient policy decisions, use the grouped [`CONTENT_OWNER_DECISION_MATRIX.md`](CONTENT_OWNER_DECISION_MATRIX.md). The existing SecCraft repository remains the sole repository.
 
@@ -401,6 +401,6 @@ Still required before implementation:
 5. Approve release/artifact retention and deletion periods.
 6. Later, separately approve schema implementation, staging import, Render migration, repository privacy, and production import in the required order.
 
-# NOT READY FOR MIGRATION
+# OWNER CLASSIFICATION REVIEW COMPLETE
 
-The architecture is reviewable, but 159 content classifications and the policy decisions above remain unresolved. No production migration is authorized.
+All 159 decisions were approved through G1–G10 and are encoded as protected delivery classes. This historical table does not authorize production migration; staging validation and deployment gates remain separate.

@@ -83,7 +83,7 @@ try {
 
   assert.equal(LABS.length, 29, 'wireless labs and nine source-case labs are retained')
   assert.equal(AVAILABLE_LABS.length, 28, 'only available labs enter learner progress')
-  assert.equal(AVAILABLE_LABS.filter(lab => lab.grading === 'verified').length, 3, 'machine-checked grading scope is explicit')
+  assert.equal(AVAILABLE_LABS.filter(lab => lab.grading === 'answer-checked').length, 3, 'answer-checked Practice scope is explicit')
   assert.ok(LABS.every(lab => moduleIds.has(lab.module)), 'every lab belongs to a shipped module')
   const inventory = JSON.parse(fs.readFileSync(path.join(frontendRoot, 'src/content/lab-artifacts.json'), 'utf8')).artifacts
   for (const lab of AVAILABLE_LABS) {

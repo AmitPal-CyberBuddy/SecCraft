@@ -1,6 +1,6 @@
 # Owner Decision Matrix — content ownership and classification
 
-*Status: owner decision aid · 2 October 2026 · derived from `CONTENT_MIGRATION_MANIFEST.json` and `CONTENT_MIGRATION_REVIEW.md`. No migration or runtime change is authorized or implemented.*
+*Status: approved owner decisions · 2 October 2026 · retained as the policy record used to finalize `CONTENT_MIGRATION_MANIFEST.json`. No production migration or infrastructure change is authorized.*
 
 This matrix reduces 159 item decisions to ten non-overlapping policy groups. Item-level source paths, hashes, stable IDs, and destinations remain in [`CONTENT_MIGRATION_REVIEW.md`](CONTENT_MIGRATION_REVIEW.md) and [`../content/migration/CONTENT_MIGRATION_MANIFEST.json`](../content/migration/CONTENT_MIGRATION_MANIFEST.json). A group decision applies only to the membership rule stated here; exceptions remain item-level decisions.
 
@@ -228,6 +228,6 @@ G9 hostapd configs: [public | protected | neutral public + labelled protected]
 G10 Other: <decision for each of four paths>
 ```
 
-# NOT READY FOR MIGRATION
+# DECISIONS APPROVED
 
-The matrix reduces review complexity but does not decide the groups. The system remains not ready until the owner supplies these classifications and the item-level manifest is updated and re-reviewed. No implementation begins from this document alone.
+G1–G10 are final: no current artifact exceptions are public, learner-safe material is protected, and answer/solution/instructor material receives stricter delivery classes. Production deployment remains separately gated.

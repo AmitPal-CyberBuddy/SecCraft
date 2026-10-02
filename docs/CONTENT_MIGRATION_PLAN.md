@@ -34,11 +34,11 @@ The generator is local-only: it reads repository files, computes hashes, imports
 | Classification | Manifest entries | Meaning |
 |---|---:|---|
 | `KEEP_PUBLIC` | 14 | Five catalogue sources, three public references, two approved lesson bodies, and exactly four approved Wireless sample files |
-| `MOVE_TO_PROTECTED_CONTENT` | 370 | 97 non-sample lesson bodies; 146 practice items; 47 scenarios; 29 labs; 22 challenges; 9 Android cases; 10 Android lab-source artifacts; and file-level boundaries for mixed/answer-bearing sources |
-| `REVIEW_CLASSIFY` | 159 | 154 currently public artifacts plus five authored hostapd configurations whose intended audience is not safe to infer |
-| **Total** | **543** | Every source boundary and logical import record has an explicit target and reason; review is a deliberate classification, not suppression |
+| `MOVE_TO_PROTECTED_CONTENT` | 529 | Protected learner content, server-only keys/solutions/mixed archives, instructor material, all 34 PCAPs, all 18 Lab JSON files, all current archives/guides/configurations and the remaining owner-resolved artifacts |
+| `REVIEW_CLASSIFY` | 0 | Owner decisions G1–G10 were approved; unresolved classifications are now rejected by validation |
+| **Total** | **543** | Every source boundary and logical import record has a final access class and destination |
 
-The manifest deliberately does not label all current public files as leaks. `KEEP_PUBLIC` is legitimate publication, `MOVE_TO_PROTECTED_CONTENT` is ready for a future protected migration, and `REVIEW_CLASSIFY` blocks migration/publication until the owner decides.
+`KEEP_PUBLIC` means public by design; it is not a maturity tier. Protected entries additionally carry `protected-learner`, `server-only`, or `instructor-only` delivery classes.
 
 ## 4. Approved public samples
 
@@ -59,16 +59,16 @@ The committed manifest records the approved **317 post-build findings** individu
 
 | Finding classification | Findings | Interpretation |
 |---|---:|---|
-| `KEEP_PUBLIC` | 6 | Four approved source sample artifacts plus two copies emitted in the current build |
-| `MOVE_TO_PROTECTED_CONTENT` | 114 | Lesson/lab/prompt/key/solution/instructor findings that must leave public delivery, excluding the two approved lesson bodies |
-| `REVIEW_CLASSIFY` | 197 | Current source artifacts and build copies requiring an owner decision |
+| `KEEP_PUBLIC` | 6 | Two approved sample lesson bodies plus exactly four approved Wireless sample artifacts |
+| `MOVE_TO_PROTECTED_CONTENT` | 311 | All other findings now have final protected learner/server/instructor classifications |
+| `REVIEW_CLASSIFY` | 0 | No unresolved owner decisions remain |
 | **Total** | **317** | Baseline only; CI remains report-only |
 
 The target is **zero unintended protected-content exposure in public build/API**, not zero findings. Future enforcement must allow schema-approved catalogue fields and hash-pinned approved samples while rejecting protected records and any unapproved artifact.
 
 ## 6. Proposed migration sequence (not executed)
 
-1. **Owner decisions:** resolve every `REVIEW_CLASSIFY` item and approve record grouping/IDs.
+1. **Owner decisions (complete):** all G1–G10 classifications are encoded; validation rejects any remaining `REVIEW_CLASSIFY` entry.
 2. **Prerequisite hosting gate:** prepare and verify Render Static Site; keep Pages working until cutover.
 3. **Privacy gate:** make this existing repository private only after verified frontend cutover.
 4. **Authoring preparation:** create protected source under `protected-content/`; split mixed files into public metadata, learner-visible content, and server-only grading material. Preserve stable IDs.
@@ -111,19 +111,8 @@ No database migration has been authored or applied in this phase.
 
 Access expectations are invariant: unauthenticated and pending accounts receive catalogue/status plus approved samples only; active approved accounts receive authorized learning content. Authorization belongs in FastAPI and private Storage access, never solely in route guards or frontend rendering.
 
-## 9. Owner decisions required
+## 9. Owner decisions complete; deployment gates remain
 
-The human-readable review package is [`CONTENT_MIGRATION_REVIEW.md`](CONTENT_MIGRATION_REVIEW.md), including all 159 item-level rows, grouped leak findings, proposed runtime schema, authorization model, mixed-source split, Practice/Verified treatment, and retention proposal.
+The historical [`CONTENT_MIGRATION_REVIEW.md`](CONTENT_MIGRATION_REVIEW.md) and approved [`CONTENT_OWNER_DECISION_MATRIX.md`](CONTENT_OWNER_DECISION_MATRIX.md) preserve the 159 item-level decisions. All current PCAPs, Lab JSON, Android artifacts, archives, guides, hostapd configurations and miscellaneous artifacts are protected. Mixed sources split learner fields from server-only keys/solutions; self-review reveals after first attempt; existing answer-checked labs remain Practice; `cybersecurity` is the stable Career Path ID.
 
-The manifest contains all 159 item-level questions. They group into:
-
-1. **154 current public artifacts:** decide public resource, authenticated learner artifact, or server-only material. This includes all PCAPs, `lab-data`, Android packs/source, Wireless practice packs, reference guides, checksums, answers/self-review files, and downloadable zips.
-2. **Wireless Foundations remainder:** explicitly confirm protected treatment for `WF-FND-01.zip`, `SHA256SUMS`, two captures, two frame JSON files, and `self-review.md`; only the agreed four files are currently public-approved.
-3. **Five `content/configs/hostapd-*` files:** decide whether each is intentionally public reference material or learner-only lab input.
-4. **Artifact grouping:** decide whether paired PCAP/JSON/checksum/readme files become one versioned artifact pack or separate objects. Full downloadable packs must not be inferred as public.
-5. **Current “verified” practice labels:** approve conversion to Practice-only history. Existing public questions/answers cannot establish Demonstrated or Verified competency.
-6. **Mixed source files:** approve splitting prompts from keys/solutions so active learners never receive server-only grading material.
-7. **Career-path identity:** confirm `cybersecurity` as the parent career-path ID, or provide the stable ID before migration records are finalized.
-8. **Retention/version policy:** choose release retention and artifact retirement periods before PostgreSQL/Storage schemas are implemented.
-
-Until these decisions and the hosting/privacy prerequisites are complete, no real migration is authorized.
+No production migration is authorized until isolated staging validation is complete, the public build has no unintended protected payloads, Render cutover is separately approved and verified, and this existing repository is made private in the approved sequence.
