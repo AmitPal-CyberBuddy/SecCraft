@@ -146,30 +146,30 @@ test('every account state renders the right surfaces and never drops the learner
     return text
   }
 
-  // Destinations every state keeps. The Preview Curriculum and the practice surfaces are never
-  // taken away — approval adds the record, it does not revoke the reading.
+  // Destinations every state keeps. The catalogue and the practice surfaces are never taken away —
+  // approval adds learning content and the record, it does not revoke the catalogue.
   const learnerNav = ['Learning Paths', 'Modules', 'Labs', 'Challenges', 'Analytics', 'Settings', 'Progress sync']
-  // Which tier each state is shown, and whether the "continue with an approved account" upsell
-  // should be offered. A non-approved state may legitimately *name* the Full Curriculum in the
+  // Which access label each state is shown, and whether the "continue with an approved account"
+  // upsell should be offered. A non-approved state may legitimately *name* approved learning in the
   // upsell copy — what it must never do is be presented as already having it.
   const APPROVED = new Set(['active', 'owner'])
   const tierByState = Object.fromEntries(
     ['guest', 'unverified', 'pending', 'active', 'rejected', 'suspended', 'owner'].map(label => [
       label,
       {
-        tier: APPROVED.has(label) ? 'Full Curriculum' : 'Preview Curriculum',
+        tier: APPROVED.has(label) ? 'Approved learning' : 'Catalogue access',
         upsell: !APPROVED.has(label),
       },
     ]),
   )
 
   const scenarios = [
-    { label: 'guest', session: null, response: { status: 401, body: { detail: 'Bearer access token required.' } }, expect: ['Preview learner', 'Request an account'] },
-    { label: 'unverified', session: { access_token: 't' }, response: { status: 403, body: { detail: { code: 'email_not_verified', message: 'Verify your email before continuing.' } } }, expect: ['Confirm your email address', 'Keep learning'] },
-    { label: 'pending', session: { access_token: 't' }, response: { status: 200, body: { user_id: 'u1', email: 'p@example.com', account_status: 'pending', is_admin: false } }, expect: ['Approval pending', 'Keep learning', 'Sign out'] },
+    { label: 'guest', session: null, response: { status: 401, body: { detail: 'Bearer access token required.' } }, expect: ['Visitor', 'Request an account'] },
+    { label: 'unverified', session: { access_token: 't' }, response: { status: 403, body: { detail: { code: 'email_not_verified', message: 'Verify your email before continuing.' } } }, expect: ['Confirm your email address', 'Explore the catalogue'] },
+    { label: 'pending', session: { access_token: 't' }, response: { status: 200, body: { user_id: 'u1', email: 'p@example.com', account_status: 'pending', is_admin: false } }, expect: ['Approval pending', 'Explore the catalogue', 'Sign out'] },
     { label: 'active', session: { access_token: 't' }, response: { status: 200, body: { user_id: 'u2', email: 'a@example.com', account_status: 'active', is_admin: false } }, expect: ['Account snapshot', 'Approved account', 'Practice XP (this browser)'] },
-    { label: 'rejected', session: { access_token: 't' }, response: { status: 200, body: { user_id: 'u3', email: 'r@example.com', account_status: 'rejected', is_admin: false } }, expect: ['Not approved', 'Continue in the Preview Curriculum'] },
-    { label: 'suspended', session: { access_token: 't' }, response: { status: 200, body: { user_id: 'u4', email: 's@example.com', account_status: 'suspended', is_admin: false } }, expect: ['Suspended', 'Continue in the Preview Curriculum'] },
+    { label: 'rejected', session: { access_token: 't' }, response: { status: 200, body: { user_id: 'u3', email: 'r@example.com', account_status: 'rejected', is_admin: false } }, expect: ['Not approved', 'You can still explore the catalogue'] },
+    { label: 'suspended', session: { access_token: 't' }, response: { status: 200, body: { user_id: 'u4', email: 's@example.com', account_status: 'suspended', is_admin: false } }, expect: ['Suspended', 'You can still explore the catalogue'] },
     { label: 'owner', session: { access_token: 't' }, response: { status: 200, body: { user_id: 'o1', email: 'o@example.com', account_status: 'active', is_admin: true } }, expect: ['Open owner console', 'Owner console', 'Practice XP (this browser)'] },
   ]
 
@@ -200,7 +200,7 @@ test('every account state renders the right surfaces and never drops the learner
         ),
       )
 
-      assert.ok(shellText.includes(APPROVED.has(scenario.label) ? 'Your learning workspace' : 'Explore the preview'), `${scenario.label}: workspace presentation must reflect the actual tier`)
+      assert.ok(shellText.includes(APPROVED.has(scenario.label) ? 'Your learning workspace' : 'Explore the catalogue'), `${scenario.label}: workspace presentation must reflect the actual tier`)
       assert.ok(shellText.includes(APPROVED.has(scenario.label) ? 'View account records' : 'Practice stays in this browser'), `${scenario.label}: header must explain record provenance`)
 
       for (const destination of learnerNav) {
@@ -210,7 +210,8 @@ test('every account state renders the right surfaces and never drops the learner
       const publicText = await render(
         wrap(React.createElement(MemoryRouter, { initialEntries: ['/'] }, React.createElement(PublicHome))),
       )
-      assert.ok(publicText.includes('Preview Curriculum'), `${scenario.label}: public site must describe guest preview access`)
+      assert.ok(publicText.includes('The catalogue is public'), `${scenario.label}: public site must say the catalogue is public`)
+      assert.ok(publicText.includes('approved accounts'), `${scenario.label}: public site must say who gets lessons, labs and assessments`)
       assert.ok(publicText.includes('Once your account is approved'), `${scenario.label}: public site must describe approval honestly`)
       assert.ok(publicText.includes('not independently verified'), `${scenario.label}: public site must label imported/practice data`)
       assert.ok(!publicText.includes('Certificate issued'), `${scenario.label}: no issuance claim`)
@@ -223,8 +224,8 @@ test('every account state renders the right surfaces and never drops the learner
       )
       if (tier.upsell) {
         assert.ok(
-          /Request an account|Log in|account record/.test(shellText),
-          `${scenario.label}: a non-approved state must be offered a route to an approved account`,
+          /Request an account|Log in|for approved accounts/.test(shellText),
+          `${scenario.label}: a non-approved state must be told that lessons, labs and assessments are for approved accounts, or be offered a way to request one`,
         )
       } else {
         assert.ok(
@@ -233,9 +234,9 @@ test('every account state renders the right surfaces and never drops the learner
         )
       }
 
-      // A non-approved state must never be shown the dashboard as if it held the Full Curriculum.
+      // A non-approved state must never be shown the dashboard as if it held approved learning.
       if (!tier.upsell) {
-        assert.ok(shellText.includes('Full Curriculum'), `${scenario.label}: should see the full-curriculum framing`)
+        assert.ok(shellText.includes('Approved learning'), `${scenario.label}: should see the approved-learning framing`)
       }
 
       // Local XP is local in EVERY state, including approved. An account adds a record beside it;
@@ -281,7 +282,7 @@ test('every account state renders the right surfaces and never drops the learner
       assert.ok(text.includes(destination), `outage: learner navigation lost "${destination}"`)
     }
     assert.ok(text.includes('What should I do next') || text.includes('Next step for you'), 'outage: the dashboard should still recommend a next step')
-    assert.ok(text.includes('Preview Curriculum'), 'outage: the preview tier must still be stated')
+    assert.ok(text.includes('Catalogue access'), 'outage: catalogue access must still be stated')
     assert.ok(text.includes('Practice — unverified'), 'outage: practice figures must still be labelled')
     backendDown = false
    } catch (error) {

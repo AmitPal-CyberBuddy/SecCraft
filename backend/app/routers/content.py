@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pathlib import Path
 import json
-import re
 from app.core.config import CONTENT_DIR, REPO_CONTENT_DIR
 
 router = APIRouter()
@@ -68,17 +67,7 @@ async def get_module(module_id: str):
             return m
     raise HTTPException(status_code=404, detail="Module not found")
 
-@router.get("/content/{module_id}/{lesson_id}")
-async def get_lesson_content(module_id: str, lesson_id: str):
-    # IDs are repository identifiers, never caller-controlled filesystem paths.
-    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}", module_id) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}", lesson_id):
-        raise HTTPException(status_code=404, detail="Lesson not found")
-    # Try frontend content lessons
-    lesson_path = CONTENT_DIR / "lessons" / module_id / f"{lesson_id}.md"
-    if lesson_path.exists():
-        return lesson_path.read_text()
-    # Try repo content
-    repo_lesson = REPO_CONTENT_DIR / "modules" / module_id / "lessons" / f"{lesson_id}.md"
-    if repo_lesson.exists():
-        return repo_lesson.read_text()
-    raise HTTPException(status_code=404, detail="Lesson not found")
+# Lesson text is learning content: it is served only by the authenticated
+# GET /api/v1/content/lessons/{module_id}/{lesson_id} route (approved accounts). An anonymous
+# lesson route used to live here and bypassed that gate. Do not add one back; the
+# test_anonymous_requests_never_receive_lesson_text regression test fails if any route does this.

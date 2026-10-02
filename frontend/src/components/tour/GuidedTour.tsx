@@ -4,7 +4,7 @@ import { driver, type DriveStep } from 'driver.js'
 import 'driver.js/dist/driver.css'
 import { Map, X } from 'lucide-react'
 import { useSession } from '@/lib/session'
-import { canAccessTier } from '@/lib/contentAccess'
+import { allows } from '@/lib/access'
 
 const SEEN_KEY = 'platform-tour-seen'
 function rememberTour() {
@@ -19,7 +19,7 @@ function rememberTour() {
 export function GuidedTour() {
   const { pathname } = useLocation()
   const { userState } = useSession()
-  const full = canAccessTier(userState, 'full')
+  const full = allows(userState, 'learning-content')
   const [seen, setSeen] = useState(() => {
     try { return (localStorage.getItem(SEEN_KEY) || localStorage.getItem('wififorge-tour-seen')) === 'true' } catch { return false }
   })
@@ -35,7 +35,7 @@ export function GuidedTour() {
     setShowPrompt(false)
     const steps: DriveStep[] = [
       { popover: { title: 'A quick tour of this workspace', description: 'We will point to the controls on this screen. Nothing in the tour changes your progress. Use Next, Back, or Close at any time.' } },
-      { element: '.sc-experience-row', popover: { title: full ? 'Your account experience' : 'Your preview experience', description: full ? 'Full Curriculum is shown for this approved account. Your browser practice is still unverified; use Progress sync to see account-held records.' : 'Preview Curriculum is shown here. Practice is saved in this browser and is unverified. Account status changes the experience, not whether bundled course files can be read.', side: 'bottom' } },
+      { element: '.sc-experience-row', popover: { title: full ? 'Your account access' : 'Your catalogue access', description: full ? 'Lessons, labs and assessments are open to this approved account. Your browser practice is still unverified; use Progress sync to see account-held records.' : 'You are browsing the public catalogue. Lessons, labs and assessments are for approved accounts. Practice is saved in this browser and is unverified.', side: 'bottom' } },
       { element: '#mobile-navigation-toggle', popover: { title: 'Find every tool', description: 'Open All tools for the full list: learning paths, labs, challenges, reference, reports and your account pages. The main learning links are also in the header on larger screens.', side: 'bottom' } },
       ...(pathname === '/app' && document.querySelector('.ws-focus') ? [
         { element: '.ws-focus', popover: { title: 'Your next learning step', description: 'This suggestion comes from lessons and practice recorded in this browser. Select its action to continue; it does not claim a verified skill or grade.', side: 'bottom' as const } },

@@ -17,6 +17,26 @@ const DEFAULT_BASE = '/SecCraft/'
 
 // The HTML references Vite's hashed assets. Include the SW itself so changing its
 // fetch policy also forces an update even when the app bundles are unchanged.
+function publicBoundaryAssetsPlugin(enabled: boolean): Plugin {
+  return {
+    name: 'seccraft:public-boundary-assets',
+    apply: 'build',
+    closeBundle() {
+      if (!enabled) return
+      const out = path.join(ROOT, 'dist')
+      const publicRoot = path.join(ROOT, 'public')
+      for (const name of ['favicon.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'manifest.json', 'sw.js']) {
+        fs.copyFileSync(path.join(publicRoot, name), path.join(out, name))
+      }
+      const sampleOut = path.join(out, 'wireless-foundations', 'WF-FND-01')
+      fs.mkdirSync(sampleOut, { recursive: true })
+      for (const name of ['README.md', 'authorized-inventory.csv', 'scope.md', 'worksheet.md']) {
+        fs.copyFileSync(path.join(publicRoot, 'wireless-foundations', 'WF-FND-01', name), path.join(sampleOut, name))
+      }
+    },
+  }
+}
+
 function serviceWorkerBuildPlugin(): Plugin {
   return {
     name: 'seccraft:service-worker-build',
@@ -211,10 +231,12 @@ export default defineConfig(({ mode, command }) => {
   const env = { ...loadEnv(mode, ROOT, ''), ...process.env }
   const base = normalizeBase(env.VITE_BASE || DEFAULT_BASE)
   const cspPolicy = createCspPolicy(allowedConnectSources(env, command === 'build'))
+  const boundaryBuild = env.CONTENT_BOUNDARY_BUILD === '1'
 
   return {
     base,
-    plugins: [react(), pagesHostingPlugin(base), securityPlugin(base, cspPolicy), serviceWorkerBuildPlugin()],
+    publicDir: boundaryBuild ? false : 'public',
+    plugins: [react(), publicBoundaryAssetsPlugin(boundaryBuild), pagesHostingPlugin(base), securityPlugin(base, cspPolicy), serviceWorkerBuildPlugin()],
     server: {
       host: '0.0.0.0',
       port: 3000,
@@ -228,6 +250,14 @@ export default defineConfig(({ mode, command }) => {
     },
     resolve: {
       alias: {
+        ...(boundaryBuild ? {
+          '@/content/challenges.json': path.resolve(ROOT, 'src/content/public-boundary/empty.json'),
+          '@/content/scenarios.json': path.resolve(ROOT, 'src/content/public-boundary/empty.json'),
+          '@/content/androidCases.json': path.resolve(ROOT, 'src/content/public-boundary/androidCases.json'),
+          '@/content/engagements.json': path.resolve(ROOT, 'src/content/public-boundary/engagements.json'),
+          '@/content/lab-artifacts.json': path.resolve(ROOT, 'src/content/public-boundary/lab-artifacts.json'),
+          '@/content/quizData': path.resolve(ROOT, 'src/content/public-boundary/quizData.ts'),
+        } : {}),
         '@': path.resolve(ROOT, './src'),
       },
     },

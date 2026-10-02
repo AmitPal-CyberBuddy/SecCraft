@@ -53,6 +53,7 @@ export type AuthAvailability = 'unavailable' | 'ready'
  * ------------------------------------------------------------------ */
 
 export type Capability =
+  | 'catalogue'
   | 'guest-workspace'
   | 'local-progress'
   | 'profile'
@@ -64,19 +65,22 @@ export type Capability =
   | 'account-progress'
   | 'progress-merge'
   | 'assessment-attempts'
-  | 'full-curriculum'
+  | 'learning-content'
   | 'certificate'
   | 'admin-console'
 
 const LEARNER_STATES: UserState[] = ['public', 'guest', 'pending', 'active', 'rejected', 'suspended']
 const SIGNED_IN_STATES: UserState[] = ['pending', 'active', 'rejected', 'suspended', 'owner']
 const ACCOUNT_BACKED_STATES: UserState[] = ['active', 'owner']
+const ALL_STATES: UserState[] = [...LEARNER_STATES, 'owner']
 
 /**
  * The access matrix, in one readable place. `public` is included in the learner set so that a
  * visitor who opens a learning URL directly is treated exactly like a guest — no artificial block.
  */
 export const ACCESS_MATRIX: Record<Capability, UserState[]> = {
+  // The catalogue is public. Lessons, labs and assessments (`learning-content`) are for approved accounts.
+  catalogue: ALL_STATES,
   'guest-workspace': LEARNER_STATES,
   'local-progress': LEARNER_STATES,
   profile: LEARNER_STATES,
@@ -88,7 +92,7 @@ export const ACCESS_MATRIX: Record<Capability, UserState[]> = {
   'account-progress': ACCOUNT_BACKED_STATES,
   'progress-merge': ACCOUNT_BACKED_STATES,
   'assessment-attempts': ACCOUNT_BACKED_STATES,
-  'full-curriculum': ACCOUNT_BACKED_STATES,
+  'learning-content': ACCOUNT_BACKED_STATES,
   // No state qualifies. Certificates require authoritative XP and a completion record, and
   // nothing on the server awards verified XP yet, so issuance is off everywhere. See
   // CERTIFICATE_DISABLED_NOTE. A certificate that could be earned from browser-local state
@@ -169,44 +173,44 @@ export const STATE_META: Record<UserState, StateDescriptor> = {
   public: {
     label: 'Visitor',
     tone: 'neutral',
-    nextAction: 'Explore the Preview Curriculum — no account required.',
+    nextAction: 'Explore the catalogue, then request an account to start learning.',
     summary:
-      'Read the Preview Curriculum and try a few labs. Nothing is recorded for you, and you can keep your place in this browser.',
+      'Browse every learning path, module and lesson title. Lessons, labs and assessments are for approved accounts. Anything you practise in this browser stays on this device and is not a record.',
   },
   guest: {
-    label: 'Preview learner',
+    label: 'Visitor',
     tone: 'guest',
-    nextAction: 'Work through the Preview Curriculum — your place is saved in this browser.',
+    nextAction: 'Explore the catalogue, or request an account to start learning.',
     summary:
-      'You have the Preview Curriculum and practice labs. XP, levels, and achievements here are practice, kept on this device — they are not a record and are not verified.',
+      'You can browse the catalogue. Lessons, labs and assessments are for approved accounts. XP, levels, and achievements here are practice, kept on this device — they are not a record and are not verified.',
   },
   pending: {
     label: 'Approval pending',
     tone: 'pending',
-    nextAction: 'Nothing to do — keep working in the Preview Curriculum while the request is reviewed.',
+    nextAction: 'Nothing to do — you can explore the SecCraft catalogue while access is reviewed.',
     summary:
-      'Your email is verified and your request is with the platform owner. You are being shown the Preview Curriculum until it is approved; the Full Curriculum and account records switch on after that.',
+      'Your email is verified and your request is with the platform owner. Your account is awaiting approval. Lessons, labs and assessments switch on after approval.',
   },
   active: {
     label: 'Approved account',
     tone: 'active',
     nextAction: 'Check the account snapshot, or keep going on your current module.',
     summary:
-      'Your account is approved, so the Full Curriculum, account-backed progress records, import/merge, and assessment history are available. Synchronization stays manual.',
+      'Your account is approved, so lessons, labs, assessments and account-backed progress records are available. Synchronization stays manual.',
   },
   rejected: {
     label: 'Not approved',
     tone: 'danger',
-    nextAction: 'Continue in the Preview Curriculum — nothing you have read is taken away.',
+    nextAction: 'You can still explore the catalogue.',
     summary:
-      'This access request was not approved, so you are being shown the Preview Curriculum and no account records. The public material is unaffected.',
+      'This access request was not approved, so lessons, labs and assessments are not available. The public catalogue is unaffected.',
   },
   suspended: {
     label: 'Suspended',
     tone: 'danger',
-    nextAction: 'Continue in the Preview Curriculum — account-backed features are unavailable.',
+    nextAction: 'You can still explore the catalogue — learning access is unavailable.',
     summary:
-      'This account is suspended, so account records, verified XP, and the Full Curriculum are unavailable. The public Preview Curriculum is unaffected.',
+      'This account is suspended, so lessons, labs, assessments and account records are unavailable. The public catalogue is unaffected.',
   },
   owner: {
     label: 'Owner',
@@ -288,14 +292,21 @@ export const CROSS_DEVICE_NOTE =
 export const NO_VERIFICATION_CLAIM =
   'Assessment answers are recorded as a digest only. No server rubric grades them, so no score here is a verified result.'
 
-export const PREVIEW_NOTE =
-  'The Preview Curriculum is a real slice of the SecCraft method, not a watered-down trial. What an account adds is the record, not the reading.'
+/** What a visitor can see, in one sentence. Use it wherever the public/learning boundary is stated. */
+export const CATALOGUE_NOTE =
+  'The catalogue is public: every learning path, module and lesson title, with its skills and prerequisites. Lessons, labs and assessments are for approved accounts.'
 
+/** What approval changes, in one sentence. */
 export const ACCOUNT_ADDS_NOTE =
-  'An approved account unlocks the full curriculum and account-backed records. Imported practice stays unverified.'
+  'An approved account unlocks lessons, labs, assessments and account-backed records. Imported practice stays unverified.'
 
-export const ACCOUNT_ADDOES_NOT_ADD_NOTE =
-  'An account does not change how much of the public material you can read, and it never uploads your progress on its own. Synchronization is always a deliberate step.'
+/**
+ * The access an account state is shown. Access is not content maturity (see `contentMaturity.ts`),
+ * and neither is the lab environment badge.
+ */
+export function accessLabel(state: UserState): string {
+  return allows(state, 'learning-content') ? 'Approved learning' : 'Catalogue access'
+}
 
 /** Shown wherever local XP appears for a non-approved state, so it is never read as standing. */
 export const PRACTICE_XP_NOTE =

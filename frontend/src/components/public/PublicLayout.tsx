@@ -61,8 +61,8 @@ export function PublicLayout() {
               <Link to="/signup" className="rounded-lg border border-[var(--line-normal)] px-3 py-2 text-sm font-medium text-[var(--ink-primary)] transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--panel-raised)]">
                 Request access
               </Link>
-              <Link to="/app" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--accent-border)] bg-[var(--accent-bg)] px-4 text-sm font-semibold text-[var(--learning)] transition-colors hover:border-[var(--accent-border)] hover:bg-[var(--accent-bg)]">
-                Start the preview <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              <Link to="/paths" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[var(--accent-border)] bg-[var(--accent-bg)] px-4 text-sm font-semibold text-[var(--learning)] transition-colors hover:border-[var(--accent-border)] hover:bg-[var(--accent-bg)]">
+                Explore the catalogue <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
             </div>
           )}
@@ -106,7 +106,7 @@ export function PublicLayout() {
                   <Link to="/signup" className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-[var(--line-normal)] px-3 py-2 text-center text-sm text-[var(--ink-primary)]">
                     <CloudUpload className="h-4 w-4" aria-hidden="true" /> Request access
                   </Link>
-                  <Link to="/app" className="flex-1 rounded-lg sc-learning-action px-3 py-2 text-center text-sm font-semibold ">Start the preview</Link>
+                  <Link to="/paths" className="flex-1 rounded-lg sc-learning-action px-3 py-2 text-center text-sm font-semibold ">Explore the catalogue</Link>
                 </div>
               )}
             </div>
@@ -129,7 +129,7 @@ export function PublicLayout() {
                 <span className="font-semibold text-[var(--ink-primary)]">SecCraft</span>
               </div>
               <p className="mt-3 text-[13px] leading-relaxed text-[var(--ink-secondary)]">
-                Learn. Practice. Investigate. Improve. The Preview Curriculum is available without an account. Approved accounts have the Full Curriculum experience.
+                Learn. Practice. Investigate. Improve. The catalogue is public. Lessons, labs and assessments are for approved accounts.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-x-10 gap-y-2 sm:text-right">

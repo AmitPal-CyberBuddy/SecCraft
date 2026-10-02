@@ -3,7 +3,7 @@
     {
       "learningPathId": "wireless-pentesting",
       "id": "lab-02-beacon",
-      "grading": "verified",
+      "grading": "answer-checked",
       "module": "02-wifi-fundamentals",
       "title": "Beacon Frame Analysis",
       "type": "PCAP Analysis",
@@ -29,7 +29,7 @@
     {
       "learningPathId": "wireless-pentesting",
       "id": "lab-05-recon",
-      "grading": "verified",
+      "grading": "answer-checked",
       "module": "05-wireless-recon",
       "title": "Wireless Recon — Hidden SSID & PNL",
       "type": "Recon Analysis",
@@ -42,7 +42,7 @@
     {
       "learningPathId": "wireless-pentesting",
       "id": "lab-06-traffic",
-      "grading": "verified",
+      "grading": "answer-checked",
       "module": "06-traffic-analysis",
       "title": "Traffic Analysis — Association Flow",
       "type": "Traffic Analysis",
@@ -382,7 +382,7 @@
     {
       "learningPathId": "wireless-pentesting",
       "id": "lab-02-beacon",
-      "grading": "verified",
+      "grading": "answer-checked",
       "module": "02-wifi-fundamentals",
       "title": "Beacon Frame Analysis",
       "type": "PCAP Analysis",
@@ -395,7 +395,7 @@
     {
       "learningPathId": "wireless-pentesting",
       "id": "lab-05-recon",
-      "grading": "verified",
+      "grading": "answer-checked",
       "module": "05-wireless-recon",
       "title": "Wireless Recon — Hidden SSID & PNL",
       "type": "Recon Analysis",
@@ -408,7 +408,7 @@
     {
       "learningPathId": "wireless-pentesting",
       "id": "lab-06-traffic",
-      "grading": "verified",
+      "grading": "answer-checked",
       "module": "06-traffic-analysis",
       "title": "Traffic Analysis — Association Flow",
       "type": "Traffic Analysis",

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, Clock, Compass, Fingerprint, Info, LogOut, ShieldAlert, UserCheck, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { useSession } from '@/lib/session'
-import { allows, PREVIEW_NOTE, STATE_META, type UserState } from '@/lib/access'
+import { allows, CATALOGUE_NOTE, STATE_META, type UserState } from '@/lib/access'
 import { StateChip } from './StateChip'
 
 /**
@@ -66,16 +66,16 @@ export function AccountBanner() {
               </div>
               <p className="mt-1.5 text-sm leading-relaxed text-[var(--ink-secondary)]">
                 {unverified
-                  ? 'Open the verification message sent to your inbox, then come back. Until then, account features stay unavailable — guest learning does not.'
+                  ? 'Open the verification message sent to your inbox, then come back. Until then, account features stay unavailable — the public catalogue does not.'
                   : transient
-                  ? `${accountError.message} ${hasSession ? 'Your approval and owner access cannot be confirmed right now. This is not a pending-approval decision.' : 'Your account status cannot be checked right now.'} Preview learning and browser-local practice remain available.`
+                  ? `${accountError.message} ${hasSession ? 'Your approval and owner access cannot be confirmed right now. This is not a pending-approval decision.' : 'Your account status cannot be checked right now.'} The catalogue and browser-local practice remain available.`
                   : STATE_META[userState as Exclude<UserState, 'public' | 'guest'>].summary}
               </p>
               <p className="mt-2 text-sm leading-relaxed text-[var(--ink-secondary)]">
                 <Compass className="mr-1 inline h-3 w-3 align-[-1px]" aria-hidden="true" />
-                {allows(userState, 'full-curriculum')
-                  ? 'The Full Curriculum and your account records are both available.'
-                  : PREVIEW_NOTE}
+                {allows(userState, 'learning-content')
+                  ? 'Lessons, labs, assessments and your account records are available.'
+                  : CATALOGUE_NOTE}
               </p>
             </div>
           </div>
@@ -96,7 +96,7 @@ export function AccountBanner() {
                 to="/paths"
                 className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-[var(--accent-border)] bg-[var(--accent-bg)] px-3 text-[12px] font-semibold text-[var(--learning)] transition-colors hover:border-[var(--accent-border)] hover:bg-[var(--accent-bg)]"
               >
-                Keep learning <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                Explore the catalogue <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
             )}
             <button

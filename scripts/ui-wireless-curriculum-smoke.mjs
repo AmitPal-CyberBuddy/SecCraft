@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import {readFileSync,mkdirSync} from 'node:fs'
 import {resolve} from 'node:path'
 import {pathToFileURL} from 'node:url'
+import { routeApprovedLearnerApi } from './lib/ui-audit-fixtures.mjs'
 const modules=process.env.UI_AUDIT_MODULES||resolve('tools/browser-qa/node_modules')
 const {chromium}=await import(pathToFileURL(resolve(modules,'playwright/index.mjs')).href)
 const AxeBuilder=(await import(pathToFileURL(resolve(modules,'@axe-core/playwright/dist/index.mjs')).href)).default
@@ -14,7 +15,7 @@ try {
  for(const [width,theme,motion] of [[320,'dark','reduce'],[1440,'light','no-preference']]){
   const context=await browser.newContext({viewport:{width,height:900},reducedMotion:motion,acceptDownloads:true})
   await context.addInitScript(theme=>localStorage.setItem('platform-theme',theme),theme)
-  await context.route('**/api/**',r=>r.fulfill({status:503,contentType:'application/json',body:'{}'}))
+  await routeApprovedLearnerApi(context)
   const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message))
   for(const m of catalogue)for(const lesson of m.lessons){
    if(width===1440 && !selected.has(lesson.id))continue

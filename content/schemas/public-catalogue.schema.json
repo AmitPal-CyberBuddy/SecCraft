@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seccraft.example/schemas/public-catalogue.schema.json",
+  "title": "SecCraft public catalogue projection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "paths"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "paths": { "type": "array", "items": { "$ref": "#/$defs/path" }, "minItems": 1 }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "maturity": { "enum": ["preview", "published", "coming-soon"] },
+    "path": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "slug", "title", "description", "maturity", "modules"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }, "slug": { "$ref": "#/$defs/id" },
+        "title": { "type": "string", "minLength": 1 }, "description": { "type": "string", "minLength": 1 },
+        "maturity": { "$ref": "#/$defs/maturity" },
+        "modules": { "type": "array", "items": { "$ref": "#/$defs/module" } }
+      }
+    },
+    "module": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "title", "description", "maturity", "lessons"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }, "title": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 }, "maturity": { "$ref": "#/$defs/maturity" },
+        "lessons": { "type": "array", "items": { "$ref": "#/$defs/lesson" } }
+      }
+    },
+    "lesson": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "title", "description", "objectives", "publicSample"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }, "title": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "objectives": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+        "publicSample": { "type": "boolean" }
+      }
+    }
+  }
+}

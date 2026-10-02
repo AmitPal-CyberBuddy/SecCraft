@@ -92,7 +92,7 @@ Everything the SPA ships itself: public homepage, guest workspace, 8 learning pa
 
 The **FastAPI backend and PostgreSQL cannot run on Pages.** Without build-time `VITE_API_BASE`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_ANON_KEY`, the deployed app is guest-only and account controls stay unavailable. To enable accounts, deploy the API/database elsewhere, set those public frontend values as GitHub Actions repository variables, configure backend CORS and provider settings, then rebuild. Do not put service-role keys or database credentials in Pages variables or frontend builds. See [`ACCOUNT_SYNC_PLATFORM.md`](ACCOUNT_SYNC_PLATFORM.md) for the setup and provider-side signup limitation.
 
-Static lessons and bundled PCAP data work offline without the API. API-backed account synchronization and server PCAP parsing require the external API. In local development, run:
+Bundled PCAP data works offline without the API. Lesson text is not bundled: it is delivered by the authenticated content API to approved accounts, so a deployment without the API shows the catalogue but no lesson text. API-backed account synchronization and server PCAP parsing also require the external API. In local development, run:
 
 ```bash
 # Terminal 1

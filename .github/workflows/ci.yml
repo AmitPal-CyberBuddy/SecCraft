@@ -41,6 +41,16 @@ jobs:
       - name: Verify local progress migration and reward semantics
         run: node scripts/verify-progress-state.mjs
 
+      - name: Validate P3.1 content and catalogue contracts
+        run: |
+          node scripts/verify-content-contract.mjs
+          node --test scripts/tests/content-contract.test.mjs
+
+      # P3.1 is intentionally report-only: current protected-content exposure is known and reviewed
+      # before the P3.5 contract gate switches this command to --enforce.
+      - name: Report protected-content exposure (non-blocking findings)
+        run: node scripts/verify-no-private-content.mjs
+
       - name: Verify learning journey content contracts
         run: node scripts/verify-learning-data.mjs
 
@@ -84,11 +94,24 @@ jobs:
         run: npm run build
         working-directory: frontend
 
+      - name: Verify dry-run migration manifest against built output
+        run: |
+          node scripts/generate-content-migration-manifest.mjs
+          git diff --exit-code -- content/migration/CONTENT_MIGRATION_MANIFEST.json
+
+      - name: Report protected-content exposure in built output
+        run: node scripts/verify-no-private-content.mjs
+
       - name: Upload dist
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.1
         with:
           name: frontend-dist
           path: frontend/dist
+
+      - name: Build and enforce the staging public-content boundary
+        run: |
+          CONTENT_BOUNDARY_BUILD=1 npm run build --prefix frontend
+          node scripts/verify-public-boundary-build.mjs
 
   backend:
     name: Backend — imports and tests
@@ -152,10 +175,16 @@ jobs:
           fi
           echo "No tracked .env files."
 
+      - name: Fail if credentials, backups, exports, or runtime databases are tracked
+        run: bash scripts/verify-no-sensitive-files-tracked.sh
+
+  # The browser suites run as three parallel jobs. As one serial job they took over an hour, which left
+  # almost no headroom under the timeout and made every push wait for all of it. Each job is independent;
+  # the first keeps the original job id and name.
   browser-qa:
     name: Browser — responsive, accessibility and keyboard smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 85
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a
@@ -197,6 +226,39 @@ jobs:
           node scripts/ui-product-polish-smoke.mjs
           node scripts/ui-path-scope-smoke.mjs
           node scripts/ui-motion-contract-smoke.mjs
+      - name: Retain reports and screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: browser-qa
+          path: .cache/ui-audit
+          retention-days: 7
+
+  browser-qa-lessons:
+    name: Browser — Wireless and Android lessons (approved-learner fixture)
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            tools/browser-qa/package-lock.json
+      - run: npm ci --prefix frontend && npm ci --prefix tools/browser-qa
+      - run: tools/browser-qa/node_modules/.bin/playwright install --with-deps chromium
+      - name: Start frontend and await readiness
+        run: |
+          VITE_BASE=/ npm run dev --prefix frontend -- --host 0.0.0.0 --port 3000 > /tmp/seccraft-vite.log 2>&1 &
+          tools/browser-qa/node_modules/.bin/wait-on --timeout 60000 http://127.0.0.1:3000
+      # Lesson text is served only by the authenticated content API, so these runners install the
+      # approved-learner fixture (scripts/lib/ui-audit-fixtures.mjs) instead of a blanket API outage.
+      - name: Wireless and Android lesson interactions
+        env:
+          UI_AUDIT_MODULES: ${{ github.workspace }}/tools/browser-qa/node_modules
+        run: |
           node scripts/ui-wireless-foundations-smoke.mjs
           node scripts/ui-wireless-phase2-smoke.mjs
           node scripts/ui-wireless-phase3-smoke.mjs
@@ -206,6 +268,29 @@ jobs:
           node scripts/ui-wireless-phase7-smoke.mjs
           node scripts/ui-wireless-curriculum-smoke.mjs
           node scripts/ui-android-curriculum-smoke.mjs
+      - name: Retain reports and screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: browser-qa-lessons
+          path: .cache/ui-audit
+          retention-days: 7
+
+  browser-qa-production:
+    name: Browser — production subpath and offline downloads
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            tools/browser-qa/package-lock.json
+      - run: npm ci --prefix frontend && npm ci --prefix tools/browser-qa
+      - run: tools/browser-qa/node_modules/.bin/playwright install --with-deps chromium
       - name: Wireless practice production subpath and offline downloads
         env:
           UI_AUDIT_MODULES: ${{ github.workspace }}/tools/browser-qa/node_modules
@@ -228,7 +313,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: browser-qa
+          name: browser-qa-production
           path: .cache/ui-audit
           retention-days: 7
 

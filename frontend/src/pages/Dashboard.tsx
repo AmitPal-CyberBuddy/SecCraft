@@ -12,7 +12,7 @@ import { OwnerNotice } from '@/components/account/AccountBanner'
 import { StateChip, UnavailableStatusChip, ProvenanceChip } from '@/components/account/StateChip'
 import { StandingChip } from '@/components/account/PracticeStanding'
 import { PageHeader, Panel, ActionLink, ProgressBar } from '@/components/common/Workspace'
-import { currentCurriculumLabel, canAccessTier } from '@/lib/contentAccess'
+import { accessLabel, allows } from '@/lib/access'
 import { useSession } from '@/lib/session'
 import { useServerProgress } from '@/lib/useServerProgress'
 
@@ -146,7 +146,7 @@ function DashboardContent({ currentPathId }: { currentPathId: string }) {
   const accountBacked = can('account-progress')
   return <div className="ws-dashboard ws-dashboard-reset">
     <OwnerNotice />
-    <PageHeader eyebrow={currentCurriculumLabel(userState)} title={canAccessTier(userState, 'full') ? 'Your learning workspace' : 'Explore the preview'} description={statusUnavailable ? 'Account status is unavailable. Preview learning and local practice remain available.' : 'Pick up where you left off. Your practice stays in this browser and is unverified.'} action={statusUnavailable ? <UnavailableStatusChip /> : <StateChip state={userState} />} />
+    <PageHeader eyebrow={accessLabel(userState)} title={allows(userState, 'learning-content') ? 'Your learning workspace' : 'Explore the catalogue'} description={statusUnavailable ? 'Account status is unavailable. The catalogue and local practice remain available.' : 'Pick up where you left off. Your practice stays in this browser and is unverified.'} action={statusUnavailable ? <UnavailableStatusChip /> : <StateChip state={userState} />} />
 
     <section className="ws-focus" aria-labelledby="ws-next-title">
       <div className="ws-focus-main">
@@ -168,7 +168,7 @@ function DashboardContent({ currentPathId }: { currentPathId: string }) {
     <section className="ws-dashboard-section" aria-labelledby="ws-progress-heading">
       <div className="ws-section-head"><div><span className="ws-kicker">01 / Your position</span><h2 id="ws-progress-heading">Progress at a glance</h2></div><ProvenanceChip provenance="local" /></div>
       <div className="ws-progress-layout">
-        <div className="ws-path-meter"><div className="ws-meter-ring" role="progressbar" aria-label="Current path practice progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pathProgress)} style={{ background: `conic-gradient(var(--learning) ${pathProgress}%, var(--panel-inset) 0)` }}><div><strong>{pathProgress}%</strong><span>path</span></div></div><div><span className="ws-kicker">Current learning path</span><h3>{currentPath.title}</h3><p>{currentCurriculumLabel(userState)} · progress in this browser</p><Link to={`/paths/${currentPath.id}`} className="ws-text-action">Path overview →</Link></div></div>
+        <div className="ws-path-meter"><div className="ws-meter-ring" role="progressbar" aria-label="Current path practice progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pathProgress)} style={{ background: `conic-gradient(var(--learning) ${pathProgress}%, var(--panel-inset) 0)` }}><div><strong>{pathProgress}%</strong><span>path</span></div></div><div><span className="ws-kicker">Current learning path</span><h3>{currentPath.title}</h3><p>{accessLabel(userState)} · progress in this browser</p><Link to={`/paths/${currentPath.id}`} className="ws-text-action">Path overview →</Link></div></div>
         <div className="ws-progress-facts">{[
           { label: 'Lessons completed', value: completedLessons.length, to: '/modules' },
           { label: 'Labs reviewed', value: completedLabs.length, to: '/labs' },

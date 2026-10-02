@@ -1,5 +1,10 @@
 # Preview vs Approved Learner — revised access model
 
+> **Superseded (2 October 2026).** This Preview/Full model is replaced by the public-catalogue /
+> authenticated-learning model in [`ACCESS_AND_LEARNING_MODEL.md`](ACCESS_AND_LEARNING_MODEL.md).
+> *Preview* is no longer an access tier (it is a content-maturity label), and lesson text is no longer
+> public. Kept as a record of the earlier decision and of what was built for it.
+
 Supersedes the "guest is a first-class learner, only profile/sync differs" model in
 `PRODUCT_UX_REDESIGN.md`. The plan is in §1–§8 below; §9 records what was implemented.
 

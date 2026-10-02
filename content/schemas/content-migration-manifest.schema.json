@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seccraft.example/schemas/content-migration-manifest.schema.json",
+  "title": "SecCraft dry-run content migration manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "mode", "productionWrites", "release", "repositoryModel", "runtimeTargets", "approvedPublicSamples", "summary", "entries", "leakAuditBaseline", "manualDecisions"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "mode": { "const": "dry-run" },
+    "productionWrites": { "const": false },
+    "release": { "$ref": "#/$defs/nonempty" },
+    "repositoryModel": { "const": "single-existing-seccraft-repository" },
+    "runtimeTargets": { "type": "object" },
+    "approvedPublicSamples": { "type": "object" },
+    "summary": {
+      "type": "object",
+      "required": ["entries", "byClassification", "byDeliveryClass", "unresolvedClassifications", "findings", "findingsByClassification", "unmappedFindings"],
+      "properties": { "entries": { "type": "integer" }, "byClassification": { "type": "object" }, "byDeliveryClass": { "type": "object" }, "unresolvedClassifications": { "const": 0 }, "findings": { "type": "integer" }, "findingsByClassification": { "type": "object" }, "unmappedFindings": { "const": 0 } }
+    },
+    "entries": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/entry" } },
+    "leakAuditBaseline": {
+      "type": "object", "additionalProperties": false, "required": ["target", "findings"],
+      "properties": { "target": { "$ref": "#/$defs/nonempty" }, "findings": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/finding" } } }
+    },
+    "manualDecisions": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["migrationEntryId", "sourcePath", "question"], "properties": { "migrationEntryId": { "type": "string", "pattern": "^migration-[0-9]{4}$" }, "sourcePath": { "$ref": "#/$defs/nonempty" }, "question": { "$ref": "#/$defs/nonempty" } } } }
+  },
+  "$defs": {
+    "nonempty": { "type": "string", "minLength": 1 },
+    "nullableString": { "type": ["string", "null"] },
+    "classification": { "enum": ["KEEP_PUBLIC", "MOVE_TO_PROTECTED_CONTENT", "REVIEW_CLASSIFY"] },
+    "artifact": {
+      "type": "object", "additionalProperties": false, "required": ["filename", "mediaType", "size", "sha256"],
+      "properties": { "filename": { "$ref": "#/$defs/nonempty" }, "mediaType": { "$ref": "#/$defs/nonempty" }, "size": { "type": "integer", "minimum": 0 }, "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" } }
+    },
+    "entry": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "sourcePath", "contentType", "careerPath", "learningPath", "module", "contentId", "classification", "deliveryClass", "publicAccess", "target", "release", "classificationReason"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^migration-[0-9]{4}$" }, "sourcePath": { "$ref": "#/$defs/nonempty" }, "contentType": { "$ref": "#/$defs/nonempty" },
+        "careerPath": { "$ref": "#/$defs/nullableString" }, "learningPath": { "$ref": "#/$defs/nullableString" }, "module": { "$ref": "#/$defs/nullableString" }, "contentId": { "$ref": "#/$defs/nonempty" },
+        "classification": { "$ref": "#/$defs/classification" }, "deliveryClass": { "enum": ["public", "protected-learner", "server-only", "instructor-only"] }, "publicAccess": { "type": "boolean" },
+        "target": { "type": "object", "additionalProperties": false, "required": ["kind", "locator"], "properties": { "kind": { "$ref": "#/$defs/nonempty" }, "locator": { "$ref": "#/$defs/nonempty" } } },
+        "release": { "$ref": "#/$defs/nonempty" }, "artifact": { "$ref": "#/$defs/artifact" }, "classificationReason": { "$ref": "#/$defs/nonempty" }
+      }
+    },
+    "finding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "file", "category", "reason", "sourcePath", "migrationEntryId", "classification", "classificationReason"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^finding-[0-9]{4}$" }, "file": { "$ref": "#/$defs/nonempty" }, "category": { "$ref": "#/$defs/nonempty" }, "reason": { "$ref": "#/$defs/nonempty" },
+        "marker": { "$ref": "#/$defs/nonempty" }, "sourcePath": { "$ref": "#/$defs/nonempty" }, "migrationEntryId": { "type": "string", "pattern": "^migration-[0-9]{4}$" },
+        "classification": { "$ref": "#/$defs/classification" }, "classificationReason": { "$ref": "#/$defs/nonempty" }
+      }
+    }
+  }
+}

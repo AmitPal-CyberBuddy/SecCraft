@@ -46,7 +46,7 @@ export function ModuleDetail() {
   const quizSummaryRef = useRef<HTMLDivElement>(null)
   const [labAnswers, setLabAnswers] = useState<Record<string, string>>({})
   const completedLabs = useProgressStore(s => s.completedLabs)
-  const labCompleted = useMemo(() => Object.fromEntries(completedLabs.map(l => { const catalogueEntry = LABS.find(item => item.id === l.labId && item.module === l.moduleId); return [l.labId, catalogueEntry?.grading !== 'verified' || l.score === 100] })), [completedLabs])
+  const labCompleted = useMemo(() => Object.fromEntries(completedLabs.map(l => { const catalogueEntry = LABS.find(item => item.id === l.labId && item.module === l.moduleId); return [l.labId, catalogueEntry?.grading !== 'answer-checked' || l.score === 100] })), [completedLabs])
 
   const completeLesson = useProgressStore(s => s.completeLesson)
   const completeLab = useProgressStore(s => s.completeLab)
@@ -542,7 +542,7 @@ export function ModuleDetail() {
                         <div className="flex-1 min-w-0">
                           <h3 className="font-heading font-bold text-[16px] text-[var(--ink-primary)] flex items-center gap-2">
                             {lab.title}
-                            <span className="sc-lab-state">{lab.status === 'PLANNED' ? 'Planned' : lab.grading === 'verified' ? 'Answer-checked locally' : 'Self-review'}</span>
+                            <span className="sc-lab-state">{lab.status === 'PLANNED' ? 'Planned' : lab.grading === 'answer-checked' ? 'Answer-checked locally' : 'Self-review'}</span>
                           </h3>
                           <p className="text-[12px] text-[var(--ink-secondary)] mt-1 leading-relaxed">
                             <span className="font-mono text-[var(--learning)]">{lab.pcap ? `${lab.pcap}.pcapng` : 'No capture supplied'}</span>
@@ -751,7 +751,7 @@ export function ModuleDetail() {
                             : 'sc-learning-action'
                         }`}
                       >
-                        {labCompleted[lab.id] ? <><CheckCircle className="w-4 h-4" /> {lab.grading === 'verified' ? 'Local answer check passed' : 'Review recorded'}</> : <><Target className="w-4 h-4" /> Record Lab Review</>}
+                        {labCompleted[lab.id] ? <><CheckCircle className="w-4 h-4" /> {lab.grading === 'answer-checked' ? 'Local answer check passed' : 'Review recorded'}</> : <><Target className="w-4 h-4" /> Record Lab Review</>}
                       </button>
                     </div>
 
