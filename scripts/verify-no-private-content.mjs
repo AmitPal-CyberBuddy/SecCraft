@@ -28,6 +28,8 @@ export function scan(root = ROOT) {
   const add = (file, category, reason, marker = null) => findings.push({ file: path.relative(root, file).replaceAll(path.sep, '/'), category, reason, ...(marker ? { marker } : {}) })
   for (const file of walk(root)) {
     const rel = path.relative(root, file).replaceAll(path.sep, '/')
+    // The application/test fallback database is an ignored runtime product, never authored content.
+    if (rel === 'backend/seccraft.db' || rel === 'backend/wififorge.db') continue
     const ext = path.extname(file).toLowerCase()
     if (TEXT_EXTENSIONS.has(ext)) {
       const text = fs.readFileSync(file, 'utf8')
