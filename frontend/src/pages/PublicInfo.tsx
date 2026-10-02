@@ -4,7 +4,6 @@ import type { ReactNode } from 'react'
 import { ArrowRight, BadgeCheck, BookOpen, CloudUpload, FileCheck2, HardDrive, ShieldCheck, Wifi, CircleSlash, Fingerprint } from 'lucide-react'
 import { useSession } from '@/lib/session'
 import { isSignedIn } from '@/lib/access'
-import { CONTENT_NOT_ENFORCED_NOTE, PREVIEW_MODULE_COUNT } from '@/lib/contentAccess'
 
 function PublicPage({ eyebrow, title, intro, children }: { eyebrow: string; title: string; intro: string; children: ReactNode }) {
   const { userState, ready } = useSession()
@@ -43,7 +42,7 @@ export function AboutPage() {
         {[
           { icon: BookOpen, title: 'Authored content', text: 'Lessons, knowledge checks, module metadata, and lab artifacts are version-controlled alongside the application, so the material and the app never drift apart.' },
           { icon: Wifi, title: 'Available curriculum', text: `${learningPaths.filter(path => path.status === 'available').map(path => path.title).join(' and ')} are available now. Roadmap entries are clearly marked as planned.` },
-          { icon: ShieldCheck, title: 'Preview by default', text: `You can work through ${PREVIEW_MODULE_COUNT} modules with no account. Practice progress stays in your browser and is always shown as distinct from anything the platform has confirmed.` },
+          { icon: ShieldCheck, title: 'Public catalogue', text: 'Browse every learning path, module and lesson title without an account. Lessons, labs and assessments are for approved accounts. Practice progress stays in your browser and is always shown as distinct from anything the platform has confirmed.' },
         ].map(({ icon: Icon, title, text }) => (
           <article key={title} className="rounded-2xl border border-[var(--line-normal)] bg-[var(--panel-bg)] p-5">
             <Icon className="h-5 w-5 text-[var(--learning)]" aria-hidden="true" />
@@ -64,7 +63,7 @@ export function AboutPage() {
             'No server rubric grades your assessment answers, so no result here is presented as verified.',
             'Progress is never uploaded automatically, and is never restored on another device automatically.',
             'No certificate is issued. Certificates would need verified XP and a completion record, and the platform issues neither yet.',
-            CONTENT_NOT_ENFORCED_NOTE,
+            'Lesson text is delivered only to approved accounts. Quiz and exercise answers are still checked in your browser, so they are practice and not a verified result.',
           ].map(item => (
             <li key={item} className="flex items-start gap-2.5 rounded-xl border border-[var(--line-normal)] bg-[var(--panel-inset)] p-3 text-sm leading-6 text-[var(--ink-secondary)]">
               <CircleSlash className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--ink-muted)]" aria-hidden="true" />

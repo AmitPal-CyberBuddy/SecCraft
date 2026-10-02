@@ -129,7 +129,7 @@ export function PublicLayout() {
                 <span className="font-semibold text-[var(--ink-primary)]">SecCraft</span>
               </div>
               <p className="mt-3 text-[13px] leading-relaxed text-[var(--ink-secondary)]">
-                Learn. Practice. Investigate. Improve. The Preview Curriculum is available without an account. Approved accounts have the Full Curriculum experience.
+                Learn. Practice. Investigate. Improve. The catalogue is public. Lessons, labs and assessments are for approved accounts.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-x-10 gap-y-2 sm:text-right">

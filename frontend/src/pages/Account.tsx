@@ -7,8 +7,7 @@ import { apiFetch } from '@/lib/api'
 import { accountRedirect, supabase, supabaseConfigured } from '@/lib/supabase'
 import { useSession } from '@/lib/session'
 import { generatePassword, passwordGuidance } from '@/lib/passwordGuidance'
-import { ACCOUNT_ADDS_NOTE, isSignedIn, STATE_META } from '@/lib/access'
-import { currentCurriculumLabel } from '@/lib/contentAccess'
+import { accessLabel, ACCOUNT_ADDS_NOTE, isSignedIn, STATE_META } from '@/lib/access'
 import { StateChip } from '@/components/account/StateChip'
 
 interface PublicConfig {
@@ -38,10 +37,10 @@ function AccountFrame({ title, eyebrow, children }: { title: string; eyebrow: st
             <div className="mt-5 text-xl font-bold text-[var(--ink-primary)]">
               Sec<span className="text-[var(--learning)]">Craft</span>
             </div>
-            <p className="mt-3 text-sm leading-6 text-[var(--ink-secondary)]">Learn and practise as a guest. An account is an optional addition, not a requirement.</p>
+            <p className="mt-3 text-sm leading-6 text-[var(--ink-secondary)]">Explore the catalogue as a visitor. Lessons, labs and assessments are for approved accounts.</p>
           </div>
           <div className="text-xs leading-5 text-[var(--ink-muted)]">
-            Verify your email to request an account. You can explore preview lessons while you wait for approval.
+            Verify your email to request an account. You can explore the catalogue while you wait for approval.
           </div>
         </aside>
       </div>
@@ -128,11 +127,11 @@ export function LoginPage() {
   return (
     <AccountFrame eyebrow="Account access" title="Sign in to SecCraft">
       <p className="mb-5 text-sm leading-6 text-[var(--ink-secondary)]">
-        The Preview Curriculum is available without an account. Sign in if you already have an approved account.
+        The catalogue is public. Sign in if you already have an approved account.
       </p>
       {!supabaseConfigured && (
         <ServiceUnavailable>
-          Sign-in is unavailable right now. You can still explore preview lessons.
+          Sign-in is unavailable right now. You can still explore the catalogue.
         </ServiceUnavailable>
       )}
       {error && (
@@ -281,7 +280,7 @@ export function SignupPage() {
   return (
     <AccountFrame eyebrow="Request access" title="Create your account">
       <p className="mb-5 text-sm leading-6 text-[var(--ink-secondary)]">
-        Verify your email to request access. You can keep exploring preview lessons while your account awaits approval.
+        Verify your email to request access. You can keep exploring the catalogue while your account awaits approval.
       </p>
 
       {configError && supabaseConfigured && (
@@ -291,7 +290,7 @@ export function SignupPage() {
       )}
       {!supabaseConfigured && (
         <div className="mb-4">
-          <ServiceUnavailable>Account registration is unavailable right now. You can still explore preview lessons.</ServiceUnavailable>
+          <ServiceUnavailable>Account registration is unavailable right now. You can still explore the catalogue.</ServiceUnavailable>
         </div>
       )}
       {closed && (
@@ -638,7 +637,7 @@ export function AccountStatusPage() {
           {accountError.kind !== 'none' && <ServiceUnavailable>{accountError.message}</ServiceUnavailable>}
           <p className="text-sm leading-6 text-[var(--ink-secondary)]">
             Sign in after confirming your email to view your account state. New accounts stay pending until the owner
-            approves access — and in the meantime you keep the full Preview Curriculum.
+            approves access — and in the meantime you can explore the catalogue.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link
@@ -647,8 +646,8 @@ export function AccountStatusPage() {
             >
               Sign in <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
-            <Link to="/app" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--line-normal)] px-4 text-sm text-[var(--ink-primary)] transition-colors hover:bg-[var(--panel-raised)]">
-              Continue in the Preview Curriculum
+            <Link to="/paths" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--line-normal)] px-4 text-sm text-[var(--ink-primary)] transition-colors hover:bg-[var(--panel-raised)]">
+              Explore the catalogue
             </Link>
           </div>
           <NextActions />
@@ -672,20 +671,20 @@ export function AccountStatusPage() {
             <p className="mt-3 text-[12.5px] leading-relaxed text-[var(--ink-secondary)]">{STATE_META[userState].nextAction}</p>
             <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[var(--line-normal)] pt-3">
               <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-                Your curriculum
+                Your access
               </span>
               <span
                 className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-semibold ${
-                  can('full-curriculum')
+                  can('learning-content')
                     ? 'border-[var(--success-border)] bg-[var(--success-bg)] text-[var(--success)]'
                     : 'border-[var(--accent-border)] bg-[var(--accent-bg)] text-[var(--learning)]'
                 }`}
               >
-                {currentCurriculumLabel(userState)}
+                {accessLabel(userState)}
               </span>
-              {!can('full-curriculum') && (
+              {!can('learning-content') && (
                 <span className="text-[11.5px] leading-relaxed text-[var(--ink-muted)]">
-                  Approval switches on the Full Curriculum and account-backed records.
+                  Approval switches on lessons, labs, assessments and account-backed records.
                 </span>
               )}
             </div>

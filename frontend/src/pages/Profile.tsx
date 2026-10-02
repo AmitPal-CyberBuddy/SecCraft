@@ -6,17 +6,14 @@ import { useSession } from '@/lib/session'
 import { useServerProgress } from '@/lib/useServerProgress'
 import { useProgressStore } from '@/store/useProgressStore'
 import {
+  accessLabel,
   ACCOUNT_SYNC_NOTE,
+  CATALOGUE_NOTE,
   isSignedIn,
   PRACTICE_XP_NOTE,
   STATE_META,
 } from '@/lib/access'
 import { StandingChip } from '@/components/account/PracticeStanding'
-import {
-  CONTENT_NOT_ENFORCED_NOTE,
-  CONTENT_TIER_META,
-  currentCurriculumLabel,
-} from '@/lib/contentAccess'
 import { ProvenanceChip, StateChip, UnavailableStatusChip } from '@/components/account/StateChip'
 import { StateExplainer } from '@/components/account/AccountBanner'
 import { MetadataRow } from '@/components/common/Workspace'
@@ -156,9 +153,9 @@ export function Profile() {
               <ProvenanceChip provenance="local" />
             </div>
             <p className="mt-2 text-sm leading-relaxed text-[var(--ink-secondary)]">
-              You are learning on the <span className="text-[var(--ink-primary)]">{CONTENT_TIER_META.preview.label}</span>. Your
-              progress, XP, and achievements stay in this browser — they are practice, not a record.
-              An approved account is a different learning experience, not a bigger one.
+              You have <span className="text-[var(--ink-primary)]">{accessLabel(userState)}</span>. The catalogue is public;
+              lessons, labs and assessments are for approved accounts. Your progress, XP, and achievements stay in this browser —
+              they are practice, not a record.
             </p>
             <div className="mt-4">
               <p className="text-sm font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
@@ -166,7 +163,7 @@ export function Profile() {
               </p>
               <ul className="ws-account-benefits mt-2">
                 {[
-                  'The Full Curriculum, including the authored modules and the final assessment.',
+                  'Lessons, labs and assessments, including the final assessment.',
                   'Progress held on the platform for your account, instead of only in this browser.',
                   'Account-held XP and achievement records are distinct from local practice; without a trusted grader they are not proof of mastery.',
                   'Assessment attempt history, and a manual way to move a progress file between devices.',
@@ -177,7 +174,7 @@ export function Profile() {
                   </li>
                 ))}
               </ul>
-              <p className="mt-3 text-sm leading-relaxed text-[var(--ink-muted)]">{CONTENT_NOT_ENFORCED_NOTE}</p>
+              <p className="mt-3 text-sm leading-relaxed text-[var(--ink-muted)]">{CATALOGUE_NOTE}</p>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link to="/login" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[var(--line-strong)] px-3 text-sm text-[var(--ink-primary)] transition-colors hover:bg-[var(--panel-raised)]">
@@ -191,7 +188,7 @@ export function Profile() {
             </div>
             {authAvailability === 'unavailable' && (
               <p className="mt-3 text-sm leading-relaxed text-[var(--ink-muted)]">
-                Account services are not configured in this build, so sign-in is unavailable. The Preview Curriculum
+                Account services are not configured in this build, so sign-in is unavailable. The public catalogue
                 works on its own.
               </p>
             )}
@@ -220,7 +217,7 @@ export function Profile() {
             <Row label="Practice day streak" value={`${streak}d`} chip={<ProvenanceChip provenance="derived" />} />
             <Row
               label="Curriculum"
-              value={currentCurriculumLabel(userState)}
+              value={accessLabel(userState)}
               chip={<ProvenanceChip provenance="derived" />}
             />
           </div>

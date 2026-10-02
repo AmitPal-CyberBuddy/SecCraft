@@ -6,7 +6,7 @@ import { Topbar } from './Topbar'
 import { ArrowUp } from 'lucide-react'
 import { useSession } from '@/lib/session'
 import { AccountBanner } from '@/components/account/AccountBanner'
-import { canAccessTier } from '@/lib/contentAccess'
+import { allows } from '@/lib/access'
 
 /** Header-first workspace. The full navigation remains available in a drawer at every width. */
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -43,7 +43,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   }, [])
   const closeMenu = () => { setMenuOpen(false); requestAnimationFrame(() => document.getElementById('mobile-navigation-toggle')?.focus()) }
   if (accountLoading && hasSession) return <div role="status" aria-live="polite" className="sc-owner-gate">Checking account status…</div>
-  return <div className="ws-shell sc-header-shell min-h-screen min-h-[100dvh]" data-experience={canAccessTier(userState, 'full') ? 'full' : 'preview'}>
+  return <div className="ws-shell sc-header-shell min-h-screen min-h-[100dvh]" data-experience={allows(userState, 'learning-content') ? 'learning' : 'catalogue'}>
     <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-[var(--panel-bg)]">Skip to content</a>
     {menuOpen && <button type="button" className="sc-drawer-backdrop" aria-label="Close navigation" onClick={closeMenu} tabIndex={-1} />}
     <div className={`sc-drawer ${menuOpen ? 'is-open' : ''}`} role={menuOpen ? 'dialog' : undefined} aria-modal={menuOpen ? true : undefined} aria-label={menuOpen ? 'All workspace destinations' : undefined}>

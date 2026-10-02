@@ -7,8 +7,7 @@ import { Bell, ChevronDown, Menu, Moon, Search, Shield, Sun, UserRound } from 'l
 import { NotificationCenter } from '@/components/notifications/NotificationCenter'
 import { useTheme } from '@/components/theme/ThemeProvider'
 import { useSession } from '@/lib/session'
-import { isOwner, isSignedIn } from '@/lib/access'
-import { canAccessTier, currentCurriculumLabel } from '@/lib/contentAccess'
+import { accessLabel, allows, isOwner, isSignedIn } from '@/lib/access'
 import { StateChip, UnavailableStatusChip } from '@/components/account/StateChip'
 
 interface Props { onMenuToggle: () => void; sidebarOpen: boolean }
@@ -41,7 +40,7 @@ export function Topbar({ onMenuToggle, sidebarOpen }: Props) {
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const accountRef = useRef<HTMLDivElement>(null)
-  const full = canAccessTier(userState, 'full')
+  const full = allows(userState, 'learning-content')
   useEffect(() => { setAccountOpen(false) }, [pathname])
   useEffect(() => {
     if (!accountOpen) return
@@ -59,12 +58,12 @@ export function Topbar({ onMenuToggle, sidebarOpen }: Props) {
         <button type="button" data-tour="search" onClick={() => document.dispatchEvent(new CustomEvent('open-search'))} className="sc-search-button" aria-label="Search SecCraft"><Search size={17} aria-hidden="true" /><span>Search</span><kbd>⌘ K</kbd></button>
         <button type="button" className="sc-icon-button sc-utility-icon" onClick={() => setTheme(resolved === 'dark' ? 'light' : 'dark')} aria-label={`Switch to ${resolved === 'dark' ? 'light' : 'dark'} mode`}>{resolved === 'dark' ? <Sun size={18} /> : <Moon size={18} />}</button>
         <button type="button" className="sc-icon-button sc-utility-icon" onClick={() => setNotificationsOpen(v => !v)} aria-label="Activity and notifications" aria-haspopup="dialog" aria-expanded={notificationsOpen} aria-controls="activity-panel"><Bell size={18} /></button>
-        <div className="sc-account-menu" ref={accountRef}><button type="button" className="sc-account-trigger sc-avatar-trigger" aria-expanded={accountOpen} aria-controls="account-menu" aria-label={`${isSignedIn(userState) ? 'Account' : 'Preview learner'} menu`} onClick={() => setAccountOpen(v => !v)}><UserRound size={18} aria-hidden="true" /><ChevronDown size={13} aria-hidden="true" /></button>
-          {accountOpen && <div id="account-menu" className="sc-account-dropdown" onClick={event => { if ((event.target as HTMLElement).closest('a')) setAccountOpen(false) }}><div className="sc-account-identity"><strong>{account?.email ?? (hasSession ? 'Signed in · status unconfirmed' : 'Preview learner')}</strong>{statusUnavailable ? <UnavailableStatusChip size="sm" /> : <StateChip state={userState} size="sm" />}</div><Link to="/profile">Profile</Link><Link to="/sync">Progress sync</Link><Link to="/settings">Settings</Link><Link to={`/feedback?page=${encodeURIComponent(pathname)}`}>Contact & feedback</Link>{isSignedIn(userState) && <Link to="/account">Account status</Link>}{isOwner(userState) && <Link to="/admin">Owner console</Link>}{isSignedIn(userState) ? <button type="button" onClick={() => { setAccountOpen(false); void signOut() }}>Sign out</button> : <><Link to="/login">Log in</Link><Link to="/signup">Request access</Link></>}</div>}
+        <div className="sc-account-menu" ref={accountRef}><button type="button" className="sc-account-trigger sc-avatar-trigger" aria-expanded={accountOpen} aria-controls="account-menu" aria-label={`${isSignedIn(userState) ? 'Account' : 'Visitor'} menu`} onClick={() => setAccountOpen(v => !v)}><UserRound size={18} aria-hidden="true" /><ChevronDown size={13} aria-hidden="true" /></button>
+          {accountOpen && <div id="account-menu" className="sc-account-dropdown" onClick={event => { if ((event.target as HTMLElement).closest('a')) setAccountOpen(false) }}><div className="sc-account-identity"><strong>{account?.email ?? (hasSession ? 'Signed in · status unconfirmed' : 'Visitor')}</strong>{statusUnavailable ? <UnavailableStatusChip size="sm" /> : <StateChip state={userState} size="sm" />}</div><Link to="/profile">Profile</Link><Link to="/sync">Progress sync</Link><Link to="/settings">Settings</Link><Link to={`/feedback?page=${encodeURIComponent(pathname)}`}>Contact & feedback</Link>{isSignedIn(userState) && <Link to="/account">Account status</Link>}{isOwner(userState) && <Link to="/admin">Owner console</Link>}{isSignedIn(userState) ? <button type="button" onClick={() => { setAccountOpen(false); void signOut() }}>Sign out</button> : <><Link to="/login">Log in</Link><Link to="/signup">Request access</Link></>}</div>}
         </div>
         <button type="button" id="mobile-navigation-toggle" className="sc-all-tools" aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'} aria-expanded={sidebarOpen} aria-controls="primary-navigation" onClick={onMenuToggle}><Menu size={19} aria-hidden="true" /><span>All tools</span></button>
       </div>
     </div>
-    <div className="sc-experience-row"><div className="sc-experience-copy"><span className="sc-experience-marker" aria-hidden="true" /><strong>{currentCurriculumLabel(userState)}</strong><span className="sc-experience-divider" aria-hidden="true" /><span>{full ? 'Account experience · local practice is still unverified' : 'Practice stays in this browser · unverified'}</span></div>{full ? <Link to="/sync">View account records →</Link> : <Link to={isSignedIn(userState) ? '/account' : '/signup'}>{isSignedIn(userState) ? 'Check account status →' : 'About accounts →'}</Link>}</div>
+    <div className="sc-experience-row"><div className="sc-experience-copy"><span className="sc-experience-marker" aria-hidden="true" /><strong>{accessLabel(userState)}</strong><span className="sc-experience-divider" aria-hidden="true" /><span>{full ? 'Account experience · local practice is still unverified' : 'Practice stays in this browser · unverified'}</span></div>{full ? <Link to="/sync">View account records →</Link> : <Link to={isSignedIn(userState) ? '/account' : '/signup'}>{isSignedIn(userState) ? 'Check account status →' : 'Request access →'}</Link>}</div>
   </header><NotificationCenter open={notificationsOpen} onClose={() => setNotificationsOpen(false)} /></>
 }
