@@ -270,7 +270,7 @@ The validator requires a marker on every private file and the sample marker on e
 
 ### 9.6 Rollout
 
-Report-only until P3.5: the script prints today's leaks (answer keys in the bundle, the instructor key in `docs/`, ~165 public artifact files) without failing CI. At the contract step it flips to enforcing.
+Report-only until P3.5: the P3.1 source-tree baseline reports **274 findings** without failing CI: 99 lesson files, 1 lab source, 5 prompt files, 5 key-bearing files, 5 solution-bearing files, 1 instructor key, 158 public artifacts, and 0 private-verification files. These are findings by protected class, not 274 distinct files (answer-bearing sources intentionally appear in several categories). A current production build adds 43 copied artifact findings, for **317 post-build findings**. At the contract step the completed allow-list scanner flips to enforcing.
 
 | Mistake | Caught by |
 |---|---|

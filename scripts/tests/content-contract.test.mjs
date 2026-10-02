@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
-import { importPlan, paths, validateDocument, validateRelease } from '../../tools/content/contract.mjs'
+import { importPlan, paths, validateCatalogue, validateDocument, validateRelease } from '../../tools/content/contract.mjs'
 import { scan } from '../verify-no-private-content.mjs'
 
 const releaseFixture = path.join(paths.repoRoot, 'content/fixtures/synthetic-release.json')
@@ -23,7 +23,7 @@ test('synthetic authored release validates and import planning performs no write
   assert.equal(planned.valid, true)
   assert.equal(planned.plan.mode, 'dry-run')
   assert.equal(planned.plan.databaseWrites, false)
-  assert.deepEqual(planned.plan.counts, { paths: 1, lessons: 1, labs: 1, items: 2, artifacts: 1 })
+  assert.deepEqual(planned.plan.counts, { paths: 1, modules: 1, lessons: 1, labs: 1, items: 2, artifacts: 1 })
 })
 
 test('practice and verification grading cannot be crossed', () => {
@@ -37,9 +37,34 @@ test('practice and verification grading cannot be crossed', () => {
 test('cross-record references reject an unknown artifact', () => {
   const release = JSON.parse(fs.readFileSync(releaseFixture))
   release.labs[0].artifactIds = ['missing-artifact']
-  const result = validateRelease(temporaryJson(release))
+  const result = validateRelease(temporaryJson(release), { verifyArtifacts: false })
   assert.equal(result.valid, false)
   assert.match(JSON.stringify(result.errors), /unknown artifact/)
+})
+
+test('records cannot refer to a module owned by another path', () => {
+  const release = JSON.parse(fs.readFileSync(releaseFixture))
+  release.paths.push({ id: 'other-path', title: 'Other synthetic path', maturity: 'preview', moduleIds: [] })
+  release.lessons[0].pathId = 'other-path'
+  const result = validateRelease(temporaryJson(release), { verifyArtifacts: false })
+  assert.equal(result.valid, false)
+  assert.match(JSON.stringify(result.errors), /does not belong to path/)
+})
+
+test('artifact size and digest are checked before an import can be planned', () => {
+  const release = JSON.parse(fs.readFileSync(releaseFixture))
+  release.artifacts[0].sha256 = '0'.repeat(64)
+  const result = validateRelease(temporaryJson(release), { artifactRoot: path.dirname(releaseFixture) })
+  assert.equal(result.valid, false)
+  assert.match(JSON.stringify(result.errors), /digest mismatch/)
+})
+
+test('each live catalogue path has exactly one public sample lesson', () => {
+  const catalogue = JSON.parse(fs.readFileSync(catalogueFixture))
+  catalogue.paths[0].modules[0].lessons[0].publicSample = false
+  const result = validateCatalogue(temporaryJson(catalogue))
+  assert.equal(result.valid, false)
+  assert.match(JSON.stringify(result.errors), /expected 1 public sample lesson/)
 })
 
 test('public catalogue schema rejects private body and key fields', () => {

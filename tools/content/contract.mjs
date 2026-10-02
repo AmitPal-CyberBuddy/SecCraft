@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
@@ -26,24 +27,83 @@ export function validateDocument(schemaFile, documentFile) {
   return { valid, document, errors: validate.errors ?? [] }
 }
 
-export function validateRelease(documentFile) {
+function error(instancePath, message) {
+  return { instancePath, message }
+}
+
+export function validateCatalogue(documentFile) {
+  const result = validateDocument(paths.catalogueSchema, documentFile)
+  if (!result.valid) return result
+  const errors = []
+  const seenIds = new Set()
+  const seenSlugs = new Set()
+  for (const cataloguePath of result.document.paths) {
+    if (seenIds.has(cataloguePath.id)) errors.push(error(`/paths/${cataloguePath.id}`, `duplicate path id: ${cataloguePath.id}`))
+    if (seenSlugs.has(cataloguePath.slug)) errors.push(error(`/paths/${cataloguePath.id}/slug`, `duplicate path slug: ${cataloguePath.slug}`))
+    seenIds.add(cataloguePath.id)
+    seenSlugs.add(cataloguePath.slug)
+    const sampleCount = cataloguePath.modules.flatMap(module => module.lessons).filter(lesson => lesson.publicSample).length
+    const expected = cataloguePath.maturity === 'coming-soon' ? 0 : 1
+    if (sampleCount !== expected) errors.push(error(`/paths/${cataloguePath.id}`, `expected ${expected} public sample lesson(s), found ${sampleCount}`))
+  }
+  return { ...result, valid: errors.length === 0, errors }
+}
+
+export function validateRelease(documentFile, { artifactRoot = path.dirname(documentFile), verifyArtifacts = true } = {}) {
   const result = validateDocument(paths.releaseSchema, documentFile)
   if (!result.valid) return result
-  const { paths: releases, lessons, labs, items, artifacts } = result.document
-  const pathIds = new Set(releases.map(item => item.id))
-  const moduleIds = new Set(releases.flatMap(item => item.moduleIds))
-  const artifactIds = new Set(artifacts.map(item => item.id))
-  const ids = [...releases, ...lessons, ...labs, ...items, ...artifacts].map(item => item.id)
-  const duplicate = ids.find((id, index) => ids.indexOf(id) !== index)
+
+  const release = result.document
+  const pathById = new Map(release.paths.map(record => [record.id, record]))
+  const moduleById = new Map(release.modules.map(record => [record.id, record]))
+  const artifactIds = new Set(release.artifacts.map(record => record.id))
+  const records = [...release.paths, ...release.modules, ...release.lessons, ...release.labs, ...release.items, ...release.artifacts]
+  const seenIds = new Set()
   const errors = []
-  if (duplicate) errors.push({ instancePath: '', message: `duplicate release-wide id: ${duplicate}` })
-  for (const record of [...lessons, ...labs, ...items]) {
-    if (!pathIds.has(record.pathId)) errors.push({ instancePath: `/${record.id}/pathId`, message: `unknown path ${record.pathId}` })
-    if (!moduleIds.has(record.moduleId)) errors.push({ instancePath: `/${record.id}/moduleId`, message: `unknown module ${record.moduleId}` })
+
+  for (const record of records) {
+    if (seenIds.has(record.id)) errors.push(error(`/${record.id}`, `duplicate release-wide id: ${record.id}`))
+    seenIds.add(record.id)
   }
-  for (const lab of labs) for (const id of lab.artifactIds) {
-    if (!artifactIds.has(id)) errors.push({ instancePath: `/${lab.id}/artifactIds`, message: `unknown artifact ${id}` })
+
+  for (const module of release.modules) {
+    const owner = pathById.get(module.pathId)
+    if (!owner) errors.push(error(`/modules/${module.id}/pathId`, `unknown path ${module.pathId}`))
+    else if (!owner.moduleIds.includes(module.id)) errors.push(error(`/modules/${module.id}`, `module is absent from path ${owner.id} moduleIds`))
   }
+  for (const authoredPath of release.paths) {
+    for (const moduleId of authoredPath.moduleIds) {
+      const module = moduleById.get(moduleId)
+      if (!module) errors.push(error(`/paths/${authoredPath.id}/moduleIds`, `unknown module ${moduleId}`))
+      else if (module.pathId !== authoredPath.id) errors.push(error(`/paths/${authoredPath.id}/moduleIds`, `module ${moduleId} belongs to path ${module.pathId}`))
+    }
+  }
+  for (const record of [...release.lessons, ...release.labs, ...release.items]) {
+    if (!pathById.has(record.pathId)) errors.push(error(`/${record.id}/pathId`, `unknown path ${record.pathId}`))
+    const module = moduleById.get(record.moduleId)
+    if (!module) errors.push(error(`/${record.id}/moduleId`, `unknown module ${record.moduleId}`))
+    else if (module.pathId !== record.pathId) errors.push(error(`/${record.id}/moduleId`, `module ${record.moduleId} does not belong to path ${record.pathId}`))
+  }
+  for (const lab of release.labs) {
+    for (const artifactId of lab.artifactIds) {
+      if (!artifactIds.has(artifactId)) errors.push(error(`/labs/${lab.id}/artifactIds`, `unknown artifact ${artifactId}`))
+    }
+  }
+
+  if (verifyArtifacts) {
+    for (const artifact of release.artifacts) {
+      const file = path.join(artifactRoot, artifact.filename)
+      if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
+        errors.push(error(`/artifacts/${artifact.id}/filename`, `artifact file not found: ${artifact.filename}`))
+        continue
+      }
+      const bytes = fs.readFileSync(file)
+      if (bytes.length !== artifact.size) errors.push(error(`/artifacts/${artifact.id}/size`, `expected ${artifact.size} bytes, found ${bytes.length}`))
+      const digest = crypto.createHash('sha256').update(bytes).digest('hex')
+      if (digest !== artifact.sha256) errors.push(error(`/artifacts/${artifact.id}/sha256`, `digest mismatch for ${artifact.filename}`))
+    }
+  }
+
   return { ...result, valid: errors.length === 0, errors }
 }
 
@@ -60,11 +120,11 @@ export function importPlan(documentFile) {
       databaseWrites: false,
       releaseId: release.releaseId,
       synthetic: release.synthetic,
-      counts: Object.fromEntries(['paths', 'lessons', 'labs', 'items', 'artifacts'].map(key => [key, release[key].length])),
+      counts: Object.fromEntries(['paths', 'modules', 'lessons', 'labs', 'items', 'artifacts'].map(key => [key, release[key].length])),
       operations: [
-        'validate schema and cross-record references',
+        'validate schema, ownership, references, and artifact integrity',
         'stage an immutable release (P3.2+; not implemented)',
-        'verify artifact hashes (P3.2+; not implemented)',
+        'upload private artifacts (P3.2+; not implemented)',
         'activate the staged release transactionally (P3.2+; not implemented)',
       ],
     },
@@ -72,7 +132,7 @@ export function importPlan(documentFile) {
 }
 
 export function formatErrors(errors) {
-  return errors.map(error => `${error.instancePath || '/'} ${error.message}`).join('\n')
+  return errors.map(item => `${item.instancePath || '/'} ${item.message}`).join('\n')
 }
 
 export async function runCli(argv = process.argv.slice(2)) {

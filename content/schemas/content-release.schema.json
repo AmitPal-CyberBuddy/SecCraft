@@ -4,12 +4,13 @@
   "title": "SecCraft authored content release",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "releaseId", "synthetic", "paths", "lessons", "labs", "items", "artifacts"],
+  "required": ["schemaVersion", "releaseId", "synthetic", "paths", "modules", "lessons", "labs", "items", "artifacts"],
   "properties": {
     "schemaVersion": { "const": 1 },
     "releaseId": { "$ref": "#/$defs/id" },
     "synthetic": { "type": "boolean" },
     "paths": { "type": "array", "items": { "$ref": "#/$defs/path" }, "minItems": 1 },
+    "modules": { "type": "array", "items": { "$ref": "#/$defs/module" } },
     "lessons": { "type": "array", "items": { "$ref": "#/$defs/lesson" } },
     "labs": { "type": "array", "items": { "$ref": "#/$defs/lab" } },
     "items": { "type": "array", "items": { "$ref": "#/$defs/item" } },
@@ -23,26 +24,37 @@
       "required": ["id", "title", "maturity", "moduleIds"],
       "properties": {
         "id": { "$ref": "#/$defs/id" }, "title": { "type": "string", "minLength": 1 },
-        "maturity": { "enum": ["preview", "published", "coming-soon"] },
+        "maturity": { "$ref": "#/$defs/maturity" },
         "moduleIds": { "type": "array", "items": { "$ref": "#/$defs/id" }, "uniqueItems": true }
+      }
+    },
+    "module": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "pathId", "title", "description", "maturity"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }, "pathId": { "$ref": "#/$defs/id" },
+        "title": { "type": "string", "minLength": 1 }, "description": { "type": "string", "minLength": 1 },
+        "maturity": { "$ref": "#/$defs/maturity" }
       }
     },
     "lesson": {
       "type": "object", "additionalProperties": false,
-      "required": ["id", "pathId", "moduleId", "title", "body", "access"],
+      "required": ["id", "pathId", "moduleId", "title", "description", "objectives", "body", "access"],
       "properties": {
         "id": { "$ref": "#/$defs/id" }, "pathId": { "$ref": "#/$defs/id" }, "moduleId": { "$ref": "#/$defs/id" },
-        "title": { "type": "string", "minLength": 1 }, "body": { "type": "string", "minLength": 1 },
-        "access": { "enum": ["learning-content", "public-sample"] }
+        "title": { "type": "string", "minLength": 1 }, "description": { "type": "string", "minLength": 1 },
+        "objectives": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+        "body": { "type": "string", "minLength": 1 }, "access": { "$ref": "#/$defs/access" }
       }
     },
     "lab": {
       "type": "object", "additionalProperties": false,
-      "required": ["id", "pathId", "moduleId", "title", "instructions", "artifactIds"],
+      "required": ["id", "pathId", "moduleId", "title", "instructions", "artifactIds", "access"],
       "properties": {
         "id": { "$ref": "#/$defs/id" }, "pathId": { "$ref": "#/$defs/id" }, "moduleId": { "$ref": "#/$defs/id" },
         "title": { "type": "string", "minLength": 1 }, "instructions": { "type": "string", "minLength": 1 },
-        "artifactIds": { "type": "array", "items": { "$ref": "#/$defs/id" }, "uniqueItems": true }
+        "artifactIds": { "type": "array", "items": { "$ref": "#/$defs/id" }, "uniqueItems": true },
+        "access": { "$ref": "#/$defs/access" }
       }
     },
     "item": {
@@ -54,18 +66,20 @@
         "prompt": { "type": "string", "minLength": 1 }, "privateKey": { "type": "string", "minLength": 1 }, "solution": { "type": "string", "minLength": 1 }
       },
       "allOf": [
-        { "if": { "properties": { "kind": { "const": "practice" } } }, "then": { "properties": { "grading": { "const": "practice" } } } },
-        { "if": { "properties": { "kind": { "const": "verification" } } }, "then": { "properties": { "grading": { "const": "verified" } } } }
+        { "if": { "properties": { "kind": { "const": "practice" } }, "required": ["kind"] }, "then": { "properties": { "grading": { "const": "practice" } } } },
+        { "if": { "properties": { "kind": { "const": "verification" } }, "required": ["kind"] }, "then": { "properties": { "grading": { "const": "verified" } } } }
       ]
     },
     "artifact": {
       "type": "object", "additionalProperties": false,
       "required": ["id", "filename", "mediaType", "sha256", "size", "access"],
       "properties": {
-        "id": { "$ref": "#/$defs/id" }, "filename": { "type": "string", "pattern": "^[^/\\\\]+$" },
+        "id": { "$ref": "#/$defs/id" }, "filename": { "type": "string", "pattern": "^[^/\\\\]+$", "minLength": 1 },
         "mediaType": { "type": "string", "minLength": 3 }, "sha256": { "$ref": "#/$defs/sha256" },
-        "size": { "type": "integer", "minimum": 0 }, "access": { "enum": ["learning-content", "public-sample"] }
+        "size": { "type": "integer", "minimum": 0 }, "access": { "$ref": "#/$defs/access" }
       }
-    }
+    },
+    "maturity": { "enum": ["preview", "published", "coming-soon"] },
+    "access": { "enum": ["learning-content", "public-sample"] }
   }
 }
