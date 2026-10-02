@@ -4,6 +4,8 @@ Revision ID: 20261002_04
 Revises: 20261001_03
 """
 from alembic import op
+import os
+import re
 import sqlalchemy as sa
 
 revision = "20261002_04"
@@ -71,6 +73,15 @@ def upgrade() -> None:
             op.execute(f'REVOKE ALL ON TABLE content."{table}" FROM PUBLIC')
             for role in ("anon", "authenticated"):
                 op.execute(f"DO $$ BEGIN IF EXISTS (SELECT FROM pg_roles WHERE rolname = '{role}') THEN REVOKE ALL ON TABLE content.\"{table}\" FROM {role}; END IF; END; $$")
+        runtime_role = os.getenv("CONTENT_DATABASE_RUNTIME_ROLE", "")
+        if runtime_role:
+            if not re.fullmatch(r"[a-z_][a-z0-9_]{0,62}", runtime_role):
+                raise ValueError("CONTENT_DATABASE_RUNTIME_ROLE is not a safe PostgreSQL identifier")
+            op.execute(f'GRANT USAGE ON SCHEMA content TO "{runtime_role}"')
+            op.execute(f'GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA content TO "{runtime_role}"')
+            op.execute(f'GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA content TO "{runtime_role}"')
+            for table in TABLES:
+                op.execute(f'CREATE POLICY backend_service_access ON content."{table}" FOR ALL TO "{runtime_role}" USING (true) WITH CHECK (true)')
 
 
 def downgrade() -> None:

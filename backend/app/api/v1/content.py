@@ -8,7 +8,7 @@ import re
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -18,6 +18,7 @@ from app.core.config import CONTENT_DIR, PCAP_DIR, REPO_CONTENT_DIR, REPO_ROOT
 from app.core.database import get_db
 from app.models.content import ContentArtifact, ContentRecord, ContentRelease
 from app.models.platform import UserProfile
+from app.services.content_storage import get_verified
 
 router = APIRouter()
 
@@ -324,13 +325,16 @@ def download_imported_artifact(
     if not artifact:
         raise HTTPException(status_code=404, detail="Artifact not found.")
     storage_root = Path(os.getenv("CONTENT_STORAGE_ROOT", "/tmp/seccraft-content-storage")).resolve()
-    file = (storage_root / artifact.object_key).resolve()
-    if not file.is_relative_to(storage_root) or not file.is_file():
+    try:
+        data = get_verified(artifact.object_key, artifact.sha256, artifact.size, storage_root)
+    except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Artifact object unavailable.")
-    data = file.read_bytes()
-    if len(data) != artifact.size or __import__("hashlib").sha256(data).hexdigest() != artifact.sha256:
+    except (ValueError, RuntimeError):
         raise HTTPException(status_code=503, detail="Artifact integrity validation failed.")
-    return FileResponse(file, filename=artifact.filename, media_type=artifact.media_type)
+    return Response(data, media_type=artifact.media_type, headers={
+        "Content-Disposition": f'attachment; filename="{artifact.filename}"',
+        "Cache-Control": "private, no-store",
+    })
 
 
 @router.get("/artifacts/{artifact_type}/{filename}")

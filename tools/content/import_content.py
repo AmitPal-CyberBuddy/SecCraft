@@ -19,6 +19,7 @@ sys.path.insert(0, str(BACKEND))
 from sqlalchemy import create_engine, select  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 from app.models.content import ContentArtifact, ContentPrivateMaterial, ContentPublicSample, ContentRecord, ContentRelease  # noqa: E402
+from app.services.content_storage import put_verified, using_supabase  # noqa: E402
 
 ALLOWED_ENVS = {"test", "integration-test", "development", "staging"}
 
@@ -108,13 +109,7 @@ def copy_artifact(entry: dict, release_id: str, storage_root: Path) -> ContentAr
     if len(data) != expected["size"] or sha256(data) != expected["sha256"]:
         raise ValueError(f"artifact integrity mismatch: {entry['sourcePath']}")
     object_key = f"releases/{release_id}/{expected['sha256']}/{expected['filename']}"
-    destination = storage_root / object_key
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    if destination.exists():
-        if sha256(destination.read_bytes()) != expected["sha256"]:
-            raise ValueError(f"existing staged object has wrong digest: {object_key}")
-    else:
-        destination.write_bytes(data)
+    put_verified(object_key, data, expected["sha256"], expected["mediaType"], storage_root)
     return ContentArtifact(release_id=release_id, stable_id=runtime_id(entry), source_path=entry["sourcePath"], object_key=object_key,
         filename=expected["filename"], media_type=expected["mediaType"], size=expected["size"], sha256=expected["sha256"],
         access_class=entry["deliveryClass"], public_sample=entry["deliveryClass"] == "public")
