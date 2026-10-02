@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync, mkdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { routeApprovedLearnerApi } from './lib/ui-audit-fixtures.mjs'
 
 const modules = process.env.UI_AUDIT_MODULES || resolve('tools/browser-qa/node_modules')
 const { chromium } = await import(pathToFileURL(resolve(modules, 'playwright/index.mjs')).href)
@@ -19,20 +20,29 @@ try {
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
   })
 } catch (err) {
+  // CI installs the browser, so a launch failure there is a real failure and must not pass as a skip.
+  if (process.env.CI) throw err
   console.log(`SKIP: Browser launch unavailable in current environment (${err.message}). CI will execute full suite with Playwright dependencies installed.`)
   process.exit(0)
 }
 
 let pages = 0, audits = 0
 const selectedAxeLessons = new Set([
-  '01-architecture-sandbox-and-trust-boundaries',
-  '01-decompilation-and-reconstruction',
-  '01-activity-and-intent-attack-surfaces',
-  '01-data-at-rest-and-scoped-storage',
-  '01-runtime-instrumentation-principles',
-  '01-cryptographic-failures-and-keystore',
-  '01-end-to-end-attack-chain-validation',
+  '01-architecture-sandbox-and-trust-boundaries', // android-01-platform
+  '01-smali-dex-bytecode-and-decompilation', // android-11-release
+  '01-exported-components-and-intent-filters', // android-04-components
+  '01-app-storage-preferences-files-sqlite-and-cache', // android-06-storage
+  '01-runtime-observation-adb-logcat-and-process-lifecycle', // android-09-runtime
+  '01-cryptographic-misuse-algorithms-and-key-management', // android-10-crypto
+  '01-multi-step-attack-scenarios-and-kill-chains', // android-12-case
 ])
+// A renamed or removed lesson must fail here, not silently shrink the audited set.
+const catalogueLessonIds = new Set(catalogue.flatMap(m => m.lessons.map(l => l.id)))
+assert.deepEqual(
+  [...selectedAxeLessons].filter(id => !catalogueLessonIds.has(id)),
+  [],
+  'every representative axe lesson must exist in the Android catalogue'
+)
 
 try {
   for (const [width, theme, motion] of [[320, 'dark', 'reduce'], [1440, 'light', 'no-preference']]) {
@@ -42,7 +52,7 @@ try {
       acceptDownloads: true,
     })
     await context.addInitScript(theme => localStorage.setItem('platform-theme', theme), theme)
-    await context.route('**/api/**', r => r.fulfill({ status: 503, contentType: 'application/json', body: '{}' }))
+    await routeApprovedLearnerApi(context)
     const page = await context.newPage()
     const errors = []
     page.on('pageerror', e => errors.push(e.message))
@@ -83,19 +93,20 @@ try {
       }
     }
 
-    // 2. Interactive Android Component Analyzer Lab Verification
+    // 2. Android Component & IPC Boundary Analyzer lab verification
     if (width === 1440) {
       await page.goto(`${base}/paths/android-pentesting/modules/android-04-components?tab=lab`, {
         waitUntil: 'networkidle',
       })
-      await page.locator('text=Interactive Android Component Analyzer').waitFor()
+      await page.getByRole('heading', { name: 'Android Component & IPC Boundary Analyzer' }).waitFor()
 
       // Positive control simulation
       await page.getByRole('button', { name: /Simulate Execution/i }).click()
       await page.locator('text=Positive Control Verified').waitFor()
 
-      // Switch to remediated build
-      await page.getByRole('button', { name: /Guarded \/ Remediated Build/i }).click()
+      // Switch to the fixed build; the toggle resets the previous run, so simulate again.
+      await page.getByRole('button', { name: 'Build Variant: Vulnerable Target' }).click()
+      await page.getByRole('button', { name: 'Build Variant: Fixed & Hardened' }).waitFor()
       await page.getByRole('button', { name: /Simulate Execution/i }).click()
       await page.locator('text=Negative Control Verified').waitFor()
       assert.deepEqual(errors, [])
@@ -106,6 +117,8 @@ try {
       await page.goto(`${base}/labs?path=android-pentesting&tab=artifacts`, {
         waitUntil: 'networkidle',
       })
+      // The downloads sit in a collapsed disclosure; open it the way a learner would.
+      await page.locator('details.sc-artifact-disclosure > summary').click()
       const refLink = page.getByRole('link', { name: /Download reference guide/i })
       await refLink.waitFor()
       const pendingRef = page.waitForEvent('download')

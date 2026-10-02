@@ -19,6 +19,8 @@ assert.equal(await page.evaluate(()=>document.activeElement.tagName),'MAIN')
 await page.getByRole('button',{name:'Open navigation menu',exact:true}).click()
 assert.equal(await page.getByRole('button',{name:'Close navigation menu',exact:true}).getAttribute('aria-expanded'),'true')
 await page.keyboard.press('Escape')
+// Focus returns to the toggle on the next animation frame; wait for it, then assert (and report) the real active element.
+await page.waitForFunction(()=>document.activeElement?.id==='mobile-navigation-toggle',undefined,{timeout:5000}).catch(()=>{})
 assert.equal(await page.evaluate(()=>document.activeElement.id),'mobile-navigation-toggle')
 await page.getByRole('button',{name:'Search SecCraft',exact:true}).click()
 assert.equal(await page.evaluate(()=>document.activeElement.tagName),'INPUT')

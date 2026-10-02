@@ -40,6 +40,8 @@ try {
   const drawer=page.getByRole('dialog',{name:'All workspace destinations'})
   const box=await drawer.boundingBox();assert.ok(box.x>=-1 && box.x+box.width<=size.width+1)
   await page.keyboard.press('Escape')
+  // Focus returns to the toggle on the next animation frame; wait for it, then assert (and report) the real active element.
+  await page.waitForFunction(()=>document.activeElement?.id==='mobile-navigation-toggle',undefined,{timeout:5000}).catch(()=>{})
   assert.equal(await page.evaluate(()=>document.activeElement.id),'mobile-navigation-toggle')
   await page.getByRole('button',{name:'Search SecCraft',exact:true}).click()
   await page.locator('#global-search-input').fill('wpa')

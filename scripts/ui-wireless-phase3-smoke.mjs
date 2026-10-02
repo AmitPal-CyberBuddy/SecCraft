@@ -3,6 +3,7 @@ import { readFileSync, mkdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { createHash } from 'node:crypto'
+import { routeApprovedLearnerApi } from './lib/ui-audit-fixtures.mjs'
 const modules=process.env.UI_AUDIT_MODULES || resolve('tools/browser-qa/node_modules')
 const {chromium}=await import(pathToFileURL(resolve(modules,'playwright/index.mjs')).href)
 const AxeBuilder=(await import(pathToFileURL(resolve(modules,'@axe-core/playwright/dist/index.mjs')).href)).default
@@ -17,7 +18,7 @@ try{
  for(const [width,height] of sizes) for(const theme of ['dark','light']) for(const reducedMotion of ['no-preference','reduce']){
   const context=await browser.newContext({viewport:{width,height},reducedMotion,acceptDownloads:true})
   await context.addInitScript(theme=>localStorage.setItem('platform-theme',theme),theme)
-  await context.route('**/api/**',route=>route.fulfill({status:503,contentType:'application/json',body:'{}'}))
+  await routeApprovedLearnerApi(context)
   const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message))
   const check=async name=>{
    assert.deepEqual((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations.map(v=>({id:v.id,targets:v.nodes.map(n=>n.target)})),[],name)
