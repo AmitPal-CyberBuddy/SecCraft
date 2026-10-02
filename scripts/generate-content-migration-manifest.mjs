@@ -156,6 +156,8 @@ if (manifest.summary.unmappedFindings) process.exitCode = 1
 function walk(dir) {
   if (!fs.existsSync(dir)) return []
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
+    // Verification scripts may compile fixture helpers in place. Runtime caches are not authored content.
+    if (entry.name === '__pycache__' || entry.name === '.DS_Store' || entry.name.endsWith('.pyc') || entry.name.endsWith('.pyo')) return []
     const full = path.join(dir, entry.name)
     return entry.isDirectory() ? walk(full) : [full]
   })

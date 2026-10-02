@@ -5,7 +5,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const EXCLUDED_PARTS = new Set(['.git', 'node_modules', 'build', 'coverage', '.vite'])
+const EXCLUDED_PARTS = new Set(['.git', 'node_modules', 'build', 'coverage', '.vite', '__pycache__'])
 const FIXTURE_ROOT = path.join(ROOT, 'content/fixtures')
 const MARKER = /SC-PRIVATE:(lesson|lab|prompt|key|solution|verification|instructor|artifact):[a-z0-9-]+/g
 const TEXT_EXTENSIONS = new Set(['.md', '.json', '.ts', '.tsx', '.js', '.mjs', '.py', '.txt', '.csv', '.yaml', '.yml'])
