@@ -2,7 +2,7 @@
 
 *Status: decision package · 2 October 2026 · architecture only, no implementation. This package makes no production import, database/Storage write, content conversion, hosting change, visibility change, or infrastructure upgrade.*
 
-The source of truth for item mapping remains [`../content/migration/CONTENT_MIGRATION_MANIFEST.json`](../content/migration/CONTENT_MIGRATION_MANIFEST.json). The table in §1 is generated from its 159 `REVIEW_CLASSIFY` entries. The existing SecCraft repository remains the sole repository.
+The source of truth for item mapping remains [`../content/migration/CONTENT_MIGRATION_MANIFEST.json`](../content/migration/CONTENT_MIGRATION_MANIFEST.json). The table in §1 is generated from its 159 `REVIEW_CLASSIFY` entries. For efficient policy decisions, use the grouped [`CONTENT_OWNER_DECISION_MATRIX.md`](CONTENT_OWNER_DECISION_MATRIX.md). The existing SecCraft repository remains the sole repository.
 
 ## 1. Manual-review decision table (159 items)
 
