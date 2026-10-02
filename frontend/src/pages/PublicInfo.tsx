@@ -16,10 +16,10 @@ function PublicPage({ eyebrow, title, intro, children }: { eyebrow: string; titl
       <div className="mt-10 space-y-5 text-sm leading-7 text-[var(--ink-secondary)]">{children}</div>
       <div className="mt-10 flex flex-wrap gap-3">
         <Link
-          to="/app"
+          to={signedIn ? '/app' : '/paths'}
           className="inline-flex min-h-11 items-center gap-2 rounded-xl sc-learning-action px-4 text-sm font-bold  transition-colors "
         >
-          {signedIn ? 'Open your workspace' : 'Start the preview'} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          {signedIn ? 'Open your workspace' : 'Explore the catalogue'} <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
         {!signedIn && (
           <Link to="/signup" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--line-normal)] px-4 text-sm font-semibold text-[var(--ink-primary)] transition-colors hover:bg-[var(--panel-raised)]">

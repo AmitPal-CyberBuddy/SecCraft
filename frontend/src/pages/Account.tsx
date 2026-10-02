@@ -620,7 +620,7 @@ export function AccountStatusPage() {
       ) : statusUnavailable ? (
         <div className="space-y-4">
           <ServiceUnavailable>{accountError.message}</ServiceUnavailable>
-          <p className="text-sm text-[var(--ink-secondary)]">You are signed in, but the account service has not confirmed approval or owner access. This is not an approval decision. Preview learning and browser-local practice remain available.</p>
+          <p className="text-sm text-[var(--ink-secondary)]">You are signed in, but the account service has not confirmed approval or owner access. This is not an approval decision. The catalogue and browser-local practice remain available.</p>
           <div className="flex flex-wrap gap-3">
             <button type="button" onClick={() => void recheck()} disabled={checking} className="inline-flex min-h-11 items-center rounded-xl border border-[var(--line-normal)] px-4 text-sm text-[var(--ink-primary)] disabled:opacity-60">{checking ? 'Checking…' : 'Re-check status'}</button>
             <Link to="/app" className="inline-flex min-h-11 items-center rounded-xl border border-[var(--line-normal)] px-4 text-sm text-[var(--ink-primary)]">Go to workspace</Link>

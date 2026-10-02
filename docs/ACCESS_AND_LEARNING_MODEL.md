@@ -303,7 +303,7 @@ GitHub ──► GitHub Pages   public frontend + prerendered catalogue
 
 Sizes are relative (S/M/L). A phase is done when its acceptance checks pass in CI.
 
-### P1 · Product and access terminology: **S** — *in this branch*
+### P1 · Product and access terminology: **S** — *done on this branch*
 Remove "Preview Curriculum", "open to everyone", "public content", "readable here" wherever they conflict with the model. Introduce *Public catalogue* vs *Authenticated learning*, and *Preview / Published / Coming soon* for maturity. Behaviour does not change.
 **Accept:** no user-facing string presents Preview/Full as an access level or calls lesson text public; `contentAccess.ts` is gone; `contentMaturity.ts` exists; the two pinning tests are rewritten; CI green.
 
@@ -379,4 +379,6 @@ Evidence storage, competency rules (§7.2), Skills and Competencies pages, instr
 
 * **Closed an anonymous lesson route** (`GET /api/content/{module}/{lesson}` returned full lesson text with no credentials) and added a regression test that sweeps every GET route (verified to fail on the old code).
 * **Browser QA fixed** (the original failing CI): approved-learner lesson fixture, a focus race, the Android script's stale checks, three parallel CI jobs.
+* **Phase 1 (terminology):** access and content maturity are separate (`lib/contentMaturity.ts`; `learning-content` capability; `accessLabel()`); `lib/contentAccess.ts` is gone; copy that was false or contradicted the model is replaced across Home, About, the header and footer, Account, Profile, Dashboard, the banner, the tour and the modules page. A source-scan test fails if the retired wording returns.
+* **A test-harness bug fixed:** in `access-matrix.test.mjs` a root-level `after` hook exited before the last test ran, so the last test (account achievements) never executed and could not fail CI. It is now one parent test with explicit exit handling; each test position was sabotaged to confirm it fails the run. Every other test file was checked: defined tests equal reported tests.
 * Documentation: this plan, `IA_AUDIT.md`; the Pages guide no longer says lessons work offline.

@@ -24,7 +24,7 @@ Numbers come from the code (route table, import graph, file sizes) and from runn
 1. **Public and learning surfaces are not separated in routing.** `App.tsx` has 49 route entries: 9 use the public layout, **32 render inside the single learner workspace chrome** (including the catalogue pages `/paths`, `/paths/:id` and `/modules`), 2 are the owner console, 5 are redirects, and 1 is the public layout parent. A visitor browsing the catalogue is already inside the app shell, with local-progress UI, and none of those pages is prerendered or indexable.
 2. **`ModuleDetail.tsx` (965 lines) is two products behind one URL.** The module overview and the whole lesson/lab/quiz/report experience live behind `?tab=`. It has to be split: a public Module Overview and an authenticated learning experience.
 3. **"Tier" means three unrelated things:** the *access* tier (`ContentTier` preview/full, derived from `phase <= 2`), the *lab environment* tier (`TierBadge`: simulation/hybrid/RF), and *content maturity* (`content_status` authored/expanded/brief, path `status` available/planned). The access/maturity split in the decisions needs the lab one renamed too.
-4. **Some old-model copy is false today**, not just awkward. `Modules.tsx` tells every visitor *"All lessons are readable here. Account approval adds account features, not access to the lesson text."* The guided tour says account status doesn't change *"whether bundled course files can be read"*. The home page's primary action is *"Try the preview"*. Lesson text is served only to approved accounts.
+4. **Some old-model copy is false today**, not just awkward. `Modules.tsx` tells every visitor *"All lessons are readable here. Account approval adds account features, not access to the lesson text."* The guided tour says account status doesn't change *"whether bundled course files can be read"*. The home page's primary action is *"Try the preview"*. Lesson text is served only to approved accounts. **Fixed by P1 on this branch.**
 5. **The navigation is built on the principle the new model reverses.** `navModel.ts`: *"identical for every user state by design: the product does not remove learning surfaces to push registration."*
 6. **Seven routes render the same `Engagement` page, including `/assessments`.** There is no assessment concept in the UI yet, only the ENG-01 engagement.
 7. **The local-first machinery is large.** 31 files import `useProgressStore` (614 lines); 35 mention XP/gamification/achievements; 9 routes are built around it (`/sync`, `/progress`, `/analytics`, `/achievements`, `/badges`, `/daily`, `/streak`, `/profile`, `/progress/sync`).
@@ -238,8 +238,8 @@ All 25 `GET` routes in the OpenAPI schema, requested with no credentials (sample
 
 | Item | Impact | Phase |
 |---|---|---|
-| `access-matrix.test.mjs` (201 lines) | pins the old tier model (modules 01–06, "not a security boundary", `Preview Curriculum` labels): **rewrite** | P1 |
-| `account-states.test.mjs` (509 lines) | renders each state and asserts old per-state copy: **rewrite copy now, states in P4** | P1, P4 |
+| `access-matrix.test.mjs` (201 lines) | pinned the old tier model (modules 01–06, "not a security boundary", `Preview Curriculum` labels). **Rewritten in P1.** It also had a harness bug: a root-level `after` called `process.exit(0)` before the last test ran, so that test never executed and could not fail CI | P1 (done) |
+| `account-states.test.mjs` (509 lines) | renders each state and asserts per-state copy: **copy rewritten in P1; the states themselves change in P4** | P1 (done), P4 |
 | `learning-journey`, `secondary-pages` (12 progress-store references each) | adapt to server progress | P4 |
 | `api-resilience` | keep; extend for new endpoints | P3–P4 |
 | `admin-console`, `feedback-reliability`, `dense-workflows`, `motion-system`, `responsive-foundations`, `shared-controls`, `tour-contract` | keep (tour contract updates with the tour) | – |

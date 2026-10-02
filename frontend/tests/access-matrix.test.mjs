@@ -192,7 +192,7 @@ test('access model', async t => {
     const { join } = await import('node:path')
     const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(entry =>
       entry.isDirectory() ? walk(join(dir, entry.name)) : /\.(tsx?|css)$/.test(entry.name) ? [join(dir, entry.name)] : [])
-    const banned = [/Preview Curriculum/i, /Full Curriculum/i, /open to everyone/i, /no account required/i, /readable here/i, /public on this site/i, /preview lessons/i, /explore the preview/i, /try the preview/i]
+    const banned = [/Preview Curriculum/i, /Full Curriculum/i, /open to everyone/i, /no account required/i, /readable here/i, /public on this site/i, /preview lessons/i, /explore the preview/i, /try the preview/i, /start the preview/i, /preview learning/i]
     const offenders = []
     for (const file of walk(join(frontendRoot, 'src'))) {
       const text = readFileSync(file, 'utf8')

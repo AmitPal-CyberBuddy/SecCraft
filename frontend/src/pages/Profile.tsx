@@ -73,7 +73,7 @@ export function Profile() {
     <div className="ws-account-area sc-profile-page mx-auto w-full max-w-[1000px] min-w-0">
       <header className="sc-record-header"><div><p className="sc-library-domain">Account / Identity</p><h1>Profile</h1><p>Who you are in SecCraft, and where each record lives.</p></div><div className="sc-profile-actions">{statusUnavailable ? <UnavailableStatusChip /> : <StateChip state={userState} />}<button type="button" onClick={() => void handleRefresh()} disabled={refreshing} className="ws-action ws-action-secondary"><RefreshCw size={15} aria-hidden="true" />{refreshing ? 'Refreshing…' : 'Refresh'}</button></div></header>
       <nav aria-label="Profile destinations" className="sc-profile-destinations"><Link to="/paths">Learning</Link><Link to="/progress">Practice activity</Link><Link to="/engagement">Assessments</Link><Link to="/achievements">Local achievements</Link><Link to="/sync">Progress transfer</Link></nav>
-      <div className="sc-profile-state">{statusUnavailable ? <p role="status">Signed in; account status unavailable. Preview learning remains available. Refresh to try again.</p> : <StateExplainer state={userState} />}</div>
+      <div className="sc-profile-state">{statusUnavailable ? <p role="status">Signed in; account status unavailable. The catalogue remains available. Refresh to try again.</p> : <StateExplainer state={userState} />}</div>
 
       {/* ── Authenticated account ───────────────────────────────────────── */}
       {signedIn ? (
