@@ -87,6 +87,10 @@ if ! fetch_token approved-progress APPROVED_PROGRESS_EMAIL APPROVED_PROGRESS_PAS
 fi
 
 # Export only after all three logins returned non-empty access tokens.
-printf 'STAGING_PENDING_JWT=%s\n' "$pending" >> "$GITHUB_ENV"
-printf 'STAGING_APPROVED_JWT=%s\n' "$approved" >> "$GITHUB_ENV"
-printf 'STAGING_APPROVED_WITH_PROGRESS_JWT=%s\n' "$progress" >> "$GITHUB_ENV"
+write_token() {
+  local variable_name="$1" value="$2"
+  printf '%s=%s\n' "$variable_name" "$value" >> "$GITHUB_ENV"
+}
+write_token STAGING_PENDING_JWT "$pending"
+write_token STAGING_APPROVED_JWT "$approved"
+write_token STAGING_APPROVED_WITH_PROGRESS_JWT "$progress"

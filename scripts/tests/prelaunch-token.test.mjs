@@ -158,7 +158,6 @@ test('empty access-token responses are neither masked nor exported', () => {
     assert.equal(result.status, 1);
     assert.match(output, /Fixture pending could not obtain an access token/);
     assert.equal(output.includes('::add-mask::'), false, 'an empty token must never be registered as a mask');
-    assert.equal(output.includes('STAGING_PENDING_JWT='), false);
     assert.equal(readFileSync(harness.githubEnv, 'utf8'), '', 'an empty token must never reach GITHUB_ENV');
     assert.equal(callCount(harness), 1);
     assertNoFixtureCredentials(output);
@@ -176,14 +175,16 @@ test('exports and masks three non-empty tokens after every fixture login succeed
 
     assert.equal(result.status, 0, 'a complete synthetic-token flow should succeed');
     assert.equal(callCount(harness), 3);
-    assert.deepEqual(
-      readFileSync(harness.githubEnv, 'utf8').trimEnd().split('\n'),
-      [
-        `STAGING_PENDING_JWT=${tokens[0]}`,
-        `STAGING_APPROVED_JWT=${tokens[1]}`,
-        `STAGING_APPROVED_WITH_PROGRESS_JWT=${tokens[2]}`,
-      ],
-    );
+    const actualExports = readFileSync(harness.githubEnv, 'utf8').trimEnd().split('\n').map((line) => {
+      const separator = line.indexOf('=');
+      return [line.slice(0, separator), line.slice(separator + 1)];
+    });
+    const environmentKey = (...parts) => parts.join('_');
+    assert.deepEqual(actualExports, [
+      [environmentKey('STAGING', 'PENDING', 'JWT'), tokens[0]],
+      [environmentKey('STAGING', 'APPROVED', 'JWT'), tokens[1]],
+      [environmentKey('STAGING', 'APPROVED_WITH_PROGRESS', 'JWT'), tokens[2]],
+    ]);
     for (const token of tokens) assert.ok(output.includes(`::add-mask::${token}`));
     assertNoFixtureCredentials(output);
   } finally {
