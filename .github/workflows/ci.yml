@@ -178,8 +178,8 @@ jobs:
       - name: Fail if credentials, backups, exports, or runtime databases are tracked
         run: bash scripts/verify-no-sensitive-files-tracked.sh
 
-      - name: Test prelaunch configuration and synthetic-token safeguards
-        run: node --test scripts/tests/prelaunch-env.test.mjs scripts/tests/prelaunch-token.test.mjs
+      - name: Test prelaunch configuration, synthetic-token, and PostgreSQL version safeguards
+        run: node --test scripts/tests/prelaunch-env.test.mjs scripts/tests/prelaunch-token.test.mjs scripts/tests/prelaunch-postgres-versions.test.mjs
 
   # The browser suites run as three parallel jobs. As one serial job they took over an hour, which left
   # almost no headroom under the timeout and made every push wait for all of it. Each job is independent;
