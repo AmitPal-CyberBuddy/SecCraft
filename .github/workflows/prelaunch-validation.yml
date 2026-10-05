@@ -69,14 +69,14 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Verify secret and configuration presence without printing values
-        shell: bash
-        run: |
-          set -euo pipefail
-          required=(PLATFORM_DATABASE_URL CONTENT_MIGRATION_DATABASE_URL CONTENT_BACKUP_DATABASE_URL CONTENT_DATABASE_RUNTIME_ROLE SUPABASE_URL SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY)
-          for name in "${required[@]}"; do
-            [[ -n "${!name:-}" ]] || { echo "::error::Missing prelaunch environment value: $name"; exit 1; }
-          done
-          bash scripts/verify-no-sensitive-files-tracked.sh
+        env:
+          PENDING_EMAIL: ${{ secrets.PRELAUNCH_PENDING_EMAIL }}
+          PENDING_PASSWORD: ${{ secrets.PRELAUNCH_PENDING_PASSWORD }}
+          APPROVED_NEW_EMAIL: ${{ secrets.PRELAUNCH_APPROVED_NEW_EMAIL }}
+          APPROVED_NEW_PASSWORD: ${{ secrets.PRELAUNCH_APPROVED_NEW_PASSWORD }}
+          APPROVED_PROGRESS_EMAIL: ${{ secrets.PRELAUNCH_APPROVED_PROGRESS_EMAIL }}
+          APPROVED_PROGRESS_PASSWORD: ${{ secrets.PRELAUNCH_APPROVED_PROGRESS_PASSWORD }}
+        run: bash scripts/validate-prelaunch-env.sh
 
       - name: Install validation dependencies
         run: |

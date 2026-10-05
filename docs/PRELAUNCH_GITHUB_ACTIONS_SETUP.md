@@ -46,6 +46,8 @@ In **GitHub repository → Settings → Environments**, create `prelaunch`. Add 
 
 Connection values come from the Supabase project’s **Connect** dialog. URL-encode special password characters. Do not add these values as repository variables, workflow YAML, Codespace dotfiles, or frontend variables.
 
+Before installing dependencies or contacting Supabase, the workflow checks that the required environment settings are non-empty. If one is missing, the diagnostic names the corresponding GitHub setting (for example, `PRELAUNCH_MIGRATION_DATABASE_URL`) but never prints its value; configure the named setting in the protected `prelaunch` environment before starting another validation run.
+
 ## 3. Run in Actions
 
 After this workflow is present on `main`, open **Actions → Pre-launch Supabase validation → Run workflow**. Enter a new immutable release ID, for example `prelaunch-20261002-n1`. The workflow is manual-only, serialized, read-only to GitHub, and bound to the `prelaunch` environment.
