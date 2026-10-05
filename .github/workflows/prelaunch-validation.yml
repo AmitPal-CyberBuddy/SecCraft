@@ -92,25 +92,7 @@ jobs:
           APPROVED_PROGRESS_EMAIL: ${{ secrets.PRELAUNCH_APPROVED_PROGRESS_EMAIL }}
           APPROVED_PROGRESS_PASSWORD: ${{ secrets.PRELAUNCH_APPROVED_PROGRESS_PASSWORD }}
         shell: bash
-        run: |
-          set -euo pipefail
-          token() {
-            local email="$1" password="$2" response access
-            response="$(curl --fail --silent --show-error -X POST "$SUPABASE_URL/auth/v1/token?grant_type=password" \
-              -H "apikey: $SUPABASE_ANON_KEY" -H 'Content-Type: application/json' \
-              --data "$(jq -cn --arg email "$email" --arg password "$password" '{email:$email,password:$password}')")"
-            access="$(jq -er '.access_token' <<<"$response")"
-            echo "::add-mask::$access" >&2
-            printf '%s' "$access"
-          }
-          pending="$(token "$PENDING_EMAIL" "$PENDING_PASSWORD")"
-          approved="$(token "$APPROVED_NEW_EMAIL" "$APPROVED_NEW_PASSWORD")"
-          progress="$(token "$APPROVED_PROGRESS_EMAIL" "$APPROVED_PROGRESS_PASSWORD")"
-          {
-            echo "STAGING_PENDING_JWT=$pending"
-            echo "STAGING_APPROVED_JWT=$approved"
-            echo "STAGING_APPROVED_WITH_PROGRESS_JWT=$progress"
-          } >> "$GITHUB_ENV"
+        run: bash scripts/acquire-prelaunch-tokens.sh
 
       - name: Start unchanged FastAPI binary locally
         working-directory: backend
