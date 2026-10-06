@@ -189,7 +189,7 @@ test('workflow pins the PostgreSQL 17 recovery image, client bin directory, and 
   assert.ok(pathIndex < backupIndex, 'GITHUB_PATH must be updated before the backup step');
 });
 
-test('the diagnostic and the backup share one job-level, non-Supabase recovery configuration', () => {
+test('the diagnostic and the backup share one non-Supabase recovery configuration', () => {
   const workflow = readFileSync(workflowPath, 'utf8');
   const jobEnvStart = workflow.indexOf('    env:\n');
   const stepsStart = workflow.indexOf('    steps:\n');
@@ -197,15 +197,15 @@ test('the diagnostic and the backup share one job-level, non-Supabase recovery c
   const jobEnv = workflow.slice(jobEnvStart, stepsStart);
   const steps = workflow.slice(stepsStart);
 
-  for (const name of ['CONTENT_RECOVERY_DATABASE_URL', 'CONTENT_RECOVERY_STORAGE_ROOT']) {
-    assert.ok(jobEnv.includes(`${name}:`), `${name} must be defined once at job level`);
-    assert.equal(
-      steps.includes(`${name}:`),
-      false,
-      `${name} must not be redefined per step, so the readiness probe, diagnostic, backup, and cleanup cannot diverge`,
-    );
-    assert.ok(steps.includes(`$${name}`) || steps.includes(name), `${name} must remain visible to the recovery steps`);
-  }
+  // The static recovery database URL stays job-scoped so the readiness probe, diagnostic, backup,
+  // restore, and cleanup can never diverge.
+  assert.ok(jobEnv.includes('CONTENT_RECOVERY_DATABASE_URL:'), 'CONTENT_RECOVERY_DATABASE_URL must be defined once at job level');
+  assert.equal(
+    steps.includes('CONTENT_RECOVERY_DATABASE_URL:'),
+    false,
+    'CONTENT_RECOVERY_DATABASE_URL must not be redefined per step, so the readiness probe, diagnostic, backup, and cleanup cannot diverge',
+  );
+  assert.ok(steps.includes('$CONTENT_RECOVERY_DATABASE_URL') || steps.includes('CONTENT_RECOVERY_DATABASE_URL'), 'CONTENT_RECOVERY_DATABASE_URL must remain visible to the recovery steps');
 
   assert.ok(
     /CONTENT_RECOVERY_DATABASE_URL: postgresql:\/\/recovery:recovery-only-disposable@127\.0\.0\.1:55432\/seccraft_recovery/.test(jobEnv),
@@ -216,6 +216,40 @@ test('the diagnostic and the backup share one job-level, non-Supabase recovery c
     /CONTENT_RECOVERY_DATABASE_URL:.*SUPABASE/,
     'the recovery database URL must never be sourced from the Supabase project',
   );
+
+  // The disposable storage root depends on the runner's temporary directory. GitHub evaluates
+  // job-level env before allocating a runner, so ${{ runner.* }} there fails the whole workflow at
+  // startup (run 37438753903: "Unrecognized named-value: runner"). The value must instead be
+  // exported to GITHUB_ENV by one dedicated step that runs before every consumer.
+  assert.doesNotMatch(jobEnv, /\$\{\{\s*runner\./, 'job-level env must never evaluate runner.* expressions');
+  assert.equal(
+    jobEnv.includes('CONTENT_RECOVERY_STORAGE_ROOT'),
+    false,
+    'CONTENT_RECOVERY_STORAGE_ROOT cannot live in job-level env because it needs the runner context',
+  );
+
+  const exportLine = 'echo "CONTENT_RECOVERY_STORAGE_ROOT=$RUNNER_TEMP/seccraft-recovery-storage" >> "$GITHUB_ENV"';
+  const configureIndex = steps.indexOf(exportLine);
+  assert.ok(configureIndex > -1, 'a dedicated step must export CONTENT_RECOVERY_STORAGE_ROOT to GITHUB_ENV from $RUNNER_TEMP');
+  assert.equal(
+    (steps.match(/CONTENT_RECOVERY_STORAGE_ROOT=/g) ?? []).length,
+    1,
+    'CONTENT_RECOVERY_STORAGE_ROOT must be defined exactly once so consumers cannot diverge',
+  );
+
+  const readinessIndex = steps.indexOf('run: bash scripts/wait-for-prelaunch-recovery-postgres.sh');
+  const diagnosticIndex = steps.indexOf('run: bash scripts/verify-prelaunch-postgres-versions.sh 17');
+  const backupIndex = steps.indexOf('backup_external_staging.py backup');
+  const cleanupIndex = steps.indexOf('Confirm no secret-bearing artifacts are retained');
+  for (const [label, index] of [
+    ['readiness probe', readinessIndex],
+    ['version diagnostic', diagnosticIndex],
+    ['backup/restore step', backupIndex],
+    ['always() cleanup', cleanupIndex],
+  ]) {
+    assert.ok(index > -1, `the ${label} must remain present in the workflow`);
+    assert.ok(configureIndex < index, `CONTENT_RECOVERY_STORAGE_ROOT must be exported before the ${label}`);
+  }
 });
 
 test('no backup, dump, object copy, or recovery export is uploaded as an artifact and cleanup always runs', () => {
@@ -225,7 +259,11 @@ test('no backup, dump, object copy, or recovery export is uploaded as an artifac
   const cleanup = workflow.slice(workflow.indexOf('Confirm no secret-bearing artifacts are retained'));
   assert.match(cleanup, /if: always\(\)/, 'the cleanup step must run even when an earlier step failed');
   assert.match(cleanup, /rm -rf "\$RUNNER_TEMP\/seccraft-prelaunch-backup"/, 'cleanup must delete the temporary dump directory');
-  assert.match(cleanup, /rm -rf .*"\$CONTENT_RECOVERY_STORAGE_ROOT"/, 'cleanup must delete the temporary recovery filesystem');
+  assert.match(
+    cleanup,
+    /rm -rf .*"\$\{CONTENT_RECOVERY_STORAGE_ROOT:-\$RUNNER_TEMP\/seccraft-recovery-storage\}"/,
+    'cleanup must delete the temporary recovery filesystem, with the deterministic fallback in case the export step never ran',
+  );
   assert.match(cleanup, /bash scripts\/verify-no-sensitive-files-tracked\.sh/, 'cleanup must re-run the hygiene scan');
 });
 
