@@ -33,3 +33,12 @@ test('progress fills and the scroll-top control move on shared tokens with insta
   assert.match(workspace, /\(prefers-reduced-motion:reduce\) \{ \.sc-scroll-top \{ animation:none; \} \}/)
   assert.match(workspace, /:is\(\.reduce-motion,\[data-motion="reduced"\],\[data-motion-paused="true"\]\) \.sc-scroll-top \{ animation:none; \}/)
 })
+
+test('empty states carry the product mark, decoratively and without motion', () => {
+  const workspace = read('components/common/Workspace.tsx')
+  assert.match(workspace, /aria-hidden="true" className="ws-empty-mark"><Shield /, 'the empty-state mark is the brand shield and stays decorative')
+  assert.doesNotMatch(workspace, /framer-motion|motion\./, 'the shared workspace vocabulary never animates')
+  const css = read('styles/workspace.css')
+  assert.match(css, /\.ws-empty-mark \{ display:inline-grid;/)
+  assert.doesNotMatch(css, /\.ws-empty-mark[^}]*animation|\.ws-empty-mark[^}]*transition/)
+})
