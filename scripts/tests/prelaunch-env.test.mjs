@@ -86,3 +86,48 @@ test('passes with complete configuration and does not print configured values', 
   assert.match(output, /No tracked environment files/);
   assert.doesNotMatch(output, /test-only-value-/);
 });
+
+test('VITE_API_BASE stays an origin with no /api/v1 path in the workflow and in every example', () => {
+  const sources = [
+    ['.github/workflows/prelaunch-validation.yml', /VITE_API_BASE:\s*([^\n]*)/g],
+    ['.github/workflows/pages.yml', /VITE_API_BASE:\s*([^\n]*)/g],
+    ['deploy/staging.env.example', /^\s*VITE_API_BASE=(.*)$/gm],
+    ['frontend/.env.example', /^\s*#.*VITE_API_BASE=(.*)$/gm],
+    ['docker-compose.env.example', /^\s*VITE_API_BASE=(.*)$/gm],
+  ];
+
+  let checked = 0;
+  for (const [relative, pattern] of sources) {
+    const content = readFileSync(resolve(repoRoot, relative), 'utf8');
+    for (const match of content.matchAll(pattern)) {
+      const value = (match[1] ?? '').trim();
+      if (!value || value.startsWith('${{') || value.startsWith('${')) continue;
+      checked += 1;
+      assert.equal(
+        value.includes('/api/'),
+        false,
+        `${relative} must set VITE_API_BASE to an origin without an /api path, found ${value}`,
+      );
+      assert.equal(
+        value.endsWith('/api') || value.endsWith('/api/v1'),
+        false,
+        `${relative} must not append the API prefix to VITE_API_BASE`,
+      );
+      const parsed = new URL(value);
+      assert.equal(parsed.pathname, '/', `${relative} must not give VITE_API_BASE a path component`);
+      assert.equal(parsed.search, '', `${relative} must not give VITE_API_BASE a query string`);
+    }
+  }
+  assert.ok(checked >= 3, 'the VITE_API_BASE sources must still be present and non-empty');
+
+  const prelaunch = readFileSync(resolve(repoRoot, '.github/workflows/prelaunch-validation.yml'), 'utf8');
+  assert.ok(
+    prelaunch.includes('VITE_API_BASE: http://127.0.0.1:8000'),
+    'pre-launch validation must build against the local FastAPI origin without the API prefix',
+  );
+  const stagingExample = readFileSync(resolve(repoRoot, 'deploy/staging.env.example'), 'utf8');
+  assert.ok(
+    stagingExample.includes('VITE_API_BASE=http://127.0.0.1:8000'),
+    'deploy/staging.env.example must document the origin-only VITE_API_BASE value',
+  );
+});

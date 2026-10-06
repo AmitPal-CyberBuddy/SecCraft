@@ -9,44 +9,78 @@ import test from 'node:test';
 const testsDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(testsDir, '../..');
 const versionScript = resolve(repoRoot, 'scripts/verify-prelaunch-postgres-versions.sh');
+const readinessScript = resolve(repoRoot, 'scripts/wait-for-prelaunch-recovery-postgres.sh');
 const workflowPath = resolve(repoRoot, '.github/workflows/prelaunch-validation.yml');
 
-// Fixture connection strings mirror the real URL shape (including embedded credentials) so the
+// Fixture connection strings mirror the real URL shape, including embedded credentials, so the
 // never-printed assertions are meaningful. The db.example.test host is already allowlisted by
 // scripts/verify-no-sensitive-files-tracked.sh for documentation and test fixtures.
 const stagingUrl = 'postgresql://staging-fixture:fixture-only-staging-secret@db.example.test:5432/seccraft_staging_fixture';
+const stagingSqlalchemyUrl = 'postgresql+psycopg://staging-fixture:fixture-only-staging-secret@db.example.test:5432/seccraft_staging_fixture';
 const recoveryUrl = 'postgresql://recovery-fixture:fixture-only-recovery-secret@db.example.test:55432/seccraft_recovery_fixture';
+const recoverySqlalchemyUrl = 'postgresql+psycopg://recovery-fixture:fixture-only-recovery-secret@db.example.test:55432/seccraft_recovery_fixture';
 const fixtureSecrets = Object.freeze([
   stagingUrl,
+  stagingSqlalchemyUrl,
   recoveryUrl,
+  recoverySqlalchemyUrl,
   'fixture-only-staging-secret',
   'fixture-only-recovery-secret',
   'staging-fixture',
   'recovery-fixture',
   'db.example.test',
+  'postgresql+psycopg',
 ]);
 
 const dumpToolMock = (tool) => `#!/bin/bash
 printf '${tool} (PostgreSQL) %s\\n' "$MOCK_CLIENT_VERSION"
 `;
 
-// The mock records every query target and argument list, and it deliberately echoes the
-// connection string to stderr when failing so the tests can prove the real script suppresses
-// driver diagnostics instead of leaking URLs.
+// The psql mock emulates the behaviour that broke the previous diagnostic: libpq only accepts a
+// connection URI as the connection argument, it never parses PGDATABASE as a URI, and it rejects
+// the SQLAlchemy postgresql+psycopg:// spelling. A regression therefore fails here instead of
+// silently probing the local socket. The mock also quotes the connection string on failure so the
+// tests can prove the real script suppresses and redacts driver diagnostics.
 const psqlMock = `#!/bin/bash
+set -u
 if [[ "\${1:-}" == "--version" ]]; then
   printf 'psql (PostgreSQL) %s\\n' "$MOCK_CLIENT_VERSION"
   exit 0
 fi
-printf '%s\\t%s\\n' "\${PGDATABASE:-}" "$*" >> "$PSQL_CALLS_FILE"
-if [[ -n "\${MOCK_PSQL_FAIL:-}" ]]; then
-  printf 'psql: error: connection to server at "%s" failed\\n' "\${PGDATABASE:-}" >&2
+connection=""
+args="$*"
+while (( $# )); do
+  case "$1" in
+    --dbname) connection="\${2:-}"; shift 2; continue ;;
+    --dbname=*) connection="\${1#--dbname=}" ;;
+    -d) connection="\${2:-}"; shift 2; continue ;;
+  esac
+  shift
+done
+printf 'connection=%s\\targs=%s\\tpgdatabase=%s\\n' "$connection" "$args" "\${PGDATABASE:-}" >> "$PSQL_CALLS_FILE"
+if [[ -n "\${PGDATABASE:-}" ]]; then
+  printf 'psql: error: PGDATABASE %s is a database name, not a connection URI\\n' "$PGDATABASE" >&2
   exit 2
 fi
-case "\${PGDATABASE:-}" in
+if [[ "$connection" != postgresql://* ]]; then
+  if [[ -n "\${MOCK_PSQL_FAIL:-}" ]]; then
+    printf 'psql: error: connection to server at "%s" failed\\n' "$connection" >&2
+  else
+    printf 'psql: error: invalid connection string "%s"\\n' "$connection" >&2
+  fi
+  exit 2
+fi
+if [[ -n "\${MOCK_PSQL_FAIL:-}" ]]; then
+  if [[ -n "\${MOCK_PSQL_LEAK:-}" ]]; then
+    printf 'psql: error: server said %s and %s and key %s\\n' "\${MOCK_PSQL_LEAK}" 'Authorization: Bearer abcdefghijklmnop.qrstuvwxyz.0123456789' 'sb_secret_abcdefgh12345678' >&2
+  fi
+  printf 'psql: error: connection to server at "%s" (db.example.test), port 5432 failed: Connection refused\\n' "$connection" >&2
+  exit 2
+fi
+case "$connection" in
   "$MOCK_STAGING_URL") printf '%s\\n' "$MOCK_STAGING_SERVER_VERSION_NUM" ;;
   "$MOCK_RECOVERY_URL") printf '%s\\n' "$MOCK_RECOVERY_SERVER_VERSION_NUM" ;;
-  *) printf 'psql: error: unexpected fixture target\\n' >&2; exit 3 ;;
+  *) printf 'psql: error: unexpected fixture target "%s"\\n' "$connection" >&2; exit 3 ;;
 esac
 `;
 
@@ -54,6 +88,7 @@ function makeHarness({
   clientVersion = '17.5',
   missingTools = [],
   psqlFail = false,
+  psqlLeak = '',
   stagingVersionNum = '170005',
   recoveryVersionNum = '170005',
 } = {}) {
@@ -86,12 +121,17 @@ function makeHarness({
     CONTENT_RECOVERY_DATABASE_URL: recoveryUrl,
   };
   if (psqlFail) env.MOCK_PSQL_FAIL = '1';
+  if (psqlLeak) env.MOCK_PSQL_LEAK = psqlLeak;
 
-  return { env, callsFile, cleanup: () => rmSync(root, { recursive: true, force: true }) };
+  return { env, callsFile, bin, root, cleanup: () => rmSync(root, { recursive: true, force: true }) };
+}
+
+function runScript(script, env, args = []) {
+  return spawnSync('/bin/bash', [script, ...args], { cwd: repoRoot, env, encoding: 'utf8' });
 }
 
 function runVersionScript(env, args = []) {
-  return spawnSync('/bin/bash', [versionScript, ...args], { cwd: repoRoot, env, encoding: 'utf8' });
+  return runScript(versionScript, env, args);
 }
 
 function outputOf(result) {
@@ -103,8 +143,9 @@ function recordedCalls(harness) {
     .split('\n')
     .filter(Boolean)
     .map((line) => {
-      const separator = line.indexOf('\t');
-      return { target: line.slice(0, separator), args: line.slice(separator + 1) };
+      const fields = line.split('\t');
+      const value = (prefix) => (fields.find((field) => field.startsWith(prefix)) ?? '').slice(prefix.length);
+      return { connection: value('connection='), args: value('args='), pgDatabase: value('pgdatabase=') };
     });
 }
 
@@ -123,41 +164,69 @@ test('workflow pins the PostgreSQL 17 recovery image, client bin directory, and 
     workflow.includes('sudo apt-get install -y postgresql-client-17'),
     'the workflow must install the PostgreSQL 17 client toolchain when the runner image lacks it',
   );
+  assert.ok(
+    workflow.includes('for tool in pg_dump pg_restore psql; do'),
+    'the workflow must verify the whole PostgreSQL 17 client toolchain, including psql',
+  );
+  assert.ok(
+    workflow.includes('"$pg17_bin/$tool" --version'),
+    'the workflow must print pg_dump --version, pg_restore --version, and psql --version from the pinned bin directory',
+  );
 
   const pathIndex = workflow.indexOf('echo /usr/lib/postgresql/17/bin >> "$GITHUB_PATH"');
   assert.ok(pathIndex > -1, 'the workflow must add /usr/lib/postgresql/17/bin to GITHUB_PATH');
+  const readinessIndex = workflow.indexOf('run: bash scripts/wait-for-prelaunch-recovery-postgres.sh');
+  assert.ok(readinessIndex > -1, 'the workflow must wait for the disposable recovery service');
   const diagnosticIndex = workflow.indexOf('run: bash scripts/verify-prelaunch-postgres-versions.sh 17');
   assert.ok(diagnosticIndex > -1, 'the workflow must run the fail-closed major-version diagnostic');
   const backupIndex = workflow.indexOf('backup_external_staging.py backup');
   assert.ok(backupIndex > -1, 'the backup step must remain present');
 
+  assert.ok(readinessIndex < diagnosticIndex, 'the readiness probe must run before the diagnostic');
+  assert.ok(pathIndex < readinessIndex, 'GITHUB_PATH must be updated before the readiness probe');
   assert.ok(pathIndex < diagnosticIndex, 'GITHUB_PATH must be updated before the diagnostic runs');
   assert.ok(diagnosticIndex < backupIndex, 'the diagnostic must run before the backup step');
   assert.ok(pathIndex < backupIndex, 'GITHUB_PATH must be updated before the backup step');
+});
+
+test('the diagnostic and the backup share one job-level, non-Supabase recovery configuration', () => {
+  const workflow = readFileSync(workflowPath, 'utf8');
+  const jobEnvStart = workflow.indexOf('    env:\n');
+  const stepsStart = workflow.indexOf('    steps:\n');
+  assert.ok(jobEnvStart > -1 && stepsStart > jobEnvStart, 'the job must keep a job-level env block before its steps');
+  const jobEnv = workflow.slice(jobEnvStart, stepsStart);
+  const steps = workflow.slice(stepsStart);
+
+  for (const name of ['CONTENT_RECOVERY_DATABASE_URL', 'CONTENT_RECOVERY_STORAGE_ROOT']) {
+    assert.ok(jobEnv.includes(`${name}:`), `${name} must be defined once at job level`);
+    assert.equal(
+      steps.includes(`${name}:`),
+      false,
+      `${name} must not be redefined per step, so the readiness probe, diagnostic, backup, and cleanup cannot diverge`,
+    );
+    assert.ok(steps.includes(`$${name}`) || steps.includes(name), `${name} must remain visible to the recovery steps`);
+  }
+
   assert.ok(
-    workflow.indexOf('CONTENT_RECOVERY_DATABASE_URL: postgresql://recovery:') < diagnosticIndex
-      && workflow.lastIndexOf('CONTENT_RECOVERY_DATABASE_URL') > diagnosticIndex,
-    'the diagnostic step must receive the recovery database URL from its own env block',
+    /CONTENT_RECOVERY_DATABASE_URL: postgresql:\/\/recovery:recovery-only-disposable@127\.0\.0\.1:55432\/seccraft_recovery/.test(jobEnv),
+    'the recovery database must point at the disposable PostgreSQL service, never at Supabase',
+  );
+  assert.doesNotMatch(
+    jobEnv,
+    /CONTENT_RECOVERY_DATABASE_URL:.*SUPABASE/,
+    'the recovery database URL must never be sourced from the Supabase project',
   );
 });
 
-test('existing immutable-release lifecycle steps remain intact', () => {
+test('no backup, dump, object copy, or recovery export is uploaded as an artifact and cleanup always runs', () => {
   const workflow = readFileSync(workflowPath, 'utf8');
-  for (const command of [
-    'run: bash tools/content/run_external_staging.sh',
-    'run: python tools/content/validate_external_lifecycle.py',
-    'run: python tools/content/verify_external_progress.py',
-    'python tools/content/backup_external_staging.py backup "$backup"',
-    'python tools/content/backup_external_staging.py restore "$backup"',
-    'rm -rf "$backup" "$CONTENT_RECOVERY_STORAGE_ROOT"',
-  ]) {
-    assert.ok(workflow.includes(command), `pre-launch workflow lost a required step: ${command}`);
-  }
-  assert.doesNotMatch(
-    workflow,
-    /import_content\.py (rollback|delete)|DROP DATABASE|delete-release/i,
-    'the pre-launch workflow must never delete or roll back existing releases directly',
-  );
+  assert.doesNotMatch(workflow, /actions\/upload-artifact/, 'pre-launch validation must never upload an artifact');
+
+  const cleanup = workflow.slice(workflow.indexOf('Confirm no secret-bearing artifacts are retained'));
+  assert.match(cleanup, /if: always\(\)/, 'the cleanup step must run even when an earlier step failed');
+  assert.match(cleanup, /rm -rf "\$RUNNER_TEMP\/seccraft-prelaunch-backup"/, 'cleanup must delete the temporary dump directory');
+  assert.match(cleanup, /rm -rf .*"\$CONTENT_RECOVERY_STORAGE_ROOT"/, 'cleanup must delete the temporary recovery filesystem');
+  assert.match(cleanup, /bash scripts\/verify-no-sensitive-files-tracked\.sh/, 'cleanup must re-run the hygiene scan');
 });
 
 test('passes when clients and both servers report major 17 and prints no database URLs', () => {
@@ -167,19 +236,52 @@ test('passes when clients and both servers report major 17 and prints no databas
     const output = outputOf(result);
 
     assert.equal(result.status, 0, output);
-    assert.match(output, /client pg_dump: major 17 /);
-    assert.match(output, /client pg_restore: major 17 /);
-    assert.match(output, /client psql: major 17 /);
-    assert.match(output, /server external staging backup source: major 17 \(server_version_num 170005\)/);
-    assert.match(output, /server disposable recovery restore target: major 17 \(server_version_num 170005\)/);
-    assert.match(output, /diagnostic passed/);
+    assert.match(output, /client pg_dump: major 17 \(resolved from .*\/pg_dump\)/);
+    assert.match(output, /client pg_restore: major 17 \(resolved from .*\/pg_restore\)/);
+    assert.match(output, /client psql: major 17 \(resolved from .*\/psql\)/);
+    assert.match(output, /server source \(CONTENT_BACKUP_DATABASE_URL\): major 17 \(server_version_num 170005\)/);
+    assert.match(output, /server recovery \(CONTENT_RECOVERY_DATABASE_URL\): major 17 \(server_version_num 170005\)/);
+    assert.match(
+      output,
+      /PostgreSQL compatibility verified: pg_dump=17, pg_restore=17, psql=17, source=17, recovery=17/,
+      'the diagnostic must print the canonical one-line compatibility summary',
+    );
     assertNoFixtureSecrets(output);
   } finally {
     harness.cleanup();
   }
 });
 
-test('the diagnostic only reads server_version_num and never mutates release state', () => {
+test('PostgreSQL CLI tools only ever receive ordinary postgresql:// connection strings', () => {
+  const harness = makeHarness();
+  try {
+    // The source variable is deliberately spelled the SQLAlchemy way: the diagnostic must
+    // normalise it in memory instead of handing postgresql+psycopg:// to psql.
+    harness.env.CONTENT_BACKUP_DATABASE_URL = stagingSqlalchemyUrl;
+    const result = runVersionScript(harness.env);
+    const output = outputOf(result);
+
+    assert.equal(result.status, 0, output);
+    const calls = recordedCalls(harness);
+    assert.equal(calls.length, 2, 'exactly one read-only probe per database target');
+    assert.deepEqual(
+      calls.map((call) => call.connection).sort(),
+      [stagingUrl, recoveryUrl].sort(),
+      'psql must receive the normalised postgresql:// URL, never the SQLAlchemy spelling',
+    );
+    for (const call of calls) {
+      assert.match(call.connection, /^postgresql:\/\//);
+      assert.doesNotMatch(call.connection, /\+psycopg/, 'CLI tools must never receive a driver-suffixed URL');
+      assert.equal(call.pgDatabase, '', 'PGDATABASE must stay unused: libpq reads it as a database name, not a URI');
+      assert.match(call.args, /SHOW server_version_num/);
+    }
+    assertNoFixtureSecrets(output);
+  } finally {
+    harness.cleanup();
+  }
+});
+
+test('SQLAlchemy URLs are rejected for non-PostgreSQL schemes and read-only probes never mutate state', () => {
   const harness = makeHarness();
   try {
     const result = runVersionScript(harness.env);
@@ -187,10 +289,6 @@ test('the diagnostic only reads server_version_num and never mutates release sta
 
     const calls = recordedCalls(harness);
     assert.equal(calls.length, 2, 'exactly one read-only probe per database target');
-    assert.deepEqual(
-      calls.map((call) => call.target).sort(),
-      [stagingUrl, recoveryUrl].sort(),
-    );
     for (const call of calls) {
       assert.match(call.args, /SHOW server_version_num/);
       assert.doesNotMatch(
@@ -199,50 +297,54 @@ test('the diagnostic only reads server_version_num and never mutates release sta
         'the diagnostic must stay strictly read-only so existing releases cannot change',
       );
     }
+
   } finally {
     harness.cleanup();
   }
+
+  // A rejected scheme is caught in the preflight, before any PostgreSQL tool or server is used.
+  const rejectedHarness = makeHarness();
+  try {
+    rejectedHarness.env.CONTENT_RECOVERY_DATABASE_URL = 'sqlite:///tmp/not-postgres.sqlite';
+    const rejected = runVersionScript(rejectedHarness.env);
+    const rejectedOutput = outputOf(rejected);
+    assert.equal(rejected.status, 1);
+    assert.match(rejectedOutput, /CONTENT_RECOVERY_DATABASE_URL must use the postgresql:\/\/ scheme/);
+    assert.equal(rejectedOutput.includes('not-postgres.sqlite'), false, 'the rejected value must never be echoed');
+    assert.equal(recordedCalls(rejectedHarness).length, 0, 'a rejected URL must not reach any probe');
+    assertNoFixtureSecrets(rejectedOutput);
+  } finally {
+    rejectedHarness.cleanup();
+  }
 });
 
-test('fails closed when the disposable recovery server is not major 17', () => {
-  const harness = makeHarness({ recoveryVersionNum: '160009' });
+test('fails closed and contacts no server when a required database URL is empty', () => {
+  for (const variable of ['CONTENT_BACKUP_DATABASE_URL', 'CONTENT_RECOVERY_DATABASE_URL']) {
+    const harness = makeHarness();
+    try {
+      harness.env[variable] = '';
+      const result = runVersionScript(harness.env);
+      const output = outputOf(result);
+
+      assert.equal(result.status, 1);
+      assert.match(output, new RegExp(`Required ${variable} is unset or empty`));
+      assert.equal(recordedCalls(harness).length, 0, 'an empty URL must fail before any PostgreSQL tool or server is used');
+      assertNoFixtureSecrets(output);
+    } finally {
+      harness.cleanup();
+    }
+  }
+});
+
+test('fails closed when PostgreSQL 17 must dump a PostgreSQL 17 server with an older client', () => {
+  const harness = makeHarness({ clientVersion: '16.15' });
   try {
     const result = runVersionScript(harness.env);
     const output = outputOf(result);
 
     assert.equal(result.status, 1);
-    assert.match(output, /disposable recovery restore target server is major 16/);
-    assert.match(output, /requires major 17/);
+    assert.match(output, /pg_dump resolves to major 16 but this run requires major 17/);
     assert.match(output, /Backup and restore are blocked/);
-    assertNoFixtureSecrets(output);
-  } finally {
-    harness.cleanup();
-  }
-});
-
-test('fails closed when the external staging server is not major 17', () => {
-  const harness = makeHarness({ stagingVersionNum: '150012' });
-  try {
-    const result = runVersionScript(harness.env);
-    const output = outputOf(result);
-
-    assert.equal(result.status, 1);
-    assert.match(output, /external staging backup source server is major 15/);
-    assertNoFixtureSecrets(output);
-  } finally {
-    harness.cleanup();
-  }
-});
-
-test('fails closed when a client resolves to a pre-17 toolchain and contacts no server', () => {
-  const harness = makeHarness({ clientVersion: '14.13' });
-  try {
-    const result = runVersionScript(harness.env);
-    const output = outputOf(result);
-
-    assert.equal(result.status, 1);
-    assert.match(output, /pg_dump resolves to major 14 but this run requires major 17/);
-    assert.match(output, /\/usr\/lib\/postgresql\/17\/bin/);
     assert.equal(recordedCalls(harness).length, 0, 'no server may be contacted before the client toolchain passes');
     assertNoFixtureSecrets(output);
   } finally {
@@ -250,61 +352,86 @@ test('fails closed when a client resolves to a pre-17 toolchain and contacts no 
   }
 });
 
-test('fails closed when a client tool is missing from PATH', () => {
-  const harness = makeHarness({ missingTools: ['pg_restore'] });
+test('fails closed when either server reports an older or newer major version', () => {
+  for (const [label, versionNum, expected] of [
+    ['disposable recovery restore target', '160009', /The recovery \(CONTENT_RECOVERY_DATABASE_URL\) server is major 16/],
+    ['external staging backup source', '180000', /The source \(CONTENT_BACKUP_DATABASE_URL\) server is major 18/],
+  ]) {
+    const harness = makeHarness(
+      label.includes('recovery') ? { recoveryVersionNum: versionNum } : { stagingVersionNum: versionNum },
+    );
+    try {
+      const result = runVersionScript(harness.env);
+      const output = outputOf(result);
+
+      assert.equal(result.status, 1);
+      assert.match(output, expected, `${label} must fail closed on a major-version mismatch`);
+      assert.match(output, /requires major 17/);
+      assertNoFixtureSecrets(output);
+    } finally {
+      harness.cleanup();
+    }
+  }
+});
+
+test('fails closed when a client tool is missing or its version is unparsable', () => {
+  const missingHarness = makeHarness({ missingTools: ['pg_restore'] });
   try {
-    const result = runVersionScript(harness.env);
+    const result = runVersionScript(missingHarness.env);
     const output = outputOf(result);
 
     assert.equal(result.status, 1);
     assert.match(output, /pg_restore is not on PATH/);
-    assert.match(output, /add \/usr\/lib\/postgresql\/17\/bin to GITHUB_PATH/);
-    assert.equal(recordedCalls(harness).length, 0, 'no server may be contacted before the client toolchain passes');
+    assert.equal(recordedCalls(missingHarness).length, 0, 'no server may be contacted before the client toolchain passes');
     assertNoFixtureSecrets(output);
   } finally {
-    harness.cleanup();
+    missingHarness.cleanup();
+  }
+
+  const unparsableHarness = makeHarness({ stagingVersionNum: 'not-a-version' });
+  try {
+    const result = runVersionScript(unparsableHarness.env);
+    const output = outputOf(result);
+
+    assert.equal(result.status, 1);
+    assert.match(output, /source \(CONTENT_BACKUP_DATABASE_URL\) database reported a server version that could not be parsed/);
+    assertNoFixtureSecrets(output);
+  } finally {
+    unparsableHarness.cleanup();
   }
 });
 
-test('suppresses driver diagnostics so a failing connection cannot leak the URL', () => {
+test('reports an unreachable server with a sanitised cause instead of suppressing everything or leaking the URL', () => {
   const harness = makeHarness({ psqlFail: true });
   try {
     const result = runVersionScript(harness.env);
     const output = outputOf(result);
 
     assert.equal(result.status, 1);
-    assert.match(output, /external staging backup source database did not report its server version/);
-    assert.match(output, /disposable recovery restore target database did not report its server version/);
+    assert.match(output, /source \(CONTENT_BACKUP_DATABASE_URL\) database did not report its server version/);
+    assert.match(output, /recovery \(CONTENT_RECOVERY_DATABASE_URL\) database did not report its server version/);
     assert.match(output, /the connection string is never printed/);
+    assert.match(output, /psql reported:/, 'the real cause must be surfaced so an operator is not left guessing');
+    assert.match(output, /Connection refused/, 'the sanitised libpq cause must survive redaction');
     assertNoFixtureSecrets(output);
   } finally {
     harness.cleanup();
   }
 });
 
-test('fails closed and names the variable when a required database URL is unset', () => {
-  const harness = makeHarness();
-  try {
-    harness.env.CONTENT_RECOVERY_DATABASE_URL = '';
-    const result = runVersionScript(harness.env);
-    const output = outputOf(result);
-
-    assert.equal(result.status, 1);
-    assert.match(output, /Required CONTENT_RECOVERY_DATABASE_URL is unset/);
-    assertNoFixtureSecrets(output);
-  } finally {
-    harness.cleanup();
-  }
-});
-
-test('fails closed on an unparsable server version without printing it as a URL', () => {
-  const harness = makeHarness({ stagingVersionNum: 'not-a-version' });
+test('redacts a JWT, bearer header, or project key that a driver quotes back', () => {
+  const serviceRoleJwt = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.QWERTYuiop1234567890abc';
+  const harness = makeHarness({ psqlFail: true, psqlLeak: serviceRoleJwt });
   try {
     const result = runVersionScript(harness.env);
     const output = outputOf(result);
 
     assert.equal(result.status, 1);
-    assert.match(output, /external staging backup source database reported a server version that could not be parsed/);
+    assert.equal(output.includes(serviceRoleJwt), false, 'a quoted JWT must never reach the log');
+    assert.equal(output.includes('abcdefghijklmnop.qrstuvwxyz'), false, 'a quoted bearer token must never reach the log');
+    assert.equal(output.includes('sb_secret_abcdefgh12345678'), false, 'a quoted project key must never reach the log');
+    assert.match(output, /\[REDACTED-SECRET\]/, 'the redaction marker must show a secret was suppressed');
+    assert.match(output, /Connection refused/, 'the cause must still be reported');
     assertNoFixtureSecrets(output);
   } finally {
     harness.cleanup();
@@ -339,5 +466,155 @@ test('rejects a non-numeric expected major without echoing the argument', () => 
     assertNoFixtureSecrets(output);
   } finally {
     harness.cleanup();
+  }
+});
+
+const isReadyMock = `#!/bin/bash
+set -u
+connection=""
+while (( $# )); do
+  case "$1" in
+    --dbname) connection="\${2:-}"; shift 2; continue ;;
+    --dbname=*) connection="\${1#--dbname=}" ;;
+  esac
+  shift
+done
+attempts=0
+if [[ -f "$PG_ISREADY_CALLS_FILE" ]]; then
+  read -r attempts < "$PG_ISREADY_CALLS_FILE"
+fi
+attempts=$((attempts + 1))
+printf '%s' "$attempts" > "$PG_ISREADY_CALLS_FILE"
+printf 'connection=%s\\n' "$connection" >> "$PG_ISREADY_TARGETS_FILE"
+if [[ "$connection" != postgresql://* ]]; then
+  printf 'pg_isready: error: connection string "%s" is not a URI\\n' "$connection" >&2
+  exit 2
+fi
+if (( attempts <= \${MOCK_ISREADY_FAILURES:-0} )); then
+  printf 'pg_isready: error: connection to server at "db.example.test" failed\\n' >&2
+  exit 2
+fi
+printf 'db.example.test:55432 - accepting connections\\n'
+`;
+
+function makeReadinessHarness({ failures = 0, attempts = 24, interval = 0, missingTool = false } = {}) {
+  const root = mkdtempSync(join(tmpdir(), 'seccraft-prelaunch-readiness-test-'));
+  const bin = join(root, 'bin');
+  mkdirSync(bin);
+  if (!missingTool) {
+    const mockPath = join(bin, 'pg_isready');
+    writeFileSync(mockPath, isReadyMock);
+    chmodSync(mockPath, 0o755);
+  }
+  // The readiness loop sleeps between attempts; the mock keeps the retry budget observable and
+  // the test fast without letting any other external command resolve.
+  const sleepPath = join(bin, 'sleep');
+  writeFileSync(sleepPath, '#!/bin/bash\nprintf \'%s\\n\' "$1" >> "$SLEEP_CALLS_FILE"\n');
+  chmodSync(sleepPath, 0o755);
+  const env = {
+    PATH: bin,
+    HOME: process.env.HOME ?? tmpdir(),
+    CONTENT_RECOVERY_DATABASE_URL: recoveryUrl,
+    PG_ISREADY_CALLS_FILE: join(root, 'calls'),
+    PG_ISREADY_TARGETS_FILE: join(root, 'targets'),
+    MOCK_ISREADY_FAILURES: String(failures),
+    PRELAUNCH_RECOVERY_READINESS_ATTEMPTS: String(attempts),
+    PRELAUNCH_RECOVERY_READINESS_INTERVAL: String(interval),
+    SLEEP_CALLS_FILE: join(root, 'sleep-calls'),
+  };
+  writeFileSync(env.PG_ISREADY_CALLS_FILE, '0');
+  writeFileSync(env.PG_ISREADY_TARGETS_FILE, '');
+  writeFileSync(env.SLEEP_CALLS_FILE, '');
+  return { env, root, cleanup: () => rmSync(root, { recursive: true, force: true }) };
+}
+
+test('waits for the disposable recovery service and reports bounded success without printing the URL', () => {
+  const harness = makeReadinessHarness({ failures: 2, attempts: 5 });
+  try {
+    const result = runScript(readinessScript, harness.env, ['CONTENT_RECOVERY_DATABASE_URL']);
+    const output = outputOf(result);
+
+    assert.equal(result.status, 0, output);
+    assert.match(output, /recovery PostgreSQL service is accepting connections \(attempt 3 of 5\)/);
+    assert.equal(output.includes('accepting connections\n'), false, 'pg_isready output must not be forwarded');
+    const probed = readFileSync(harness.env.PG_ISREADY_TARGETS_FILE, 'utf8').split('\n').filter(Boolean);
+    assert.deepEqual(probed, [`connection=${recoveryUrl}`, `connection=${recoveryUrl}`, `connection=${recoveryUrl}`]);
+    assertNoFixtureSecrets(output);
+  } finally {
+    harness.cleanup();
+  }
+});
+
+test('fails clearly after a bounded number of retries when the recovery service never answers', () => {
+  const harness = makeReadinessHarness({ failures: 99, attempts: 3, interval: 0 });
+  try {
+    const result = runScript(readinessScript, harness.env, ['CONTENT_RECOVERY_DATABASE_URL']);
+    const output = outputOf(result);
+
+    assert.equal(result.status, 1);
+    assert.match(output, /Disposable recovery PostgreSQL unavailable/);
+    assert.match(output, /did not accept connections within 3 attempts/);
+    assert.equal(readFileSync(harness.env.PG_ISREADY_CALLS_FILE, 'utf8'), '3', 'the retry budget must be bounded exactly');
+    assert.deepEqual(
+      readFileSync(harness.env.SLEEP_CALLS_FILE, 'utf8').split('\n').filter(Boolean),
+      ['0', '0'],
+      'the probe must wait between attempts and stop at the bound',
+    );
+    assertNoFixtureSecrets(output);
+  } finally {
+    harness.cleanup();
+  }
+});
+
+test('fails closed before probing when the recovery URL is empty or pg_isready is missing', () => {
+  const emptyHarness = makeReadinessHarness();
+  try {
+    emptyHarness.env.CONTENT_RECOVERY_DATABASE_URL = '';
+    const result = runScript(readinessScript, emptyHarness.env, ['CONTENT_RECOVERY_DATABASE_URL']);
+    const output = outputOf(result);
+
+    assert.equal(result.status, 1);
+    assert.match(output, /Required CONTENT_RECOVERY_DATABASE_URL is unset or empty/);
+    assert.equal(readFileSync(emptyHarness.env.PG_ISREADY_CALLS_FILE, 'utf8'), '0', 'an empty URL must fail before probing');
+    assertNoFixtureSecrets(output);
+  } finally {
+    emptyHarness.cleanup();
+  }
+
+  const missingHarness = makeReadinessHarness({ missingTool: true });
+  try {
+    const result = runScript(readinessScript, missingHarness.env, ['CONTENT_RECOVERY_DATABASE_URL']);
+    const output = outputOf(result);
+
+    assert.equal(result.status, 1);
+    assert.match(output, /pg_isready is not on PATH/);
+    assertNoFixtureSecrets(output);
+  } finally {
+    missingHarness.cleanup();
+  }
+});
+
+test('a failing recovery readiness probe never leaks the connection string through pg_isready diagnostics', () => {
+  const harness = makeReadinessHarness({ failures: 99, attempts: 2, interval: 0 });
+  try {
+    const result = runScript(readinessScript, harness.env, ['CONTENT_RECOVERY_DATABASE_URL']);
+    const output = outputOf(result);
+
+    assert.equal(result.status, 1);
+    assert.equal(output.includes('db.example.test'), false, 'pg_isready diagnostics must not be forwarded');
+    assertNoFixtureSecrets(output);
+  } finally {
+    harness.cleanup();
+  }
+});
+
+test('the workflow never traces these scripts, so no connection string can appear in an echo', () => {
+  const workflow = readFileSync(workflowPath, 'utf8');
+  for (const script of ['verify-prelaunch-postgres-versions.sh', 'wait-for-prelaunch-recovery-postgres.sh']) {
+    assert.ok(workflow.includes(`bash scripts/${script}`), `${script} must stay part of the workflow`);
+  }
+  assert.doesNotMatch(workflow, /set -x/, 'shell tracing would echo every connection string');
+  for (const script of [versionScript, readinessScript]) {
+    assert.match(readFileSync(script, 'utf8'), /^set \+x$/m, 'each script must disable shell tracing explicitly');
   }
 });
