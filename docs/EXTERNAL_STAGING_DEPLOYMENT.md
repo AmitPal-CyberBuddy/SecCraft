@@ -33,11 +33,19 @@ PostgreSQL tables use schema `content`; all five tables require RLS enabled. Pos
 6. Back up, restore, and validate using isolated recovery resources:
    ```bash
    python tools/content/backup_external_staging.py backup /secure/path/staging-backup-N
-   # Set CONTENT_RECOVERY_DATABASE_URL to disposable/local PostgreSQL and
-   # CONTENT_RECOVERY_STORAGE_ROOT to a disposable local directory.
+   # CONTENT_BACKUP_DATABASE_URL is the CLI-compatible (postgresql://) backup URL.
+   # Set CONTENT_RECOVERY_DATABASE_URL to a disposable PostgreSQL 17 server (never Supabase)
+   # and CONTENT_RECOVERY_STORAGE_ROOT to a disposable local directory.
    python tools/content/backup_external_staging.py restore /secure/path/prelaunch-backup-N
    ```
-   Run database/Storage hash checks against recovery, activate/rollback there, and record evidence. Documentation alone is not completion.
+   The backup writes two custom-format dumps — the private `content` schema and the SecCraft-owned
+   tables in `public` — plus a manifest of release metadata, per-table row counts, and an object
+   index; Supabase-managed schemas (`auth`, `storage`, `extensions`, and the rest) are never dumped
+   or restored. The restore compares release metadata and every table count with the manifest and
+   re-reads every object from the recovery target to prove presence, size, and SHA-256, then the
+   workflow's `always()` cleanup deletes the dumps and the recovered copies. No backup or recovery
+   output is uploaded as a GitHub artifact. Run the same database/Storage checks against recovery,
+   activate/rollback there, and record evidence. Documentation alone is not completion.
 
 ## Authorization and compatibility acceptance
 

@@ -148,6 +148,15 @@ jobs:
             echo "No backend tests in this checkout."
           fi
 
+      # Pre-launch backup/restore safeguards: CLI tools only ever receive ordinary postgresql://
+      # URLs, an empty URL fails before any tool is invoked, the dump covers only SecCraft-owned
+      # objects (never Supabase-managed schemas), and the restore proves release metadata, row
+      # counts, and every object hash while never printing a connection string.
+      - name: Test pre-launch backup and restore safeguards
+        run: |
+          pip install pytest
+          pytest tools/content/tests -v
+
       - name: Alembic migration smoke test (temporary SQLite)
         run: |
           set -euo pipefail

@@ -35,10 +35,18 @@ jobs:
           --health-interval 5s --health-timeout 5s --health-retries 12
     env:
       PLATFORM_ENV: prelaunch
+      # SQLAlchemy/application and migration URLs (postgresql+psycopg://).
       PLATFORM_DATABASE_URL: ${{ secrets.PRELAUNCH_DATABASE_URL }}
       CONTENT_MIGRATION_DATABASE_URL: ${{ secrets.PRELAUNCH_MIGRATION_DATABASE_URL }}
+      # CLI-compatible URLs (postgresql://) used only by psql, pg_dump, pg_isready, and pg_restore.
       CONTENT_BACKUP_DATABASE_URL: ${{ secrets.PRELAUNCH_BACKUP_DATABASE_URL }}
       CONTENT_DATABASE_RUNTIME_ROLE: ${{ vars.CONTENT_DATABASE_RUNTIME_ROLE }}
+      # Disposable recovery resources: the throwaway PostgreSQL 17 service container and a
+      # throwaway directory inside the runner. Job-scoped so the readiness check, the version
+      # diagnostic, the backup/restore step, and the always() cleanup all see the same target,
+      # and so the recovery database can never be the live Supabase project.
+      CONTENT_RECOVERY_DATABASE_URL: postgresql://recovery:recovery-only-disposable@127.0.0.1:55432/seccraft_recovery
+      CONTENT_RECOVERY_STORAGE_ROOT: ${{ runner.temp }}/seccraft-recovery-storage
       PLATFORM_ALLOWED_ORIGINS: http://127.0.0.1:5173
       PLATFORM_AUTO_CREATE_TABLES: "false"
       PLATFORM_ENABLE_API_DOCS: "false"
@@ -117,7 +125,7 @@ jobs:
         run: |
           set -euo pipefail
           pg17_bin=/usr/lib/postgresql/17/bin
-          if [[ ! -x "$pg17_bin/pg_dump" || ! -x "$pg17_bin/pg_restore" ]]; then
+          if [[ ! -x "$pg17_bin/pg_dump" || ! -x "$pg17_bin/pg_restore" || ! -x "$pg17_bin/psql" ]]; then
             echo "PostgreSQL 17 client tools are not preinstalled; installing postgresql-client-17 from the PGDG apt repository."
             codename="$(. /etc/os-release && printf '%s' "${VERSION_CODENAME:?missing VERSION_CODENAME in /etc/os-release}")"
             sudo install -d /usr/share/postgresql-common/pgdg
@@ -127,34 +135,42 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y postgresql-client-17
           fi
-          "$pg17_bin/pg_dump" --version
-          "$pg17_bin/pg_restore" --version
+          for tool in pg_dump pg_restore psql; do
+            if [[ ! -x "$pg17_bin/$tool" ]]; then
+              echo "::error title=Missing PostgreSQL 17 client tool::$tool was not installed at $pg17_bin; backup and restore are blocked."
+              exit 1
+            fi
+            "$pg17_bin/$tool" --version
+          done
           echo /usr/lib/postgresql/17/bin >> "$GITHUB_PATH"
 
+      # Bounded readiness probe for the disposable recovery service: its published port can lag
+      # behind the container health check. Retries are capped, the annotated failure never prints
+      # the connection URL, and shell tracing stays off.
+      - name: Wait for the disposable PostgreSQL 17 recovery service
+        run: bash scripts/wait-for-prelaunch-recovery-postgres.sh CONTENT_RECOVERY_DATABASE_URL
+
       # Fail-closed client/server major-version diagnostic: blocks the backup unless pg_dump,
-      # pg_restore, and psql plus the staging and disposable recovery servers all report major 17.
-      # Read-only (SHOW server_version_num); never prints either database URL.
+      # pg_restore, and psql plus the staging (CONTENT_BACKUP_DATABASE_URL) and disposable
+      # recovery (CONTENT_RECOVERY_DATABASE_URL) servers all report major 17. Read-only
+      # (SHOW server_version_num); SQLAlchemy URLs are normalised in memory and no database URL,
+      # or part of one, is ever printed.
       - name: Verify PostgreSQL 17 client/server major versions before backup
-        env:
-          CONTENT_RECOVERY_DATABASE_URL: postgresql://recovery:recovery-only-disposable@127.0.0.1:55432/seccraft_recovery
         run: bash scripts/verify-prelaunch-postgres-versions.sh 17
 
       - name: Back up existing Supabase content and restore to disposable PostgreSQL/filesystem
-        env:
-          CONTENT_RECOVERY_DATABASE_URL: postgresql://recovery:recovery-only-disposable@127.0.0.1:55432/seccraft_recovery
-          CONTENT_RECOVERY_STORAGE_ROOT: ${{ runner.temp }}/seccraft-recovery-storage
         run: |
           backup="$RUNNER_TEMP/seccraft-prelaunch-backup"
           python tools/content/backup_external_staging.py backup "$backup"
           python tools/content/backup_external_staging.py restore "$backup"
-          test -s "$backup/database.dump"
-          test -s "$backup/objects.json"
-          rm -rf "$backup" "$CONTENT_RECOVERY_STORAGE_ROOT"
 
+      # No backup, dump, object copy, or recovery export is ever uploaded as an artifact: the
+      # cleanup runs even when an earlier validation step failed, and the hygiene scan re-checks
+      # that nothing secret-bearing became tracked.
       - name: Confirm no secret-bearing artifacts are retained
         if: always()
         run: |
-          rm -rf "$RUNNER_TEMP/seccraft-prelaunch-backup" "$RUNNER_TEMP/seccraft-recovery-storage"
+          rm -rf "$RUNNER_TEMP/seccraft-prelaunch-backup" "$CONTENT_RECOVERY_STORAGE_ROOT"
           bash scripts/verify-no-sensitive-files-tracked.sh
 
       - name: Show API diagnostics on failure
