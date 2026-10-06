@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 45
     services:
       recovery-postgres:
-        image: postgres:16
+        image: postgres:17
         env:
           POSTGRES_USER: recovery
           POSTGRES_PASSWORD: recovery-only-disposable
@@ -108,6 +108,36 @@ jobs:
 
       - name: Validate pending, no-history and existing-progress compatibility
         run: python tools/content/verify_external_progress.py
+
+      # Runner images ship only one PostgreSQL major (16 on ubuntu-24.04), so pg_dump/pg_restore
+      # would otherwise be older than the PostgreSQL 17 servers this workflow dumps and restores.
+      # Install the 17 client toolchain when missing and put its bin directory first on PATH for
+      # every later step, ahead of the backup. Fails closed when the binaries remain unavailable.
+      - name: Pin PostgreSQL 17 client tools for pg_dump and pg_restore
+        run: |
+          set -euo pipefail
+          pg17_bin=/usr/lib/postgresql/17/bin
+          if [[ ! -x "$pg17_bin/pg_dump" || ! -x "$pg17_bin/pg_restore" ]]; then
+            echo "PostgreSQL 17 client tools are not preinstalled; installing postgresql-client-17 from the PGDG apt repository."
+            codename="$(. /etc/os-release && printf '%s' "${VERSION_CODENAME:?missing VERSION_CODENAME in /etc/os-release}")"
+            sudo install -d /usr/share/postgresql-common/pgdg
+            sudo curl --fail --silent --show-error -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+              https://www.postgresql.org/media/keys/ACCC4CF8.asc
+            sudo sh -c "echo \"deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt ${codename}-pgdg main\" > /etc/apt/sources.list.d/pgdg.list"
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client-17
+          fi
+          "$pg17_bin/pg_dump" --version
+          "$pg17_bin/pg_restore" --version
+          echo /usr/lib/postgresql/17/bin >> "$GITHUB_PATH"
+
+      # Fail-closed client/server major-version diagnostic: blocks the backup unless pg_dump,
+      # pg_restore, and psql plus the staging and disposable recovery servers all report major 17.
+      # Read-only (SHOW server_version_num); never prints either database URL.
+      - name: Verify PostgreSQL 17 client/server major versions before backup
+        env:
+          CONTENT_RECOVERY_DATABASE_URL: postgresql://recovery:recovery-only-disposable@127.0.0.1:55432/seccraft_recovery
+        run: bash scripts/verify-prelaunch-postgres-versions.sh 17
 
       - name: Back up existing Supabase content and restore to disposable PostgreSQL/filesystem
         env:
