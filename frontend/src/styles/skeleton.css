@@ -1,0 +1,23 @@
+/* Structural loading placeholders.
+   Deliberately still: a placeholder marks where content will arrive, it is not itself a change,
+   so it never shimmers or pulses. It is removed the moment real content renders, which is the
+   feedback. Colors come from the semantic tokens so both themes stay quiet and legible. */
+.sc-skeleton { display:block; border-radius:4px; background:var(--panel-inset); border:1px solid var(--line-subtle); }
+.sc-skeleton-line { height:11px; }
+.sc-skeleton-line.is-short { height:10px; }
+
+/* Mirrors the ws-page-header + first-panel composition so the layout does not jump on arrival. */
+.sc-skeleton-page { min-height:52vh; padding:8px 0 24px; }
+.sc-skeleton-header { display:grid; gap:14px; padding:8px 0 18px; border-bottom:1px solid var(--line-normal); }
+.sc-skeleton-eyebrow { width:112px; height:10px; }
+.sc-skeleton-title { width:min(430px,62%); height:clamp(30px,4vw,44px); border-radius:6px; }
+.sc-skeleton-desc { width:min(560px,82%); height:12px; }
+.sc-skeleton-panel { display:grid; gap:16px; padding:22px 0; }
+.sc-skeleton-heading { width:190px; height:16px; }
+.sc-skeleton-lines { display:grid; gap:10px; }
+
+/* A placeholder row inside an existing panel (for example the account snapshot while it loads). */
+.sc-skeleton-inline { display:grid; gap:8px; max-width:340px; }
+
+/* Quiet structure under the full-screen account/owner gates. */
+.sc-gate-lines { display:grid; gap:8px; justify-items:center; margin-top:16px; }

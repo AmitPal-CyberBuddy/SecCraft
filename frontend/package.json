@@ -11,7 +11,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "test": "node --test --test-concurrency=1 tests/api-resilience.test.mjs tests/access-matrix.test.mjs tests/account-states.test.mjs tests/tour-contract.test.mjs tests/admin-console.test.mjs tests/responsive-foundations.test.mjs tests/shared-controls.test.mjs tests/learning-journey.test.mjs tests/dense-workflows.test.mjs tests/secondary-pages.test.mjs tests/feedback-reliability.test.mjs tests/motion-system.test.mjs",
+    "test": "node --test --test-concurrency=1 tests/api-resilience.test.mjs tests/access-matrix.test.mjs tests/account-states.test.mjs tests/tour-contract.test.mjs tests/admin-console.test.mjs tests/responsive-foundations.test.mjs tests/shared-controls.test.mjs tests/learning-journey.test.mjs tests/dense-workflows.test.mjs tests/secondary-pages.test.mjs tests/feedback-reliability.test.mjs tests/motion-system.test.mjs tests/loading-states.test.mjs",
     "preview": "vite preview",
     "preview:pages": "node ../scripts/serve-pages-preview.mjs"
   },
