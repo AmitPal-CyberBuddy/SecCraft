@@ -152,19 +152,19 @@ function DashboardContent({ currentPathId }: { currentPathId: string }) {
 
     <section className="ws-focus" aria-labelledby="ws-next-title">
       <ResultTransition identity={nextAction.to} className="ws-focus-main">
-        <div className="ws-focus-meta"><span className="ws-kicker">Next step for you</span><span className="ws-focus-step">{nextAction.kind} / {moduleOrdinal(currentModule.id)}</span></div>
+        <div className="ws-focus-meta"><span className="ws-kicker">Next step for you</span><span className="ws-focus-step">{nextAction.kind} / {moduleOrdinal(nextAction.moduleId)}</span></div>
         <p className="ws-focus-path">{currentPath.title} <span aria-hidden="true">/</span> {nextAction.moduleTitle}</p>
         <h2 id="ws-next-title">{nextAction.title}</h2>
         <p className="ws-focus-summary">{nextAction.detail}</p>
         <div className="ws-focus-actions"><ActionLink to={nextAction.to}>{nextAction.cta} <span aria-hidden="true">↗</span></ActionLink><Link to={`/paths/${currentPath.id}`} className="ws-text-action">Explore the path <span aria-hidden="true">→</span></Link></div>
       </ResultTransition>
-      <div className="ws-focus-context">
-        <span className="ws-kicker">Current module</span>
+      <aside className="ws-focus-context" aria-label="Current learning position">
+        <span className="ws-kicker">Your position</span>
         <Link className="ws-focus-module" to={`/modules/${currentModule.id}`}><span className="ws-focus-index">{moduleOrdinal(currentModule.id)}</span><span>{currentModule.title}</span><span aria-hidden="true">↗</span></Link>
         <p>{currentModule.description}</p>
         <div className="ws-focus-progress-label"><span>{completedLessons.filter(l => l.moduleId === currentModule.id).length} / {currentModule.lessons.length} lessons · {currentModule.estimated_hours}h estimated</span><strong>{currentProgress}%</strong></div>
         <ProgressBar value={currentProgress} label="Current module progress" />
-      </div>
+      </aside>
     </section>
 
     <section className="ws-dashboard-section" aria-labelledby="ws-progress-heading">
