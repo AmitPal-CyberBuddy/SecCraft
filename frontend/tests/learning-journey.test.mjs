@@ -28,6 +28,7 @@ test('learning links, URL state and curriculum selection survive navigation', as
   const { moduleLink, resolveModuleView, updateQuery } = await vite.ssrLoadModule('/src/lib/learningNavigation.ts')
   const { ModuleDetail } = await vite.ssrLoadModule('/src/pages/ModuleDetail.tsx')
   const { Modules } = await vite.ssrLoadModule('/src/pages/Modules.tsx')
+  const { Labs } = await vite.ssrLoadModule('/src/pages/Labs.tsx')
   const { SessionProvider } = await vite.ssrLoadModule('/src/lib/session.tsx')
   const { LocalProfileProvider } = await vite.ssrLoadModule('/src/components/profile/LocalProfile.tsx')
   const { LABS } = await vite.ssrLoadModule('/src/content/labs.ts')
@@ -55,6 +56,7 @@ test('learning links, URL state and curriculum selection survive navigation', as
         h(Route, { path: '/paths/:pathId/modules/:id', element: h(ModuleDetail) }),
         h(Route, { path: '/modules/:id', element: h(ModuleDetail) }),
         h(Route, { path: '/modules', element: h(Modules) }),
+        h(Route, { path: '/labs', element: h(Labs) }),
       )))))))
   await act(async () => { await new Promise(resolve => setTimeout(resolve, 100)) })
   assert.equal(document.querySelector('[aria-label="Module workspace"] [aria-pressed="true"]').textContent, `Labs${android.labs?.length || 1}`)
@@ -148,5 +150,39 @@ test('learning links, URL state and curriculum selection survive navigation', as
   const resumedStep = document.querySelector('.sc-module-next')
   assert.match(resumedStep.textContent, new RegExp(`Lesson 2 of ${firstWirelessModule.lessons.length}`))
   assert.match(resumedStep.textContent, new RegExp(`1 of ${firstWirelessModule.lessons.length} lessons are marked complete`))
+
+  const wirelessLabs = LABS.filter(item => item.learningPathId === 'wireless-pentesting')
+  const availableWirelessLabs = wirelessLabs.filter(item => item.status !== 'PLANNED')
+  const localAnswerChecks = availableWirelessLabs.filter(item => item.grading === 'answer-checked').length
+  const selfReviewLabs = availableWirelessLabs.filter(item => item.grading === 'self-review').length
+  await act(async () => { useProgressStore.getState().setCurrentLearningPath('wireless-pentesting'); navigate('/labs') })
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 120)) })
+  const practiceModel = document.querySelector('[aria-label="Lab practice model"]')
+  assert.ok(practiceModel)
+  assert.match(practiceModel.textContent, new RegExp(`${availableWirelessLabs.length}available labs`))
+  assert.match(practiceModel.textContent, new RegExp(`${localAnswerChecks}local answer checks`))
+  assert.match(practiceModel.textContent, new RegExp(`${selfReviewLabs}guided self-review`))
+  assert.match(practiceModel.textContent, /planned entry excluded from available totals/)
+  const typeGroup = document.querySelector('[aria-label="Filter labs by type"]')
+  const uniqueLabTypes = [...new Set(wirelessLabs.map(item => item.type))]
+  assert.equal(typeGroup.querySelectorAll('button').length, uniqueLabTypes.length + 1, 'every catalogue type remains filterable')
+  assert.equal(typeGroup.querySelectorAll('button[aria-pressed]').length, uniqueLabTypes.length + 1)
+  const lastType = uniqueLabTypes.at(-1)
+  const lastTypeButton = typeGroup.querySelector(`[aria-label="Filter labs by ${lastType}"]`)
+  assert.ok(lastTypeButton, 'types beyond the first six are not hidden')
+  await act(async () => lastTypeButton.click())
+  const matchingLabCount = wirelessLabs.filter(item => item.type === lastType).length
+  assert.match(document.querySelector('.sc-lab-filter-summary [role="status"]').textContent, new RegExp(`Showing ${matchingLabCount} of ${wirelessLabs.length}`))
+  assert.equal(lastTypeButton.getAttribute('aria-pressed'), 'true')
+  await act(async () => [...document.querySelectorAll('.sc-lab-filter-summary button')].find(button => button.textContent === 'Clear filters').click())
+  const labSearch = document.querySelector('input[aria-label="Search labs"]')
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(labSearch, 'no-such-lab')
+    labSearch.dispatchEvent(new window.Event('input', { bubbles: true }))
+  })
+  assert.match(document.querySelector('.sc-lab-empty h3').textContent, /No lab entries match/)
+  assert.match(document.querySelector('.sc-lab-filter-summary [role="status"]').textContent, /Showing 0 of/)
+  await act(async () => [...document.querySelectorAll('.sc-lab-filter-summary button')].find(button => button.textContent === 'Clear filters').click())
+  assert.ok(document.querySelectorAll('.ws-lab-workspace .ws-catalog-row').length > 0)
 
 })
