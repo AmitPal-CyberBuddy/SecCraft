@@ -29,6 +29,7 @@ test('learning links, URL state and curriculum selection survive navigation', as
   const { ModuleDetail } = await vite.ssrLoadModule('/src/pages/ModuleDetail.tsx')
   const { Modules } = await vite.ssrLoadModule('/src/pages/Modules.tsx')
   const { Labs } = await vite.ssrLoadModule('/src/pages/Labs.tsx')
+  const { Challenges } = await vite.ssrLoadModule('/src/pages/Challenges.tsx')
   const { SessionProvider } = await vite.ssrLoadModule('/src/lib/session.tsx')
   const { LocalProfileProvider } = await vite.ssrLoadModule('/src/components/profile/LocalProfile.tsx')
   const { LABS } = await vite.ssrLoadModule('/src/content/labs.ts')
@@ -57,6 +58,7 @@ test('learning links, URL state and curriculum selection survive navigation', as
         h(Route, { path: '/modules/:id', element: h(ModuleDetail) }),
         h(Route, { path: '/modules', element: h(Modules) }),
         h(Route, { path: '/labs', element: h(Labs) }),
+        h(Route, { path: '/challenges', element: h(Challenges) }),
       )))))))
   await act(async () => { await new Promise(resolve => setTimeout(resolve, 100)) })
   assert.equal(document.querySelector('[aria-label="Module workspace"] [aria-pressed="true"]').textContent, `Labs${android.labs?.length || 1}`)
@@ -184,5 +186,18 @@ test('learning links, URL state and curriculum selection survive navigation', as
   assert.match(document.querySelector('.sc-lab-filter-summary [role="status"]').textContent, /Showing 0 of/)
   await act(async () => [...document.querySelectorAll('.sc-lab-filter-summary button')].find(button => button.textContent === 'Clear filters').click())
   assert.ok(document.querySelectorAll('.ws-lab-workspace .ws-catalog-row').length > 0)
+
+  const challengeCatalog = JSON.parse(readFileSync(`${rootPath}/src/content/challenges.json`, 'utf8'))
+  const firstWirelessChallenge = challengeCatalog.find(item => item.learningPathId === 'wireless-pentesting')
+  assert.ok(firstWirelessChallenge)
+  await act(async () => navigate('/challenges'))
+  const challengeCard = [...document.querySelectorAll('.sc-challenges .ws-catalog-row')].find(card => card.querySelector('h3')?.textContent === firstWirelessChallenge.title)
+  assert.ok(challengeCard)
+  assert.match(challengeCard.textContent, /No checkpoint recorded/)
+  assert.match(challengeCard.querySelector('.ws-row-link').textContent, /Open challenge/)
+  await act(async () => useProgressStore.getState().completeChallenge(firstWirelessChallenge.id))
+  assert.match(challengeCard.textContent, /Checkpoint recorded locally/)
+  assert.match(challengeCard.querySelector('.ws-row-link').textContent, /Review challenge/)
+  assert.match(document.querySelector('.sc-practice-summary').textContent, /1 checkpoint recorded locally/)
 
 })
