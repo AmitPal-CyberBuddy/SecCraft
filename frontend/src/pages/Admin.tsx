@@ -135,6 +135,9 @@ export function AdminPage() {
     setConfirmation(null); setActionError(''); setNotice('')
     setReload(value => value + 1)
   }
+  function selectAccountFilter(nextFilter: 'all' | AccountStatus) {
+    setFilter(nextFilter); setAccountQuery(''); setConfirmation(null); setActionError(''); setUsers([]); setUsersLoading(true)
+  }
   async function saveSettings(event: FormEvent) {
     event.preventDefault()
     if (!settings || saving) return
@@ -184,9 +187,10 @@ export function AdminPage() {
   return <div className="ws-admin sc-owner-page">
     <header className="sc-owner-intro"><div><p className="sc-library-domain">SecCraft / Owner operations</p><h1>Platform administration</h1><p>Manage enrollment, review learner accounts and inspect recent owner actions. Access and capacity are enforced by the server—not by this screen.</p></div><button type="button" onClick={refresh} disabled={usersLoading || settingsLoading || auditLoading || saving || Boolean(pendingUserId)} className="ws-action ws-action-secondary"><RefreshCw size={16} aria-hidden="true" /> Refresh data</button></header>
     {(actionError || notice) && <div role={actionError ? 'alert' : 'status'} className={`sc-owner-feedback ${actionError ? 'is-error' : 'is-success'}`}>{actionError || notice}</div>}
+    <nav className="sc-owner-jump-nav" aria-label="Owner console sections"><a href="#capacity-heading">Capacity</a><a href="#policy-heading">Enrollment policy</a><a href="#accounts-heading">Learner accounts</a><a href="#audit-heading">Recent activity</a></nav>
 
     <section className="sc-owner-overview" aria-labelledby="owner-overview"><h2 id="owner-overview">Owner overview</h2><div className="sc-owner-overview-grid">
-      <div><span>Pending approvals</span><strong>{usersLoading || usersError ? 'Unavailable' : filter === 'pending' || filter === 'all' ? `${users.filter(user => user.account_status === 'pending').length}${users.length === PAGE_LIMIT ? '+' : ''}` : 'Switch to Pending'}</strong><small>Current {filter} list only; not a platform-wide total.</small></div>
+      <div><span>Pending approvals</span><strong>{usersLoading || usersError ? 'Unavailable' : filter === 'pending' || filter === 'all' ? `${users.filter(user => user.account_status === 'pending').length}${users.length === PAGE_LIMIT ? '+' : ''}` : 'Not loaded'}</strong><small>{filter === 'pending' || filter === 'all' ? 'Pending rows in the current bounded list; not a platform-wide total.' : `Pending accounts are not included in the current ${filter} filter.`}</small>{filter !== 'pending' && <a className="sc-owner-overview-action" href="#accounts-heading" onClick={() => selectAccountFilter('pending')}>View pending queue <span aria-hidden="true">→</span></a>}</div>
       <div><span>Active learners</span><strong>{settingsLoading || settingsError || !settings ? 'Unavailable' : settings.active_approved_users}</strong><small>Server-reported approved non-owner accounts.</small></div>
       <div><span>Recent owner events</span><strong>{auditLoading || auditError ? 'Unavailable' : audit.length}</strong><small>Up to 50 recent events, not a complete audit export.</small></div>
     </div></section>
@@ -204,7 +208,7 @@ export function AdminPage() {
 
     <section className="sc-owner-accounts" aria-labelledby="accounts-heading"><div className="sc-owner-section-head"><div><h2 id="accounts-heading">Learner accounts</h2><p>Only email-verified accounts appear for review. Owner-allowlisted identities are not in this list.</p></div><span>Oldest requests first · up to {PAGE_LIMIT} per filter</span></div>
       <TextField label="Search loaded accounts" hint="Searches only the accounts loaded for the selected status, not the full server directory." type="search" value={accountQuery} onChange={event => setAccountQuery(event.target.value)} />
-      <div className="sc-owner-filters" role="group" aria-label="Filter accounts by status">{FILTERS.map(item => <button key={item.id} type="button" aria-pressed={filter === item.id} onClick={() => { setFilter(item.id); setAccountQuery(''); setConfirmation(null); setActionError(''); setUsers([]); setUsersLoading(true) }}>{item.label}</button>)}</div>
+      <div className="sc-owner-filters" role="group" aria-label="Filter accounts by status">{FILTERS.map(item => <button key={item.id} type="button" aria-pressed={filter === item.id} onClick={() => selectAccountFilter(item.id)}>{item.label}</button>)}</div>
       {!canApprove && !settingsLoading && settings && <p className="sc-owner-advisory" role="status">Approvals and reactivations are unavailable until a positive limit with spare capacity is saved. The API independently checks every request.</p>}
       {usersError ? <p role="alert" className="sc-owner-error">{usersError} <button type="button" onClick={refresh}>Retry</button></p> : usersLoading ? <p role="status" className="sc-owner-loading"><LoaderCircle size={16} className="animate-spin" aria-hidden="true" /> Loading {filter === 'all' ? '' : `${filter} `}accounts…</p> : users.length === 0 ? <p className="sc-owner-empty">No accounts in this filter. Try another status or refresh the list.</p> : <>
         <p className="sc-owner-count" role="status">Showing {visibleUsers.length} of {users.length} loaded{users.length === PAGE_LIMIT ? ' (first 200 only; the API has no next page)'  : ''} · {filter === 'all' ? 'all statuses' : filter}</p>
