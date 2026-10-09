@@ -402,3 +402,11 @@ body { background:var(--app-bg); color:var(--ink-primary); background-image:none
 @media(max-width:900px) { .sc-lab-orientation { grid-template-columns:repeat(3,minmax(0,1fr)); }.sc-lab-orientation > p { grid-column:1/-1; border-top:1px solid var(--line-normal); padding:14px 18px; } }
 @media(max-width:700px) { .sc-lab-controls { grid-template-columns:1fr; }.sc-lab-type-scroll { width:100%; }.sc-lab-orientation > div { padding:14px 10px; }.sc-lab-orientation > p { padding:12px 10px; } }
 @media(max-width:600px) { .sc-lab-search input { font-size:1rem; } }
+
+/* Analytics: state which figures are path-scoped and which summarize all local practice. */
+.sc-analytics-scope { display:grid; grid-template-columns:minmax(190px,.55fr) minmax(0,1.45fr); align-items:center; gap:20px; padding:16px 18px; border-left:2px solid var(--learning); background:var(--panel-inset); }
+.sc-analytics-scope > div { display:grid; gap:4px; }
+.sc-analytics-scope > div span { color:var(--ink-muted); font-size:.68rem; text-transform:uppercase; letter-spacing:.04em; }
+.sc-analytics-scope > div strong { color:var(--ink-primary); font-size:.92rem; font-weight:690; }
+.sc-analytics-scope > p { color:var(--ink-secondary); font-size:.76rem; line-height:1.55; }
+@media(max-width:650px) { .sc-analytics-scope { grid-template-columns:1fr; gap:9px; } }
