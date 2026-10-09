@@ -53,6 +53,7 @@ test('learning links, URL state and curriculum selection survive navigation', as
     h(MotionConfig, { reducedMotion: 'always', transition: { duration: 0 } },
       h(NavigationProbe), h(Routes, null,
         h(Route, { path: '/paths/:pathId/modules/:id', element: h(ModuleDetail) }),
+        h(Route, { path: '/modules/:id', element: h(ModuleDetail) }),
         h(Route, { path: '/modules', element: h(Modules) }),
       )))))))
   await act(async () => { await new Promise(resolve => setTimeout(resolve, 100)) })
@@ -120,5 +121,32 @@ test('learning links, URL state and curriculum selection survive navigation', as
   assert.match(document.body.textContent, /This path is planned/)
   assert.equal(document.querySelectorAll('.ws-catalog-row').length, 0)
   assert.equal(useProgressStore.getState().currentLearningPathId, 'wireless-pentesting', 'invalid and planned routes never replace a real choice')
+
+  const firstWirelessModule = modules.find(item => item.learningPathId === 'wireless-pentesting' && item.lessons?.length)
+  assert.ok(firstWirelessModule)
+  await act(async () => { useProgressStore.getState().resetProgress(); navigate(`/modules/${firstWirelessModule.id}`) })
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 100)) })
+  const suggestedStep = document.querySelector('.sc-module-next')
+  assert.ok(suggestedStep, 'module overview must surface one suggested next step')
+  assert.match(suggestedStep.textContent, new RegExp(`Lesson 1 of ${firstWirelessModule.lessons.length}`))
+  assert.match(suggestedStep.textContent, new RegExp(firstWirelessModule.lessons[0].title))
+  const openLesson = [...suggestedStep.querySelectorAll('button')].find(button => button.textContent.includes('Open lesson'))
+  assert.ok(openLesson)
+  await act(async () => openLesson.click())
+  assert.equal(new URLSearchParams(location.search).get('tab'), 'theory')
+  assert.equal(new URLSearchParams(location.search).get('lesson'), firstWirelessModule.lessons[0].id)
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 100)) })
+  const markComplete = [...document.querySelectorAll('.sc-reading-toolbar button')].find(button => button.textContent.includes('Mark complete · 10 practice XP'))
+  assert.ok(markComplete)
+  await act(async () => markComplete.click())
+  assert.equal(useProgressStore.getState().completedLessons.length, 1)
+  assert.match(document.querySelector('.sc-reading-toolbar').textContent, /Completed · local record/)
+  assert.ok([...document.querySelectorAll('.sc-reading-toolbar button')].some(button => button.disabled && button.textContent.includes('Completed · local record')))
+  assert.match(document.querySelector('.sc-lesson-index').textContent, new RegExp(`1/${firstWirelessModule.lessons.length}`))
+  assert.match(document.querySelector('.sc-lesson-index').textContent, /Completed locally/)
+  await act(async () => navigate(`/modules/${firstWirelessModule.id}`))
+  const resumedStep = document.querySelector('.sc-module-next')
+  assert.match(resumedStep.textContent, new RegExp(`Lesson 2 of ${firstWirelessModule.lessons.length}`))
+  assert.match(resumedStep.textContent, new RegExp(`1 of ${firstWirelessModule.lessons.length} lessons are marked complete`))
 
 })

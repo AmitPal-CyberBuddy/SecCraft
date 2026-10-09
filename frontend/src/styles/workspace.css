@@ -358,3 +358,18 @@ body { background:var(--app-bg); color:var(--ink-primary); background-image:none
   .sc-global-header.sc-topbar,.sc-sticky-tool,.sc-lesson-index,.sc-reading-context { position:static; }
   .sc-header-shell { --sticky-offset:16px; }
 }
+
+/* Module workspace: give the suggested, optional next action a clear place in the hierarchy. */
+.sc-module-next { display:grid; grid-template-columns:minmax(0,1fr) minmax(210px,.42fr); align-items:center; gap:clamp(24px,4vw,56px); margin-bottom:clamp(24px,3vw,36px); padding:clamp(22px,3vw,36px); border:1px solid var(--line-normal); border-left:3px solid var(--learning); border-radius:var(--radius-panel); background:var(--panel-bg); box-shadow:var(--shadow-soft); }
+.sc-module-next-copy > span { color:var(--learning); font-size:.72rem; font-weight:690; letter-spacing:.04em; text-transform:uppercase; }
+.sc-module-next-copy h2 { max-width:34ch; margin:10px 0; font-size:clamp(1.35rem,2.2vw,2rem); line-height:1.18; font-weight:710; letter-spacing:-.035em; }
+.sc-module-next-copy p { max-width:66ch; color:var(--ink-secondary); font-size:.82rem; line-height:1.65; }
+.sc-module-next-action { display:grid; justify-items:start; gap:14px; }
+.sc-module-next-progress { display:flex; width:100%; align-items:baseline; justify-content:space-between; gap:14px; border-top:1px solid var(--line-normal); padding-top:12px; }
+.sc-module-next-progress span { color:var(--ink-muted); font-size:.7rem; line-height:1.5; }
+.sc-module-next-progress strong { color:var(--ink-primary); font:700 1rem ui-monospace,monospace; white-space:nowrap; }
+.sc-module-next-action .ws-action { max-width:100%; }
+.sc-unit-progress small { color:var(--ink-muted); font-size:.68rem; line-height:1.5; }
+.sc-reading-context small { display:block; margin-top:10px; color:var(--ink-muted); font-size:.68rem; line-height:1.55; }
+@media(max-width:700px) { .sc-module-next { grid-template-columns:1fr; gap:22px; }.sc-module-next-action { grid-template-columns:minmax(0,1fr) auto; align-items:center; }.sc-module-next-action .ws-action { justify-self:end; } }
+@media(max-width:420px) { .sc-module-next-action { grid-template-columns:1fr; }.sc-module-next-action .ws-action { justify-self:stretch; width:100%; } }
