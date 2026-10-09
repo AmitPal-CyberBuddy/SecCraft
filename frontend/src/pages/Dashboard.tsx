@@ -12,6 +12,8 @@ import { OwnerNotice } from '@/components/account/AccountBanner'
 import { StateChip, UnavailableStatusChip, ProvenanceChip } from '@/components/account/StateChip'
 import { StandingChip } from '@/components/account/PracticeStanding'
 import { PageHeader, Panel, ActionLink, ProgressBar } from '@/components/common/Workspace'
+import { SkeletonRow } from '@/components/common/Skeleton'
+import { ResultTransition } from '@/components/common/ResultTransition'
 import { accessLabel, allows } from '@/lib/access'
 import { useSession } from '@/lib/session'
 import { useServerProgress } from '@/lib/useServerProgress'
@@ -149,20 +151,20 @@ function DashboardContent({ currentPathId }: { currentPathId: string }) {
     <PageHeader eyebrow={accessLabel(userState)} title={allows(userState, 'learning-content') ? 'Your learning workspace' : 'Explore the catalogue'} description={statusUnavailable ? 'Account status is unavailable. The catalogue and local practice remain available.' : 'Pick up where you left off. Your practice stays in this browser and is unverified.'} action={statusUnavailable ? <UnavailableStatusChip /> : <StateChip state={userState} />} />
 
     <section className="ws-focus" aria-labelledby="ws-next-title">
-      <div className="ws-focus-main">
-        <div className="ws-focus-meta"><span className="ws-kicker">Next step for you</span><span className="ws-focus-step">{nextAction.kind} / {moduleOrdinal(currentModule.id)}</span></div>
+      <ResultTransition identity={nextAction.to} className="ws-focus-main">
+        <div className="ws-focus-meta"><span className="ws-kicker">Next step for you</span><span className="ws-focus-step">{nextAction.kind} / {moduleOrdinal(nextAction.moduleId)}</span></div>
         <p className="ws-focus-path">{currentPath.title} <span aria-hidden="true">/</span> {nextAction.moduleTitle}</p>
         <h2 id="ws-next-title">{nextAction.title}</h2>
         <p className="ws-focus-summary">{nextAction.detail}</p>
         <div className="ws-focus-actions"><ActionLink to={nextAction.to}>{nextAction.cta} <span aria-hidden="true">↗</span></ActionLink><Link to={`/paths/${currentPath.id}`} className="ws-text-action">Explore the path <span aria-hidden="true">→</span></Link></div>
-      </div>
-      <div className="ws-focus-context">
-        <span className="ws-kicker">Current module</span>
+      </ResultTransition>
+      <aside className="ws-focus-context" aria-label="Current learning position">
+        <span className="ws-kicker">Your position</span>
         <Link className="ws-focus-module" to={`/modules/${currentModule.id}`}><span className="ws-focus-index">{moduleOrdinal(currentModule.id)}</span><span>{currentModule.title}</span><span aria-hidden="true">↗</span></Link>
         <p>{currentModule.description}</p>
         <div className="ws-focus-progress-label"><span>{completedLessons.filter(l => l.moduleId === currentModule.id).length} / {currentModule.lessons.length} lessons · {currentModule.estimated_hours}h estimated</span><strong>{currentProgress}%</strong></div>
         <ProgressBar value={currentProgress} label="Current module progress" />
-      </div>
+      </aside>
     </section>
 
     <section className="ws-dashboard-section" aria-labelledby="ws-progress-heading">
@@ -188,7 +190,7 @@ function DashboardContent({ currentPathId }: { currentPathId: string }) {
       <div className="ws-support-column">
         <section className="ws-dashboard-section ws-records" aria-labelledby="ws-records-heading"><div className="ws-section-head"><div><span className="ws-kicker">03 / Records</span><h2 id="ws-records-heading">Practice & account</h2></div></div>
           <div className="ws-record-row"><div><h3>Practice XP (this browser)</h3><StandingChip standing="practice" /><p>Saved in this browser · unverified.</p></div><strong>{totalXp} <small>XP</small></strong></div>
-          <div className="ws-record-row"><div><h3>Account snapshot</h3><ProvenanceChip provenance="server" /><p>{accountBacked ? server.data ? `${server.data.records.length} records · ${server.data.imported} imported · ${server.data.verified} verified` : server.state === 'loading' ? 'Reading account record…' : server.message : 'Available for approved accounts. Local practice remains available.'}</p></div><strong>{accountBacked && server.data ? server.data.xp : '—'} <small>XP</small></strong></div>
+          <div className="ws-record-row"><div><h3>Account snapshot</h3><ProvenanceChip provenance="server" /><p>{accountBacked ? server.data ? `${server.data.records.length} records · ${server.data.imported} imported · ${server.data.verified} verified` : server.state === 'loading' ? <SkeletonRow label="Reading account record…" /> : server.message : 'Available for approved accounts. Local practice remains available.'}</p></div><strong>{accountBacked && server.data ? server.data.xp : '—'} <small>XP</small></strong></div>
           <p className="ws-record-note">Imported progress and assessment attempts remain unverified. Independent grading and certificates are not available.</p>
         </section>
         <Panel title="Recent practice" aside={<ProvenanceChip provenance="local" />} className="ws-recent-panel">

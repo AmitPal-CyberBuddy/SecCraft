@@ -83,14 +83,31 @@ test('secondary pages preserve reset consent, theme selection and local mileston
   assert.equal(document.querySelectorAll('.sc-badges article').length, ACHIEVEMENTS_DEF.length)
 
   const { default: modules } = await vite.ssrLoadModule('/src/content/modules.json')
+  const { default: challengeContent } = await vite.ssrLoadModule('/src/content/challenges.json')
   const android = modules.find(m => m.learningPathId === 'android-pentesting')
   const wireless = modules.find(m => m.learningPathId === 'wireless-pentesting')
-  await act(async () => useProgressStore.setState({ currentLearningPathId: 'android-pentesting', completedLessons: [android, wireless].map(m => ({ moduleId: m.id, lessonId: m.lessons[0].id, points: 10, completed: true, completedAt: new Date().toISOString() })) }))
+  const firstChallenge = challengeContent.find(challenge => challenge.learningPathId === 'wireless-pentesting')
+  const challengeRecord = { challengeId: firstChallenge.id, moduleId: firstChallenge.module, points: firstChallenge.points, completedAt: new Date().toISOString() }
+  await act(async () => useProgressStore.setState({ currentLearningPathId: 'android-pentesting', completedLessons: [android, wireless].map(m => ({ moduleId: m.id, lessonId: m.lessons[0].id, points: 10, completed: true, completedAt: new Date().toISOString() })), completedLabs: [], completedChallenges: [], quizScores: [], achievements: [] }))
   await render(AnalyticsDashboard)
   assert.match(document.body.textContent, new RegExp(android.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
   assert.ok(!document.body.textContent.includes(wireless.title), 'current-path rows must not mix curricula')
   assert.deepEqual([...document.querySelectorAll('.sc-week-bar > span:last-child')].map(el => el.textContent), ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
   assert.equal([...document.querySelectorAll('.sc-week-value')].reduce((sum, el) => sum + parseInt(el.textContent), 0), 20)
+  assert.match(document.querySelector('.sc-analytics-scope').textContent, /Module rows below cover the selected path/)
+  assert.match(document.querySelector('.sc-analytics-scope').textContent, /browser-local records across paths/)
+
+  await act(async () => useProgressStore.setState({ completedLessons: [], completedLabs: [], completedChallenges: [challengeRecord], quizScores: [], achievements: [] }))
+  await render(AnalyticsDashboard)
+  assert.doesNotMatch(document.body.textContent, /Nothing recorded on this device yet/)
+  assert.match(document.body.textContent, /1 challenge checkpoint recorded locally/)
+  assert.equal([...document.querySelectorAll('.sc-week-value')].reduce((sum, el) => sum + parseInt(el.textContent), 0), firstChallenge.points)
+
+  await act(async () => useProgressStore.setState({ completedLessons: [], completedLabs: [{ moduleId: '08-wpa-wpa2', labId: 'lab-09-handshake', completed: true, points: 0, completedAt: new Date().toISOString() }], completedChallenges: [], quizScores: [], achievements: [] }))
+  await render(AnalyticsDashboard)
+  assert.match(document.body.textContent, /Practice was recorded, but no XP was credited/)
+  assert.match(document.body.textContent, /1 local completion record falls in this week/)
+  assert.doesNotMatch(document.body.textContent, /Nothing recorded on this device yet/)
 
   await t.test('new XP feedback pauses on focus and stale expiry cannot clear a newer event', async () => {
     const { PointsToast } = await vite.ssrLoadModule('/src/components/gamification/PointsToast.tsx')

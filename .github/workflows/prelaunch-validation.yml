@@ -41,12 +41,14 @@ jobs:
       # CLI-compatible URLs (postgresql://) used only by psql, pg_dump, pg_isready, and pg_restore.
       CONTENT_BACKUP_DATABASE_URL: ${{ secrets.PRELAUNCH_BACKUP_DATABASE_URL }}
       CONTENT_DATABASE_RUNTIME_ROLE: ${{ vars.CONTENT_DATABASE_RUNTIME_ROLE }}
-      # Disposable recovery resources: the throwaway PostgreSQL 17 service container and a
-      # throwaway directory inside the runner. Job-scoped so the readiness check, the version
-      # diagnostic, the backup/restore step, and the always() cleanup all see the same target,
-      # and so the recovery database can never be the live Supabase project.
+      # Disposable recovery database: the throwaway PostgreSQL 17 service container. Job-scoped so
+      # the readiness check, the version diagnostic, the backup/restore step, and the always()
+      # cleanup all see the same target, and so the recovery database can never be the live
+      # Supabase project. The disposable storage root deliberately does NOT live here: GitHub
+      # evaluates job-level env before a runner is allocated, so runner.* context expressions are rejected
+      # and killed run 37438753903 at startup. The "Configure disposable recovery paths" step
+      # exports it to GITHUB_ENV right after checkout instead.
       CONTENT_RECOVERY_DATABASE_URL: postgresql://recovery:recovery-only-disposable@127.0.0.1:55432/seccraft_recovery
-      CONTENT_RECOVERY_STORAGE_ROOT: ${{ runner.temp }}/seccraft-recovery-storage
       PLATFORM_ALLOWED_ORIGINS: http://127.0.0.1:5173
       PLATFORM_AUTO_CREATE_TABLES: "false"
       PLATFORM_ENABLE_API_DOCS: "false"
@@ -65,6 +67,16 @@ jobs:
       VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # Job-level env is evaluated before GitHub allocates a runner, so the runner context is not
+      # available there (that killed run 37438753903 at startup). Export the disposable recovery
+      # storage root from the step shell instead; every later step, including the always()
+      # cleanup, inherits the same value from GITHUB_ENV.
+      - name: Configure disposable recovery paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "CONTENT_RECOVERY_STORAGE_ROOT=$RUNNER_TEMP/seccraft-recovery-storage" >> "$GITHUB_ENV"
 
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
         with:
@@ -170,7 +182,7 @@ jobs:
       - name: Confirm no secret-bearing artifacts are retained
         if: always()
         run: |
-          rm -rf "$RUNNER_TEMP/seccraft-prelaunch-backup" "$CONTENT_RECOVERY_STORAGE_ROOT"
+          rm -rf "$RUNNER_TEMP/seccraft-prelaunch-backup" "${CONTENT_RECOVERY_STORAGE_ROOT:-$RUNNER_TEMP/seccraft-recovery-storage}"
           bash scripts/verify-no-sensitive-files-tracked.sh
 
       - name: Show API diagnostics on failure

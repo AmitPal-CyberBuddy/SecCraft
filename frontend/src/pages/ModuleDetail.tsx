@@ -46,12 +46,12 @@ export function ModuleDetail() {
   const quizSummaryRef = useRef<HTMLDivElement>(null)
   const [labAnswers, setLabAnswers] = useState<Record<string, string>>({})
   const completedLabs = useProgressStore(s => s.completedLabs)
+  const completedLessons = useProgressStore(s => s.completedLessons)
   const labCompleted = useMemo(() => Object.fromEntries(completedLabs.map(l => { const catalogueEntry = LABS.find(item => item.id === l.labId && item.module === l.moduleId); return [l.labId, catalogueEntry?.grading !== 'answer-checked' || l.score === 100] })), [completedLabs])
 
   const completeLesson = useProgressStore(s => s.completeLesson)
   const completeLab = useProgressStore(s => s.completeLab)
   const completeQuiz = useProgressStore(s => s.completeQuiz)
-  const isLessonCompleted = useProgressStore(s => s.isLessonCompleted)
   const getProgress = useProgressStore(s => s.getModuleProgress)
   const setCurrentModule = useProgressStore(s => s.setCurrentModule)
   const setCurrentLearningPath = useProgressStore(s => s.setCurrentLearningPath)
@@ -74,6 +74,15 @@ export function ModuleDetail() {
     () => new Map((moduleEntry?.lessons ?? []).map(l => [l.id, l])),
     [moduleEntry],
   )
+  // Subscribe to the lesson records themselves so a newly recorded completion immediately
+  // updates the reader, module overview, and next-step recommendation.
+  const completedLessonIds = useMemo(
+    () => new Set(completedLessons.filter(record => record.moduleId === id).map(record => record.lessonId)),
+    [completedLessons, id],
+  )
+  const isLessonDone = (lessonId: string) => completedLessonIds.has(lessonId)
+  const completedLessonCount = lessons.filter(isLessonDone).length
+  const nextLessonIndex = lessons.findIndex(lessonId => !isLessonDone(lessonId))
 
   const objectives = useMemo(() => {
     const fromContent = (module as { objectives?: string[] })?.objectives
@@ -109,6 +118,7 @@ export function ModuleDetail() {
   const view = resolveModuleView(query, lessons, labs.map(lab => lab.id), quizzes.length > 0, effectivePathId !== 'android-pentesting', id)
   const activeTab = view.tab
   const activeLesson = view.lesson
+  const currentLessonCompleted = isLessonDone(lessons[activeLesson])
   const setActiveTab = (tab: ModuleView) => setQuery(previous => updateQuery(previous, { tab: tab === 'overview' ? null : tab, lab: null }))
   const setActiveLesson = (index: number) => setQuery(previous => updateQuery(previous, { tab: 'theory', lesson: lessons[index] || null, lab: null }))
   useEffect(() => { setCompletionPulse(false); setCompletionNotice('') }, [id, activeLesson, activeTab])
@@ -125,6 +135,40 @@ export function ModuleDetail() {
   }
   const nextSection: ModuleView = labs.length ? 'lab' : quizzes.length ? 'quiz' : 'overview'
   const nextSectionLabel = labs.length ? 'Go to labs' : quizzes.length ? 'Check understanding' : 'Module overview'
+  const suggestedStepTitle = nextLessonIndex >= 0
+    ? lessonMeta.get(lessons[nextLessonIndex])?.title || lessons[nextLessonIndex].replace(/-/g, ' ')
+    : labs.length ? 'Practice with supplied lab artifacts' : quizzes.length ? 'Check your understanding' : 'Revisit a lesson'
+  const suggestedStepLabel = nextLessonIndex >= 0
+    ? `Lesson ${nextLessonIndex + 1} of ${lessons.length}`
+    : labs.length ? 'Optional practice' : quizzes.length ? 'Optional knowledge check' : 'Review at your pace'
+  const suggestedStepDescription = nextLessonIndex >= 0
+    ? `${completedLessonCount} of ${lessons.length} lessons are marked complete in this browser. The order is suggested; you can open any lesson.`
+    : labs.length
+      ? `All ${lessons.length} lessons are marked complete locally. Lab work is optional practice and does not verify proficiency.`
+      : quizzes.length
+        ? `All ${lessons.length} lessons are marked complete locally. This knowledge check is local practice, not an accredited assessment.`
+        : `All ${lessons.length} lessons are marked complete locally. Revisit any lesson when useful.`
+  const suggestedStepAction = nextLessonIndex >= 0
+    ? 'Open lesson'
+    : labs.length ? 'Open lab practice' : quizzes.length ? 'Open quiz' : 'Review a lesson'
+  const openSuggestedStep = () => {
+    if (nextLessonIndex >= 0) {
+      setActiveLesson(nextLessonIndex)
+    } else if (nextSection === 'lab' || nextSection === 'quiz') {
+      setActiveTab(nextSection)
+    } else {
+      setActiveLesson(0)
+    }
+  }
+  const advanceLesson = () => {
+    if (!currentLessonCompleted) markLessonComplete()
+    if (activeLesson < lessons.length - 1) {
+      setActiveLesson(activeLesson + 1)
+    } else {
+      setActiveTab(nextSection)
+      window.scrollTo({ top: 0, behavior: scrollBehavior() })
+    }
+  }
   const [quizQuestions, setQuizQuestions] = useState<any[]>([])
   useEffect(() => {
     let cancelled = false
@@ -278,7 +322,7 @@ export function ModuleDetail() {
   return (
     <div className="ws-legacy ws-lesson max-w-[1200px] mx-auto space-y-4 xs:space-y-5 sm:space-y-6 min-w-0 w-full">
       <nav className="ws-breadcrumb" aria-label="Breadcrumb"><Link to={`/paths/${effectivePathId}`}>Learning path</Link><span aria-hidden="true">/</span><Link to={`/paths/${effectivePathId}/modules`}>Modules</Link><span aria-hidden="true">/</span><span aria-current="page">{module.title}</span></nav>
-      <header className="sc-unit-header"><div><p className="sc-library-domain">Phase {module.phase} / Module {moduleOrdinal(module.id)}</p><h1>{module.title}</h1><p>{module.description}</p><div className="sc-unit-meta"><span>{module.difficulty}</span><span>{module.estimated_hours}h estimated</span><span>{lessons.length} lessons</span><span>{labs.length} labs</span>{effectivePathId === 'android-pentesting' ? <span>Offline source review · no runtime lab</span> : <TierBadge tier={(module as { lab_requirement?: string }).lab_requirement ?? module.status} />}</div></div><div className="sc-unit-progress"><span>Local practice progress</span><strong>{progress}%</strong><div role="progressbar" aria-label="Module practice progress" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} className="ws-progress"><span style={{ width: `${progress}%` }} /></div></div></header>
+      <header className="sc-unit-header"><div><p className="sc-library-domain">Phase {module.phase} / Module {moduleOrdinal(module.id)}</p><h1>{module.title}</h1><p>{module.description}</p><div className="sc-unit-meta"><span>{module.difficulty}</span><span>{module.estimated_hours}h estimated</span><span>{lessons.length} lessons</span><span>{labs.length} labs</span>{effectivePathId === 'android-pentesting' ? <span>Offline source review · no runtime lab</span> : <TierBadge tier={(module as { lab_requirement?: string }).lab_requirement ?? module.status} />}</div></div><div className="sc-unit-progress"><span>Local practice progress · this browser</span><strong>{progress}%</strong><div role="progressbar" aria-label="Module practice progress" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} className="ws-progress"><span style={{ width: `${progress}%` }} /></div><small>Self-reported; not verified proficiency.</small></div></header>
       {effectivePathId === 'wireless-pentesting' && <PracticeAvailability />}
       <ViewSwitcher label="Module workspace" value={activeTab} onChange={setActiveTab} options={([
         { id: 'overview', label: 'Overview' },
@@ -292,18 +336,22 @@ export function ModuleDetail() {
 
       {/* Content */}
       <div className="sc-learning-content min-w-0 w-full">
+          {activeTab === 'overview' && <section className="sc-module-next" aria-labelledby="module-next-title">
+            <div className="sc-module-next-copy"><span>{suggestedStepLabel}</span><h2 id="module-next-title">{suggestedStepTitle}</h2><p>{suggestedStepDescription}</p></div>
+            <div className="sc-module-next-action"><div className="sc-module-next-progress"><span>Lessons marked complete · this browser</span><strong>{completedLessonCount}/{lessons.length}</strong></div><button type="button" className="ws-action" onClick={openSuggestedStep}>{suggestedStepAction} <ChevronRight aria-hidden="true" size={16} /></button></div>
+          </section>}
           {/* Overview */}
           {activeTab === 'overview' && (
             <div className="sc-unit-overview"><div className="sc-unit-overview-primary"><section><h2>What you will work through</h2><ol className="sc-objective-list">{objectives.map((objective, index) => <li key={index}><span>{String(index + 1).padStart(2, '0')}</span>{objective}</li>)}</ol></section>
               {((module as { evidence_focus?: string }).evidence_focus || (module as { retest_focus?: string }).retest_focus) && <section><h2>Evidence & retest</h2>{(module as { evidence_focus?: string }).evidence_focus && <p><strong>Evidence standard.</strong> {(module as { evidence_focus?: string }).evidence_focus}</p>}{(module as { retest_focus?: string }).retest_focus && <p><strong>Retest focus.</strong> {(module as { retest_focus?: string }).retest_focus}</p>}</section>}
               <section><h2>Your route through this module</h2><ol className="sc-objective-list">
-              <li><span>01</span><button type="button" onClick={() => setActiveTab('theory')}>Read the authored lessons ({lessons.filter(lesson => isLessonCompleted(module.id, lesson)).length}/{lessons.length} marked complete locally)</button></li>
+              <li><span>01</span><button type="button" onClick={() => setActiveTab('theory')}>Read the authored lessons ({completedLessonCount}/{lessons.length} marked complete locally)</button></li>
               {labs.length > 0 && <li><span>02</span><button type="button" onClick={() => setActiveTab('lab')}>Practice with the supplied lab artifacts ({labs.length} labs)</button></li>}
               {quizzes.length > 0 && <li><span>03</span><button type="button" onClick={() => setActiveTab('quiz')}>Check your understanding ({quizzes.length} local questions)</button></li>}
               {effectivePathId !== 'android-pentesting' && <li><span>04</span><button type="button" onClick={() => setActiveTab('report')}>Document your reasoning and evidence</button></li>}
               </ol><p>These are suggested steps, not verified completion requirements. Your progress is browser-local and self-reviewed.</p></section>
-              <section><h2>Lesson sequence</h2><ol className="sc-objective-list">{lessons.map((lesson, index) => <li key={lesson}><span>{isLessonCompleted(module.id, lesson) ? '✓' : String(index + 1).padStart(2,'0')}</span><button type="button" onClick={() => { setActiveLesson(index) }}>{lessonMeta.get(lesson)?.title || lesson.replace(/-/g,' ')}</button></li>)}</ol></section>
-            </div><aside className="sc-unit-overview-aside"><section><h2>Module context</h2><dl><div><dt>Difficulty</dt><dd>{module.difficulty}</dd></div><div><dt>Estimated</dt><dd>{module.estimated_hours}h</dd></div><div><dt>Labs</dt><dd>{labs.length}</dd></div><div><dt>Quiz questions</dt><dd>{quizzes.length}</dd></div></dl></section><section><h2>Environment</h2><p>Use supplied artifacts for local practice. Work requiring real RF equipment needs an authorized environment; no live infrastructure is modified here.</p></section><button type="button" className="ws-action" onClick={() => setActiveTab('theory')}>Open lessons →</button></aside></div>
+              <section><h2>Lesson sequence</h2><ol className="sc-objective-list">{lessons.map((lesson, index) => <li key={lesson}><span>{isLessonDone(lesson) ? '✓' : String(index + 1).padStart(2,'0')}</span><button type="button" onClick={() => setActiveLesson(index)}>{lessonMeta.get(lesson)?.title || lesson.replace(/-/g,' ')}</button></li>)}</ol></section>
+            </div><aside className="sc-unit-overview-aside"><section><h2>Module context</h2><dl><div><dt>Difficulty</dt><dd>{module.difficulty}</dd></div><div><dt>Estimated</dt><dd>{module.estimated_hours}h</dd></div><div><dt>Labs</dt><dd>{labs.length}</dd></div><div><dt>Quiz questions</dt><dd>{quizzes.length}</dd></div></dl></section><section><h2>Environment</h2><p>Use supplied artifacts for local practice. Work requiring real RF equipment needs an authorized environment; no live infrastructure is modified here.</p></section></aside></div>
           )}
 
           {/* Theory — Enhanced Readability + Scroll Fix */}
@@ -321,7 +369,7 @@ export function ModuleDetail() {
                     <button type="button" className="sc-lesson-toggle" aria-expanded={lessonNavOpen} aria-controls="lesson-options" onClick={() => setLessonNavOpen(v => !v)}>Choose a lesson <span aria-hidden="true">{lessonNavOpen ? '−' : '+'}</span></button>
                     <div id="lesson-options" className={`sc-lesson-options space-y-1.5 ${lessonNavOpen ? 'is-open' : ''}`}>
                       {lessons.map((lesson, idx) => {
-                        const completed = isLessonCompleted(module.id, lesson)
+                        const completed = isLessonDone(lesson)
                         const isActive = activeLesson === idx
                         const meta = lessonMeta.get(lessons[idx])
                         return (
@@ -346,10 +394,10 @@ export function ModuleDetail() {
                     <div className="mt-4 pt-4 border-t border-[var(--line-normal)] space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="text-[11px] text-[var(--ink-secondary)] font-mono">Progress</div>
-                        <div className="text-[11px] text-[var(--learning)] font-mono font-bold">{lessons.filter(l => isLessonCompleted(module.id, l)).length}/{lessons.length}</div>
+                        <div className="text-[11px] text-[var(--learning)] font-mono font-bold">{completedLessonCount}/{lessons.length}</div>
                       </div>
                       <div className="w-full h-2 bg-[var(--panel-inset)] rounded-full border border-[var(--line-normal)] overflow-hidden">
-                        <LearningProgress value={(lessons.filter(l => isLessonCompleted(module.id, l)).length / lessons.length) * 100} label="Lessons completed locally" />
+                        <LearningProgress value={(completedLessonCount / lessons.length) * 100} label="Lessons completed locally" />
                       </div>
 
                     </div>
@@ -372,7 +420,7 @@ export function ModuleDetail() {
                               <div className="text-[12px] font-mono text-[var(--ink-secondary)] flex items-center gap-2">
                                 <span>{lessonMeta.get(lessons[activeLesson])?.title || lessons[activeLesson]}</span>
                                 <span className="w-1 h-1 rounded-full bg-[var(--panel-raised)]" />
-                                <span className="text-[var(--success)]">+10 XP</span>
+                                <span className={currentLessonCompleted ? 'text-[var(--success)]' : 'text-[var(--ink-secondary)]'}>{currentLessonCompleted ? 'Recorded locally' : '10 practice XP · local'}</span>
                               </div>
                               <div className="mt-1">
                                 <LessonReadingProgress content={lessonContent} />
@@ -386,11 +434,13 @@ export function ModuleDetail() {
                               <p className="sc-reading-mode-help">{readingMode === 'focus' ? 'Sidebars are hidden. Exit focus reading to browse lessons.' : 'Focus reading hides the lesson list and sidebar.'}</p>
                             </div>
                             <button
+                              type="button"
                               onClick={markLessonComplete}
+                              disabled={currentLessonCompleted}
                               data-completion={completionPulse ? 'new' : undefined}
-                              className={`px-4 py-2.5 rounded-xl text-[12px] font-semibold border sc-surface-transition flex items-center gap-2 ${isLessonCompleted(module.id, lessons[activeLesson]) ? 'bg-[var(--success-bg)] border-[var(--success-border)] text-[var(--success)]' : 'sc-learning-action border-[var(--learning)]'}`}
+                              className={`px-4 py-2.5 rounded-xl text-[12px] font-semibold border sc-surface-transition flex items-center gap-2 disabled:cursor-default ${currentLessonCompleted ? 'bg-[var(--success-bg)] border-[var(--success-border)] text-[var(--success)]' : 'sc-learning-action border-[var(--learning)]'}`}
                             >
-                              {isLessonCompleted(module.id, lessons[activeLesson]) ? <><CheckCircle className="w-4 h-4" /> Completed · practice XP</> : <><Award className="w-4 h-4" /> Mark complete · practice XP</>}
+                              {currentLessonCompleted ? <><CheckCircle className="w-4 h-4" /> Completed · local record</> : <><Award className="w-4 h-4" /> Mark complete · 10 practice XP</>}
                             </button>
                             <p className="sc-learning-feedback" role="status">{completionNotice}</p>
                           </div>
@@ -447,19 +497,12 @@ export function ModuleDetail() {
                           </div>
                         </button>
                         <button
-                          onClick={() => {
-                            markLessonComplete();
-                            if (activeLesson < lessons.length - 1) {
-                              setActiveLesson(activeLesson + 1)
-                            } else {
-                              setActiveTab(nextSection)
-                              window.scrollTo({ top: 0, behavior: scrollBehavior() })
-                            }
-                          }}
+                          type="button"
+                          onClick={advanceLesson}
                           className="group px-6 py-3 rounded-xl sc-learning-action text-[13px] font-semibold sc-surface-transition flex items-center gap-3"
                         >
                           <div className="text-left">
-                            <div className="text-xs font-mono uppercase tracking-wide">{activeLesson < lessons.length - 1 ? 'Complete & next lesson' : 'Complete & continue'}</div>
+                            <div className="text-xs font-mono uppercase tracking-wide">{activeLesson < lessons.length - 1 ? currentLessonCompleted ? 'Next lesson' : 'Complete & next lesson' : currentLessonCompleted ? 'Continue' : 'Complete & continue'}</div>
                             <div className="text-[13px] font-semibold">{activeLesson < lessons.length - 1 ? lessonMeta.get(lessons[activeLesson + 1])?.title || lessons[activeLesson + 1].replace(/-/g, ' ') : nextSectionLabel}</div>
                           </div>
                           <ChevronRight className="w-5 h-5 " />
@@ -471,7 +514,7 @@ export function ModuleDetail() {
                 </div>
                 <aside className="sc-reading-context" aria-label="Lesson context">
                   {showToc && toc.length > 0 && <section><h2>On this page</h2><nav aria-label="Lesson headings">{toc.map((heading, index) => <a key={`${heading.id}-${index}`} href={`#${heading.id}`} className={heading.level > 1 ? 'is-nested' : ''}>{heading.text}</a>)}</nav></section>}
-                  <section><h2>Up next</h2><p>{activeLesson < lessons.length - 1 ? lessonMeta.get(lessons[activeLesson + 1])?.title || lessons[activeLesson + 1].replace(/-/g, ' ') : nextSectionLabel}</p><button type="button" onClick={() => { if (activeLesson < lessons.length - 1) setActiveLesson(activeLesson + 1); else setActiveTab(nextSection); document.getElementById('theory-content-start')?.scrollIntoView() }}>Continue →</button></section>
+                  <section><h2>Next in sequence</h2><p>{activeLesson < lessons.length - 1 ? lessonMeta.get(lessons[activeLesson + 1])?.title || lessons[activeLesson + 1].replace(/-/g, ' ') : nextSectionLabel}</p><small>Use the main next-step control below when ready; it records this lesson only if you have not already done so.</small></section>
                   <section><h2>Record</h2><p>Marking this lesson complete records browser-local practice. It does not certify competence.</p></section>
                 </aside>
               </div>
