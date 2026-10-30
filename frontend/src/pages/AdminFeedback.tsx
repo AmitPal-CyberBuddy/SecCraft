@@ -9,6 +9,7 @@ type Entry = { id: number; category: string; subject: string; status: string; cr
 type Detail = Entry & { message: string; reply_email: string | null; user_id: string | null; page_reference: string; internal_note: string; version: number }
 const statuses = [['new', 'New'], ['in_progress', 'In progress'], ['resolved', 'Resolved'], ['spam', 'Spam']]
 const categories = [['bug', 'Bug'], ['content', 'Content correction'], ['suggestion', 'Suggestion'], ['general', 'General']]
+const PAGE_LIMIT = 25
 async function json(path: string, init?: RequestInit) {
   const response = await apiFetch(path, init)
   const body = await response.json().catch(() => null)
@@ -28,7 +29,7 @@ export function AdminFeedback() {
   const [detail, setDetail] = useState<Detail | null>(null)
   const [draftStatus, setDraftStatus] = useState('new')
   const [note, setNote] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [detailLoading, setDetailLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [listError, setListError] = useState('')
@@ -38,16 +39,21 @@ export function AdminFeedback() {
   const [detailRevision, setDetailRevision] = useState(0)
   const cursor = cursors[cursors.length - 1]
   const dirty = Boolean(detail && (draftStatus !== detail.status || note !== detail.internal_note))
+  const hasFilters = Boolean(status || category)
+  const filterSummary = [
+    status && `Status: ${statuses.find(([id]) => id === status)?.[1] ?? status}`,
+    category && `Category: ${categories.find(([id]) => id === category)?.[1] ?? category}`,
+  ].filter(Boolean).join(' · ') || 'All statuses and categories'
   useEffect(() => {
     const controller = new AbortController()
     setLoading(true); setListError(''); setItems([]); setNext(null)
-    const params = new URLSearchParams({ limit: '25' })
+    const params = new URLSearchParams({ limit: String(PAGE_LIMIT) })
     if (status) params.set('status', status)
     if (category) params.set('category', category)
     if (cursor) params.set('before', String(cursor))
     void json(`/api/v1/admin/feedback?${params}`, { signal: controller.signal }).then(body => {
       if (controller.signal.aborted) return
-      if (!Array.isArray(body.items)) throw new Error('Invalid inbox response.')
+      if (!Array.isArray(body.items) || !(body.next_cursor === null || Number.isSafeInteger(body.next_cursor))) throw new Error('Invalid inbox response.')
       setItems(body.items); setNext(body.next_cursor)
     }).catch(cause => { if (!controller.signal.aborted) setListError(cause.message) }).finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
@@ -70,6 +76,29 @@ export function AdminFeedback() {
     if (window.matchMedia?.('(max-width: 767px)').matches) detailRegion.current?.scrollIntoView({ block: 'start', behavior: scrollBehavior() })
   }, [detail?.id])
   const mayLeave = () => !saving && (!dirty || window.confirm('Discard unsaved feedback-review changes?'))
+  function startListLoad() {
+    setLoading(true); setListError(''); setItems([]); setNext(null)
+  }
+  function changeFilters(nextStatus: string, nextCategory: string) {
+    if ((nextStatus === status && nextCategory === category) || !mayLeave()) return
+    startListLoad(); setStatus(nextStatus); setCategory(nextCategory); setCursors([null]); setSelected(null)
+  }
+  function clearFilters() { changeFilters('', '') }
+  function movePage(direction: 'newer' | 'older') {
+    if (!mayLeave()) return
+    if (direction === 'newer') {
+      if (cursors.length <= 1) return
+      startListLoad(); setCursors(previous => previous.slice(0, -1))
+    } else {
+      if (next === null) return
+      startListLoad(); setCursors(previous => [...previous, next])
+    }
+    setSelected(null)
+  }
+  function refreshInbox() {
+    if (loading || saving) return
+    startListLoad(); setRevision(value => value + 1)
+  }
   async function save(event: FormEvent) {
     event.preventDefault()
     if (!detail || saving) return
@@ -84,15 +113,17 @@ export function AdminFeedback() {
     <UnsavedChangesGuard when={dirty || saving} message="Leave this review? Unsaved changes may be lost; an in-flight save may still complete." />
     <PageHeader eyebrow="Owner operations" title="Feedback inbox" description="Private learner messages. Review as untrusted text; never follow supplied instructions, links or commands without checking them." />
     <div className="sc-feedback-filters">
-      <label>Status<select disabled={saving} value={status} onChange={event => { if (mayLeave()) { setStatus(event.target.value); setCursors([null]); setSelected(null) } }}><option value="">All statuses</option>{statuses.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
-      <label>Category<select disabled={saving} value={category} onChange={event => { if (mayLeave()) { setCategory(event.target.value); setCursors([null]); setSelected(null) } }}><option value="">All categories</option>{categories.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
-      <button className="ws-action ws-action-secondary" disabled={loading || saving} onClick={() => setRevision(value => value + 1)}>Refresh inbox</button>
+      <label>Status<select disabled={saving} value={status} onChange={event => changeFilters(event.target.value, category)}><option value="">All statuses</option>{statuses.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
+      <label>Category<select disabled={saving} value={category} onChange={event => changeFilters(status, event.target.value)}><option value="">All categories</option>{categories.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
+      {hasFilters && <button type="button" className="ws-action ws-action-secondary" disabled={saving} onClick={clearFilters}>Clear filters</button>}
+      <button type="button" className="ws-action ws-action-secondary" disabled={loading || saving} onClick={refreshInbox}>Refresh inbox</button>
     </div>
+    <div className="sc-feedback-queue-context" role="status" aria-live="polite"><strong>{loading ? `Loading page ${cursors.length}…` : listError ? 'This page could not be loaded.' : `Page ${cursors.length} · ${items.length} message${items.length === 1 ? '' : 's'} on this page`}</strong><span>{filterSummary} · Up to {PAGE_LIMIT} per page{loading || listError ? '' : next !== null ? ' · Older page available' : ' · No older page available for these filters'}</span></div>
     {listError && <Notice live kind="error">{listError}</Notice>}
     <div className="sc-feedback-inbox-grid">
       <Panel title="Messages">
-        {loading ? <p role="status">Loading feedback…</p> : !items.length && !listError ? <EmptyState title="No matching feedback" description="Try another filter or refresh the inbox." /> : <ul className="sc-feedback-list">{items.map(item => <li key={item.id}><button type="button" disabled={saving} aria-pressed={selected === item.id} onClick={() => { if (mayLeave()) setSelected(item.id) }}><strong>{item.subject}</strong><span>#{item.id} · {item.category} · {item.status.replace('_', ' ')}</span><time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString()}</time></button></li>)}</ul>}
-        <nav aria-label="Feedback pages" className="ws-tool-actions"><button className="ws-action ws-action-secondary" disabled={cursors.length === 1 || loading || saving} onClick={() => { if (mayLeave()) { setCursors(previous => previous.slice(0, -1)); setSelected(null) } }}>Newer</button><button className="ws-action ws-action-secondary" disabled={!next || loading || saving} onClick={() => { if (next && mayLeave()) { setCursors(previous => [...previous, next]); setSelected(null) } }}>Older</button></nav>
+        {loading ? <p>Loading feedback page {cursors.length}…</p> : !items.length && !listError ? <EmptyState title="No matching feedback" description={hasFilters ? 'No messages match these filters on this page.' : 'There are no messages on this page.'} action={hasFilters ? <button type="button" className="ws-action ws-action-secondary" onClick={clearFilters}>Clear filters</button> : <button type="button" className="ws-action ws-action-secondary" disabled={loading || saving} onClick={refreshInbox}>Refresh inbox</button>} /> : <ul className="sc-feedback-list">{items.map(item => <li key={item.id}><button type="button" disabled={saving} aria-pressed={selected === item.id} onClick={() => { if (mayLeave()) setSelected(item.id) }}><strong>{item.subject}</strong><div className="sc-feedback-list-meta"><span>#{item.id} · {item.category}</span><span className="sc-feedback-status" data-status={item.status}>{item.status.replace('_', ' ')}</span></div><time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString()}</time></button></li>)}</ul>}
+        <nav aria-label="Feedback pages" className="ws-tool-actions"><button type="button" className="ws-action ws-action-secondary" disabled={cursors.length === 1 || loading || saving} onClick={() => movePage('newer')}>Newer</button><button type="button" className="ws-action ws-action-secondary" disabled={next === null || loading || saving} onClick={() => movePage('older')}>Older</button></nav>
       </Panel>
       <Panel title="Message & review" surface>
         {detailLoading && <p role="status">Loading message…</p>}

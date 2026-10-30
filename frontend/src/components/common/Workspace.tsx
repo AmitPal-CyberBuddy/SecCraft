@@ -1,4 +1,5 @@
 import { LearningProgress } from '@/components/learning/LearningProgress'
+import { Shield } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -21,5 +22,6 @@ export function MetadataRow({ label, value, aside, mono = false }: { label: stri
 }
 
 export function EmptyState({ title, description, action }: { title: string; description?: string; action?: ReactNode }) {
-  return <div className="ws-empty"><strong>{title}</strong>{description && <p>{description}</p>}{action && <div className="ws-empty-action">{action}</div>}</div>
+  // The brand shield keeps empty moments recognisably SecCraft; it is decorative and still.
+  return <div className="ws-empty"><span aria-hidden="true" className="ws-empty-mark"><Shield size={18} strokeWidth={1.8} /></span><strong>{title}</strong>{description && <p>{description}</p>}{action && <div className="ws-empty-action">{action}</div>}</div>
 }

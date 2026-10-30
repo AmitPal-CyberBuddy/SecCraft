@@ -187,8 +187,29 @@ jobs:
       - name: Fail if credentials, backups, exports, or runtime databases are tracked
         run: bash scripts/verify-no-sensitive-files-tracked.sh
 
-      - name: Test prelaunch configuration, synthetic-token, and PostgreSQL version safeguards
-        run: node --test scripts/tests/prelaunch-env.test.mjs scripts/tests/prelaunch-token.test.mjs scripts/tests/prelaunch-postgres-versions.test.mjs
+      # Workflow syntax gate. A job-level env expression referencing the runner context killed run
+      # 37438753903 at startup before any job ran; actionlint catches that whole failure class.
+      # Both the download script (via the immutable tag) and the release version are pinned.
+      - name: Install pinned actionlint
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            --url https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash \
+            --output "$RUNNER_TEMP/download-actionlint.bash"
+          bash "$RUNNER_TEMP/download-actionlint.bash" 1.7.12 "$RUNNER_TEMP"
+          "$RUNNER_TEMP/actionlint" -version
+
+      - name: Lint GitHub Actions workflows with actionlint
+        run: '"$RUNNER_TEMP/actionlint" -shellcheck= -pyflakes= .github/workflows/*.yml'
+
+      - name: Test prelaunch configuration, synthetic-token, PostgreSQL version, and workflow safeguards
+        run: |
+          set -euo pipefail
+          ACTIONLINT_BIN="$RUNNER_TEMP/actionlint" node --test \
+            scripts/tests/prelaunch-env.test.mjs \
+            scripts/tests/prelaunch-token.test.mjs \
+            scripts/tests/prelaunch-postgres-versions.test.mjs \
+            scripts/tests/prelaunch-workflow.test.mjs
 
   # The browser suites run as three parallel jobs. As one serial job they took over an hour, which left
   # almost no headroom under the timeout and made every push wait for all of it. Each job is independent;

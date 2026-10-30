@@ -100,6 +100,15 @@ function LabsContent({ effectivePathId }: { effectivePathId: string }) {
   const labsForPath = useMemo(() => {
     return LABS.filter(l => (l as any).learningPathId === effectivePathId || (!(l as any).learningPathId && effectivePathId === 'wireless-pentesting'))
   }, [effectivePathId])
+  const labPracticeCounts = useMemo(() => {
+    const available = labsForPath.filter(lab => lab.status !== 'PLANNED')
+    return {
+      available: available.length,
+      answerChecked: available.filter(lab => lab.grading === 'answer-checked').length,
+      selfReview: available.filter(lab => lab.grading === 'self-review').length,
+      planned: labsForPath.filter(lab => lab.status === 'PLANNED').length,
+    }
+  }, [labsForPath])
 
   const filteredLabs = useMemo(() => {
     return labsForPath.filter(lab => {
@@ -126,12 +135,19 @@ function LabsContent({ effectivePathId }: { effectivePathId: string }) {
   }, [pcaps, searchQuery, currentPath.status, currentPath.id])
 
   const typeFilters = [...new Set(labsForPath.map(l => l.type))]
+  const clearFilters = () => { setSearchQuery(''); setFilterType(null) }
 
   return (
     <div className="ws-legacy ws-lab-workspace max-w-[1400px] mx-auto min-w-0 w-full space-y-4 xs:space-y-6 md:space-y-8">
       <nav className="ws-breadcrumb" aria-label="Breadcrumb"><Link to={`/paths/${effectivePathId}`}>{currentPath.title}</Link><span aria-hidden="true">/</span><span aria-current="page">Labs</span></nav>
       <header className="sc-practice-header"><div><p className="sc-library-domain">Practice / {currentPath.category}</p><h1>Security lab library</h1><p>Work through scoped objectives, supplied artifacts and local tools. Record what the evidence supports; completion is not trusted grading.</p></div><div className="sc-practice-summary"><strong>{pathStats.labs}</strong><span>labs in this path</span><small>{currentPath.id === 'android-pentesting' ? 'Original source cases · no prebuilt APK' : `${filteredPcaps.length} supplied captures`} · {currentPath.status === 'available' ? 'Available' : 'Planned'}</small></div></header>
       {effectivePathId === 'wireless-pentesting' && <PracticeAvailability />}
+      <section className="sc-lab-orientation" aria-label="Lab practice model">
+        <div><strong>{labPracticeCounts.available}</strong><span>available labs</span></div>
+        <div><strong>{labPracticeCounts.answerChecked}</strong><span>local answer checks</span></div>
+        <div><strong>{labPracticeCounts.selfReview}</strong><span>guided self-review</span></div>
+        <p>Answer checks run in this browser; self-review is not scored. Lab records stay on this device and are not independently graded.{labPracticeCounts.planned > 0 && <small>{labPracticeCounts.planned} planned {labPracticeCounts.planned === 1 ? 'entry' : 'entries'} excluded from available totals.</small>}</p>
+      </section>
       {/* Tabs — generic */}
       <ViewSwitcher label="Lab tools" value={activeTab} onChange={setActiveTab} options={([
         { id: 'artifacts', label: 'Artifact library', icon: <Radio size={16} />, count: currentPath.id === 'android-pentesting' ? filteredLabs.length : filteredPcaps.length },
@@ -185,30 +201,30 @@ function LabsContent({ effectivePathId }: { effectivePathId: string }) {
             </div>
           ) : (
             <>
-              <div
-                className="flex flex-col lg:flex-row gap-3 min-w-0"
-              >
-                <div className="flex-1 relative group min-w-0">
-                  <Search className="w-4 h-4 text-[var(--ink-secondary)] absolute left-4 top-1/2 -translate-y-1/2 group-hover:text-[var(--ink-secondary)] transition-colors" />
+              <div className="sc-lab-controls">
+                <div className="sc-lab-search">
+                  <Search className="w-4 h-4" aria-hidden="true" />
                   <input
+                    type="search"
                     aria-label="Search labs"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    placeholder={`Search labs in ${currentPath.title}, e.g., beacon, handshake, deauth, rogue, captive, Enterprise, EAP...`}
-                    className="w-full pl-11 pr-4 py-3 rounded-xl bg-[var(--panel-bg)] border border-[var(--line-normal)]  text-[13px] text-[var(--ink-primary)] placeholder:text-[var(--ink-secondary)] focus:outline-none focus:border-[var(--accent-border)] focus:bg-[var(--panel-bg)] hover:border-[var(--line-strong)] hover:bg-[var(--panel-raised)] sc-surface-transition min-w-0"
+                    placeholder="Search titles, modules, types or captures"
                   />
                 </div>
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin shrink-0">
-                  <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--panel-bg)] border border-[var(--line-normal)]  shrink-0">
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold tracking-widest text-[var(--ink-secondary)] uppercase shrink-0">
-                      <Layers className="w-3 h-3" />Type
-                    </div>
-                    <button onClick={() => setFilterType(null)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium sc-surface-transition shrink-0 ${!filterType ? 'bg-[var(--panel-raised)] text-[var(--ink-primary)] border border-[var(--line-strong)] shadow-soft' : 'text-[var(--ink-secondary)] hover:text-[var(--ink-secondary)]'}`}>All</button>
-                    {typeFilters.slice(0, 6).map(type => (
-                      <button key={type} onClick={() => setFilterType(type)} className={`px-3 py-1.5 rounded-lg text-[11px] font-medium sc-surface-transition whitespace-nowrap shrink-0 ${filterType === type ? 'bg-[var(--panel-raised)] text-[var(--ink-primary)] border border-[var(--line-strong)] shadow-soft' : 'text-[var(--ink-secondary)] hover:text-[var(--ink-secondary)] hover:bg-[var(--panel-raised)]'}`}>{type.split(' ')[0]}</button>
+                <div className="sc-lab-type-scroll">
+                  <div className="sc-lab-type-filter" role="group" aria-label="Filter labs by type">
+                    <span><Layers className="w-3 h-3" aria-hidden="true" />Type</span>
+                    <button type="button" aria-label="All lab types" aria-pressed={!filterType} onClick={() => setFilterType(null)} className={!filterType ? 'is-selected' : ''}>All</button>
+                    {typeFilters.map(type => (
+                      <button type="button" key={type} aria-label={`Filter labs by ${type}`} aria-pressed={filterType === type} title={type} onClick={() => setFilterType(type)} className={filterType === type ? 'is-selected' : ''}>{type}</button>
                     ))}
                   </div>
                 </div>
+              </div>
+              <div className="sc-lab-filter-summary">
+                <p role="status">Showing {filteredLabs.length} of {labsForPath.length} lab entries{labPracticeCounts.planned > 0 ? ` (${labPracticeCounts.planned} planned)` : ''}</p>
+                {(searchQuery || filterType) && <button type="button" className="ws-action ws-action-secondary" onClick={clearFilters}>Clear filters</button>}
               </div>
 
               {currentPath.id === 'android-pentesting' && (
@@ -231,10 +247,11 @@ function LabsContent({ effectivePathId }: { effectivePathId: string }) {
               </div>
 
               {filteredLabs.length === 0 && (
-                <div className="rounded-2xl bg-[var(--panel-bg)] border border-dashed border-[var(--line-strong)] p-12 text-center">
-                  <div className="w-12 h-12 rounded-xl bg-[var(--panel-raised)] border border-[var(--line-strong)] flex items-center justify-center mx-auto mb-4"><Search className="w-6 h-6 text-[var(--ink-secondary)]" /></div>
-                  <h3 className="font-heading font-semibold text-[16px] text-[var(--ink-secondary)]">No labs found in {currentPath.title}</h3>
-                  <p className="text-[13px] text-[var(--ink-secondary)] mt-2">Try adjusting your search or filters — {labsForPath.length} labs total in this path</p>
+                <div className="sc-lab-empty">
+                  <div className="sc-lab-empty-mark" aria-hidden="true"><Search size={20} /></div>
+                  <h3>{labsForPath.length === 0 ? `No lab entries in ${currentPath.title} yet` : 'No lab entries match these filters'}</h3>
+                  <p>{labsForPath.length === 0 ? 'Browse this path’s modules while its practice catalogue is being built.' : `Try another type or search term. ${labsForPath.length} entries exist in this path.`}</p>
+                  {(searchQuery || filterType) && <button type="button" className="ws-action ws-action-secondary" onClick={clearFilters}>Clear filters</button>}
                 </div>
               )}
               <details className="sc-artifact-disclosure" open={pcapQuery ? true : undefined}>

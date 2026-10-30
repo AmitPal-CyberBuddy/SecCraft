@@ -2,7 +2,8 @@ import { LearningProgress } from '@/components/learning/LearningProgress'
 import { useMemo } from 'react'
 import { useProgressStore } from '@/store/useProgressStore'
 import modules from '@/content/modules.json'
-import { TOTAL_LESSONS, TOTAL_PCAPS, TOTAL_SCENARIOS } from '@/content/stats'
+import { TOTAL_LESSONS } from '@/content/stats'
+import learningPaths from '@/content/learning-paths.json'
 import { BarChart3, TrendingUp, Flame, BookOpen, Zap, Trophy, Info } from 'lucide-react'
 
 /**
@@ -17,6 +18,7 @@ interface ModuleRow { learningPathId?: string; id: string; title: string; phase:
 
 export function AnalyticsDashboard({ className = '' }: { className?: string }) {
   const currentPathId = useProgressStore(s => s.currentLearningPathId)
+  const currentPathTitle = learningPaths.find(path => path.id === currentPathId)?.title
   const totalXp = useProgressStore(s => s.getTotalXp())
   const level = useProgressStore(s => s.getLevel())
   const streak = useProgressStore(s => s.getStreak())
@@ -24,6 +26,7 @@ export function AnalyticsDashboard({ className = '' }: { className?: string }) {
   const overall = useProgressStore(s => s.getOverallProgress())
   const completedLessons = useProgressStore(s => s.completedLessons)
   const completedLabs = useProgressStore(s => s.completedLabs)
+  const completedChallenges = useProgressStore(s => s.completedChallenges)
   const quizScores = useProgressStore(s => s.quizScores)
   const getModuleProgress = useProgressStore(s => s.getModuleProgress)
 
@@ -38,7 +41,7 @@ export function AnalyticsDashboard({ className = '' }: { className?: string }) {
   }, [getModuleProgress, completedLessons, completedLabs, quizScores, currentPathId])
 
   const started = moduleRows.filter(m => m.progress > 0)
-  const nothingRecorded = completedLessons.length === 0 && completedLabs.length === 0 && quizScores.length === 0
+  const nothingRecorded = completedLessons.length === 0 && completedLabs.length === 0 && completedChallenges.length === 0 && quizScores.length === 0
 
   // Real activity by weekday, from the timestamps stored with each completion.
   const weekly = useMemo(() => {
@@ -47,6 +50,7 @@ export function AnalyticsDashboard({ className = '' }: { className?: string }) {
     const points: { at: string; points: number }[] = [
       ...completedLessons.map(l => ({ at: l.completedAt || '', points: l.points || 0 })),
       ...completedLabs.map(l => ({ at: l.completedAt || '', points: l.points || 0 })),
+      ...completedChallenges.map(c => ({ at: c.completedAt || '', points: c.points || 0 })),
       ...quizScores.map(q => ({ at: q.completedAt || '', points: q.points || 0 })),
     ]
     const now = new Date()
@@ -64,7 +68,7 @@ export function AnalyticsDashboard({ className = '' }: { className?: string }) {
       tracked++
     }
     return { labels, buckets, tracked }
-  }, [completedLessons, completedLabs, quizScores])
+  }, [completedLessons, completedLabs, completedChallenges, quizScores])
 
   const weekTotal = weekly.buckets.reduce((a, b) => a + b, 0)
   const peak = Math.max(...weekly.buckets, 0)
@@ -78,6 +82,10 @@ export function AnalyticsDashboard({ className = '' }: { className?: string }) {
 
   return (
     <div className={`space-y-4 xs:space-y-5 min-w-0 w-full ${className}`}>
+      <section className="sc-analytics-scope" aria-label="Analytics scope">
+        <div><span>Module coverage</span><strong>{currentPathTitle ?? 'All learning paths'}</strong></div>
+        <p>{currentPathId ? 'Module rows below cover the selected path.' : 'Module rows below cover all available paths.'} XP, lessons, streaks, achievements, weekly activity and overall completion totals include browser-local records across paths.</p>
+      </section>
       <div className="grid grid-cols-1 min-[400px]:grid-cols-2 xl:grid-cols-4 gap-3">
         {stats.map(stat => (
           <div key={stat.label} className="p-4 rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] hover:border-[var(--line-strong)] transition-colors min-w-0">
@@ -105,8 +113,8 @@ export function AnalyticsDashboard({ className = '' }: { className?: string }) {
             <div className="p-5 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-center">
               <div className="text-sm text-[var(--ink-secondary)]">No module progress yet</div>
               <p className="mt-1.5 text-sm text-[var(--ink-secondary)] leading-relaxed">
-                Progress appears here as soon as you complete a lesson, lab or quiz. Start with
-                <span className="font-mono text-[var(--ink-secondary)]"> Modules → {moduleRows[0]?.title ?? 'the first module'}</span>, then run the matching lab in the PCAP inspector.
+                Progress appears here as you record lessons, labs or quizzes. Start with
+                <span className="font-mono text-[var(--ink-secondary)]"> Modules → {moduleRows[0]?.title ?? 'the first module'}</span>, then choose its available offline practice route when useful.
               </p>
             </div>
           ) : (
@@ -140,9 +148,14 @@ export function AnalyticsDashboard({ className = '' }: { className?: string }) {
             <div className="p-5 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-center">
               <div className="text-sm text-[var(--ink-secondary)]">No completions recorded this week</div>
               <p className="mt-1.5 text-sm text-[var(--ink-secondary)] leading-relaxed">
-                The chart counts XP from completions stored on this device in the current Mon–Sun week. Complete a
-                lesson ({TOTAL_LESSONS} authored), a lab ({TOTAL_PCAPS} verified captures) or a decision scenario
-                ({TOTAL_SCENARIOS} available) and it will appear here.
+                This chart reads local completion timestamps in the current Mon–Sun week. Lessons, eligible answer-checked labs, passed quizzes and local challenge checkpoints can add XP; self-review may add none.
+              </p>
+            </div>
+          ) : weekTotal === 0 ? (
+            <div className="p-5 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-center">
+              <div className="text-sm text-[var(--ink-secondary)]">Practice was recorded, but no XP was credited</div>
+              <p className="mt-1.5 text-sm text-[var(--ink-secondary)] leading-relaxed">
+                {weekly.tracked} local completion record{weekly.tracked === 1 ? '' : 's'} {weekly.tracked === 1 ? 'falls' : 'fall'} in this week. Self-review and review-only activities can record practice without awarding XP; that is not a graded result.
               </p>
             </div>
           ) : (
@@ -192,9 +205,9 @@ export function AnalyticsDashboard({ className = '' }: { className?: string }) {
           </p>
         ) : (
           <p className="text-sm text-[var(--ink-secondary)] leading-relaxed">
-            {completedLessons.length} lessons, {completedLabs.length} labs and {quizScores.length} quizzes recorded
-            locally, {achievements.length} achievements unlocked. Overall completion ({overall}%) is derived from those
-            records plus XP against the level table. This local view does not include account-synced records and is not a
+            {completedLessons.length} lessons, {completedLabs.length} labs, {quizScores.length} quizzes and {completedChallenges.length} challenge checkpoint{completedChallenges.length === 1 ? '' : 's'} recorded
+            locally, {achievements.length} achievements unlocked. Overall completion ({overall}%) is based on these local
+            activity records against the available activity totals. Account-synced records are separate; this is not a
             comparison with other learners.
           </p>
         )}

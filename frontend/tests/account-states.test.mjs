@@ -271,6 +271,37 @@ test('every account state renders the right surfaces and never drops the learner
     })
   }
 
+  await t.test('owner navigation identifies the active console section', async () => {
+    try {
+      backendDown = false
+      fakeSession = { access_token: 'owner-nav-session' }
+      accountResponse = { status: 200, body: { user_id: 'owner-nav', email: 'owner@example.com', account_status: 'active', is_admin: true } }
+      async function readOwnerNav(path) {
+        const root = createRoot(container)
+        await act(async () => {
+          root.render(wrap(React.createElement(MemoryRouter, { initialEntries: [path] }, React.createElement(AdminShell, null, React.createElement('span', null, 'Owner page')))))
+        })
+        for (let i = 0; i < 3; i++) await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)) })
+        const links = [...container.querySelectorAll('nav[aria-label="Owner sections"] a')].map(link => ({
+          href: link.getAttribute('href'), current: link.getAttribute('aria-current'), activeClass: link.classList.contains('is-current'),
+        }))
+        await act(async () => root.unmount())
+        return links
+      }
+      const accountsNav = await readOwnerNav('/admin')
+      assert.deepEqual(accountsNav.map(link => [link.href, link.current, link.activeClass]), [
+        ['/admin', 'page', true], ['/admin/feedback', null, false],
+      ])
+      const feedbackNav = await readOwnerNav('/admin/feedback')
+      assert.deepEqual(feedbackNav.map(link => [link.href, link.current, link.activeClass]), [
+        ['/admin', null, false], ['/admin/feedback', 'page', true],
+      ])
+    } catch (error) {
+      failures.push(error)
+      throw error
+    }
+  })
+
   await t.test('a backend outage never breaks guest learning', async () => {
    try {
     backendDown = true

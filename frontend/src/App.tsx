@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import { createBrowserRouter, RouterProvider, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Shell } from '@/components/layout/Shell'
 import { AdminShell } from '@/components/layout/AdminShell'
+import { SkeletonPage } from '@/components/common/Skeleton'
 import { ScrollToTop } from '@/components/layout/ScrollToTop'
 import { PointsToast } from '@/components/gamification/PointsToast'
 import { GlobalSearch } from '@/components/search/GlobalSearch'
@@ -50,19 +51,11 @@ const ownerConsole = (page: ReactNode) => <AdminShell><Suspense fallback={<Admin
 const publicRoutes = new Set(['/feedback', '/', '/about', '/how-it-works', '/login', '/signup', '/account', '/reset-password', '/update-password'])
 
 function AdminRouteFallback() {
-  return (
-    <div className="flex min-h-[40vh] items-center justify-center text-sm text-[var(--ink-secondary)]" role="status" aria-live="polite">
-      <span className="mr-2.5 h-2 w-2 rounded-full bg-[var(--owner)]" aria-hidden="true" /> Loading the owner console…
-    </div>
-  )
+  return <SkeletonPage label="Loading the owner console…" />
 }
 
 function RouteFallback() {
-  return (
-    <div className="flex min-h-[40vh] items-center justify-center text-sm text-[var(--ink-secondary)]" role="status" aria-live="polite">
-      <span className="mr-2.5 h-2 w-2 rounded-full bg-[var(--action-fill)]" aria-hidden="true" /> Loading…
-    </div>
-  )
+  return <SkeletonPage label="Loading…" />
 }
 
 function ApplicationRoutes() {

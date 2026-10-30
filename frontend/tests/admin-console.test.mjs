@@ -55,9 +55,10 @@ test('owner console retains unsaved policy edits, isolates filters and confirms 
   }
   async function flush() { await act(async () => { await new Promise(resolve => setTimeout(resolve, 35)) }) }
   function button(name) { return [...container.querySelectorAll('button')].find(el => el.textContent.trim() === name) }
-  async function click(el) { assert.ok(el, 'expected button'); await act(async () => { el.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })) }) }
+  async function click(el) { assert.ok(el, 'expected interactive control'); await act(async () => { el.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })) }) }
   await act(async () => { root.render(React.createElement(AdminPage)) })
   await flush()
+  assert.deepEqual([...container.querySelectorAll('.sc-owner-jump-nav a')].map(link => link.getAttribute('href')), ['#capacity-heading', '#policy-heading', '#accounts-heading', '#audit-heading'])
   assert.match(container.textContent, /pending@example\.test/)
   assert.ok(!container.textContent.includes('active@example.test'))
   assert.ok(calls.some(c => c.request.includes('status=pending&limit=200')))
@@ -78,10 +79,14 @@ test('owner console retains unsaved policy edits, isolates filters and confirms 
   await flush()
   assert.match(container.textContent, /active@example\.test/)
   assert.ok(!container.textContent.includes('pending@example.test'), 'previous filter must be cleared')
+  assert.match(container.textContent, /Pending accounts are not included in the current active filter\./)
   assert.equal(container.querySelector('.sc-owner-toggle input').checked, true, 'filter changes must not discard unsaved policy')
 
-  await click(button('Pending'))
+  assert.equal(container.querySelector('.sc-owner-overview-action')?.getAttribute('href'), '#accounts-heading')
+  await click(container.querySelector('.sc-owner-overview-action'))
   await flush()
+  assert.match(container.textContent, /pending@example\.test/)
+  assert.ok(!container.textContent.includes('active@example.test'), 'overview shortcut must load the pending filter')
   await click(button('Approve'))
   assert.match(container.textContent, /Confirm approval/)
   assert.equal(calls.filter(c => c.method === 'PATCH' && c.request.includes('/admin/users/')).length, 0, 'approval must await confirmation')
