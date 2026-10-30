@@ -6,7 +6,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, KeyRound, LoaderCircl
 import { apiFetch } from '@/lib/api'
 import { accountRedirect, supabase, supabaseConfigured } from '@/lib/supabase'
 import { useSession } from '@/lib/session'
-import { generatePassword, passwordGuidance } from '@/lib/passwordGuidance'
+import { generatePassword } from '@/lib/passwordGenerator'
 import { accessLabel, ACCOUNT_ADDS_NOTE, isSignedIn, STATE_META } from '@/lib/access'
 import { StateChip } from '@/components/account/StateChip'
 
@@ -15,6 +15,11 @@ interface PublicConfig {
   signup_enabled: boolean
   email_verification_required?: boolean
 }
+
+type PasswordGuidanceFunction = typeof import('@/lib/passwordGuidance').passwordGuidance
+type PasswordGuidanceValue = ReturnType<PasswordGuidanceFunction>
+const EMPTY_PASSWORD_GUIDANCE: PasswordGuidanceValue = { strength: null, score: 0, validLength: false, feedback: 'Use a unique password or several unrelated words.' }
+const NO_PERSONAL_WORDS: string[] = []
 
 function AccountFrame({ title, eyebrow, children }: { title: string; eyebrow: string; children: ReactNode }) {
   return (
@@ -46,6 +51,21 @@ function AccountFrame({ title, eyebrow, children }: { title: string; eyebrow: st
       </div>
     </div>
   )
+}
+
+function usePasswordGuidance(password: string, personalWords: string[] = NO_PERSONAL_WORDS) {
+  const [evaluate, setEvaluate] = useState<PasswordGuidanceFunction | null>(null)
+  const [unavailable, setUnavailable] = useState(false)
+  useEffect(() => {
+    if (!password || evaluate || unavailable) return
+    let current = true
+    void import('@/lib/passwordGuidance').then(module => {
+      if (current) setEvaluate(() => module.passwordGuidance)
+    }).catch(() => { if (current) setUnavailable(true) })
+    return () => { current = false }
+  }, [password, evaluate, unavailable])
+  const guidance = useMemo(() => evaluate ? evaluate(password, personalWords) : EMPTY_PASSWORD_GUIDANCE, [evaluate, password, personalWords])
+  return { guidance, checking: Boolean(password && !evaluate && !unavailable), unavailable: Boolean(password && unavailable) }
 }
 
 function ServiceUnavailable({ children }: { children: ReactNode }) {
@@ -199,7 +219,8 @@ export function SignupPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [copyStatus, setCopyStatus] = useState('')
-  const guidance = useMemo(() => passwordGuidance(password, [email, email.split('@')[0]]), [password, email])
+  const personalWords = useMemo(() => [email, email.split('@')[0]], [email])
+  const { guidance, checking, unavailable } = usePasswordGuidance(password, personalWords)
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -351,7 +372,7 @@ export function SignupPage() {
           </span>
         </label>
         <div id="signup-password-guidance" className="space-y-2 text-xs text-[var(--ink-secondary)]">
-          <PasswordFeedback guidance={guidance} />
+          <PasswordFeedback guidance={guidance} checking={checking} unavailable={unavailable} />
           <button type="button" className="min-h-10 rounded-lg border border-[var(--accent-border)] px-3 font-semibold text-[var(--learning)] hover:bg-[var(--accent-bg)]" onClick={() => {
             try { setPassword(generatePassword()); setConfirmPassword(''); setShowPassword(true); setCopyStatus(''); setError('') }
             catch { setError('Secure password generation is unavailable in this browser. Please create a unique password yourself.') }
@@ -475,7 +496,7 @@ export function UpdatePasswordPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [copyStatus, setCopyStatus] = useState('')
-  const guidance = useMemo(() => passwordGuidance(password), [password])
+  const { guidance, checking, unavailable } = usePasswordGuidance(password)
   const [confirm, setConfirm] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -532,7 +553,7 @@ export function UpdatePasswordPage() {
           </span>
         </label>
         <div id="recovery-password-guidance" className="space-y-2 text-xs text-[var(--ink-secondary)]">
-          <PasswordFeedback guidance={guidance} />
+          <PasswordFeedback guidance={guidance} checking={checking} unavailable={unavailable} />
           <button type="button" className="min-h-10 rounded-lg border border-[var(--accent-border)] px-3 font-semibold text-[var(--learning)] hover:bg-[var(--accent-bg)]" onClick={() => {
             try { setPassword(generatePassword()); setConfirm(''); setShowPassword(true); setCopyStatus(''); setError('') }
             catch { setError('Secure password generation is unavailable in this browser. Please create a unique password yourself.') }
