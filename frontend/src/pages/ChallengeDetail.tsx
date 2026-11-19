@@ -1,5 +1,6 @@
 import { PracticeAvailability } from '@/components/common/PracticeAvailability'
-import { Notice } from '@/components/common/Controls'
+import { Notice, TextareaField } from '@/components/common/Controls'
+import { Breadcrumb, EmptyState } from '@/components/common/Workspace'
 import { useState, useEffect } from 'react'
 import { useProgressStore } from '@/store/useProgressStore'
 import { useParams, Link } from 'react-router-dom'
@@ -22,6 +23,7 @@ function ChallengeSession({ id }: { id?: string }) {
   const [pointsAwarded, setPointsAwarded] = useState(0)
   const [flagInput, setFlagInput] = useState('')
   const [flagCorrect, setFlagCorrect] = useState<boolean | null>(null)
+  const [flagError, setFlagError] = useState('')
   const completeChallenge = useProgressStore(s => s.completeChallenge)
   const completedChallenges = useProgressStore(s => s.completedChallenges)
   const checkpointSaved = completedChallenges.some(item => item.challengeId === id)
@@ -31,7 +33,7 @@ function ChallengeSession({ id }: { id?: string }) {
     if (!id) return
     try {
       localStorage.setItem(`challenge-draft:${id}`, JSON.stringify(answers))
-      setDraftStatus('Draft saved in this browser · not submitted or graded')
+      setDraftStatus('Draft saved · not submitted or graded')
     } catch {
       setDraftStatus('Draft could not be saved. Keep this page open and copy your responses before leaving.')
     }
@@ -39,22 +41,18 @@ function ChallengeSession({ id }: { id?: string }) {
 
   if (!challenge) {
     return (
-      <div className="ws-legacy max-w-[800px] mx-auto p-12 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-[var(--panel-raised)] border border-[var(--line-strong)] flex items-center justify-center mx-auto mb-4">
-          <FileText className="w-8 h-8 text-[var(--ink-muted)]" />
-        </div>
-        <div className="text-[var(--ink-secondary)] font-heading text-[16px]">Challenge not found: {id}</div>
-        <Link to="/challenges" className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--panel-raised)] border border-[var(--line-strong)] text-[13px] text-[var(--ink-secondary)] hover:bg-[var(--panel-raised)] transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          Back to challenges
-        </Link>
-      </div>
+      <EmptyState
+        title={challenges.length ? `Challenge not found: ${id}` : 'Challenge content isn’t included in this public build'}
+        description={challenges.length ? 'Choose a challenge from the current library, or return to the catalogue.' : 'This release omits challenge prompts and answer keys, and no authenticated challenge-delivery route is available yet. Public samples and bundled labs remain available.'}
+        action={<><Link to="/challenges" className="ws-action ws-action-secondary"><ArrowLeft className="w-4 h-4" /> Back to challenges</Link><Link to="/labs" className="ws-action ws-action-secondary">Explore local labs</Link></>}
+      />
     )
   }
 
   const handleFlagSubmit = () => {
-    if (!submitted) { alert('Complete your written task responses, then reveal the answer key for self-review before submitting the local checkpoint.'); return }
-    if (challenge.tasks.some((task: any) => !answers[task.id]?.trim())) { alert('Add a response to every task before submitting the checkpoint.'); return }
+    setFlagError('')
+    if (!submitted) { setFlagError('Complete your written task responses, then reveal the answer key for self-review before submitting the checkpoint.'); return }
+    if (challenge.tasks.some((task: any) => !answers[task.id]?.trim())) { setFlagError('Add a response to every task before submitting the checkpoint.'); return }
     if (flagInput.trim() === challenge.flag) {
       const result = completeChallenge(challenge.id)
       setPointsAwarded(result.points)
@@ -69,10 +67,10 @@ function ChallengeSession({ id }: { id?: string }) {
 
   return (
     <div className="ws-legacy ws-challenge-task max-w-[1200px] mx-auto space-y-6">
-      <nav className="ws-breadcrumb" aria-label="Breadcrumb"><Link to="/challenges">Challenges</Link><span aria-hidden="true">/</span><span aria-current="page">{challenge.title}</span></nav>
-      <header className="sc-task-header"><div><p className="sc-library-domain">{challenge.module} / {challenge.level.replace('-', ' ')} / {challenge.status === 'simulated' ? 'Offline evidence' : 'Offline reasoning; RF validation not supplied'}</p><h1>{challenge.title}</h1><p>{challenge.description}</p><div className="sc-unit-meta"><span>{challenge.difficulty}</span><span>{challenge.estimated_time} estimated</span><span>{challenge.tasks.length} tasks</span><span>{challenge.points} browser-local practice XP</span></div></div><aside><span>Written responses</span><strong>{answeredTasks} / {challenge.tasks.length}</strong><div role="progressbar" aria-label="Task responses entered, not graded" aria-valuemin={0} aria-valuemax={challenge.tasks.length} aria-valuenow={answeredTasks} className="ws-progress"><span style={{ width: `${taskProgress}%` }} /></div><small>{checkpointSaved ? 'Checkpoint saved locally' : 'Not yet recorded'} · self-review, not trusted grading</small></aside></header>
+      <Breadcrumb items={[{ label: 'Challenges', to: '/challenges' }, { label: challenge.title }]} />
+      <header className="sc-task-header"><div><p className="sc-library-domain">{challenge.module} / {challenge.level.replace('-', ' ')} / {challenge.status === 'simulated' ? 'Offline evidence' : 'Offline reasoning; RF validation not supplied'}</p><h1>{challenge.title}</h1><p>{challenge.description}</p><div className="sc-unit-meta"><span>{challenge.difficulty}</span><span>{challenge.estimated_time} estimated</span><span>{challenge.tasks.length} tasks</span><span>{challenge.points} points</span></div></div><aside><span>Written responses</span><strong>{answeredTasks} / {challenge.tasks.length}</strong><div role="progressbar" aria-label="Task responses entered, not graded" aria-valuemin={0} aria-valuemax={challenge.tasks.length} aria-valuenow={answeredTasks} className="ws-progress"><span style={{ width: `${taskProgress}%` }} /></div><small>{checkpointSaved ? 'Checkpoint recorded' : 'Not yet recorded'} · self-review, not graded</small></aside></header>
 
-      <section className="sc-investigation-guide" aria-label="Investigation workflow"><h2>Investigation workflow</h2><p>Read the objective and scope below, inspect only the supplied evidence, answer each task with your reasoning, then compare against the answer key. Submit saves a local self-review checkpoint, not a graded result.</p><ol><li>Objective & scope</li><li>Available evidence</li><li>Written responses</li><li>Reasoning & self-review</li></ol></section>
+      <section className="sc-investigation-guide" aria-label="Investigation workflow"><h2>Investigation workflow</h2><p>Read the objective and scope below, inspect only the supplied evidence, answer each task with your reasoning, then compare against the answer key. Submit saves a self-review checkpoint, not a graded result.</p><ol><li>Objective & scope</li><li>Available evidence</li><li>Written responses</li><li>Reasoning & self-review</li></ol></section>
       <PracticeAvailability />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
@@ -163,12 +161,13 @@ function ChallengeSession({ id }: { id?: string }) {
                     key={task.id}
                     className="rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] p-4  hover:bg-[var(--panel-inset)] hover:border-[var(--line-strong)] sc-surface-transition"
                   >
-                    <label htmlFor={`challenge-response-${task.id}`} className="block text-[13px] font-medium text-[var(--ink-primary)] mb-3 leading-relaxed">{task.question}</label>
-                    <textarea id={`challenge-response-${task.id}`} rows={3}
+                    <TextareaField
+                      id={`challenge-response-${task.id}`}
+                      label={task.question}
+                      rows={3}
                       value={answers[task.id] || ''}
                       onChange={e => { setAnswers({...answers, [task.id]: e.target.value}); setFlagCorrect(null) }}
                       placeholder="Your answer..."
-                      className="w-full px-4 py-3 rounded-xl bg-[var(--panel-bg)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] placeholder:text-[var(--ink-secondary)] focus:border-[var(--accent-border)] focus:bg-[var(--panel-raised)] focus:outline-none hover:border-[var(--line-strong)] sc-surface-transition"
                     />
                     <div className="flex flex-wrap items-start justify-between gap-2 mt-3">
                       <button onClick={() => setShowHints({...showHints, [task.id]: !showHints[task.id]})} className="text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink-secondary)] flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[var(--panel-bg)] border border-[var(--line-normal)] hover:bg-[var(--panel-raised)] hover:border-[var(--line-strong)] sc-surface-transition">
@@ -217,14 +216,14 @@ function ChallengeSession({ id }: { id?: string }) {
                 <div className="w-8 h-8 rounded-xl bg-[var(--owner-bg)] border border-[var(--owner-border)] flex items-center justify-center">
                   <Flag className="w-4 h-4 text-[var(--owner)]" />
                 </div>
-                Local Practice Checkpoint
+                Checkpoint
                 <span className="ml-auto text-[10px] px-2 py-1 rounded-full bg-[var(--owner-bg)] text-[var(--owner)] border border-[var(--owner-border)] font-mono">WIFIFORGE{`{...}`}</span>
               </h3>
               <div className="flex gap-3">
-                <label htmlFor="local-checkpoint" className="sr-only">Local practice checkpoint flag</label>
+                <label htmlFor="local-checkpoint" className="sr-only">Checkpoint flag</label>
                 <input id="local-checkpoint"
                   value={flagInput}
-                  onChange={e => { setFlagInput(e.target.value); setFlagCorrect(null) }}
+                  onChange={e => { setFlagInput(e.target.value); setFlagCorrect(null); setFlagError('') }}
                   placeholder="WIFIFORGE{...}"
                   className="flex-1 px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] placeholder:text-[var(--ink-secondary)] focus:border-[var(--owner-border)] focus:bg-[var(--panel-inset)] focus:outline-none hover:border-[var(--line-strong)] sc-surface-transition"
                 />
@@ -236,6 +235,7 @@ function ChallengeSession({ id }: { id?: string }) {
                   Submit
                 </button>
               </div>
+              {flagError && <p role="alert" className="mt-3 rounded-xl border border-[var(--warning-border)] bg-[var(--warning-bg)] p-3 text-[12px] leading-relaxed text-[var(--attention)]">{flagError}</p>}
               <>
                 {(flagCorrect === true || (checkpointSaved && flagCorrect !== false)) && (
                   <div
@@ -245,8 +245,8 @@ function ChallengeSession({ id }: { id?: string }) {
                       <CheckCircle className="w-5 h-5" />
                     </div>
                     <div>
-                      <div className="font-bold">{flagCorrect === true && pointsAwarded > 0 ? 'Local practice checkpoint recorded.' : 'Checkpoint was already recorded on this device.'}</div>
-                      <div className="text-[11px]  mt-0.5">{pointsAwarded > 0 ? `+${pointsAwarded} XP (first completion only)` : 'No additional XP for a repeat submission'} • Not graded, proctored or a verified skill credential.</div>
+                      <div className="font-bold">{flagCorrect === true && pointsAwarded > 0 ? 'Checkpoint recorded.' : 'Checkpoint was already recorded.'}</div>
+                      <div className="text-[11px]  mt-0.5">{pointsAwarded > 0 ? `+${pointsAwarded} points (first completion only)` : 'No additional points for a repeat submission'} • Not graded, proctored or a verified skill credential.</div>
                     </div>
                   </div>
                 )}
@@ -265,7 +265,7 @@ function ChallengeSession({ id }: { id?: string }) {
                 )}
               </>
               <div className="mt-4 text-[11px] text-[var(--ink-muted)] leading-relaxed p-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)]">
-                Local-first practice only: task responses are self-reviewed against the answer key, and flags/checkpoint rules are shipped in this browser app. This is not a secure/proctored assessment or independent proof of skill.
+                Self-review only: task responses are compared with the answer key. This is not a secure/proctored assessment or independent proof of skill.
               </div>
             </div>
           </div>
@@ -286,7 +286,7 @@ function ChallengeSession({ id }: { id?: string }) {
               <div className="flex justify-between items-center p-2.5 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)]"><span className="text-[var(--ink-muted)]">Level</span><span className="text-[var(--ink-secondary)] font-medium capitalize">{challenge.level}</span></div>
               <div className="flex justify-between items-center p-2.5 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)]"><span className="text-[var(--ink-muted)]">Difficulty</span><span className="text-[var(--ink-secondary)] font-medium">{challenge.difficulty}</span></div>
               <div className="flex justify-between items-center p-2.5 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)]"><span className="text-[var(--ink-muted)]">Time</span><span className="text-[var(--ink-secondary)] font-medium font-mono">{challenge.estimated_time}</span></div>
-              <div className="flex justify-between items-center p-2.5 rounded-xl bg-[var(--warning-bg)] border border-[var(--warning-border)]"><span className="text-[var(--ink-muted)]">Local practice XP</span><span className="text-[var(--attention)] font-bold font-mono flex items-center gap-1"><Trophy className="w-3 h-3" />{challenge.points}</span></div>
+              <div className="flex justify-between items-center p-2.5 rounded-xl bg-[var(--warning-bg)] border border-[var(--warning-border)]"><span className="text-[var(--ink-muted)]">Points</span><span className="text-[var(--attention)] font-bold font-mono flex items-center gap-1"><Trophy className="w-3 h-3" />{challenge.points}</span></div>
             </div>
           </div>
 

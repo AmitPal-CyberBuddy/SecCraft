@@ -25,3 +25,12 @@
 .public-path-option-title { display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--ink-primary); font-size:1rem; font-weight:650; }
 .public-path-option-title svg { flex:none; }
 .public-path-option small { color:var(--ink-muted); font-size:.75rem; }
+
+.public-tertiary { display:inline-flex; align-items:center; gap:8px; font-size:.86rem; font-weight:640; color:var(--ink-secondary); padding:10px 4px; }
+.public-tertiary:hover { color:var(--learning); text-decoration:underline; }
+.public-artifact-foot { display:flex; flex-wrap:wrap; gap:16px; margin-top:12px; }
+.public-artifact-foot a { display:inline-flex; align-items:center; gap:8px; font-size:.78rem; font-weight:690; color:var(--learning); }
+.public-artifact-foot a:hover { text-decoration:underline; }
+
+.public-stats { padding:clamp(28px,4vw,48px) 0; border-bottom:1px solid var(--line-normal); }
+.public-stats .ws-stat-grid { border-top:0; }

@@ -1,11 +1,12 @@
 import { ViewSwitcher } from '@/components/common/Controls'
+import { Breadcrumb, EmptyState } from '@/components/common/Workspace'
 import { ScrollRegion } from '@/components/common/TechnicalContent'
 import { updateQuery } from '@/lib/learningNavigation'
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import {
   Briefcase, ShieldCheck, Scale, Target, FileArchive, ListChecks, Award, AlertTriangle,
-  ChevronDown, FlaskConical, ClipboardCheck, BookOpen, ExternalLink, ArrowLeft, Map as MapIcon, Clock, Layers
+  ChevronDown, FlaskConical, ClipboardCheck, BookOpen, ExternalLink, Layers
 } from 'lucide-react'
 import engagements from '@/content/engagements.json'
 import artifacts from '@/content/lab-artifacts.json'
@@ -114,15 +115,7 @@ export function Engagement() {
   if (!id && filteredList.length !== 1) {
     return (
       <div className="ws-legacy max-w-[1200px] mx-auto space-y-6">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Link to={`/paths/${effectivePathId}`} className="inline-flex items-center gap-2 text-[12px] text-[var(--ink-muted)] hover:text-[var(--ink-secondary)] transition-colors px-3 py-2 rounded-xl hover:bg-[var(--panel-bg)] border border-transparent hover:border-[var(--line-normal)]">
-            <ArrowLeft className="w-4 h-4" />
-            {currentPath.title} — Path Detail
-          </Link>
-          <span className="text-[11px] px-2 py-1 rounded-full bg-[var(--panel-bg)] border border-[var(--line-normal)] text-[var(--ink-secondary)] font-mono flex items-center gap-1.5">
-            <MapIcon className="w-3 h-3" /> {currentPath.icon} {currentPath.title} • {filteredList.length} assessments • Local self-review
-          </span>
-        </div>
+        <Breadcrumb items={[{ label: currentPath.title, to: `/paths/${effectivePathId}` }, { label: 'Engagements' }]} />
 
         <div className="relative rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-6 overflow-hidden">
 
@@ -171,15 +164,10 @@ export function Engagement() {
         </div>
 
         {filteredList.length === 0 && (
-          <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-8 text-center">
-            <div className="w-12 h-12 rounded-xl bg-[var(--panel-raised)] border border-[var(--line-strong)] flex items-center justify-center mx-auto mb-3">
-              <Clock className="w-6 h-6 text-[var(--ink-muted)]" />
-            </div>
-            <div className="text-[14px] font-semibold text-[var(--ink-primary)]">No assessments for {currentPath.title} yet</div>
-            <p className="mt-2 text-sm text-[var(--ink-muted)] max-w-[600px] mx-auto leading-relaxed">
-              Architecture is ready — same assessment engine will be reused. Wireless ENG-01 is reference implementation.
-            </p>
-          </div>
+          <EmptyState
+            title={`No assessments for ${currentPath.title} yet`}
+            description="Architecture is ready — same assessment engine will be reused. Wireless ENG-01 is reference implementation."
+          />
         )}
 
         <div className="rounded-2xl bg-[var(--panel-inset)] border border-[var(--line-normal)] p-5">
@@ -199,10 +187,11 @@ export function Engagement() {
 
   if (!engagement) {
     return (
-      <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-8 text-center max-w-[800px] mx-auto">
-        <p className="text-[var(--ink-secondary)]">Unknown engagement {id}. Available: {filteredList.map(e => e.id).join(', ') || 'none for this path'}</p>
-        <Link to={`/engagement?path=${effectivePathId}`} className="mt-4 inline-block text-[12px] font-mono text-[var(--learning)]">← back to assessments for {currentPath.title}</Link>
-      </div>
+      <EmptyState
+        title={`Unknown engagement ${id}`}
+        description={`Available: ${filteredList.map(e => e.id).join(', ') || 'none for this path'}`}
+        action={<Link to={`/engagement?path=${effectivePathId}`} className="ws-action ws-action-secondary">← back to assessments for {currentPath.title}</Link>}
+      />
     )
   }
 
@@ -210,15 +199,7 @@ export function Engagement() {
 
   return (
     <div className="max-w-[1200px] mx-auto space-y-5">
-      {/* Path-aware breadcrumb */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <Link to={`/paths/${effectivePathId}`} className="inline-flex items-center gap-2 text-[12px] text-[var(--ink-muted)] hover:text-[var(--ink-secondary)] transition-colors px-3 py-2 rounded-xl hover:bg-[var(--panel-bg)] border border-transparent hover:border-[var(--line-normal)]">
-          <ArrowLeft className="w-4 h-4" />
-          {currentPath.title}
-        </Link>
-        <Link to={`/engagement?path=${effectivePathId}`} className="text-[11px] px-2 py-1 rounded-full bg-[var(--panel-bg)] border border-[var(--line-normal)] text-[var(--ink-secondary)] font-mono hover:border-[var(--line-strong)] transition-colors">Assessments • {currentPath.shortTitle}</Link>
-        <span className="text-[11px] px-2 py-1 rounded-full bg-[var(--accent-bg)] border border-[var(--accent-border)] text-[var(--learning)] font-mono">{currentPath.icon} {currentPath.title} • {engagement.id}</span>
-      </div>
+      <Breadcrumb items={[{ label: currentPath.title, to: `/paths/${effectivePathId}` }, { label: 'Assessments', to: `/engagement?path=${effectivePathId}` }, { label: engagement.id }]} />
 
       {/* Header */}
       <div className="assessment-dossier-header relative rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-5 sm:p-6 overflow-hidden">

@@ -1,4 +1,4 @@
-import { BarChart, BarChart3, BookOpen, FileText, Flame, FlaskConical, GraduationCap, LayoutDashboard, Map, Settings, Shield, Swords, Target, Terminal, Trophy, UserRound, CloudUpload, LogOut, Sparkles, type LucideIcon } from 'lucide-react'
+import { BarChart3, BookOpen, FileText, FlaskConical, GraduationCap, LayoutDashboard, Map, Settings, Shield, Swords, Target, Terminal, UserRound, CloudUpload, LogOut, Sparkles, type LucideIcon } from 'lucide-react'
 import { TOTAL_CHALLENGES, TOTAL_LEARNING_PATHS, TOTAL_MODULES, TOTAL_PCAPS, AVAILABLE_LEARNING_PATHS } from '@/content/stats'
 import type { UserState } from '@/lib/access'
 
@@ -35,7 +35,7 @@ export function buildLearnerSections(): NavSection[] {
           to: '/app',
           icon: LayoutDashboard,
           label: 'Dashboard',
-          desc: 'What to do next, from your current position',
+          desc: 'Catalogue hub and account records',
         },
       ],
     },
@@ -83,12 +83,9 @@ export function buildLearnerSections(): NavSection[] {
     },
     {
       key: 'track',
-      label: 'Work & progress',
+      label: 'Work',
       icon: BarChart3,
       items: [
-        { to: '/daily', icon: Flame, label: 'Daily Practice', desc: 'Optional local practice' },
-        { to: '/achievements', icon: Trophy, label: 'Achievements', desc: 'Local practice milestones' },
-        { to: '/progress', icon: BarChart, label: 'Analytics', desc: 'Progress • insights • path-aware' },
         { to: '/reports', icon: FileText, label: 'Findings & reports', desc: 'Evidence-led writing practice' },
       ],
     },
@@ -131,8 +128,8 @@ export function buildAccountSections(state: UserState): AccountNavSection[] {
       label: state === 'guest' || state === 'public' ? 'You' : 'Account',
       icon: UserRound,
       items: [
-        { to: '/profile', icon: UserRound, label: 'Profile', desc: 'Identity, state, sync summary' },
-        { to: '/sync', icon: CloudUpload, label: 'Progress sync', desc: 'Import, export, merge' },
+        { to: '/profile', icon: UserRound, label: 'Profile', desc: 'Account and sign-in' },
+        { to: '/sync', icon: CloudUpload, label: 'Account records', desc: 'Platform-held records' },
         { to: '/settings', icon: Settings, label: 'Settings', desc: 'Appearance, accessibility, data' },
       ],
     },

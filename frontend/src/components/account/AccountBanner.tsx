@@ -13,8 +13,10 @@ import { StateChip } from './StateChip'
  * approved users never see a banner — the product does not nag.
  */
 export function AccountBanner() {
-  const { userState, accountError, signOut, ready, accountLoading, hasSession, refreshAccount } = useSession()
+  const { userState, accountError, signOut, ready, accountLoading, hasSession, refreshAccount, resendVerificationEmail } = useSession()
   const [dismissedFor, setDismissedFor] = useState<UserState | null>(null)
+  const [resendBusy, setResendBusy] = useState(false)
+  const [resendMessage, setResendMessage] = useState('')
 
   if (!ready || accountLoading) return null
 
@@ -68,19 +70,35 @@ export function AccountBanner() {
                 {unverified
                   ? 'Open the verification message sent to your inbox, then come back. Until then, account features stay unavailable — the public catalogue does not.'
                   : transient
-                  ? `${accountError.message} ${hasSession ? 'Your approval and owner access cannot be confirmed right now. This is not a pending-approval decision.' : 'Your account status cannot be checked right now.'} The catalogue and browser-local practice remain available.`
+                  ? `${accountError.message} ${hasSession ? 'Your approval and owner access cannot be confirmed right now. This is not a pending-approval decision.' : 'Your account status cannot be checked right now.'} The catalogue and content details remain available.`
                   : STATE_META[userState as Exclude<UserState, 'public' | 'guest'>].summary}
               </p>
               <p className="mt-2 text-sm leading-relaxed text-[var(--ink-secondary)]">
                 <Compass className="mr-1 inline h-3 w-3 align-[-1px]" aria-hidden="true" />
                 {allows(userState, 'learning-content')
-                  ? 'Lessons, labs, assessments and your account records are available.'
+                  ? 'Protected lesson text, knowledge-check prompts and your account records are available. Public samples and bundled labs remain available; challenge content is not included in this public build yet.'
                   : CATALOGUE_NOTE}
               </p>
             </div>
           </div>
 
           <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+            {unverified && (
+              <button
+                type="button"
+                disabled={resendBusy}
+                onClick={async () => {
+                  setResendBusy(true)
+                  setResendMessage('')
+                  const result = await resendVerificationEmail()
+                  setResendMessage(result.message)
+                  setResendBusy(false)
+                }}
+                className="inline-flex min-h-11 items-center rounded-lg border border-[var(--accent-border)] px-3 text-[12px] font-semibold text-[var(--learning)] hover:bg-[var(--accent-bg)] disabled:opacity-60"
+              >
+                {resendBusy ? 'Sending…' : 'Resend verification email'}
+              </button>
+            )}
             {transient && hasSession && (
               <button type="button" onClick={() => void refreshAccount()} className="inline-flex min-h-11 items-center rounded-lg border border-[var(--accent-border)] px-3 text-[12px] font-semibold text-[var(--learning)] hover:bg-[var(--accent-bg)]">Re-check status</button>
             )}
@@ -116,6 +134,7 @@ export function AccountBanner() {
                 <X className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
             )}
+            {resendMessage && <p role="status" className="basis-full text-[11.5px] leading-relaxed text-[var(--ink-secondary)]">{resendMessage}</p>}
           </div>
         </div>
       </div>

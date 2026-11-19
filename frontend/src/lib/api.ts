@@ -4,6 +4,13 @@ const configuredBase = import.meta.env.VITE_API_BASE?.trim().replace(/\/+$/, '')
 const SESSION_LOOKUP_TIMEOUT_MS = 1_500
 const API_REQUEST_TIMEOUT_MS = 8_000
 
+// Keep the browser's sample entry points aligned with the API's explicit public allowlist.
+// Everything else uses the approved-account lesson endpoint; no lesson markdown is bundled here.
+const PUBLIC_SAMPLE_LESSONS = new Set([
+  '01-intro-wireless/02-scope-and-assessment-decisions',
+  'android-01-platform/01-architecture-sandbox-and-trust-boundaries',
+])
+
 /** API host only, for example https://api.example.com. Leave unset to use the same-origin /api proxy. */
 export function apiUrl(path: string): string {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
@@ -220,42 +227,89 @@ export interface LessonContentResult {
   status?: number
   code?: string
   message?: string
+  access?: 'public-sample' | 'approved-content'
 }
 
-export async function fetchLesson(moduleId: string, lessonId: string): Promise<LessonContentResult> {
-  try {
-    const res = await apiFetch(`/api/v1/content/lessons/${encodeURIComponent(moduleId)}/${encodeURIComponent(lessonId)}`)
-    if (res.ok) {
-      const data = await res.json()
-      return {
-        ok: true,
-        moduleId: data.module_id || moduleId,
-        lessonId: data.lesson_id || lessonId,
-        title: data.title || lessonId,
-        content: data.content || '',
-        status: res.status,
-      }
-    }
-    let code: string | undefined
-    let message: string | undefined
-    try {
-      const err = await res.json()
-      if (err?.detail?.code) code = err.detail.code
-      if (err?.detail?.message) message = err.detail.message
-      else if (typeof err?.detail === 'string') message = err.detail
-    } catch {
-      await discardResponseBody(res)
-    }
+function parseLessonResponse(data: any, moduleId: string, lessonId: string, status: number, access: LessonContentResult['access']): LessonContentResult {
+  if (data?.module_id !== moduleId || data?.lesson_id !== lessonId || typeof data?.content !== 'string' || !data.content.trim()) {
     return {
       ok: false,
       moduleId,
       lessonId,
       title: lessonId,
       content: '',
-      status: res.status,
-      code,
-      message,
+      status: 502,
+      message: 'The content service returned an incomplete lesson response.',
     }
+  }
+  return {
+    ok: true,
+    moduleId,
+    lessonId,
+    title: typeof data.title === 'string' && data.title ? data.title : lessonId,
+    content: data.content,
+    status,
+    access,
+  }
+}
+
+async function fetchPublicSampleLesson(moduleId: string, lessonId: string): Promise<LessonContentResult | null> {
+  if (!PUBLIC_SAMPLE_LESSONS.has(`${moduleId}/${lessonId}`)) return null
+  try {
+    const res = await apiFetch(`/api/v1/content/samples/lessons/${encodeURIComponent(moduleId)}/${encodeURIComponent(lessonId)}`)
+    if (res.ok) {
+      const data = await res.json()
+      if (data?.access !== 'public-sample') {
+        return { ok: false, moduleId, lessonId, title: lessonId, content: '', status: 502, message: 'The content service returned an invalid public-sample response.' }
+      }
+      return parseLessonResponse(data, moduleId, lessonId, res.status, 'public-sample')
+    }
+    // A missing allowlisted sample may have been removed in a newer release. An approved learner
+    // may still receive it from the protected release route below; other failures should be shown
+    // as service errors rather than misreported as an account restriction.
+    if (res.status !== 404) {
+      const result = await readLessonError(res, moduleId, lessonId)
+      return result
+    }
+    await discardResponseBody(res)
+    return null
+  } catch (err) {
+    return {
+      ok: false,
+      moduleId,
+      lessonId,
+      title: lessonId,
+      content: '',
+      status: 0,
+      message: err instanceof Error ? err.message : 'Network failure',
+    }
+  }
+}
+
+async function readLessonError(res: Response, moduleId: string, lessonId: string): Promise<LessonContentResult> {
+  let code: string | undefined
+  let message: string | undefined
+  try {
+    const err = await res.json()
+    if (typeof err?.detail?.code === 'string') code = err.detail.code
+    if (typeof err?.detail?.message === 'string') message = err.detail.message
+    else if (typeof err?.detail === 'string') message = err.detail
+  } catch {
+    await discardResponseBody(res)
+  }
+  return { ok: false, moduleId, lessonId, title: lessonId, content: '', status: res.status, code, message }
+}
+
+export async function fetchLesson(moduleId: string, lessonId: string): Promise<LessonContentResult> {
+  const sample = await fetchPublicSampleLesson(moduleId, lessonId)
+  if (sample) return sample
+  try {
+    const res = await apiFetch(`/api/v1/content/lessons/${encodeURIComponent(moduleId)}/${encodeURIComponent(lessonId)}`)
+    if (res.ok) {
+      const data = await res.json()
+      return parseLessonResponse(data, moduleId, lessonId, res.status, 'approved-content')
+    }
+    return await readLessonError(res, moduleId, lessonId)
   } catch (err) {
     return {
       ok: false,
@@ -275,24 +329,42 @@ export async function fetchLessonContent(moduleId: string, lessonId: string): Pr
     return result.content
   }
   if (result.status === 401) {
-    return `# Account Required\n\nFull lesson curriculum and technical walkthroughs require an approved learner account.\n\nPlease [sign in or register](/account) to access lesson materials and retain your progress.`
+    return `# Approved Account Needed\n\nThis lesson text is protected and requires an approved learner account. It is not one of SecCraft's selected public sample lessons. The public catalogue, supplied samples and bundled local labs remain available.\n\n[Request or check account access](/account).`
   }
   if (result.status === 403) {
+    if (result.code === 'email_not_verified') {
+      return `# Verify Your Email\n\nVerify the email address on your account before requesting protected lesson text. The public catalogue, supplied samples and bundled local labs remain available.\n\n[Check account settings](/account).`
+    }
     if (result.code === 'account_pending') {
-      return `# Account Approval Pending\n\nYour SecCraft account has been registered and is currently awaiting administrator review.\n\nOnce approved, you will have immediate access to all technical walkthroughs, scenario challenges, and lab fixtures. You can check your account status anytime in [Account Settings](/account).`
+      return `# Account Approval Pending\n\nYour account is awaiting owner review. Approval unlocks protected lesson text and knowledge-check prompts; public samples and bundled local labs remain available.\n\n[Check account settings](/account).`
     }
     if (result.code === 'account_rejected') {
-      return `# Account Not Approved\n\nYour account registration was not approved for platform access.\n\nPlease review your status in [Account Settings](/account) or contact platform administration via the feedback form.`
+      return `# Account Not Approved\n\nProtected lesson text is unavailable for this account. The public catalogue, supplied samples and bundled local labs remain available.\n\n[Review account status](/account) or contact the platform owner through the feedback form.`
     }
     if (result.code === 'account_suspended') {
-      return `# Account Suspended\n\nThis account is currently suspended from accessing platform learning materials.\n\nPlease check [Account Settings](/account) for details.`
+      return `# Account Suspended\n\nProtected lesson text and account-backed records are unavailable for this account. The public catalogue, supplied samples and bundled local labs remain available.\n\n[Check account settings](/account).`
     }
-    return `# Access Restricted\n\n${result.message || 'Approved account privileges are required to view this lesson.'}`
+    return `# Access Restricted\n\n${result.message || 'An approved account is required for this protected lesson text.'} Public samples and bundled local labs remain available.`
   }
   if (result.status === 404) {
-    return `# Lesson Not Found\n\nThe requested lesson \`${lessonId}\` could not be located in module \`${moduleId}\`. Please select another lesson from the curriculum outline.`
+    return `# Lesson Not Found\n\nThe requested lesson \`${lessonId}\` could not be located in module \`${moduleId}\`. Select another lesson from the public outline or contact the platform owner if this link should work.`
   }
-  return `# Lesson Content Unavailable\n\nUnable to load lesson content (${result.message || 'API connection failed'}). If you are practicing offline, ensure the local API server is active.`
+  return `# Lesson Content Unavailable\n\nThe learner service could not provide this lesson text. Check the connection and retry. Public samples and bundled local labs remain available.`
+}
+
+export interface ModuleQuizGradeResult {
+  module_id: string
+  score: number
+  total: number
+  passed: boolean
+  grading_class: 'practice'
+  results: Array<{
+    id: string
+    selected_index: number
+    correct_index: number
+    correct: boolean
+    explanation: string
+  }>
 }
 
 export async function fetchModuleQuiz(moduleId: string): Promise<any | null> {
@@ -301,6 +373,20 @@ export async function fetchModuleQuiz(moduleId: string): Promise<any | null> {
     if (res.ok) {
       return await res.json()
     }
+    await discardResponseBody(res)
+  } catch {}
+  return null
+}
+
+/** Submit learner-visible option indices for server-side practice grading; answer keys never ship with the prompt. */
+export async function gradeModuleQuiz(moduleId: string, answers: Record<string, number>): Promise<ModuleQuizGradeResult | null> {
+  try {
+    const res = await apiFetch(`/api/v1/content/quizzes/${encodeURIComponent(moduleId)}/grade`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ answers }),
+    })
+    if (res.ok) return await res.json() as ModuleQuizGradeResult
     await discardResponseBody(res)
   } catch {}
   return null

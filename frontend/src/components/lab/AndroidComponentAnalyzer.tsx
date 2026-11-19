@@ -1,9 +1,11 @@
 import { useState, useId, useMemo } from 'react'
-import { Shield, Smartphone, Terminal, Play, AlertTriangle, CheckCircle, Copy, Check, Lock, Unlock, RefreshCw, Eye, ExternalLink } from 'lucide-react'
+import { Shield, Smartphone, Terminal, Play, Copy, Check, Lock, Unlock, RefreshCw, Eye, ExternalLink } from 'lucide-react'
 
 export interface AndroidComponent {
   id: string
   name: string
+  packageName: string
+  className: string
   type: 'Activity' | 'BroadcastReceiver' | 'Service' | 'ContentProvider'
   exported: boolean
   permission: string | null
@@ -23,10 +25,12 @@ export interface AndroidComponent {
   masvsControl: string
 }
 
-const SAMPLE_COMPONENTS: AndroidComponent[] = [
+export const SAMPLE_COMPONENTS: AndroidComponent[] = [
   {
     id: 'notes-view',
     name: 'com.example.notevault.NotesViewActivity',
+    packageName: 'com.example.notevault',
+    className: '.NotesViewActivity',
     type: 'Activity',
     exported: true,
     permission: null,
@@ -47,6 +51,8 @@ const SAMPLE_COMPONENTS: AndroidComponent[] = [
   {
     id: 'auth-receiver',
     name: 'com.example.notevault.receiver.ExportAuthReceiver',
+    packageName: 'com.example.notevault',
+    className: '.receiver.ExportAuthReceiver',
     type: 'BroadcastReceiver',
     exported: true,
     permission: null,
@@ -65,6 +71,8 @@ const SAMPLE_COMPONENTS: AndroidComponent[] = [
   {
     id: 'backup-service',
     name: 'com.example.notevault.service.BackgroundSyncService',
+    packageName: 'com.example.notevault',
+    className: '.service.BackgroundSyncService',
     type: 'Service',
     exported: true,
     permission: null,
@@ -78,6 +86,8 @@ const SAMPLE_COMPONENTS: AndroidComponent[] = [
   {
     id: 'notes-provider',
     name: 'com.example.notevault.provider.NotesContentProvider',
+    packageName: 'com.example.notevault',
+    className: '.provider.NotesContentProvider',
     type: 'ContentProvider',
     exported: true,
     permission: 'com.example.notevault.READ_NOTES',
@@ -92,6 +102,45 @@ const SAMPLE_COMPONENTS: AndroidComponent[] = [
   },
 ]
 
+export interface AdbPayload {
+  targetUri: string
+  extraKey: string
+  extraVal: string
+}
+
+/** Quote one POSIX-shell argument. These quotes are intended for the Android device's shell. */
+function shellArgument(value: string): string {
+  return `'${value.replace(/'/g, "'\\''")}'`
+}
+
+/** Keep the remote command as one host-shell argument so ADB cannot strip its device-side quoting. */
+function adbShellCommand(remoteCommand: string): string {
+  return `adb shell ${shellArgument(remoteCommand)}`
+}
+
+/** Build a copyable two-shell-safe command; user fields remain data on both host and device. */
+export function buildAdbCommand(component: AndroidComponent, payload: AdbPayload): string {
+  const componentName = shellArgument(`${component.packageName}/${component.className}`)
+  const extra = payload.extraKey && payload.extraVal
+    ? ` --es ${shellArgument(payload.extraKey)} ${shellArgument(payload.extraVal)}`
+    : ''
+  if (component.type === 'Activity') {
+    return adbShellCommand(`am start -n ${componentName}${payload.targetUri ? ` -d ${shellArgument(payload.targetUri)}` : ''}${extra}`)
+  }
+  if (component.type === 'BroadcastReceiver') {
+    const action = component.intentFilter?.actions[0] || 'com.example.notevault.ACTION_SYNC'
+    return adbShellCommand(`am broadcast -n ${componentName} -a ${shellArgument(action)}${extra}`)
+  }
+  if (component.type === 'Service') {
+    return adbShellCommand(`am startservice -n ${componentName}${extra}`)
+  }
+  if (component.type === 'ContentProvider') {
+    const uri = payload.targetUri || 'content://com.example.notevault.provider/notes'
+    return adbShellCommand(`content query --uri ${shellArgument(uri)}`)
+  }
+  return adbShellCommand(`am start -n ${componentName}${extra}`)
+}
+
 export function AndroidComponentAnalyzer({ className = '' }: { className?: string }) {
   const [selectedId, setSelectedId] = useState<string>(SAMPLE_COMPONENTS[0].id)
   const [isFixedBuild, setIsFixedBuild] = useState(false)
@@ -99,7 +148,11 @@ export function AndroidComponentAnalyzer({ className = '' }: { className?: strin
   const [extraKey, setExtraKey] = useState<string>('note_id')
   const [extraVal, setExtraVal] = useState<string>('1337')
   const [copiedCmd, setCopiedCmd] = useState(false)
+  const [copyStatus, setCopyStatus] = useState('')
   const [simulatedExecution, setSimulatedExecution] = useState(false)
+  const titleId = useId()
+  const selectorId = useId()
+  const simulationId = useId()
 
   const component = useMemo(() => SAMPLE_COMPONENTS.find(c => c.id === selectedId) || SAMPLE_COMPONENTS[0], [selectedId])
 
@@ -113,55 +166,43 @@ export function AndroidComponentAnalyzer({ className = '' }: { className?: strin
     setSimulatedExecution(false)
   }
 
-  // Generate ADB command
-  const generatedAdb = useMemo(() => {
-    if (component.type === 'Activity') {
-      let cmd = `adb shell am start -n ${component.name}`
-      if (targetUri) cmd += ` -d "${targetUri}"`
-      if (extraKey && extraVal) cmd += ` --es ${extraKey} "${extraVal}"`
-      return cmd
-    }
-    if (component.type === 'BroadcastReceiver') {
-      const action = component.intentFilter?.actions[0] || 'com.example.notevault.ACTION_SYNC'
-      let cmd = `adb shell am broadcast -a ${action}`
-      if (extraKey && extraVal) cmd += ` --es ${extraKey} "${extraVal}"`
-      return cmd
-    }
-    if (component.type === 'Service') {
-      let cmd = `adb shell am startservice -n ${component.name}`
-      if (extraKey && extraVal) cmd += ` --es ${extraKey} "${extraVal}"`
-      return cmd
-    }
-    if (component.type === 'ContentProvider') {
-      const uri = targetUri || 'content://com.example.notevault.provider/notes'
-      return `adb shell content query --uri ${uri}`
-    }
-    return `adb shell am start -n ${component.name}`
-  }, [component, targetUri, extraKey, extraVal])
+  const generatedAdb = useMemo(
+    () => buildAdbCommand(component, { targetUri, extraKey, extraVal }),
+    [component, targetUri, extraKey, extraVal],
+  )
 
-  const copyCommand = () => {
-    navigator.clipboard.writeText(generatedAdb)
-    setCopiedCmd(true)
-    setTimeout(() => setCopiedCmd(false), 2000)
+  const copyCommand = async () => {
+    setCopyStatus('')
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable')
+      await navigator.clipboard.writeText(generatedAdb)
+      setCopiedCmd(true)
+      setCopyStatus('ADB command copied. Review it before use; this page does not execute it.')
+    } catch {
+      setCopiedCmd(false)
+      setCopyStatus('Clipboard unavailable. Select the generated command and copy it manually.')
+    }
+    window.setTimeout(() => setCopiedCmd(false), 2000)
   }
 
   return (
-    <div className={`rounded-2xl border border-[var(--line-normal)] bg-[var(--panel-bg)] p-5 space-y-6 ${className}`} aria-labelledby="android-analyzer-title">
+    <div className={`rounded-2xl border border-[var(--line-normal)] bg-[var(--panel-bg)] p-5 space-y-6 ${className}`} aria-labelledby={titleId}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--line-normal)] pb-4">
         <div>
           <div className="flex items-center gap-2">
             <Smartphone className="w-5 h-5 text-[var(--learning)]" />
-            <h3 id="android-analyzer-title" className="font-heading font-bold text-base text-[var(--ink-primary)]">
+            <h3 id={titleId} className="font-heading font-bold text-base text-[var(--ink-primary)]">
               Android Component & IPC Boundary Analyzer
             </h3>
           </div>
           <p className="text-xs text-[var(--ink-secondary)] mt-1">
-            Interactive manifest triage, ADB intent payload constructor, and runtime boundary verification simulator.
+            Manifest triage and an ADB command builder. The scripted outcome is illustrative only; no Android runtime is invoked.
           </p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             type="button"
+            aria-pressed={isFixedBuild}
             onClick={() => { setIsFixedBuild(!isFixedBuild); setSimulatedExecution(false) }}
             className={`px-3 py-1.5 rounded-xl text-xs font-medium border flex items-center gap-1.5 transition-colors ${
               isFixedBuild
@@ -177,16 +218,17 @@ export function AndroidComponentAnalyzer({ className = '' }: { className?: strin
 
       {/* Component Selector Pills */}
       <div className="space-y-2">
-        <label className="text-xs font-semibold text-[var(--ink-secondary)] uppercase tracking-wider block">
+        <p id={selectorId} className="text-xs font-semibold text-[var(--ink-secondary)] uppercase tracking-wider">
           Target Component Declaration
-        </label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+        </p>
+        <div role="group" aria-labelledby={selectorId} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
           {SAMPLE_COMPONENTS.map(c => {
             const isSelected = c.id === selectedId
             return (
               <button
                 key={c.id}
                 type="button"
+                aria-pressed={isSelected}
                 onClick={() => handleSelect(c)}
                 className={`text-left p-3 rounded-xl border text-xs transition-colors ${
                   isSelected
@@ -252,7 +294,7 @@ export function AndroidComponentAnalyzer({ className = '' }: { className?: strin
               ADB Intent Payload Constructor
             </h4>
           </div>
-          <span className="text-[11px] text-[var(--ink-muted)] font-mono">am start / broadcast / content</span>
+          <span className="text-[11px] text-[var(--ink-muted)] font-mono">POSIX host shell · Android am / content</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -261,6 +303,7 @@ export function AndroidComponentAnalyzer({ className = '' }: { className?: strin
               Data URI (-d):
               <input
                 type="text"
+                maxLength={2048}
                 value={targetUri}
                 onChange={e => setTargetUri(e.target.value)}
                 placeholder="notevault://notes/view?id=1337"
@@ -272,6 +315,7 @@ export function AndroidComponentAnalyzer({ className = '' }: { className?: strin
             Extra Key (--es):
             <input
               type="text"
+              maxLength={128}
               value={extraKey}
               onChange={e => setExtraKey(e.target.value)}
               placeholder="key"
@@ -282,6 +326,7 @@ export function AndroidComponentAnalyzer({ className = '' }: { className?: strin
             Extra Value:
             <input
               type="text"
+              maxLength={2048}
               value={extraVal}
               onChange={e => setExtraVal(e.target.value)}
               placeholder="val"
@@ -292,7 +337,7 @@ export function AndroidComponentAnalyzer({ className = '' }: { className?: strin
 
         {/* Generated Shell Command */}
         <div className="flex items-center gap-2 pt-2">
-          <div className="flex-1 p-3 rounded-lg bg-[var(--panel-bg)] border border-[var(--line-normal)] text-xs font-mono text-[var(--learning)] overflow-x-auto whitespace-nowrap">
+          <div role="region" aria-label="Generated ADB command" tabIndex={0} className="flex-1 p-3 rounded-lg bg-[var(--panel-bg)] border border-[var(--line-normal)] text-xs font-mono text-[var(--learning)] overflow-x-auto whitespace-nowrap">
             {generatedAdb}
           </div>
           <button
@@ -303,60 +348,34 @@ export function AndroidComponentAnalyzer({ className = '' }: { className?: strin
           >
             {copiedCmd ? <Check className="w-4 h-4 text-[var(--success)]" /> : <Copy className="w-4 h-4" />}
           </button>
+          <p className="sr-only" role="status" aria-live="polite">{copyStatus}</p>
           <button
             type="button"
             onClick={() => setSimulatedExecution(true)}
             className="px-4 py-2.5 rounded-lg sc-learning-action text-xs font-semibold flex items-center gap-1.5"
           >
             <Play className="w-3.5 h-3.5 fill-current" />
-            Simulate Execution
+            Show illustrative outcome
           </button>
         </div>
+        <p className="text-xs text-[var(--ink-secondary)]">The command is shown as text only and is never run by this page. Use only in an authorized test environment.</p>
       </div>
 
-      {/* Simulated Device Execution Output */}
       {simulatedExecution && (
-        <div className="rounded-xl border border-[var(--line-normal)] bg-[var(--panel-inset)] p-4 space-y-3" aria-live="polite">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[var(--ink-primary)] uppercase tracking-wider flex items-center gap-1.5">
-              {isFixedBuild ? (
-                <>
-                  <CheckCircle className="w-4 h-4 text-[var(--success)]" />
-                  Boundary Defense Result: Blocked & Enforced
-                </>
-              ) : (
-                <>
-                  <AlertTriangle className="w-4 h-4 text-[var(--danger)]" />
-                  Execution Result: Component Vulnerability Confirmed
-                </>
-              )}
-            </span>
-            <span className="text-[10px] font-mono text-[var(--ink-muted)]">API Level 34 · Android Runtime</span>
+        <section aria-labelledby={simulationId} className="rounded-xl border border-[var(--line-normal)] bg-[var(--panel-inset)] p-4 space-y-3" aria-live="polite">
+          <h4 id={simulationId} className="text-xs font-bold text-[var(--ink-primary)] uppercase tracking-wider">
+            Illustrative outcome · no runtime verification
+          </h4>
+          <p className="text-sm text-[var(--ink-secondary)]">
+            The <strong>{isFixedBuild ? 'hardened' : 'vulnerable'}</strong> sample declaration is selected for {component.type} <code>{component.name}</code>.
+            No ADB command was executed and no Android device or manifest was inspected.
+          </p>
+          <div className="rounded-lg bg-[var(--panel-bg)] border border-[var(--line-normal)] p-3 text-sm leading-relaxed text-[var(--ink-secondary)]">
+            <strong className="block text-[var(--ink-primary)] mb-1">{isFixedBuild ? 'Remediation to review' : 'Risk to assess'}</strong>
+            {isFixedBuild ? component.fixedDescription : component.vulnerabilityDescription}
           </div>
-
-          <pre className="p-3 rounded-lg bg-[var(--panel-bg)] border border-[var(--line-normal)] text-[11px] font-mono leading-relaxed overflow-x-auto whitespace-pre">
-            {isFixedBuild ? (
-              <span className="text-[var(--warning)]">
-                {`$ ${generatedAdb}\n`}
-                {`Starting: Intent { act=android.intent.action.VIEW cmp=${component.name} }\n`}
-                {`java.lang.SecurityException: Permission Denial: starting Intent { act=android.intent.action.VIEW cmp=${component.name} } from null (pid=12401, uid=2000) not exported from uid 10142\n`}
-                {`    at android.os.Parcel.createExceptionOrNull(Parcel.java:3057)\n`}
-                {`    at com.android.server.wm.ActivityStackSupervisor.checkStartAnyActivityPermission(ActivityStackSupervisor.java:1082)\n`}
-                {`[+] Negative Control Verified: Untrusted invocation rejected across kernel UID boundary.`}
-              </span>
-            ) : (
-              <span className="text-[var(--success)]">
-                {`$ ${generatedAdb}\n`}
-                {`Starting: Intent { act=android.intent.action.VIEW cmp=${component.name} }\n`}
-                {`I/ActivityManager: START u0 {act=android.intent.action.VIEW cmp=${component.name}} from uid 2000\n`}
-                {`D/NoteVault: ${component.name.split('.').pop()} initialized via external IPC\n`}
-                {`D/NoteVault: Extracted parameter '${extraKey}': '${extraVal}'\n`}
-                {`W/NoteVault: Loaded target data without session authentication check!\n`}
-                {`[!] Positive Control Verified: Vulnerability reproducible via unprivileged external Intent.`}
-              </span>
-            )}
-          </pre>
-        </div>
+          <pre className="p-3 rounded-lg bg-[var(--panel-bg)] border border-[var(--line-normal)] text-[11px] font-mono leading-relaxed overflow-x-auto whitespace-pre">{`$ ${generatedAdb}\n[ILLUSTRATION ONLY] This command was not run.\n[REVIEW] ${isFixedBuild ? component.fixedDescription : component.vulnerabilityDescription}\n[LIMIT] Confirm the merged manifest, Android version, caller identity and runtime behavior on an authorized test device.`}</pre>
+        </section>
       )}
     </div>
   )

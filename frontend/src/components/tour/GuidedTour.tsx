@@ -35,13 +35,13 @@ export function GuidedTour() {
     setShowPrompt(false)
     const steps: DriveStep[] = [
       { popover: { title: 'A quick tour of this workspace', description: 'We will point to the controls on this screen. Nothing in the tour changes your progress. Use Next, Back, or Close at any time.' } },
-      { element: '.sc-experience-row', popover: { title: full ? 'Your account access' : 'Your catalogue access', description: full ? 'Lessons, labs and assessments are open to this approved account. Your browser practice is still unverified; use Progress sync to see account-held records.' : 'You are browsing the public catalogue. Lessons, labs and assessments are for approved accounts. Practice is saved in this browser and is unverified.', side: 'bottom' } },
+      { element: '.sc-experience-row', popover: { title: full ? 'Approved content access' : 'Catalogue & practice access', description: full ? 'Protected lesson text and knowledge-check prompts are available to this approved account. Public samples and bundled labs are public; use Account records to see account-held records. Challenge content is not included in this public build yet.' : 'The catalogue, selected public samples and bundled labs are public. Approved accounts unlock protected lesson text and knowledge-check prompts. Challenge content is not included in this public build yet; sign in for full learning materials.', side: 'bottom' } },
       { element: '#mobile-navigation-toggle', popover: { title: 'Find every tool', description: 'Open All tools for the full list: learning paths, labs, challenges, reference, reports and your account pages. The main learning links are also in the header on larger screens.', side: 'bottom' } },
       ...(pathname === '/app' && document.querySelector('.ws-focus') ? [
-        { element: '.ws-focus', popover: { title: 'Your next learning step', description: 'This suggestion comes from lessons and practice recorded in this browser. Select its action to continue; it does not claim a verified skill or grade.', side: 'bottom' as const } },
+        { element: '.ws-focus', popover: { title: 'Your next learning step', description: 'Start with the first module in this path. The catalogue and content details are public; sign in for full learning materials.', side: 'bottom' as const } },
       ] : []),
       { element: '[data-tour="search"]', popover: { title: 'Search the learning material', description: 'Select Search to find a path, module, lab or reference. You can also press Control K (or Command K on a Mac).', side: 'bottom' } },
-      { element: '.sc-avatar-trigger', popover: { title: 'Your profile and records', description: 'Open this menu for your profile, settings and progress sync. It also shows your account state and sign-in options where applicable.', side: 'bottom' } },
+      { element: '.sc-avatar-trigger', popover: { title: 'Your profile and records', description: 'Open this menu for your profile, settings and account records. It also shows your account state and sign-in options where applicable.', side: 'bottom' } },
     ]
     const tour = driver({
       steps,
@@ -64,7 +64,7 @@ export function GuidedTour() {
       <button type="button" className="sc-tour-dismiss" aria-label="Dismiss tour invitation" onClick={dismissPrompt}><X size={16} aria-hidden="true" /></button>
       <span className="sc-library-domain">Orientation</span>
       <h2>New to this workspace?</h2>
-      <p>See what the navigation, your learning record and the main controls actually do. About one minute; no progress is changed.</p>
+      <p>See what the navigation and main controls actually do. About one minute; no progress is changed.</p>
       <div><button type="button" className="ws-action" onClick={startTour}>Show me around</button><button type="button" className="ws-action ws-action-secondary" onClick={dismissPrompt}>Not now</button></div>
     </section>}
     <button type="button" onClick={startTour} className="sc-tour-launch" aria-label="Start workspace tour" title="Tour the workspace"><Map size={18} aria-hidden="true" /><span>Tour</span></button>

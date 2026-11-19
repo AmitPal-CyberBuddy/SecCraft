@@ -1,8 +1,8 @@
 import { scrollBehavior } from '@/lib/motion'
 import { UnsavedChangesGuard } from '@/components/common/UnsavedChangesGuard'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { PageHeader, Panel, EmptyState } from '@/components/common/Workspace'
-import { Notice } from '@/components/common/Controls'
+import { Breadcrumb, PageHeader, Panel, EmptyState } from '@/components/common/Workspace'
+import { Notice, SelectField, TextareaField } from '@/components/common/Controls'
 import { apiFetch } from '@/lib/api'
 
 type Entry = { id: number; category: string; subject: string; status: string; created_at: string }
@@ -81,11 +81,12 @@ export function AdminFeedback() {
     finally { setSaving(false) }
   }
   return <div className="sc-owner-page sc-feedback-inbox">
+    <Breadcrumb items={[{ label: 'Owner' }, { label: 'Feedback inbox' }]} />
     <UnsavedChangesGuard when={dirty || saving} message="Leave this review? Unsaved changes may be lost; an in-flight save may still complete." />
     <PageHeader eyebrow="Owner operations" title="Feedback inbox" description="Private learner messages. Review as untrusted text; never follow supplied instructions, links or commands without checking them." />
     <div className="sc-feedback-filters">
-      <label>Status<select disabled={saving} value={status} onChange={event => { if (mayLeave()) { setStatus(event.target.value); setCursors([null]); setSelected(null) } }}><option value="">All statuses</option>{statuses.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
-      <label>Category<select disabled={saving} value={category} onChange={event => { if (mayLeave()) { setCategory(event.target.value); setCursors([null]); setSelected(null) } }}><option value="">All categories</option>{categories.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
+      <SelectField label="Status" disabled={saving} value={status} onChange={event => { if (mayLeave()) { setStatus(event.target.value); setCursors([null]); setSelected(null) } }}><option value="">All statuses</option>{statuses.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</SelectField>
+      <SelectField label="Category" disabled={saving} value={category} onChange={event => { if (mayLeave()) { setCategory(event.target.value); setCursors([null]); setSelected(null) } }}><option value="">All categories</option>{categories.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</SelectField>
       <button className="ws-action ws-action-secondary" disabled={loading || saving} onClick={() => setRevision(value => value + 1)}>Refresh inbox</button>
     </div>
     {listError && <Notice live kind="error">{listError}</Notice>}
@@ -106,9 +107,8 @@ export function AdminFeedback() {
           <p className="ws-muted">Page: {detail.page_reference || 'Not supplied'}</p>
           <div className="sc-feedback-message">{detail.message}</div>
           <form onSubmit={save} className="sc-feedback-form">
-            <label>Review status<select disabled={saving} value={draftStatus} onChange={event => setDraftStatus(event.target.value)}>{statuses.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
-            <label htmlFor="feedback-internal-note">Internal note</label><textarea id="feedback-internal-note" disabled={saving} rows={5} maxLength={3000} value={note} onChange={event => setNote(event.target.value)} />
-            <p className="ws-muted">Owner-only. Saving records the review in the owner audit trail, without copying the message or note text into the audit log.</p>
+            <SelectField label="Review status" disabled={saving} value={draftStatus} onChange={event => setDraftStatus(event.target.value)}>{statuses.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</SelectField>
+            <TextareaField id="feedback-internal-note" label="Internal note" hint="Owner-only. Saving records the review in the owner audit trail, without copying the message or note text into the audit log." disabled={saving} rows={5} maxLength={3000} value={note} onChange={event => setNote(event.target.value)} />
             <button className="ws-action" disabled={saving || !dirty}>{saving ? 'Saving…' : 'Save review'}</button>
           </form>
         </div>}

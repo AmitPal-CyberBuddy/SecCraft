@@ -4,13 +4,13 @@ import { updateQuery } from '@/lib/learningNavigation'
 import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ModuleCard } from '@/components/learning/ModuleCard'
-import { useProgressStore } from '@/store/useProgressStore'
 import learningPaths from '@/content/learning-paths.json'
 import { getModulesForPath } from '@/content/stats'
 import { useSession } from '@/lib/session'
 import { allows } from '@/lib/access'
 import { maturityOfModule } from '@/lib/contentMaturity'
-import { ProgressBar } from '@/components/common/Workspace'
+import { Breadcrumb, EmptyState, SectionHeader } from '@/components/common/Workspace'
+import { FilterBar } from '@/components/common/Controls'
 
 export function Modules() {
   return <LearningPathScope area="modules">{id => <ModulesContent key={id} effectivePathId={id} />}</LearningPathScope>
@@ -21,28 +21,54 @@ function ModulesContent({ effectivePathId }: { effectivePathId: string }) {
   const [query, setQuery] = useSearchParams()
   const filterPhase = Number(query.get('phase')) || null
   const filterStatus = query.get('environment')
+  const filterDifficulty = query.get('difficulty')
   const searchQuery = query.get('q') || ''
   const setFilterPhase = (value: number | null) => setQuery(previous => updateQuery(previous, { phase: value ? String(value) : null }))
   const setFilterStatus = (value: string | null) => setQuery(previous => updateQuery(previous, { environment: value }))
+  const setFilterDifficulty = (value: string | null) => setQuery(previous => updateQuery(previous, { difficulty: value }))
   const setSearchQuery = (value: string) => setQuery(previous => updateQuery(previous, { q: value }), { replace: true })
-  const getModuleProgress = useProgressStore(s => s.getModuleProgress)
-  const getPathProgress = useProgressStore(s => s.getPathProgress)
   const { userState } = useSession()
   const hasLearningAccess = allows(userState, 'learning-content')
   const filtered = pathModules.filter(m => {
     if (filterPhase && m.phase !== filterPhase) return false
     if (filterStatus && m.status !== filterStatus) return false
+    if (filterDifficulty && m.difficulty !== filterDifficulty) return false
     if (searchQuery) { const q = searchQuery.toLowerCase(); return m.title.toLowerCase().includes(q) || m.id.toLowerCase().includes(q) || m.description.toLowerCase().includes(q) }
     return true
   })
   const phases = [...new Set(pathModules.map(m => m.phase))].sort((a,b) => a-b)
-  const reset = () => setQuery(previous => updateQuery(previous, { phase: null, environment: null, q: null }))
+  const difficulties = [...new Set(pathModules.map(m => m.difficulty))].sort()
+  const reset = () => setQuery(previous => updateQuery(previous, { phase: null, environment: null, difficulty: null, q: null }))
+  const hasActiveFilters = Boolean(searchQuery || filterPhase || filterStatus || filterDifficulty)
   return <div className="sc-modules">
-    <nav aria-label="Breadcrumb" className="ws-breadcrumb"><Link to="/paths">Learning paths</Link><span aria-hidden="true">/</span><Link to={`/paths/${path.id}`}>{path.title}</Link><span aria-hidden="true">/</span><span aria-current="page">Modules</span></nav>
-    <header className="sc-modules-header"><div><p className="sc-library-domain">{path.category} / Curriculum</p><h1>Modules</h1><p>{path.title} · {pathModules.length} modules across {phases.length} phases. Follow the sequence or find a specific subject.</p></div><div className="sc-modules-progress"><span>Practice progress · this browser</span><strong>{getPathProgress(path.id)}%</strong><ProgressBar value={getPathProgress(path.id)} label="Path practice progress" /></div></header>
-    <section className="sc-modules-access" data-tour="access-note" aria-label="Learning access"><div><strong>{hasLearningAccess ? 'Approved learning' : 'Catalogue access'}</strong><p>{hasLearningAccess ? 'Continue through the full path, from foundations to independent practice.' : 'Browse the full learning sequence. Lessons, labs and assessments are for approved accounts.'}</p><small>{pathModules.length} modules in this path. Practice results remain unverified.</small></div>{!hasLearningAccess && <Link to="/account" className="ws-text-action">Request or check access →</Link>}</section>
-    <section className="sc-modules-catalog" aria-labelledby="modules-sequence"><div className="sc-section-intro"><span>Curriculum sequence</span><h2 id="modules-sequence">Find your next unit</h2></div><div className="sc-modules-controls"><label className="sc-modules-search"><span>Search modules</span><input type="search" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search titles, subjects or identifiers" /></label><label><span>Phase</span><select aria-label="Phase" value={filterPhase ?? ''} onChange={e => setFilterPhase(e.target.value ? Number(e.target.value) : null)}><option value="">All phases</option>{phases.map(phase => <option value={phase} key={phase}>{path.phases.find(item => item.id === phase)?.name ?? `Phase ${phase}`}</option>)}</select></label><label><span>Environment</span><select aria-label="Environment" value={filterStatus ?? ''} onChange={e => setFilterStatus(e.target.value || null)}><option value="">All environments</option><option value="simulated">Simulation</option>{pathModules.some(module => module.status === 'hardware') && <option value="hardware">RF hardware</option>}</select></label></div><div className="sc-filter-summary"><p className="sc-modules-count" role="status">Showing {filtered.length} of {pathModules.length} modules</p>{(searchQuery || filterPhase || filterStatus) && <button type="button" className="ws-action ws-action-secondary" onClick={reset}>Clear filters</button>}</div>
-      {filtered.length ? <ResultTransition identity={`${effectivePathId}:${filterPhase}:${filterStatus}`} className="ws-row-list">{filtered.map(m => <ModuleCard key={m.id} id={m.id} title={m.title} phase={m.phase} difficulty={m.difficulty} estimated_hours={m.estimated_hours} status={m.status} progress={getModuleProgress(m.id)} description={m.description} locked={false} maturity={maturityOfModule(m)} />)}</ResultTransition> : <div className="sc-modules-empty"><h3>No modules match these filters</h3><p>Try another search or environment.</p><button type="button" onClick={reset}>Clear filters</button></div>}
+    <Breadcrumb items={[{ label: 'Learning paths', to: '/paths' }, { label: path.title, to: `/paths/${path.id}` }, { label: 'Modules' }]} />
+    <header className="sc-modules-header"><div><p className="sc-library-domain">{path.category} / Curriculum</p><h1>Modules</h1><p>{path.title} · {pathModules.length} modules across {phases.length} phases. Follow the sequence or find a specific subject. Module outlines and content details are public — sign in for full learning materials.</p></div></header>
+    <section className="sc-modules-access" data-tour="access-note" aria-label="Learning access"><div><strong>{hasLearningAccess ? 'Approved content' : 'Catalogue & practice'}</strong><p>{hasLearningAccess ? 'Protected lesson text and knowledge-check prompts are available for this account.' : 'Browse public module outlines, selected sample lessons, supplied artifacts and bundled labs. Approved accounts unlock protected lesson text and knowledge-check prompts.'}</p><small>{pathModules.length} modules in this path.</small></div>{!hasLearningAccess && <Link to="/account" className="ws-text-action">Request or check access →</Link>}</section>
+    <section className="sc-modules-catalog" aria-labelledby="modules-sequence">
+      <SectionHeader kicker="Curriculum sequence" title="Find your next unit" id="modules-sequence" />
+      <FilterBar
+        searchLabel="Search modules"
+        searchPlaceholder="Search titles, subjects or identifiers"
+        searchValue={searchQuery}
+        onSearch={setSearchQuery}
+        filters={[
+          { key: 'phase', label: 'Phase', options: phases.map(phase => ({ value: String(phase), label: path.phases.find(item => item.id === phase)?.name ?? `Phase ${phase}` })) },
+          { key: 'environment', label: 'Environment', options: [{ value: 'simulated', label: 'Simulation' }, ...(pathModules.some(module => module.status === 'hardware') ? [{ value: 'hardware', label: 'RF hardware' }] : [])] },
+          { key: 'difficulty', label: 'Difficulty', options: difficulties.map(value => ({ value, label: value })) },
+        ]}
+        values={{ phase: filterPhase ? String(filterPhase) : null, environment: filterStatus, difficulty: filterDifficulty }}
+        onFilter={(key, value) => {
+          if (key === 'phase') setFilterPhase(value ? Number(value) : null)
+          else if (key === 'environment') setFilterStatus(value)
+          else setFilterDifficulty(value)
+        }}
+        count={filtered.length}
+        total={pathModules.length}
+        countLabel="modules"
+        onClear={reset}
+        hasActiveFilters={hasActiveFilters}
+      />
+      {filtered.length ? <ResultTransition identity={`${effectivePathId}:${filterPhase}:${filterStatus}:${filterDifficulty}`} className="ws-row-list">{filtered.map(m => <ModuleCard key={m.id} id={m.id} title={m.title} phase={m.phase} difficulty={m.difficulty} estimated_hours={m.estimated_hours} status={m.status} description={m.description} locked={false} maturity={maturityOfModule(m)} />)}</ResultTransition> : <EmptyState title="No modules match these filters" description="Try another search or environment." action={<button type="button" className="ws-btn ws-btn-secondary" onClick={reset}>Clear filters</button>} />}
     </section>
   </div>
 }

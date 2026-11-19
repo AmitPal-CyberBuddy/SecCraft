@@ -19,9 +19,10 @@ const server = await createServer({
 })
 
 try {
-  const [moduleContent, quizContent, labContent, challengeContent, scenarioContent, pathContent] = await Promise.all([
+  const [moduleContent, quizContent, quizCountContent, labContent, challengeContent, scenarioContent, pathContent] = await Promise.all([
     server.ssrLoadModule('/src/content/modules.json'),
     server.ssrLoadModule('/src/content/quizData.ts'),
+    server.ssrLoadModule('/src/content/quiz-counts.ts'),
     server.ssrLoadModule('/src/content/labs.ts'),
     server.ssrLoadModule('/src/content/challenges.json'),
     server.ssrLoadModule('/src/content/scenarios.json'),
@@ -29,6 +30,8 @@ try {
   ])
   const modules = moduleContent.default
   const quizzes = quizContent.quizData
+  const { QUIZ_COUNTS, TOTAL_QUIZZES, TOTAL_QUIZ_QUESTIONS } = quizCountContent
+  const serverQuizBanks = JSON.parse(fs.readFileSync(path.join(frontendRoot, 'src/content/quizzes.json'), 'utf8'))
   const { LABS, AVAILABLE_LABS } = labContent
   const challenges = challengeContent.default
   const scenarios = scenarioContent.default
@@ -66,8 +69,18 @@ try {
   assert.equal(lessonKeys.size, lessonCount)
   assert.equal(Object.keys(quizzes).length, 27, 'all authored modules have knowledge checks')
   const totalQuestions = Object.values(quizzes).reduce((sum, list) => sum + list.length, 0)
+  const countFor = bank => Object.fromEntries(Object.entries(bank).map(([id, questions]) => [id, questions.length]).sort(([a], [b]) => a.localeCompare(b)))
+  const sortedCounts = Object.fromEntries(Object.entries(QUIZ_COUNTS).sort(([a], [b]) => a.localeCompare(b)))
   assert.equal(totalQuestions, 146, 'every implemented quiz question is accounted for')
+  assert.equal(TOTAL_QUIZZES, 27, 'the public quiz catalogue lists every quiz, without prompts or keys')
+  assert.equal(TOTAL_QUIZ_QUESTIONS, totalQuestions, 'public counts match the authored bank')
+  assert.deepEqual(sortedCounts, countFor(quizzes), 'public module counts match authored practice data')
+  assert.deepEqual(sortedCounts, countFor(serverQuizBanks), 'public module counts match the authenticated API bank')
   assert.ok(modules.every(module => Object.hasOwn(quizzes, module.id)), 'each module has an authored knowledge check')
+  for (const file of ['pages/ModuleDetail.tsx', 'store/useProgressStore.ts']) {
+    const source = fs.readFileSync(path.join(frontendRoot, 'src', file), 'utf8')
+    assert.doesNotMatch(source, /content\/quizData/, `${file} must never import browser-side answer keys`)
+  }
   assert.ok(quizzes['20-final-assessment']?.length, 'the final-assessment module has an authored knowledge check')
   assert.deepEqual(modules.find(item => item.id === '20-final-assessment').prerequisites, ['18-corporate-attacks'], 'wireless final case follows corporate attacks')
   const retired = new Set(['09-wpa2-practical', '13-rogue-ap', '16-eap', '17-radius', '19-methodology'])

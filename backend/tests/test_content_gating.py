@@ -21,7 +21,7 @@ os.environ["PLATFORM_ALLOWED_ORIGINS"] = "http://localhost:3000,http://localhost
 os.environ["SUPABASE_URL"] = "https://auth-test.invalid"
 os.environ["SUPABASE_ANON_KEY"] = "public-test-anon-key"
 os.environ["SUPABASE_JWT_ISSUER"] = "https://auth-test.invalid/auth/v1"
-os.environ["SUPABASE_JWT_SECRET"] = "test-only-secret-not-for-use"
+os.environ["SUPABASE_JWT_SECRET"] = "test-only-secret-not-for-use-32bytes"
 os.environ["SUPABASE_REQUIRE_VERIFIED_EMAIL"] = "false"
 
 import jwt  # noqa: E402
@@ -282,9 +282,24 @@ def test_authenticated_quizzes_and_labs(client: TestClient) -> None:
     set_user_status(active_id, "active")
     active_token = make_token(active_id)
 
-    # 1. Quizzes require auth
+    # 1. Quiz prompts and grading require an approved account on every direct API route.
     anon_quiz = client.get("/api/v1/content/quizzes/android-01-platform")
     assert anon_quiz.status_code == 401
+    grade_url = "/api/v1/content/quizzes/android-01-platform/grade"
+    assert client.post(grade_url, json={"answers": {"q1": 0}}).status_code == 401
+
+    pending_id = "user-pending-content-123"
+    set_user_status(pending_id, "pending")
+    pending_headers = {"Authorization": f"Bearer {make_token(pending_id)}"}
+    pending_quiz = client.get("/api/v1/content/quizzes/android-01-platform", headers=pending_headers)
+    assert pending_quiz.status_code == 403
+    assert pending_quiz.json()["detail"]["code"] == "account_pending"
+    pending_grade = client.post(grade_url, json={"answers": {"q1": 0}}, headers=pending_headers)
+    assert pending_grade.status_code == 403
+    assert pending_grade.json()["detail"]["code"] == "account_pending"
+    pending_lab = client.get("/api/v1/content/labs/lab-05-recon", headers=pending_headers)
+    assert pending_lab.status_code == 403
+    assert pending_lab.json()["detail"]["code"] == "account_pending"
 
     auth_quiz = client.get(
         "/api/v1/content/quizzes/android-01-platform",
@@ -295,7 +310,31 @@ def test_authenticated_quizzes_and_labs(client: TestClient) -> None:
     assert quiz_data["module_id"] == "android-01-platform"
     assert quiz_data["grading_class"] == "practice"
     assert len(quiz_data["questions"]) == 6
+    assert all(set(question) == {"id", "question", "options"} for question in quiz_data["questions"])
     assert all(not ({"correct", "answer", "explanation", "solution", "rationale"} & set(question)) for question in quiz_data["questions"])
+
+    answers = {question["id"]: 0 for question in quiz_data["questions"]}
+    graded = client.post(grade_url, json={"answers": answers}, headers={"Authorization": f"Bearer {active_token}"})
+    assert graded.status_code == 200
+    grade_data = graded.json()
+    assert grade_data["grading_class"] == "practice"
+    assert grade_data["total"] == 6
+    source_questions = json.loads((BACKEND_DIR.parent / "frontend" / "src" / "content" / "quizzes.json").read_text(encoding="utf-8"))["android-01-platform"]
+    assert grade_data["score"] == sum(question["correct"] == 0 for question in source_questions)
+    assert len(grade_data["results"]) == 6
+    assert all({"id", "correct_index", "correct", "explanation"} <= set(result) for result in grade_data["results"])
+    assert client.post(grade_url, json={"answers": {"q1": 0}}, headers={"Authorization": f"Bearer {active_token}"}).status_code == 422
+    assert client.post(grade_url, json={"answers": {**answers, "unknown": 0}}, headers={"Authorization": f"Bearer {active_token}"}).status_code == 422
+    first_question = quiz_data["questions"][0]
+    invalid_answer = dict(answers)
+    invalid_answer[first_question["id"]] = True
+    assert client.post(grade_url, json={"answers": invalid_answer}, headers={"Authorization": f"Bearer {active_token}"}).status_code == 422
+    invalid_answer[first_question["id"]] = -1
+    assert client.post(grade_url, json={"answers": invalid_answer}, headers={"Authorization": f"Bearer {active_token}"}).status_code == 422
+    assert client.post(grade_url, json={"answers": answers, "score": 6}, headers={"Authorization": f"Bearer {active_token}"}).status_code == 422
+    out_of_range = dict(answers)
+    out_of_range[first_question["id"]] = len(first_question["options"])
+    assert client.post(grade_url, json={"answers": out_of_range}, headers={"Authorization": f"Bearer {active_token}"}).status_code == 422
 
     # 2. Labs require auth
     anon_lab = client.get("/api/v1/content/labs/lab-05-recon")
@@ -308,6 +347,14 @@ def test_authenticated_quizzes_and_labs(client: TestClient) -> None:
     assert auth_lab.status_code == 200
     lab_data = auth_lab.json()
     assert lab_data["id"] == "lab-05-recon"
+
+    # The server allowlist also grants owner access regardless of the profile's learner status.
+    owner_id = "user-content-owner-123"
+    set_user_status(owner_id, "pending", is_admin=True)
+    owner_headers = {"Authorization": f"Bearer {make_token(owner_id)}"}
+    assert client.get("/api/v1/content/quizzes/android-01-platform", headers=owner_headers).status_code == 200
+    assert client.post(grade_url, json={"answers": answers}, headers=owner_headers).status_code == 200
+    assert client.get("/api/v1/content/labs/lab-05-recon", headers=owner_headers).status_code == 200
 
     # 3. Artifact download requires active auth
     anon_art = client.get("/api/v1/content/artifacts/wireless/WF-AUTH-03.zip")

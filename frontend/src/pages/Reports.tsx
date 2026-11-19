@@ -1,4 +1,4 @@
-import { PageHeader } from '@/components/common/Workspace'
+import { Breadcrumb, Button, PageHeader } from '@/components/common/Workspace'
 import { Notice, ViewSwitcher } from '@/components/common/Controls'
 import { LoadingPanel } from '@/components/common/LoadingPanel'
 import { ReportEditor } from '@/components/report/ReportEditor'
@@ -17,9 +17,10 @@ export function Reports() {
 
   return (
     <div className="sc-technical-surface ws-legacy max-w-[1200px] mx-auto space-y-4 xs:space-y-6 md:space-y-8 min-w-0 w-full">
-      <PageHeader eyebrow="Practice / Reporting" title="Findings & evidence" description="Explain an observation, cite evidence, assess impact, recommend a fix and describe how to retest. A report is not an award or a verified assessment." action={<Link to="/engagement" className="ws-action ws-action-secondary">Explore assessment briefs →</Link>} />
+      <Breadcrumb items={[{ label: 'Work' }, { label: 'Findings & reports' }]} />
+      <PageHeader eyebrow="Practice / Reporting" title="Findings & evidence" description="Explain an observation, cite evidence, assess impact, recommend a fix and describe how to retest. A report is not an award or a verified assessment." action={<Button to="/engagement" tone="secondary">Explore assessment briefs →</Button>} />
 
-      <Notice>Start with an authorized exercise or supplied artifact. The editor does not automatically import lab evidence or verify your conclusions; review every statement before sharing a draft. <Link to="/labs">Explore labs</Link>.</Notice>
+      <Notice>Start with an authorized exercise or supplied artifact. The editor does not automatically import lab evidence or verify your conclusions; review every statement before sharing a draft. The evidence vault keeps files on this device only — nothing is uploaded automatically. <Link to="/labs">Explore labs</Link>.</Notice>
 
       <ViewSwitcher label="Reporting tools" value={activeTab} onChange={setActiveTab} options={[
         { id: 'editor', label: 'Report editor', icon: <FileText size={16} /> },

@@ -21,7 +21,10 @@ test('tour points at visible workspace controls rather than retired sidebar or d
   assert.ok(tour.includes("pathname === '/app'"), 'dashboard-only steps must be conditional')
   assert.ok(app.includes("!location.pathname.startsWith('/admin')"), 'owner console must not show a learner tour')
   assert.ok(!/data-tour="(sidebar|dashboard-stats|daily|reports)"/.test(tour), 'retired anchors must not return')
-  assert.ok(tour.includes('Practice is saved in this browser and is unverified'))
+  assert.ok(tour.includes('The catalogue, selected public samples and bundled labs are public.'))
+  assert.ok(tour.includes('Approved accounts unlock protected lesson text and knowledge-check prompts.'))
+  assert.ok(tour.includes('Challenge content is not included in this public build yet'))
+  assert.ok(tour.includes('sign in for full learning materials.'))
 })
 
 

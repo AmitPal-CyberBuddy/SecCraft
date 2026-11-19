@@ -6,7 +6,6 @@ import { createBrowserRouter, RouterProvider, Routes, Route, Navigate, useLocati
 import { Shell } from '@/components/layout/Shell'
 import { AdminShell } from '@/components/layout/AdminShell'
 import { ScrollToTop } from '@/components/layout/ScrollToTop'
-import { PointsToast } from '@/components/gamification/PointsToast'
 import { GlobalSearch } from '@/components/search/GlobalSearch'
 import { KeyboardShortcuts } from '@/components/shortcuts/KeyboardShortcuts'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
@@ -27,9 +26,6 @@ import { Reference } from '@/pages/Reference'
 import { Engagement } from '@/pages/Engagement'
 import { Settings } from '@/pages/Settings'
 import { Reports } from '@/pages/Reports'
-import { Analytics } from '@/pages/Analytics'
-import { Achievements } from '@/pages/Achievements'
-import { Daily } from '@/pages/Daily'
 import { NotFound } from '@/pages/NotFound'
 
 const GuidedTour = lazy(() => import('@/components/tour/GuidedTour').then(m => ({ default: m.GuidedTour })))
@@ -94,7 +90,6 @@ function ApplicationRoutes() {
       <OfflineIndicator />
       <UpdateNotice />
       {!isPublicRoute && <>
-        <PointsToast />
         <GlobalSearch open={searchOpen} onClose={closeSearch} />
         <KeyboardShortcuts />
         {!location.pathname.startsWith('/admin') && <Suspense fallback={null}><GuidedTour /></Suspense>}
@@ -147,12 +142,14 @@ function ApplicationRoutes() {
         <Route path="/profile" element={workspace(<Suspense fallback={<RouteFallback />}><Profile /></Suspense>)} />
         <Route path="/sync" element={workspace(<Suspense fallback={<RouteFallback />}><Sync /></Suspense>)} />
         <Route path="/progress/sync" element={<Navigate to="/sync" replace />} />
-        <Route path="/analytics" element={workspace(<Analytics />)} />
-        <Route path="/progress" element={workspace(<Analytics />)} />
-        <Route path="/achievements" element={workspace(<Achievements />)} />
-        <Route path="/badges" element={workspace(<Achievements />)} />
-        <Route path="/daily" element={workspace(<Daily />)} />
-        <Route path="/streak" element={workspace(<Daily />)} />
+        {/* Browser-progress surfaces were removed: no XP, streaks or local levels.
+            Old bookmarks land on the catalogue hub instead of a tracking page. */}
+        <Route path="/analytics" element={<Navigate to="/app" replace />} />
+        <Route path="/progress" element={<Navigate to="/app" replace />} />
+        <Route path="/achievements" element={<Navigate to="/app" replace />} />
+        <Route path="/badges" element={<Navigate to="/app" replace />} />
+        <Route path="/daily" element={<Navigate to="/app" replace />} />
+        <Route path="/streak" element={<Navigate to="/app" replace />} />
         <Route path="/legacy/path" element={<Navigate to="/paths/wireless-pentesting" replace />} />
         <Route path="*" element={workspace(<NotFound />)} />
       </Routes>

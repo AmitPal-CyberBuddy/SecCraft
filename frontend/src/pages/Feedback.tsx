@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { PageHeader, Panel } from '@/components/common/Workspace'
-import { Notice, TextField } from '@/components/common/Controls'
+import { Breadcrumb, Button, PageHeader, Panel } from '@/components/common/Workspace'
+import { Notice, SelectField, TextareaField, TextField } from '@/components/common/Controls'
 import { apiFetch } from '@/lib/api'
 
 const DRAFT_KEY = 'platform-feedback-draft'
@@ -57,15 +57,15 @@ export function FeedbackPage() {
     finally { submitting.current = false; setBusy(false) }
   }
   return <div className="sc-feedback-page">
+    <Breadcrumb items={[{ label: 'Help' }, { label: 'Contact & feedback' }]} />
     <PageHeader eyebrow="Help improve SecCraft" title="Contact & feedback" description="Report a broken lab, suggest a correction or tell us what would make learning easier. Guests are welcome." />
     <Notice title="Keep sensitive information out">Do not include passwords, tokens, personal data about others or sensitive evidence. For security vulnerabilities, use <a className="ws-text-action" href="https://github.com/AmitPal-CyberBuddy/SecCraft/security/policy" target="_blank" rel="noreferrer">our private security-reporting instructions</a>, not this form.</Notice>
     {reference ? <Notice live kind="success" title={`Feedback saved · reference #${reference}`}>Your message is in the owner inbox. A reply is not guaranteed; there is no automated email or public tracking page.<div className="mt-4"><button className="ws-action ws-action-secondary" disabled={cooldown > 0} onClick={() => { setDraft({ ...initialDraft(''), request_id: crypto.randomUUID(), subject: '', message: '', reply_email: '', page_reference: '' }); setReference(null) }}>{cooldown ? `New message in ${cooldown}s` : 'Write another message'}</button></div></Notice> : <Panel surface title="Send a message">
       <form onSubmit={submit} className="sc-feedback-form">
         <fieldset disabled={busy} className="sc-feedback-fields">
-          <label>Category<select value={draft.category} onChange={event => edit('category', event.target.value)}>{categories.map(([id, title]) => <option key={id} value={id}>{title}</option>)}</select></label>
+          <SelectField label="Category" value={draft.category} onChange={event => edit('category', event.target.value)}>{categories.map(([id, title]) => <option key={id} value={id}>{title}</option>)}</SelectField>
           <TextField label="Subject" required minLength={3} maxLength={160} value={draft.subject} onChange={event => edit('subject', event.target.value)} />
-          <label htmlFor="feedback-message">Message</label><textarea id="feedback-message" required minLength={10} maxLength={5000} rows={8} value={draft.message} onChange={event => edit('message', event.target.value)} aria-describedby="feedback-message-hint" />
-          <p id="feedback-message-hint" className="ws-muted">{draft.message.length}/5000 characters. Describe what happened, what you expected and how to reproduce it.</p>
+          <TextareaField id="feedback-message" label="Message" hint={`${draft.message.length}/5000 characters. Describe what happened, what you expected and how to reproduce it.`} required minLength={10} maxLength={5000} rows={8} value={draft.message} onChange={event => edit('message', event.target.value)} />
           <TextField label="Reply email (optional)" hint="Only add an address if you want the owner to be able to contact you. It is not verified by this form." type="email" autoComplete="email" maxLength={320} value={draft.reply_email} onChange={event => edit('reply_email', event.target.value)} />
           <TextField label="Page or module path (optional)" hint="For example /labs. No query strings, fragments or full external URLs." maxLength={300} value={draft.page_reference} onChange={event => edit('page_reference', event.target.value)} />
         </fieldset>
@@ -73,7 +73,7 @@ export function FeedbackPage() {
         <p className="ws-muted">A draft is kept in this tab’s session storage until sent. {storageError ? 'Browser storage is unavailable: keep a copy before navigating away.' : 'Sending requires the backend; offline drafts are not automatically submitted.'}</p>
         {error && <Notice live kind="error">{error}</Notice>}
         {cooldown > 0 && <p className="ws-muted">Try again in {cooldown} seconds. You can still edit or copy your message.</p>}
-        <button type="submit" className="ws-action" aria-busy={busy} disabled={busy || cooldown > 0}>{busy ? 'Sending…' : 'Send feedback'}</button>
+        <Button type="submit" aria-busy={busy} disabled={busy || cooldown > 0}>{busy ? 'Sending…' : 'Send feedback'}</Button>
       </form>
     </Panel>}
   </div>

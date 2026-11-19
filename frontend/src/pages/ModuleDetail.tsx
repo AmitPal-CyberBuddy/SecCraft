@@ -2,6 +2,7 @@ import { PracticeAvailability } from '@/components/common/PracticeAvailability'
 import { LearningProgress } from '@/components/learning/LearningProgress'
 import { resolveModuleView, updateQuery, type ModuleView } from '@/lib/learningNavigation'
 import { ViewSwitcher, Notice } from '@/components/common/Controls'
+import { Breadcrumb, EmptyState } from '@/components/common/Workspace'
 import { scrollBehavior } from '@/lib/motion'
 import { moduleOrdinal } from '@/content/module-ordinal'
 import { AndroidCaseLab } from '@/components/learning/AndroidCaseLab'
@@ -26,11 +27,45 @@ import { DecisionPractice, getScenariosForModule } from '@/components/learning/D
 import { AVAILABLE_LABS, LABS } from '@/content/labs'
 
 const NotesBookmarks = lazy(() => import('@/components/learning/NotesBookmarks').then(m => ({ default: m.NotesBookmarks })))
-import { ArrowLeft, BookOpen, FlaskConical, CheckCircle, Shield, FileText, Swords, Radio, AlertTriangle, Wifi, Target, ChevronRight, Award } from 'lucide-react'
+import { ArrowLeft, BookOpen, FlaskConical, CheckCircle, Shield, FileText, Swords, Radio, Wifi, Target, ChevronRight, Award } from 'lucide-react'
 
-import { quizData } from '@/content/quizData'
-import { fetchLessonContent, fetchModuleQuiz } from '@/lib/api'
+import { QUIZ_COUNTS } from '@/content/quiz-counts'
+import { fetchLesson, fetchModuleQuiz, gradeModuleQuiz, type LessonContentResult } from '@/lib/api'
 
+function lessonIssue(result: LessonContentResult) {
+  if (result.status === 401) return {
+    title: 'Approved account needed', kind: 'warning' as const, requestAccess: true,
+    message: "This lesson text is protected and is not one of SecCraft's selected public samples. The public catalogue, supplied samples and bundled local labs remain available.",
+  }
+  if (result.status === 403 && result.code === 'email_not_verified') return {
+    title: 'Verify your email', kind: 'warning' as const, requestAccess: true,
+    message: 'Verify the email address on your account before requesting protected lesson text. Public samples and bundled labs remain available.',
+  }
+  if (result.status === 403 && result.code === 'account_pending') return {
+    title: 'Approval pending', kind: 'warning' as const, requestAccess: true,
+    message: 'Your account is awaiting owner review. Approval unlocks protected lesson text and knowledge-check prompts; public samples and bundled local labs remain available.',
+  }
+  if (result.status === 403 && result.code === 'account_rejected') return {
+    title: 'Account not approved', kind: 'warning' as const, requestAccess: true,
+    message: 'Protected lesson text is unavailable for this account. The public catalogue, supplied samples and bundled local labs remain available.',
+  }
+  if (result.status === 403 && result.code === 'account_suspended') return {
+    title: 'Account suspended', kind: 'warning' as const, requestAccess: true,
+    message: 'Protected lesson text and account-backed records are unavailable for this account. The public catalogue, supplied samples and bundled local labs remain available.',
+  }
+  if (result.status === 403) return {
+    title: 'Access restricted', kind: 'warning' as const, requestAccess: true,
+    message: `${result.message || 'An approved account is required for this protected lesson text.'} Public samples and bundled labs remain available.`,
+  }
+  if (result.status === 404) return {
+    title: 'Lesson not found', kind: 'error' as const, requestAccess: false,
+    message: 'This lesson could not be found in the current content release. Choose another lesson from the outline or contact the platform owner if this link should work.',
+  }
+  return {
+    title: 'Lesson text unavailable', kind: 'error' as const, requestAccess: false,
+    message: 'The content service could not provide this lesson. Check the connection and retry. Public samples and bundled labs remain available.',
+  }
+}
 
 export function ModuleDetail() {
   const { id, pathId } = useParams<{ id: string; pathId?: string }>()
@@ -38,11 +73,16 @@ export function ModuleDetail() {
   const effectivePathId = (module as any)?.learningPathId || pathId || 'wireless-pentesting'
   const [query, setQuery] = useSearchParams()
   const [lessonContent, setLessonContent] = useState<string>('')
+  const [lessonLoadState, setLessonLoadState] = useState<'loading' | 'ready' | 'unavailable'>('loading')
+  const [lessonLoadIssue, setLessonLoadIssue] = useState<ReturnType<typeof lessonIssue> | null>(null)
+  const [lessonAccess, setLessonAccess] = useState<LessonContentResult['access']>()
+  const [lessonRetry, setLessonRetry] = useState(0)
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({})
   const [quizSubmitted, setQuizSubmitted] = useState(false)
   const [quizError, setQuizError] = useState('')
   const [completionNotice, setCompletionNotice] = useState('')
   const [completionPulse, setCompletionPulse] = useState(false)
+  const [labError, setLabError] = useState('')
   const quizSummaryRef = useRef<HTMLDivElement>(null)
   const [labAnswers, setLabAnswers] = useState<Record<string, string>>({})
   const completedLabs = useProgressStore(s => s.completedLabs)
@@ -52,7 +92,6 @@ export function ModuleDetail() {
   const completeLab = useProgressStore(s => s.completeLab)
   const completeQuiz = useProgressStore(s => s.completeQuiz)
   const isLessonCompleted = useProgressStore(s => s.isLessonCompleted)
-  const getProgress = useProgressStore(s => s.getModuleProgress)
   const setCurrentModule = useProgressStore(s => s.setCurrentModule)
   const setCurrentLearningPath = useProgressStore(s => s.setCurrentLearningPath)
   useEffect(() => {
@@ -105,8 +144,8 @@ export function ModuleDetail() {
     () => AVAILABLE_LABS.filter(lab => lab.module === id).map(lab => ({ ...lab, pcap: lab.pcap ?? '' })),
     [id],
   )
-  const quizzes = quizData[id || ''] || []
-  const view = resolveModuleView(query, lessons, labs.map(lab => lab.id), quizzes.length > 0, effectivePathId !== 'android-pentesting', id)
+  const quizCount = id && Object.hasOwn(QUIZ_COUNTS, id) ? QUIZ_COUNTS[id as keyof typeof QUIZ_COUNTS] : 0
+  const view = resolveModuleView(query, lessons, labs.map(lab => lab.id), quizCount > 0, effectivePathId !== 'android-pentesting', id)
   const activeTab = view.tab
   const activeLesson = view.lesson
   const setActiveTab = (tab: ModuleView) => setQuery(previous => updateQuery(previous, { tab: tab === 'overview' ? null : tab, lab: null }))
@@ -121,37 +160,66 @@ export function ModuleDetail() {
   const markLessonComplete = () => {
     const result = completeLesson(id!, lessons[activeLesson])
     setCompletionPulse(result.isNew)
-    setCompletionNotice(result.isNew ? 'Lesson marked complete · local, unverified practice.' : 'Already marked complete locally · no additional practice XP.')
+    setCompletionNotice(result.isNew ? 'Review recorded.' : 'Review already recorded.')
   }
-  const nextSection: ModuleView = labs.length ? 'lab' : quizzes.length ? 'quiz' : 'overview'
-  const nextSectionLabel = labs.length ? 'Go to labs' : quizzes.length ? 'Check understanding' : 'Module overview'
+  const nextSection: ModuleView = labs.length ? 'lab' : quizCount ? 'quiz' : 'overview'
+  const nextSectionLabel = labs.length ? 'Go to labs' : quizCount ? 'Check understanding' : 'Module overview'
   const [quizQuestions, setQuizQuestions] = useState<any[]>([])
+  const [quizLoadState, setQuizLoadState] = useState<'loading' | 'ready' | 'unavailable'>('loading')
+  const [quizSubmitting, setQuizSubmitting] = useState(false)
+  const quizLoadGeneration = useRef(0)
+  const [quizLoadError, setQuizLoadError] = useState('')
+  const [quizRetry, setQuizRetry] = useState(0)
   useEffect(() => {
     let cancelled = false
-    const formatQuestions = (items: any[]) => items.map(q => {
-      const options = q.options.map((text: string, index: number) => ({ text, index }))
-      for (let i = options.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [options[i], options[j]] = [options[j], options[i]] }
-      return { ...q, options: options.map((o: { text: string; index: number }) => o.text), correct: options.findIndex((o: { text: string; index: number }) => o.index === q.correct) }
-    })
-
-    if (id) {
-      fetchModuleQuiz(id).then(res => {
-        if (!cancelled && res?.questions && res.questions.length > 0) {
-          setQuizQuestions(formatQuestions(res.questions))
-        } else if (!cancelled) {
-          setQuizQuestions(formatQuestions(quizzes))
+    const generation = ++quizLoadGeneration.current
+    const formatQuestions = (items: any[]) => items
+      .filter(q => typeof q?.id === 'string' && typeof q.question === 'string' && Array.isArray(q.options) && q.options.length >= 2 && q.options.every((option: unknown) => typeof option === 'string'))
+      .map(q => {
+        const options = q.options.map((text: string, index: number) => ({ text, index }))
+        for (let i = options.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [options[i], options[j]] = [options[j], options[i]] }
+        // Allowlist learner-visible fields. Keys/solutions from a malformed response are never retained.
+        return {
+          id: q.id,
+          question: q.question,
+          options: options.map((option: { text: string; index: number }) => option.text),
+          optionIndices: options.map((option: { text: string; index: number }) => option.index),
         }
-      }).catch(() => {
-        if (!cancelled) setQuizQuestions(formatQuestions(quizzes))
       })
+    const unavailable = () => {
+      if (cancelled || generation !== quizLoadGeneration.current) return
+      setQuizQuestions([])
+      setQuizLoadState('unavailable')
+      setQuizLoadError('The learner API did not provide this question bank. Sign in with an approved account or check the API connection, then retry.')
+    }
+
+    setQuizQuestions([])
+    setQuizLoadError('')
+    setQuizLoadState(quizCount > 0 ? 'loading' : 'unavailable')
+    setQuizSubmitting(false)
+    if (id && quizCount > 0) {
+      fetchModuleQuiz(id).then(res => {
+        if (cancelled || generation !== quizLoadGeneration.current) return
+        const rawQuestions = Array.isArray(res?.questions) ? res.questions : []
+        const formatted = formatQuestions(rawQuestions)
+        if (!rawQuestions.length || formatted.length !== rawQuestions.length || rawQuestions.length !== quizCount) {
+          unavailable()
+          return
+        }
+        setQuizQuestions(formatted)
+        setQuizLoadState('ready')
+      }).catch(unavailable)
     } else {
-      setQuizQuestions(formatQuestions(quizzes))
+      unavailable()
     }
 
     setLessonContent(''); setLabAnswers({})
     setQuizAnswers({}); setQuizSubmitted(false); setQuizError('')
-    return () => { cancelled = true }
-  }, [id])
+    return () => {
+      cancelled = true
+      if (quizLoadGeneration.current === generation) quizLoadGeneration.current++
+    }
+  }, [id, quizCount, quizRetry])
   const theoryContentRef = useRef<HTMLDivElement>(null)
   const [readingMode, setReadingMode] = useState<'default' | 'focus'>('default')
   const [showToc, setShowToc] = useState(true)
@@ -174,19 +242,24 @@ export function ModuleDetail() {
     let cancelled = false
     if (activeTab === 'theory' && id && lessons[activeLesson]) {
       setLessonContent('')
+      setLessonLoadState('loading')
+      setLessonLoadIssue(null)
+      setLessonAccess(undefined)
       const lessonId = lessons[activeLesson]
-      fetchLessonContent(id, lessonId)
-        .then(content => {
-          if (!cancelled) setLessonContent(content)
-        })
-        .catch(err => {
-          if (!cancelled) {
-            setLessonContent(`# ${lessonId}\n\nUnable to load lesson content. ${err?.message || ''}`)
-          }
-        })
+      fetchLesson(id, lessonId).then(result => {
+        if (cancelled) return
+        if (result.ok) {
+          setLessonContent(result.content)
+          setLessonAccess(result.access)
+          setLessonLoadState('ready')
+        } else {
+          setLessonLoadIssue(lessonIssue(result))
+          setLessonLoadState('unavailable')
+        }
+      })
     }
     return () => { cancelled = true }
-  }, [activeTab, activeLesson, id, lessons])
+  }, [activeTab, activeLesson, id, lessons, lessonRetry])
 
   // Generate TOC from lessonContent
   const toc = useMemo(() => {
@@ -212,35 +285,89 @@ export function ModuleDetail() {
 
   if (!module) {
     return (
-      <div className="max-w-[800px] mx-auto p-12 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-[var(--panel-raised)] border border-[var(--line-strong)] flex items-center justify-center mx-auto mb-4">
-          <AlertTriangle className="w-8 h-8 text-[var(--ink-secondary)]" />
-        </div>
-        <div className="text-[var(--ink-secondary)] font-heading text-[16px]">Module not found: {id}</div>
-        <Link to="/modules" className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--panel-raised)] border border-[var(--line-strong)] text-[13px] text-[var(--ink-secondary)] hover:bg-[var(--panel-raised)] transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          Back to modules
-        </Link>
-      </div>
+      <EmptyState
+        title={`Module not found: ${id}`}
+        description="This module could not be found in the current content release. Choose another module from the catalogue."
+        action={<Link to="/modules" className="ws-action ws-action-secondary"><ArrowLeft className="w-4 h-4" /> Back to modules</Link>}
+      />
     )
   }
 
-  const progress = getProgress(module.id)
-
-  const handleQuizSubmit = () => {
+  const handleQuizSubmit = async () => {
+    if (quizLoadState !== 'ready' || quizSubmitting) return
     if (quizQuestions.length === 0 || quizQuestions.some((_, idx) => quizAnswers[`q${idx}`] === undefined)) {
       setQuizError('Answer every question before submitting. Your current answers are kept.')
       const firstMissing = quizQuestions.findIndex((_, idx) => quizAnswers[`q${idx}`] === undefined)
       document.querySelector<HTMLInputElement>(`input[name="q${firstMissing}"]`)?.focus()
       return
     }
-    const score = quizQuestions.reduce((n, q, idx) => n + (quizAnswers[`q${idx}`] === q.correct ? 1 : 0), 0)
+
+    const answers: Record<string, number> = {}
+    for (const [index, question] of quizQuestions.entries()) {
+      const selectedOption = quizAnswers[`q${index}`]
+      const sourceIndex = question.optionIndices?.[selectedOption]
+      if (!question.id || !Number.isInteger(sourceIndex)) {
+        setQuizError('The selected response could not be matched to its question. Your answers are kept; reload this module and retry.')
+        return
+      }
+      answers[question.id] = sourceIndex
+    }
+
+    const generation = quizLoadGeneration.current
     setQuizError('')
-    completeQuiz(module.id, 'quiz-01', score, quizQuestions.length)
+    setQuizSubmitting(true)
+    const result = await gradeModuleQuiz(module.id, answers)
+    if (generation !== quizLoadGeneration.current) return
+    setQuizSubmitting(false)
+    if (!result || result.module_id !== module.id || result.grading_class !== 'practice'
+      || result.total !== quizQuestions.length || !Number.isInteger(result.score)
+      || result.score < 0 || result.score > result.total
+      || !Array.isArray(result.results) || result.results.length !== quizQuestions.length) {
+      setQuizError('The learner API could not grade this practice attempt. Your answers are kept; sign in with an approved account or check the API connection, then retry.')
+      return
+    }
+
+    const expectedIds = new Set(quizQuestions.map(question => question.id))
+    const resultIds = result.results.map(item => item?.id)
+    const completeResultSet = resultIds.every(id => typeof id === 'string' && expectedIds.has(id))
+      && new Set(resultIds).size === expectedIds.size
+    const validResultValues = result.results.every(item => {
+      const optionCount = quizQuestions.find(question => question.id === item?.id)?.options.length ?? 0
+      return !!item
+        && Number.isInteger(item.selected_index)
+        && item.selected_index === answers[item.id]
+        && Number.isInteger(item.correct_index)
+        && item.correct_index >= 0
+        && item.correct_index < optionCount
+        && typeof item.correct === 'boolean'
+        && item.correct === (item.selected_index === item.correct_index)
+        && typeof item.explanation === 'string'
+    })
+    if (!completeResultSet || !validResultValues) {
+      setQuizError('The learner API returned an incomplete or inconsistent grading result. Your answers are kept; retry or contact the platform owner.')
+      return
+    }
+
+    const feedback = new Map(result.results.map(item => [item.id, item]))
+    const gradedQuestions = quizQuestions.map(question => {
+      const item = feedback.get(question.id)
+      if (!item) return null
+      const correct = question.optionIndices.indexOf(item.correct_index)
+      return correct >= 0 ? { ...question, correct, explanation: item.explanation } : null
+    })
+    const calculatedScore = result.results.filter(item => item.correct).length
+    if (gradedQuestions.some(question => question === null) || calculatedScore !== result.score) {
+      setQuizError('The learner API returned an incomplete or inconsistent grading result. Your answers are kept; retry or contact the platform owner.')
+      return
+    }
+
+    setQuizQuestions(gradedQuestions as any[])
+    completeQuiz(module.id, 'quiz-01', result.score, result.total)
     setQuizSubmitted(true)
   }
 
   const handleLabCheck = (labId: string) => {
+    setLabError('')
     const record = (score?: number) => completeLab(module.id, labId, score)
     const norm = (key: string) => (labAnswers[key] || '').trim().toLowerCase()
     let valid = false
@@ -248,26 +375,27 @@ export function ModuleDetail() {
       valid = norm('bssid').includes('00:11:22:33:44:55') && norm('channel') === '6'
         && ['wpa2', 'psk', 'ccmp'].every(token => norm('security').includes(token))
         && ['none', '0'].some(token => norm('leak') === token)
-      if (!valid) { alert('Use the beacon-only evidence: BSSID 00:11:22:33:44:55, channel 6, WPA2-PSK/CCMP, and zero probe requests.'); return }
+      if (!valid) { setLabError('Use the beacon-only evidence: BSSID 00:11:22:33:44:55, channel 6, WPA2-PSK/CCMP, and zero probe requests.'); return }
       record(100)
     } else if (id === '05-wireless-recon') {
       valid = norm('apCount') === '6' && ['hidden-lab', 'probe response'].every(token => norm('hidden').includes(token))
         && ['12:34:56:78:9a:bc', 'homewifi-2345', 'airport_free_wifi'].every(token => norm('clients').includes(token))
         && norm('ess').includes('no') && norm('ess').includes('authorized')
-      if (!valid) { alert('Review the 6 beacon BSSIDs, hidden-SSID probe response, client probe requests, and why a shared SSID alone cannot prove an ESS.'); return }
+      if (!valid) { setLabError('Review the 6 beacon BSSIDs, hidden-SSID probe response, client probe requests, and why a shared SSID alone cannot prove an ESS.'); return }
       record(100)
     } else if (id === '06-traffic-analysis') {
       const handshakeFrames = (labAnswers['handshake'] || '').match(/\d+/g)?.map(Number) ?? []
       valid = norm('frameCount') === '21' && norm('client').includes('12:34:56:78:9a:bc')
         && handshakeFrames.length === 4 && [8, 9, 10, 11].every(frame => handshakeFrames.includes(frame))
         && ['dhcp', 'arp', 'icmp', 'dns', 'http'].every(token => norm('protocols').includes(token))
-      if (!valid) { alert('Check the 21-frame capture: client 12:34:56:78:9a:bc, M1–M4 at frames 8–11, then DHCP/ARP/ICMP/DNS/HTTP.'); return }
+      if (!valid) { setLabError('Check the 21-frame capture: client 12:34:56:78:9a:bc, M1–M4 at frames 8–11, then DHCP/ARP/ICMP/DNS/HTTP.'); return }
       record(100)
     } else {
       // Other catalogue entries currently provide artefacts and guided review, not machine-graded tasks.
       // Record only that the learner reviewed the material; do not claim a score or verified skill.
       record()
     }
+    setLabError('')
     setLabAnswers({ ...labAnswers, [`reviewed:${labId}`]: 'true' })
   }
 
@@ -277,16 +405,16 @@ export function ModuleDetail() {
 
   return (
     <div className="ws-legacy ws-lesson max-w-[1200px] mx-auto space-y-4 xs:space-y-5 sm:space-y-6 min-w-0 w-full">
-      <nav className="ws-breadcrumb" aria-label="Breadcrumb"><Link to={`/paths/${effectivePathId}`}>Learning path</Link><span aria-hidden="true">/</span><Link to={`/paths/${effectivePathId}/modules`}>Modules</Link><span aria-hidden="true">/</span><span aria-current="page">{module.title}</span></nav>
-      <header className="sc-unit-header"><div><p className="sc-library-domain">Phase {module.phase} / Module {moduleOrdinal(module.id)}</p><h1>{module.title}</h1><p>{module.description}</p><div className="sc-unit-meta"><span>{module.difficulty}</span><span>{module.estimated_hours}h estimated</span><span>{lessons.length} lessons</span><span>{labs.length} labs</span>{effectivePathId === 'android-pentesting' ? <span>Offline source review · no runtime lab</span> : <TierBadge tier={(module as { lab_requirement?: string }).lab_requirement ?? module.status} />}</div></div><div className="sc-unit-progress"><span>Local practice progress</span><strong>{progress}%</strong><div role="progressbar" aria-label="Module practice progress" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} className="ws-progress"><span style={{ width: `${progress}%` }} /></div></div></header>
+      <Breadcrumb items={[{ label: 'Learning path', to: `/paths/${effectivePathId}` }, { label: 'Modules', to: `/paths/${effectivePathId}/modules` }, { label: module.title }]} />
+      <header className="sc-unit-header"><div><p className="sc-library-domain">Phase {module.phase} / Module {moduleOrdinal(module.id)}</p><h1>{module.title}</h1><p>{module.description}</p><div className="sc-unit-meta"><span>{module.difficulty}</span><span>{module.estimated_hours}h estimated</span><span>{lessons.length} lessons</span><span>{labs.length} labs</span>{effectivePathId === 'android-pentesting' ? <span>Offline source review · no runtime lab</span> : <TierBadge tier={(module as { lab_requirement?: string }).lab_requirement ?? module.status} />}</div></div></header>
       {effectivePathId === 'wireless-pentesting' && <PracticeAvailability />}
       <ViewSwitcher label="Module workspace" value={activeTab} onChange={setActiveTab} options={([
         { id: 'overview', label: 'Overview' },
         { id: 'theory', label: 'Lessons', count: lessons.length },
         { id: 'lab', label: 'Labs', count: labs.length },
-        { id: 'quiz', label: 'Quiz', count: quizzes.length },
+        { id: 'quiz', label: 'Quiz', count: quizCount },
         { id: 'report', label: 'Report' },
-      ] as const).filter(tab => (tab.id !== 'quiz' || quizzes.length > 0) && (tab.id !== 'lab' || labs.length > 0) && (tab.id !== 'report' || effectivePathId !== 'android-pentesting'))} />
+      ] as const).filter(tab => (tab.id !== 'quiz' || quizCount > 0) && (tab.id !== 'lab' || labs.length > 0) && (tab.id !== 'report' || effectivePathId !== 'android-pentesting'))} />
       {activeTab === 'lab' && view.lab && <Notice action={<button className="ws-action ws-action-secondary" type="button" onClick={() => setActiveTab('lab')}>Show all module labs</button>}>Selected lab: <strong>{labs.find(lab => lab.id === view.lab)?.title}</strong></Notice>}
 
 
@@ -297,13 +425,13 @@ export function ModuleDetail() {
             <div className="sc-unit-overview"><div className="sc-unit-overview-primary"><section><h2>What you will work through</h2><ol className="sc-objective-list">{objectives.map((objective, index) => <li key={index}><span>{String(index + 1).padStart(2, '0')}</span>{objective}</li>)}</ol></section>
               {((module as { evidence_focus?: string }).evidence_focus || (module as { retest_focus?: string }).retest_focus) && <section><h2>Evidence & retest</h2>{(module as { evidence_focus?: string }).evidence_focus && <p><strong>Evidence standard.</strong> {(module as { evidence_focus?: string }).evidence_focus}</p>}{(module as { retest_focus?: string }).retest_focus && <p><strong>Retest focus.</strong> {(module as { retest_focus?: string }).retest_focus}</p>}</section>}
               <section><h2>Your route through this module</h2><ol className="sc-objective-list">
-              <li><span>01</span><button type="button" onClick={() => setActiveTab('theory')}>Read the authored lessons ({lessons.filter(lesson => isLessonCompleted(module.id, lesson)).length}/{lessons.length} marked complete locally)</button></li>
+              <li><span>01</span><button type="button" onClick={() => setActiveTab('theory')}>Read the authored lessons ({lessons.length} lessons)</button></li>
               {labs.length > 0 && <li><span>02</span><button type="button" onClick={() => setActiveTab('lab')}>Practice with the supplied lab artifacts ({labs.length} labs)</button></li>}
-              {quizzes.length > 0 && <li><span>03</span><button type="button" onClick={() => setActiveTab('quiz')}>Check your understanding ({quizzes.length} local questions)</button></li>}
+              {quizCount > 0 && <li><span>03</span><button type="button" onClick={() => setActiveTab('quiz')}>Check your understanding ({quizCount} questions · learner access required)</button></li>}
               {effectivePathId !== 'android-pentesting' && <li><span>04</span><button type="button" onClick={() => setActiveTab('report')}>Document your reasoning and evidence</button></li>}
-              </ol><p>These are suggested steps, not verified completion requirements. Your progress is browser-local and self-reviewed.</p></section>
-              <section><h2>Lesson sequence</h2><ol className="sc-objective-list">{lessons.map((lesson, index) => <li key={lesson}><span>{isLessonCompleted(module.id, lesson) ? '✓' : String(index + 1).padStart(2,'0')}</span><button type="button" onClick={() => { setActiveLesson(index) }}>{lessonMeta.get(lesson)?.title || lesson.replace(/-/g,' ')}</button></li>)}</ol></section>
-            </div><aside className="sc-unit-overview-aside"><section><h2>Module context</h2><dl><div><dt>Difficulty</dt><dd>{module.difficulty}</dd></div><div><dt>Estimated</dt><dd>{module.estimated_hours}h</dd></div><div><dt>Labs</dt><dd>{labs.length}</dd></div><div><dt>Quiz questions</dt><dd>{quizzes.length}</dd></div></dl></section><section><h2>Environment</h2><p>Use supplied artifacts for local practice. Work requiring real RF equipment needs an authorized environment; no live infrastructure is modified here.</p></section><button type="button" className="ws-action" onClick={() => setActiveTab('theory')}>Open lessons →</button></aside></div>
+              </ol><p>These are suggested steps, not verified completion requirements.</p></section>
+              <section><h2>Lesson sequence</h2><ol className="sc-objective-list">{lessons.map((lesson, index) => <li key={lesson}><span>{String(index + 1).padStart(2,'0')}</span><button type="button" onClick={() => { setActiveLesson(index) }}>{lessonMeta.get(lesson)?.title || lesson.replace(/-/g,' ')}</button></li>)}</ol></section>
+            </div><aside className="sc-unit-overview-aside"><section><h2>Module context</h2><dl><div><dt>Difficulty</dt><dd>{module.difficulty}</dd></div><div><dt>Estimated</dt><dd>{module.estimated_hours}h</dd></div><div><dt>Labs</dt><dd>{labs.length}</dd></div><div><dt>Quiz questions</dt><dd>{quizCount}</dd></div></dl></section><section><h2>Environment</h2><p>Use supplied artifacts for practice. Work requiring real RF equipment needs an authorized environment; no live infrastructure is modified here.</p></section><button type="button" className="ws-action" onClick={() => setActiveTab('theory')}>Open lessons →</button></aside></div>
           )}
 
           {/* Theory — Enhanced Readability + Scroll Fix */}
@@ -321,7 +449,6 @@ export function ModuleDetail() {
                     <button type="button" className="sc-lesson-toggle" aria-expanded={lessonNavOpen} aria-controls="lesson-options" onClick={() => setLessonNavOpen(v => !v)}>Choose a lesson <span aria-hidden="true">{lessonNavOpen ? '−' : '+'}</span></button>
                     <div id="lesson-options" className={`sc-lesson-options space-y-1.5 ${lessonNavOpen ? 'is-open' : ''}`}>
                       {lessons.map((lesson, idx) => {
-                        const completed = isLessonCompleted(module.id, lesson)
                         const isActive = activeLesson === idx
                         const meta = lessonMeta.get(lessons[idx])
                         return (
@@ -332,26 +459,24 @@ export function ModuleDetail() {
                             className={`group w-full text-left p-3 rounded-xl flex items-center gap-3 sc-surface-transition relative overflow-hidden ${isActive ? 'sc-lesson-active border text-[var(--ink-primary)]' : 'text-[var(--ink-secondary)] hover:bg-[var(--panel-raised)] hover:text-[var(--ink-primary)] border border-transparent'}`}
                           >
                             {isActive && <span aria-hidden="true" className="sc-lesson-selection" />}
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 sc-surface-transition ${completed ? 'bg-[var(--success-bg)] text-[var(--success)] border border-[var(--success-border)]' : isActive ? 'bg-[var(--accent-bg)] text-[var(--learning)] border border-[var(--accent-border)]' : 'bg-[var(--panel-inset)] text-[var(--ink-secondary)] group-hover:bg-[var(--panel-raised)] group-hover:text-[var(--ink-secondary)]'}`}>{completed ? '✓' : idx + 1}</div>
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 sc-surface-transition ${isActive ? 'bg-[var(--accent-bg)] text-[var(--learning)] border border-[var(--accent-border)]' : 'bg-[var(--panel-inset)] text-[var(--ink-secondary)] group-hover:bg-[var(--panel-raised)] group-hover:text-[var(--ink-secondary)]'}`}>{idx + 1}</div>
                             <div className="flex-1 min-w-0">
                               <span className="text-sm font-medium block">{meta?.title || lesson.replace(/-/g, ' ').replace(/^\d+\s/, '')}</span>
-                              <span className="text-[10px] font-mono text-[var(--ink-secondary)] truncate block">{completed ? 'Completed locally' : 'Not started'}</span>
+                              <span className="text-[10px] font-mono text-[var(--ink-secondary)] truncate block">Lesson {idx + 1} of {lessons.length}</span>
                             </div>
-                            {completed && <CheckCircle className="w-4 h-4 text-[var(--success)] shrink-0" />}
-                            {isActive && !completed && <div className="w-2 h-2 rounded-full bg-[var(--action-fill)] shrink-0" />}
+                            {isActive && <div className="w-2 h-2 rounded-full bg-[var(--action-fill)] shrink-0" />}
                           </button>
                         )
                       })}
                     </div>
                     <div className="mt-4 pt-4 border-t border-[var(--line-normal)] space-y-3">
                       <div className="flex items-center justify-between">
-                        <div className="text-[11px] text-[var(--ink-secondary)] font-mono">Progress</div>
-                        <div className="text-[11px] text-[var(--learning)] font-mono font-bold">{lessons.filter(l => isLessonCompleted(module.id, l)).length}/{lessons.length}</div>
+                        <div className="text-[11px] text-[var(--ink-secondary)] font-mono">Position</div>
+                        <div className="text-[11px] text-[var(--learning)] font-mono font-bold">Lesson {activeLesson + 1} of {lessons.length}</div>
                       </div>
                       <div className="w-full h-2 bg-[var(--panel-inset)] rounded-full border border-[var(--line-normal)] overflow-hidden">
-                        <LearningProgress value={(lessons.filter(l => isLessonCompleted(module.id, l)).length / lessons.length) * 100} label="Lessons completed locally" />
+                        <LearningProgress value={((activeLesson + 1) / lessons.length) * 100} label={`Lesson ${activeLesson + 1} of ${lessons.length}`} />
                       </div>
-
                     </div>
                   </div>
 
@@ -371,8 +496,9 @@ export function ModuleDetail() {
                             <div>
                               <div className="text-[12px] font-mono text-[var(--ink-secondary)] flex items-center gap-2">
                                 <span>{lessonMeta.get(lessons[activeLesson])?.title || lessons[activeLesson]}</span>
+                                {lessonAccess === 'public-sample' && <span className="ws-label">Public sample</span>}
                                 <span className="w-1 h-1 rounded-full bg-[var(--panel-raised)]" />
-                                <span className="text-[var(--success)]">+10 XP</span>
+
                               </div>
                               <div className="mt-1">
                                 <LessonReadingProgress content={lessonContent} />
@@ -390,14 +516,26 @@ export function ModuleDetail() {
                               data-completion={completionPulse ? 'new' : undefined}
                               className={`px-4 py-2.5 rounded-xl text-[12px] font-semibold border sc-surface-transition flex items-center gap-2 ${isLessonCompleted(module.id, lessons[activeLesson]) ? 'bg-[var(--success-bg)] border-[var(--success-border)] text-[var(--success)]' : 'sc-learning-action border-[var(--learning)]'}`}
                             >
-                              {isLessonCompleted(module.id, lessons[activeLesson]) ? <><CheckCircle className="w-4 h-4" /> Completed · practice XP</> : <><Award className="w-4 h-4" /> Mark complete · practice XP</>}
+                              {isLessonCompleted(module.id, lessons[activeLesson]) ? <><CheckCircle className="w-4 h-4" /> Review recorded</> : <><Award className="w-4 h-4" /> Record review</>}
                             </button>
                             <p className="sc-learning-feedback" role="status">{completionNotice}</p>
                           </div>
                         </div>
                       </div>
 
-                      {/* Improved Markdown Readability */}
+                      {/* Loading, access, and transport states are explicit; they are never rendered as lesson markdown. */}
+                      {lessonLoadState === 'loading' ? (
+                        <LoadingPanel label="Loading lesson text" detail="Checking the public-sample route or approved-content service." compact />
+                      ) : lessonLoadState === 'unavailable' && lessonLoadIssue ? (
+                        <Notice
+                          kind={lessonLoadIssue.kind}
+                          title={lessonLoadIssue.title}
+                          live
+                          action={<div className="flex flex-wrap gap-2">{lessonLoadIssue.requestAccess && <Link to="/account" className="ws-action ws-action-secondary">Request or check access</Link>}<button type="button" className="ws-action ws-action-secondary" onClick={() => setLessonRetry(value => value + 1)}>Retry lesson</button></div>}
+                        >
+                          {lessonLoadIssue.message}
+                        </Notice>
+                      ) : (
                       <div id="lesson-markdown-content" className={`ws-reading-prose markdown prose prose-invert max-w-none prose-headings:font-heading prose-headings:tracking-tight ${readingMode === 'focus' ? 'prose-p:text-[15.5px] prose-p:leading-[1.85] prose-p:text-[var(--ink-primary)] prose-li:text-[15px] prose-li:leading-[1.75]' : 'prose-p:text-[14.5px] prose-p:leading-[1.8] prose-p:text-[var(--ink-secondary)]'} prose-strong:text-[var(--ink-primary)] prose-strong:font-semibold prose-code:text-[var(--learning)] prose-code:bg-[var(--panel-inset)] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:border prose-code:border-[var(--accent-border)] prose-code:text-[13px] prose-pre:bg-[var(--panel-inset)] prose-pre:border prose-pre:border-[var(--line-normal)] prose-pre:rounded-xl prose-pre:shadow-soft prose-a:text-[var(--learning)] prose-a:no-underline hover:prose-a:text-[var(--learning)] prose-a:font-medium prose-headings:scroll-mt-24`}>
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
@@ -427,6 +565,7 @@ export function ModuleDetail() {
                           {lessonContent}
                         </ReactMarkdown>
                       </div>
+                      )}
 
                       {/* Enhanced Navigation with Scroll Fix */}
                       <div className="mt-10 flex flex-col sm:flex-row justify-between gap-3 pt-8 border-t border-[var(--line-normal)]">
@@ -472,7 +611,7 @@ export function ModuleDetail() {
                 <aside className="sc-reading-context" aria-label="Lesson context">
                   {showToc && toc.length > 0 && <section><h2>On this page</h2><nav aria-label="Lesson headings">{toc.map((heading, index) => <a key={`${heading.id}-${index}`} href={`#${heading.id}`} className={heading.level > 1 ? 'is-nested' : ''}>{heading.text}</a>)}</nav></section>}
                   <section><h2>Up next</h2><p>{activeLesson < lessons.length - 1 ? lessonMeta.get(lessons[activeLesson + 1])?.title || lessons[activeLesson + 1].replace(/-/g, ' ') : nextSectionLabel}</p><button type="button" onClick={() => { if (activeLesson < lessons.length - 1) setActiveLesson(activeLesson + 1); else setActiveTab(nextSection); document.getElementById('theory-content-start')?.scrollIntoView() }}>Continue →</button></section>
-                  <section><h2>Record</h2><p>Marking this lesson complete records browser-local practice. It does not certify competence.</p></section>
+                  <section><h2>Record</h2><p>Recording marks your review of this lesson. It does not certify competence.</p></section>
                 </aside>
               </div>
             </>
@@ -542,7 +681,7 @@ export function ModuleDetail() {
                         <div className="flex-1 min-w-0">
                           <h3 className="font-heading font-bold text-[16px] text-[var(--ink-primary)] flex items-center gap-2">
                             {lab.title}
-                            <span className="sc-lab-state">{lab.status === 'PLANNED' ? 'Planned' : lab.grading === 'answer-checked' ? 'Answer-checked locally' : 'Self-review'}</span>
+                            <span className="sc-lab-state">{lab.status === 'PLANNED' ? 'Planned' : lab.grading === 'answer-checked' ? 'Answer-checked' : 'Self-review'}</span>
                           </h3>
                           <p className="text-[12px] text-[var(--ink-secondary)] mt-1 leading-relaxed">
                             <span className="font-mono text-[var(--learning)]">{lab.pcap ? `${lab.pcap}.pcapng` : 'No capture supplied'}</span>
@@ -556,7 +695,7 @@ export function ModuleDetail() {
                       {labCompleted[lab.id] && (
                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--success-bg)] border border-[var(--success-border)] text-[var(--success)] text-[11px] font-medium">
                           <CheckCircle className="w-4 h-4" />
-                          Completed locally
+                          Review recorded
                         </div>
                       )}
                     </div>
@@ -709,28 +848,28 @@ export function ModuleDetail() {
 
                       {id === '02-wifi-fundamentals' && lab.id === 'lab-02-beacon' && (
                         <>
-                          <div><label htmlFor={`${lab.id}-bssid`} className="text-sm font-medium text-[var(--ink-secondary)]">1. `LAB-WIFI` BSSID?</label><input id={`${lab.id}-bssid`} value={labAnswers['bssid'] || ''} onChange={e => setLabAnswers({...labAnswers, bssid: e.target.value})} placeholder="00:11:22:33:44:55" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] placeholder:text-[var(--ink-secondary)] focus:border-[var(--accent-border)] focus:bg-[var(--panel-inset)] focus:outline-none hover:border-[var(--line-strong)] sc-surface-transition" /></div>
-                          <div><label htmlFor={`${lab.id}-channel`} className="text-sm font-medium text-[var(--ink-secondary)]">2. Channel?</label><input id={`${lab.id}-channel`} value={labAnswers['channel'] || ''} onChange={e => setLabAnswers({...labAnswers, channel: e.target.value})} placeholder="6" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
-                          <div><label htmlFor={`${lab.id}-security`} className="text-sm font-medium text-[var(--ink-secondary)]">3. RSN authentication/cipher?</label><input id={`${lab.id}-security`} value={labAnswers['security'] || ''} onChange={e => setLabAnswers({...labAnswers, security: e.target.value})} placeholder="WPA2-PSK, CCMP" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
-                          <div><label htmlFor={`${lab.id}-leak`} className="text-sm font-medium text-[var(--ink-secondary)]">4. Probe requests captured? (0 / none)</label><input id={`${lab.id}-leak`} value={labAnswers['leak'] || ''} onChange={e => setLabAnswers({...labAnswers, leak: e.target.value})} placeholder="0" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-bssid`} className="text-sm font-medium text-[var(--ink-secondary)]">1. `LAB-WIFI` BSSID?</label><input id={`${lab.id}-bssid`} value={labAnswers['bssid'] || ''} onChange={e => { setLabError(''); setLabAnswers({...labAnswers, bssid: e.target.value}) }} placeholder="00:11:22:33:44:55" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] placeholder:text-[var(--ink-secondary)] focus:border-[var(--accent-border)] focus:bg-[var(--panel-inset)] focus:outline-none hover:border-[var(--line-strong)] sc-surface-transition" /></div>
+                          <div><label htmlFor={`${lab.id}-channel`} className="text-sm font-medium text-[var(--ink-secondary)]">2. Channel?</label><input id={`${lab.id}-channel`} value={labAnswers['channel'] || ''} onChange={e => { setLabError(''); setLabAnswers({...labAnswers, channel: e.target.value}) }} placeholder="6" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-security`} className="text-sm font-medium text-[var(--ink-secondary)]">3. RSN authentication/cipher?</label><input id={`${lab.id}-security`} value={labAnswers['security'] || ''} onChange={e => { setLabError(''); setLabAnswers({...labAnswers, security: e.target.value}) }} placeholder="WPA2-PSK, CCMP" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-leak`} className="text-sm font-medium text-[var(--ink-secondary)]">4. Probe requests captured? (0 / none)</label><input id={`${lab.id}-leak`} value={labAnswers['leak'] || ''} onChange={e => { setLabError(''); setLabAnswers({...labAnswers, leak: e.target.value}) }} placeholder="0" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
                         </>
                       )}
 
                       {id === '05-wireless-recon' && (
                         <>
-                          <div><label htmlFor={`${lab.id}-apCount`} className="text-sm font-medium text-[var(--ink-secondary)]">1. How many beacon BSSIDs?</label><input id={`${lab.id}-apCount`} value={labAnswers['apCount'] || ''} onChange={e => setLabAnswers({...labAnswers, apCount: e.target.value})} placeholder="6" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
-                          <div><label htmlFor={`${lab.id}-hidden`} className="text-sm font-medium text-[var(--ink-secondary)]">2. Which SSID is hidden? How revealed?</label><input id={`${lab.id}-hidden`} value={labAnswers['hidden'] || ''} onChange={e => setLabAnswers({...labAnswers, hidden: e.target.value})} placeholder="HIDDEN-LAB revealed via probe response" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
-                          <div><label htmlFor={`${lab.id}-clients`} className="text-sm font-medium text-[var(--ink-secondary)]">3. List clients and their PNL</label><input id={`${lab.id}-clients`} value={labAnswers['clients'] || ''} onChange={e => setLabAnswers({...labAnswers, clients: e.target.value})} placeholder="12:34:56:78:9A:BC → LAB-WIFI, HomeWiFi, Corp-WLAN" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
-                          <div><label htmlFor={`${lab.id}-ess`} className="text-sm font-medium text-[var(--ink-secondary)]">4. Do matching SSIDs prove one ESS? Why?</label><input id={`${lab.id}-ess`} value={labAnswers['ess'] || ''} onChange={e => setLabAnswers({...labAnswers, ess: e.target.value})} placeholder="No; verify authorized inventory and deployment context" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-apCount`} className="text-sm font-medium text-[var(--ink-secondary)]">1. How many beacon BSSIDs?</label><input id={`${lab.id}-apCount`} value={labAnswers['apCount'] || ''} onChange={e => { setLabError(''); setLabAnswers({...labAnswers, apCount: e.target.value}) }} placeholder="6" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-hidden`} className="text-sm font-medium text-[var(--ink-secondary)]">2. Which SSID is hidden? How revealed?</label><input id={`${lab.id}-hidden`} value={labAnswers['hidden'] || ''} onChange={e => { setLabError(''); setLabAnswers({...labAnswers, hidden: e.target.value}) }} placeholder="HIDDEN-LAB revealed via probe response" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-clients`} className="text-sm font-medium text-[var(--ink-secondary)]">3. List clients and their PNL</label><input id={`${lab.id}-clients`} value={labAnswers['clients'] || ''} onChange={e => { setLabError(''); setLabAnswers({...labAnswers, clients: e.target.value}) }} placeholder="12:34:56:78:9A:BC → LAB-WIFI, HomeWiFi, Corp-WLAN" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-ess`} className="text-sm font-medium text-[var(--ink-secondary)]">4. Do matching SSIDs prove one ESS? Why?</label><input id={`${lab.id}-ess`} value={labAnswers['ess'] || ''} onChange={e => { setLabError(''); setLabAnswers({...labAnswers, ess: e.target.value}) }} placeholder="No; verify authorized inventory and deployment context" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
                         </>
                       )}
 
                       {id === '06-traffic-analysis' && (
                         <>
-                          <div><label htmlFor={`${lab.id}-frameCount`} className="text-sm font-medium text-[var(--ink-secondary)]">1. Total frames?</label><input id={`${lab.id}-frameCount`} value={labAnswers['frameCount'] || ''} onChange={e => setLabAnswers({...labAnswers, frameCount: e.target.value})} placeholder="21" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
-                          <div><label htmlFor={`${lab.id}-client`} className="text-sm font-medium text-[var(--ink-secondary)]">2. Associated client MAC?</label><input id={`${lab.id}-client`} value={labAnswers['client'] || ''} onChange={e => setLabAnswers({...labAnswers, client: e.target.value})} placeholder="12:34:56:78:9a:bc" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
-                          <div><label htmlFor={`${lab.id}-handshake`} className="text-sm font-medium text-[var(--ink-secondary)]">3. EAPOL M1–M4 frame numbers?</label><input id={`${lab.id}-handshake`} value={labAnswers['handshake'] || ''} onChange={e => setLabAnswers({...labAnswers, handshake: e.target.value})} placeholder="8, 9, 10, 11" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
-                          <div><label htmlFor={`${lab.id}-protocols`} className="text-sm font-medium text-[var(--ink-secondary)]">4. Name post-association protocols</label><input id={`${lab.id}-protocols`} value={labAnswers['protocols'] || ''} onChange={e => setLabAnswers({...labAnswers, protocols: e.target.value})} placeholder="DHCP, ARP, ICMP, DNS, HTTP" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-frameCount`} className="text-sm font-medium text-[var(--ink-secondary)]">1. Total frames?</label><input id={`${lab.id}-frameCount`} value={labAnswers['frameCount'] || ''} onChange={e => { setLabError(''); setLabAnswers({...labAnswers, frameCount: e.target.value}) }} placeholder="21" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-client`} className="text-sm font-medium text-[var(--ink-secondary)]">2. Associated client MAC?</label><input id={`${lab.id}-client`} value={labAnswers['client'] || ''} onChange={e => { setLabError(''); setLabAnswers({...labAnswers, client: e.target.value}) }} placeholder="12:34:56:78:9a:bc" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-handshake`} className="text-sm font-medium text-[var(--ink-secondary)]">3. EAPOL M1–M4 frame numbers?</label><input id={`${lab.id}-handshake`} value={labAnswers['handshake'] || ''} onChange={e => { setLabError(''); setLabAnswers({...labAnswers, handshake: e.target.value}) }} placeholder="8, 9, 10, 11" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
+                          <div><label htmlFor={`${lab.id}-protocols`} className="text-sm font-medium text-[var(--ink-secondary)]">4. Name post-association protocols</label><input id={`${lab.id}-protocols`} value={labAnswers['protocols'] || ''} onChange={e => { setLabError(''); setLabAnswers({...labAnswers, protocols: e.target.value}) }} placeholder="DHCP, ARP, ICMP, DNS, HTTP" className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] font-mono text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none" /></div>
                         </>
                       )}
 
@@ -742,6 +881,7 @@ export function ModuleDetail() {
                         </div>
                       )}
 
+                      {labError && <Notice kind="error" live>{labError}</Notice>}
                       <button
                         onClick={() => handleLabCheck(lab.id)}
                         disabled={!!labCompleted[lab.id]}
@@ -789,7 +929,7 @@ export function ModuleDetail() {
                           className="rounded-xl bg-[var(--success-bg)] border border-[var(--success-border)] p-4 text-[11px] text-[var(--success)] flex items-center gap-2"
                         >
                           <CheckCircle className="w-4 h-4" />
-                          Review recorded in this browser. This is local practice, not trusted grading.
+                          Review recorded. This is practice, not trusted grading.
                         </div>
                       )}
                     </div>
@@ -833,61 +973,71 @@ export function ModuleDetail() {
                     </div>
                     <div>
                       <h3 className="font-heading font-bold text-[16px] text-[var(--ink-primary)]">Knowledge Check</h3>
-                      <p className="text-[12px] text-[var(--ink-secondary)]">{quizzes.length} questions • 80% to pass • {module.title}</p>
+                      <p className="text-[12px] text-[var(--ink-secondary)]">{quizCount} questions • 80% practice threshold • {module.title}</p>
                     </div>
                   </div>
                   {quizSubmitted && (
                     <div className="text-right">
                       <div className="text-[11px] text-[var(--ink-secondary)] uppercase tracking-widest">Score</div>
-                      <div className="text-[20px] font-bold text-[var(--ink-primary)] font-mono">{quizQuestions.filter((_, i) => quizAnswers[`q${i}`] === quizQuestions[i].correct).length} / {quizzes.length}</div>
+                      <div className="text-[20px] font-bold text-[var(--ink-primary)] font-mono">{quizQuestions.filter((_, i) => quizAnswers[`q${i}`] === quizQuestions[i].correct).length} / {quizCount}</div>
                     </div>
                   )}
                 </div>
               </div>
 
+              {quizLoadState === 'loading' && <LoadingPanel label="Loading knowledge check" detail="Questions and grading are delivered by the learner API." compact />}
+              {quizLoadState === 'unavailable' && (
+                <Notice
+                  kind="warning"
+                  title="Knowledge check unavailable"
+                  live
+                  action={<button type="button" className="ws-action ws-action-secondary" onClick={() => setQuizRetry(value => value + 1)}>Retry</button>}
+                >
+                  {quizLoadError}
+                </Notice>
+              )}
+              {quizLoadState === 'ready' && (
+                <>
               {quizError && <Notice kind="error" live>{quizError}</Notice>}
               {quizSubmitted && <div ref={quizSummaryRef} tabIndex={-1} className="sc-quiz-summary" role="status">
                 <strong>{quizPassed ? 'Passed' : 'Not passed'} · {quizScore} / {quizQuestions.length} correct</strong>
-                <p>Local practice result, not a verified assessment. Review the explanations below{quizPerfect ? '.' : ' or retry to improve.'}</p>
+                <p>Practice result, not a verified assessment. Review the explanations below{quizPerfect ? '.' : ' or retry to improve.'}</p>
               </div>}
               {quizQuestions.map((q, idx) => (
-                <div
+                <fieldset
                   key={idx}
-
-
-
-                  className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-6 hover:border-[var(--line-strong)] "
+                  aria-describedby={quizSubmitted ? `quiz-feedback-${idx}` : undefined}
+                  className="min-w-0 rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-6 hover:border-[var(--line-strong)] "
                 >
-                  <div className="text-[13px] font-semibold text-[var(--ink-primary)] mb-4 flex gap-3">
-                    <span className="w-6 h-6 rounded-full bg-[var(--panel-raised)] border border-[var(--line-strong)] flex items-center justify-center text-[11px] font-mono shrink-0">{idx + 1}</span>
-                    <span className="leading-relaxed">{q.question}</span>
-                  </div>
+                  <legend className="mb-4 flex w-full items-start gap-3 p-0 text-[13px] font-semibold text-[var(--ink-primary)]">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--panel-raised)] border border-[var(--line-strong)] text-[11px] font-mono">{idx + 1}</span>
+                    <span className="min-w-0 leading-relaxed">{q.question}</span>
+                  </legend>
                   <div className="space-y-2">
                     {q.options.map((opt: string, optIdx: number) => (
                       <label key={optIdx} className={`sc-quiz-choice group flex items-center gap-3 p-3 rounded-xl border cursor-pointer  ${quizAnswers[`q${idx}`] === optIdx ? 'bg-[var(--panel-raised)] border-[var(--accent-border)] text-[var(--ink-primary)] shadow-soft' : 'bg-[var(--panel-inset)] border-[var(--line-normal)] text-[var(--ink-secondary)] hover:border-[var(--line-strong)] hover:text-[var(--ink-primary)] hover:bg-[var(--panel-inset)]'}`}>
-                        <input type="radio" name={`q${idx}`} checked={quizAnswers[`q${idx}`] === optIdx} onChange={() => { setQuizAnswers({...quizAnswers, [`q${idx}`]: optIdx}); setQuizError('') }} disabled={quizSubmitted} className="shrink-0 accent-[var(--learning)]" />
+                        <input type="radio" name={`q${idx}`} checked={quizAnswers[`q${idx}`] === optIdx} onChange={() => { setQuizAnswers({...quizAnswers, [`q${idx}`]: optIdx}); setQuizError('') }} disabled={quizSubmitted || quizSubmitting} className="shrink-0 accent-[var(--learning)]" />
                         <span className="text-[13px] leading-relaxed">{opt}</span>
                       </label>
                     ))}
                   </div>
                   {quizSubmitted && (
                     <div
-
-
+                      id={`quiz-feedback-${idx}`}
                       className={`mt-4 p-3 rounded-xl text-[11px] border  ${quizAnswers[`q${idx}`] === q.correct ? 'bg-[var(--success-bg)] border-[var(--success-border)] text-[var(--success)]' : 'bg-[var(--danger-bg)] border-[var(--danger-border)] text-[var(--danger)]'}`}
                     >
                       <div className="flex items-center gap-2 font-medium">
                         {quizAnswers[`q${idx}`] === q.correct ? <><CheckCircle className="w-4 h-4" /> Correct</> : <>✗ Wrong — Correct: {q.options[q.correct]}</>}
                       </div>
-                      <div className="mt-1.5 text-[11px]  leading-relaxed">{q.explanation}</div>
+                      <div className="mt-1.5 text-[11px] leading-relaxed">{q.explanation}</div>
                     </div>
                   )}
-                </div>
+                </fieldset>
               ))}
 
               <button
-                onClick={() => { if (quizSubmitted) { setQuizAnswers({}); setQuizSubmitted(false) } else handleQuizSubmit() }}
-                disabled={quizSubmitted && quizPerfect}
+                onClick={() => { if (quizSubmitted) { setQuizAnswers({}); setQuizSubmitted(false); setQuizError('') } else void handleQuizSubmit() }}
+                disabled={quizSubmitting || (quizSubmitted && quizPerfect)}
                 className={`w-full py-4 rounded-xl font-bold text-[14px] sc-surface-transition flex items-center justify-center gap-2 ${
                   quizSubmitted
                     ? quizPassed
@@ -896,18 +1046,21 @@ export function ModuleDetail() {
                     : 'sc-learning-action'
                 }`}
               >
-                {quizSubmitted ? (
+                {quizSubmitting ? 'Submitting practice attempt…' : quizSubmitted ? (
                   <>
                     {quizPassed ? <CheckCircle className="w-5 h-5" /> : <Target className="w-5 h-5" />}
-                    {quizPerfect ? `Passed · Perfect score · ${quizScore} / ${quizzes.length}` : quizPassed ? `Passed · Retake to improve · ${quizScore} / ${quizzes.length}` : `Not passed · Retry · ${quizScore} / ${quizzes.length}`}
+                    {quizPerfect ? `Passed · Perfect score · ${quizScore} / ${quizQuestions.length}` : quizPassed ? `Passed · Retake to improve · ${quizScore} / ${quizQuestions.length}` : `Not passed · Retry · ${quizScore} / ${quizQuestions.length}`}
                   </>
                 ) : (
                   <>
                     <Target className="w-5 h-5" />
-                    Submit Quiz
+                    Submit practice quiz
                   </>
                 )}
               </button>
+
+                </>
+              )}
             </div>
           )}
 
@@ -957,7 +1110,7 @@ export function ModuleDetail() {
         </Link>
         <div className="flex items-center gap-2 text-[11px] text-[var(--ink-secondary)] font-mono px-3 py-2 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)]">
           <Radio className="w-3 h-3" />
-          Module {module.id} • {progress}% • {module.status} • Notes • Bookmarks • Enterprise
+          Module {module.id} • {module.status} • Notes • Bookmarks • Enterprise
         </div>
       </div>
     </div>

@@ -21,8 +21,6 @@ const KNOWN_KEYS: { key: string; label: string; description: string }[] = [
   { key: 'wififorge-checklist-general', label: 'Checklist (Reference, legacy)', description: 'Legacy master-checklist' },
   { key: 'platform-checklist-ENG-01', label: 'Checklist (ENG-01, platform)', description: 'Ticked engagement-checklist items' },
   { key: 'wififorge-checklist-ENG-01', label: 'Checklist (ENG-01, legacy)', description: 'Legacy engagement checklist' },
-  { key: 'platform-profile', label: 'Local profile (platform)', description: 'Guest display name — no credentials or permissions' },
-  { key: 'wififorge-profile', label: 'Local profile (legacy)', description: 'Legacy display name; any self-declared role is ignored' },
   { key: 'platform-notes', label: 'Notes & bookmarks (platform)', description: 'Lesson notes and bookmarks — generic' },
   { key: 'wififorge-notes', label: 'Notes & bookmarks (legacy)', description: 'Legacy notes' },
   { key: 'theme', label: 'Theme preference', description: 'Dark / light / system' },
@@ -96,9 +94,10 @@ export function LocalDataPanel({ className = '' }: { className?: string }) {
           <div className="min-w-0 flex-1">
             <h3 className="text-[14px] font-semibold text-[var(--ink-primary)]">Local data &amp; privacy</h3>
             <p className="mt-1 text-[12px] text-[var(--ink-secondary)] leading-relaxed">
-              Guest learning and its progress remain local to this browser. If account services are configured and you sign in,
-              authentication is handled by Supabase and synchronized records are sent to the configured SecCraft API.
-              The app does not add analytics or telemetry; local learning remains available if those services are offline.
+              Browsing the catalogue needs no account. Notes, drafts and preferences stay on this device.
+              If account services are configured and you sign in, authentication is handled by Supabase and
+              account records are sent to the configured SecCraft API. The app does not add analytics or telemetry;
+              the catalogue remains available if those services are offline.
             </p>
             <div className="mt-3 flex flex-wrap gap-2 text-[10.5px] font-mono">
               <span className={`px-2 py-1 rounded-full border ${online ? 'bg-[var(--success-bg)] border-[var(--success-border)] text-[var(--success)]' : 'bg-[var(--warning-bg)] border-[var(--warning-border)] text-[var(--attention)]'}`}>
@@ -106,7 +105,7 @@ export function LocalDataPanel({ className = '' }: { className?: string }) {
                 {online ? 'browser online' : 'browser offline (app still works)'}
               </span>
               <span className={`px-2 py-1 rounded-full border ${apiReachable === true ? 'bg-[var(--success-bg)] border-[var(--success-border)] text-[var(--success)]' : apiReachable === false ? 'bg-[var(--panel-raised)] border-[var(--line-strong)] text-[var(--ink-secondary)]' : 'bg-[var(--panel-inset)] border-[var(--line-normal)] text-[var(--ink-muted)]'}`}>
-                platform API: {apiReachable === true ? 'reachable' : apiReachable === false ? 'not reachable (guest content still works)' : 'not checked'}
+                platform API: {apiReachable === true ? 'reachable' : apiReachable === false ? 'not reachable (catalogue still works)' : 'not checked'}
               </span>
               <span className="px-2 py-1 rounded-full bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[var(--ink-secondary)]">account provider: {supabaseConfigured ? 'configured' : 'not configured'}</span>
             </div>
@@ -159,7 +158,7 @@ export function LocalDataPanel({ className = '' }: { className?: string }) {
             </button>
             <button
               onClick={async () => {
-                if (!confirm('Erase this browser’s known SecCraft data and sign out of the configured account? This does not delete your server account or synchronized records. This cannot be undone.')) return
+                if (!confirm('Erase this device’s known SecCraft data and sign out of the configured account? This does not delete your server account or account records. This cannot be undone.')) return
                 for (const { key } of KNOWN_KEYS) { try { localStorage.removeItem(key) } catch { /* ignore */ } }
                 reset()
                 if (supabase) { try { await supabase.auth.signOut({ scope: 'local' }) } catch { /* local app data is still cleared */ } }
