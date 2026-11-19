@@ -9,5 +9,5 @@ os.environ.setdefault("PLATFORM_ALLOWED_ORIGINS", "http://localhost:3000,http://
 os.environ.setdefault("SUPABASE_URL", "https://auth-test.invalid")
 os.environ.setdefault("SUPABASE_ANON_KEY", "public-test-anon-key")
 os.environ.setdefault("SUPABASE_JWT_ISSUER", "https://auth-test.invalid/auth/v1")
-os.environ.setdefault("SUPABASE_JWT_SECRET", "test-only-secret-not-for-use")
+os.environ.setdefault("SUPABASE_JWT_SECRET", "test-only-secret-not-for-use-32bytes")
 os.environ.setdefault("SUPABASE_REQUIRE_VERIFIED_EMAIL", "false")

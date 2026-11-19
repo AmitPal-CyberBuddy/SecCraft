@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { ArrowRight, Menu, Shield, X, UserRound, LogOut, LayoutDashboard, CloudUpload } from 'lucide-react'
 import { useSession } from '@/lib/session'
@@ -12,9 +12,23 @@ export function PublicLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { userState, account, accountLoading, signOut } = useSession()
   const location = useLocation()
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
 
   // Close the mobile drawer on navigation so it never strands over the new page.
   useEffect(() => setMenuOpen(false), [location.pathname])
+
+  // Escape closes the drawer and returns focus to the toggle.
+  useEffect(() => {
+    if (!menuOpen) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMenuOpen(false)
+        menuButtonRef.current?.focus()
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [menuOpen])
 
   const signedIn = isSignedIn(userState)
 
@@ -68,6 +82,7 @@ export function PublicLayout() {
           )}
 
           <button
+            ref={menuButtonRef}
             type="button"
             className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--line-normal)] text-[var(--ink-primary)] md:hidden"
             onClick={() => setMenuOpen(open => !open)}
@@ -129,7 +144,7 @@ export function PublicLayout() {
                 <span className="font-semibold text-[var(--ink-primary)]">SecCraft</span>
               </div>
               <p className="mt-3 text-[13px] leading-relaxed text-[var(--ink-secondary)]">
-                Learn. Practice. Investigate. Improve. The catalogue is public. Lessons, labs and assessments are for approved accounts.
+                Learn. Practice. Investigate. Improve. The catalogue, selected sample lessons, supplied artifacts and bundled local labs are public. Approved accounts unlock protected lesson text and knowledge-check prompts; challenge content is not included in this public build yet.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-x-10 gap-y-2 sm:text-right">
@@ -142,7 +157,7 @@ export function PublicLayout() {
               </div>
               <div className="flex flex-col gap-2">
                 <span className="text-[11px] font-semibold uppercase tracking-[.16em] text-[var(--ink-muted)]">Start</span>
-                <Link to="/app" className="hover:text-[var(--ink-primary)]">Guest workspace</Link>
+                <Link to="/app" className="hover:text-[var(--ink-primary)]">Dashboard</Link>
                 <Link to="/login" className="hover:text-[var(--ink-primary)]">Log in</Link>
                 <Link to="/signup" className="hover:text-[var(--ink-primary)]">Request access</Link>
               </div>

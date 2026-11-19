@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { apiFetch } from '@/lib/api'
-import { supabase, supabaseConfigured } from '@/lib/supabase'
+import { accountRedirect, supabase, supabaseConfigured } from '@/lib/supabase'
 import {
   allows,
   deriveUserState,
@@ -45,6 +45,7 @@ interface SessionValue {
   publicConfig: PublicConfig | null
   can: (capability: Capability) => boolean
   refreshAccount: () => Promise<void>
+  resendVerificationEmail: () => Promise<{ ok: boolean; message: string }>
   signOut: () => Promise<void>
 }
 
@@ -94,6 +95,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [publicConfig, setPublicConfig] = useState<PublicConfig | null>(null)
   const inFlight = useRef<{ promise: Promise<void>; epoch: number; authoritative: boolean } | null>(null)
   const accountEpoch = useRef(0)
+  const lastAccountRefresh = useRef(0)
 
   /** Public availability probe. Failure is expected and must never block the app. */
   const loadPublicConfig = useCallback(async () => {
@@ -208,6 +210,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setAccountError({ kind: 'unavailable', message: 'Account services are unavailable. Guest learning is unaffected.' })
       } finally {
         if (epoch === accountEpoch.current) {
+          lastAccountRefresh.current = Date.now()
           setAccountLoading(false)
           setReady(true)
           inFlight.current = null
@@ -274,6 +277,47 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('online', retry)
   }, [apiState, hasSession, loadAccount, loadPublicConfig])
 
+  // Returning to the tab is when an owner approval most often needs to appear. Refresh the
+  // account record then, throttled so focus/visibility churn cannot turn into a request loop.
+  useEffect(() => {
+    if (!hasSession || accountLoading) return
+    const maybeRefresh = () => {
+      if (document.visibilityState && document.visibilityState !== 'visible') return
+      if (Date.now() - lastAccountRefresh.current < 30_000) return
+      void loadAccount({ fresh: true })
+    }
+    window.addEventListener('focus', maybeRefresh)
+    document.addEventListener('visibilitychange', maybeRefresh)
+    return () => {
+      window.removeEventListener('focus', maybeRefresh)
+      document.removeEventListener('visibilitychange', maybeRefresh)
+    }
+  }, [hasSession, accountLoading, loadAccount])
+
+  const resendVerificationEmail = useCallback(async (): Promise<{ ok: boolean; message: string }> => {
+    if (!supabase) {
+      return { ok: false, message: 'Account services are not configured in this build.' }
+    }
+    try {
+      const { data, error: userError } = await supabase.auth.getUser()
+      const email = data.user?.email
+      if (userError || !email) {
+        return { ok: false, message: 'Sign in again before resending the verification email.' }
+      }
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: { emailRedirectTo: accountRedirect('/account?sent=1') },
+      })
+      if (error) {
+        return { ok: false, message: 'The verification email could not be resent right now. Check your inbox for the original message, or try again shortly.' }
+      }
+      return { ok: true, message: 'Verification email sent. Open the newest message, confirm the address, then re-check this page.' }
+    } catch {
+      return { ok: false, message: 'The verification email could not be resent right now. Check your inbox for the original message, or try again shortly.' }
+    }
+  }, [])
+
   const signOut = useCallback(async () => {
     try {
       if (supabase) await supabase.auth.signOut()
@@ -303,9 +347,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       publicConfig,
       can: (capability: Capability) => allows(userState, capability),
       refreshAccount: () => loadAccount({ fresh: true }),
+      resendVerificationEmail,
       signOut,
     }
-  }, [ready, hasSession, accountLoading, account, accountError, apiState, publicConfig, loadAccount, signOut])
+  }, [ready, hasSession, accountLoading, account, accountError, apiState, publicConfig, loadAccount, resendVerificationEmail, signOut])
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
 }
@@ -327,6 +372,7 @@ export function useSession(): SessionValue {
     publicConfig: null,
     can: capability => allows('guest', capability),
     refreshAccount: async () => {},
+    resendVerificationEmail: async () => ({ ok: false, message: 'Account services are not configured in this build.' }),
     signOut: async () => {},
   }
 }

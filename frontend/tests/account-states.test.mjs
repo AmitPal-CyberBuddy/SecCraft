@@ -148,29 +148,29 @@ test('every account state renders the right surfaces and never drops the learner
 
   // Destinations every state keeps. The catalogue and the practice surfaces are never taken away —
   // approval adds learning content and the record, it does not revoke the catalogue.
-  const learnerNav = ['Learning Paths', 'Modules', 'Labs', 'Challenges', 'Analytics', 'Settings', 'Progress sync']
-  // Which access label each state is shown, and whether the "continue with an approved account"
-  // upsell should be offered. A non-approved state may legitimately *name* approved learning in the
-  // upsell copy — what it must never do is be presented as already having it.
+  const learnerNav = ['Learning Paths', 'Modules', 'Labs', 'Challenges', 'Settings', 'Account records']
+  // Which access label each state is shown, and whether an account request should be offered.
+  // Selected samples and bundled labs remain available; protected lesson text and
+  // knowledge-check prompts are part of the approved-content tier, while challenge data is withheld.
   const APPROVED = new Set(['active', 'owner'])
   const tierByState = Object.fromEntries(
     ['guest', 'unverified', 'pending', 'active', 'rejected', 'suspended', 'owner'].map(label => [
       label,
       {
-        tier: APPROVED.has(label) ? 'Approved learning' : 'Catalogue access',
+        tier: APPROVED.has(label) ? 'Approved content' : 'Catalogue & practice',
         upsell: !APPROVED.has(label),
       },
     ]),
   )
 
   const scenarios = [
-    { label: 'guest', session: null, response: { status: 401, body: { detail: 'Bearer access token required.' } }, expect: ['Visitor', 'Request an account'] },
+    { label: 'guest', session: null, response: { status: 401, body: { detail: 'Bearer access token required.' } }, expect: ['Not signed in', 'Request an account'] },
     { label: 'unverified', session: { access_token: 't' }, response: { status: 403, body: { detail: { code: 'email_not_verified', message: 'Verify your email before continuing.' } } }, expect: ['Confirm your email address', 'Explore the catalogue'] },
     { label: 'pending', session: { access_token: 't' }, response: { status: 200, body: { user_id: 'u1', email: 'p@example.com', account_status: 'pending', is_admin: false } }, expect: ['Approval pending', 'Explore the catalogue', 'Sign out'] },
-    { label: 'active', session: { access_token: 't' }, response: { status: 200, body: { user_id: 'u2', email: 'a@example.com', account_status: 'active', is_admin: false } }, expect: ['Account snapshot', 'Approved account', 'Practice XP (this browser)'] },
+    { label: 'active', session: { access_token: 't' }, response: { status: 200, body: { user_id: 'u2', email: 'a@example.com', account_status: 'active', is_admin: false } }, expect: ['Account snapshot', 'Approved account'] },
     { label: 'rejected', session: { access_token: 't' }, response: { status: 200, body: { user_id: 'u3', email: 'r@example.com', account_status: 'rejected', is_admin: false } }, expect: ['Not approved', 'You can still explore the catalogue'] },
     { label: 'suspended', session: { access_token: 't' }, response: { status: 200, body: { user_id: 'u4', email: 's@example.com', account_status: 'suspended', is_admin: false } }, expect: ['Suspended', 'You can still explore the catalogue'] },
-    { label: 'owner', session: { access_token: 't' }, response: { status: 200, body: { user_id: 'o1', email: 'o@example.com', account_status: 'active', is_admin: true } }, expect: ['Open owner console', 'Owner console', 'Practice XP (this browser)'] },
+    { label: 'owner', session: { access_token: 't' }, response: { status: 200, body: { user_id: 'o1', email: 'o@example.com', account_status: 'active', is_admin: true } }, expect: ['Open owner console', 'Owner console', 'Account snapshot'] },
   ]
 
   for (const scenario of scenarios) {
@@ -201,7 +201,7 @@ test('every account state renders the right surfaces and never drops the learner
       )
 
       assert.ok(shellText.includes(APPROVED.has(scenario.label) ? 'Your learning workspace' : 'Explore the catalogue'), `${scenario.label}: workspace presentation must reflect the actual tier`)
-      assert.ok(shellText.includes(APPROVED.has(scenario.label) ? 'View account records' : 'Practice stays in this browser'), `${scenario.label}: header must explain record provenance`)
+      assert.ok(shellText.includes(APPROVED.has(scenario.label) ? 'View account records' : 'Catalogue & content details are public'), `${scenario.label}: header must explain record provenance`)
 
       for (const destination of learnerNav) {
         assert.ok(shellText.includes(destination), `${scenario.label}: learner navigation lost "${destination}"`)
@@ -210,8 +210,12 @@ test('every account state renders the right surfaces and never drops the learner
       const publicText = await render(
         wrap(React.createElement(MemoryRouter, { initialEntries: ['/'] }, React.createElement(PublicHome))),
       )
-      assert.ok(publicText.includes('The catalogue is public'), `${scenario.label}: public site must say the catalogue is public`)
-      assert.ok(publicText.includes('approved accounts'), `${scenario.label}: public site must say who gets lessons, labs and assessments`)
+      assert.match(publicText, /catalogue, selected sample lessons, supplied artifacts and bundled labs are public/i, `${scenario.label}: public site must state the public catalogue boundary`)
+      assert.match(publicText, /approved accounts/i, `${scenario.label}: public site must distinguish protected content access`)
+      assert.match(publicText, /protected lesson text.*knowledge-check prompts/i, `${scenario.label}: public site must state what approval unlocks`)
+      assert.match(publicText, /Sample artifacts and bundled labs are public for everyone/i, `${scenario.label}: public site must disclose public practice content`)
+      assert.match(publicText, /challenge content is not included in this public build yet/i, `${scenario.label}: public site must disclose unavailable challenge delivery`)
+      assert.doesNotMatch(publicText, /lessons, labs and assessments are for approved accounts/i, `${scenario.label}: public site must not imply local exercises are account-protected`)
       assert.ok(publicText.includes('Once your account is approved'), `${scenario.label}: public site must describe approval honestly`)
       assert.ok(publicText.includes('not independently verified'), `${scenario.label}: public site must label imported/practice data`)
       assert.ok(!publicText.includes('Certificate issued'), `${scenario.label}: no issuance claim`)
@@ -224,8 +228,8 @@ test('every account state renders the right surfaces and never drops the learner
       )
       if (tier.upsell) {
         assert.ok(
-          /Request an account|Log in|for approved accounts/.test(shellText),
-          `${scenario.label}: a non-approved state must be told that lessons, labs and assessments are for approved accounts, or be offered a way to request one`,
+          /Request an account|Log in|approved accounts unlock/i.test(shellText),
+          `${scenario.label}: a non-approved state must be offered a way to request approved content access`,
         )
       } else {
         assert.ok(
@@ -234,21 +238,20 @@ test('every account state renders the right surfaces and never drops the learner
         )
       }
 
-      // A non-approved state must never be shown the dashboard as if it held approved learning.
+      // A non-approved state must never be shown the dashboard as if it had protected-content access.
       if (!tier.upsell) {
-        assert.ok(shellText.includes('Approved learning'), `${scenario.label}: should see the approved-learning framing`)
+        assert.ok(shellText.includes('Approved content'), `${scenario.label}: should see the approved-content framing`)
       }
 
-      // Local XP is local in EVERY state, including approved. An account adds a record beside it;
-      // it does not turn the browser figure into one. This previously regressed for approved
-      // users, who saw a bare "0 XP" with no marker at all.
+      // There is no browser-progress tracking: the catalogue hub shows no XP, no
+      // percentages and no practice log. Approved accounts see the account snapshot.
       assert.ok(
-        shellText.includes('Practice — unverified'),
-        `${scenario.label}: local XP must be labelled as practice, even when approved`,
+        !shellText.includes('Practice XP (this browser)'),
+        `${scenario.label}: browser XP must not be shown`,
       )
       assert.ok(
-        !/Practice XP \(this browser\)Server/.test(shellText),
-        `${scenario.label}: practice and record figures must not be conflated`,
+        !shellText.includes('Practice — unverified'),
+        `${scenario.label}: browser practice figures must not be shown`,
       )
 
       // Certificates are issued to nobody.
@@ -281,9 +284,9 @@ test('every account state renders the right surfaces and never drops the learner
     for (const destination of learnerNav) {
       assert.ok(text.includes(destination), `outage: learner navigation lost "${destination}"`)
     }
-    assert.ok(text.includes('What should I do next') || text.includes('Next step for you'), 'outage: the dashboard should still recommend a next step')
-    assert.ok(text.includes('Catalogue access'), 'outage: catalogue access must still be stated')
-    assert.ok(text.includes('Practice — unverified'), 'outage: practice figures must still be labelled')
+    assert.ok(text.includes('Start here'), 'outage: the dashboard should still show a starting point')
+    assert.ok(text.includes('Catalogue & practice'), 'outage: public catalogue and practice must still be stated')
+    assert.ok(!text.includes('Practice XP (this browser)'), 'outage: browser XP must not be shown')
     backendDown = false
    } catch (error) {
     failures.push(error)
@@ -393,6 +396,70 @@ test('every account state renders the right surfaces and never drops the learner
     } catch (error) {
       failures.push(error)
       throw error
+    }
+  })
+
+  await t.test('unverified account status offers resend and never calls it approval pending', async () => {
+    try {
+      backendDown = false
+      accountHandler = null
+      fakeSession = { access_token: 'unverified-session' }
+      accountResponse = { status: 403, body: { detail: { code: 'email_not_verified', message: 'Verify your email before continuing.' } } }
+      let resendParams = null
+      if (supabase) {
+        supabase.auth.getUser = async () => ({ data: { user: { email: 'unverified@example.com' } }, error: null })
+        supabase.auth.resend = async params => { resendParams = params; return { error: null } }
+      }
+      const root = createRoot(container)
+      await act(async () => { root.render(wrap(React.createElement(MemoryRouter, { initialEntries: ['/account'] }, React.createElement(AccountStatusPage)))) })
+      for (let i = 0; i < 3; i++) await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)) })
+      const text = container.textContent || ''
+      assert.match(text, /Verify your email/)
+      assert.match(text, /Confirm your email address/)
+      assert.match(text, /Resend verification email/)
+      assert.match(text, /Explore the catalogue/)
+      assert.doesNotMatch(text, /Your email is verified and your request is with the platform owner/i)
+      const resend = [...container.querySelectorAll('button')].find(button => button.textContent.includes('Resend verification email'))
+      assert.ok(resend, 'resend button should be present')
+      await act(async () => { resend.click() })
+      for (let i = 0; i < 3; i++) await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)) })
+      assert.equal(resendParams?.type, 'signup')
+      assert.equal(resendParams?.email, 'unverified@example.com')
+      assert.match(container.textContent || '', /Verification email sent/)
+      await act(async () => { root.unmount() })
+    } catch (error) {
+      failures.push(error)
+      throw error
+    }
+  })
+
+  await t.test('closed signup disables the form and explains guest learning', async () => {
+    const previousFetch = globalThis.fetch
+    try {
+      backendDown = false
+      accountHandler = null
+      fakeSession = null
+      globalThis.fetch = async (url, init) => {
+        if (String(url).includes('/api/v1/public-config')) {
+          return new Response(JSON.stringify({ auth_configured: true, signup_enabled: false }), { status: 200, headers: { 'content-type': 'application/json' } })
+        }
+        return previousFetch(url, init)
+      }
+      const root = createRoot(container)
+      await act(async () => { root.render(wrap(React.createElement(MemoryRouter, { initialEntries: ['/signup'] }, React.createElement(SignupPage)))) })
+      for (let i = 0; i < 3; i++) await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)) })
+      const text = container.textContent || ''
+      assert.match(text, /New account requests are currently closed/)
+      const email = container.querySelector('input[autocomplete="email"]')
+      const password = container.querySelector('input[autocomplete="new-password"]')
+      assert.ok(email?.disabled, 'email field should be disabled when signup is closed')
+      assert.ok(password?.disabled, 'password field should be disabled when signup is closed')
+      await act(async () => { root.unmount() })
+    } catch (error) {
+      failures.push(error)
+      throw error
+    } finally {
+      globalThis.fetch = previousFetch
     }
   })
 

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { JSDOM } from 'jsdom'
 import { createServer } from 'vite'
 
-test('secondary pages preserve reset consent, theme selection and local milestone meaning', async t => {
+test('secondary pages preserve theme selection and local milestone meaning', async t => {
   const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost/' })
   const saved = new Map()
   for (const key of ['window', 'document', 'navigator', 'HTMLElement', 'Element', 'SVGElement', 'Event', 'MouseEvent', 'localStorage', 'IS_REACT_ACT_ENVIRONMENT']) {
@@ -47,7 +47,7 @@ test('secondary pages preserve reset consent, theme selection and local mileston
   localStorage.setItem('platform-report-fixture', 'Keep my draft')
   await render(Settings)
   await act(async () => { await new Promise(resolve => setTimeout(resolve, 100)) })
-  assert.equal(document.querySelectorAll('[aria-label="Settings sections"] a').length, 5)
+  assert.equal(document.querySelectorAll('[aria-label="Settings sections"] a').length, 4)
   await click('Light')
   assert.equal(button('Light').getAttribute('aria-pressed'), 'true')
   assert.equal(button('Dark').getAttribute('aria-pressed'), 'false')
@@ -62,14 +62,9 @@ test('secondary pages preserve reset consent, theme selection and local mileston
   document.documentElement.style.removeProperty('--a11y-font-size')
   restoreReadingPreferences()
   assert.equal(parseInt(document.documentElement.style.getPropertyValue('--a11y-font-size')), parseInt(fontSizeBefore) + 1)
-  await click('Reset All Progress')
-  assert.equal(useProgressStore.getState().completedLessons.length, 1)
-  await click('Cancel')
-  assert.equal(useProgressStore.getState().completedLessons.length, 1)
-  assert.equal(button('Confirm reset'), undefined)
-  await click('Reset All Progress'); await click('Confirm reset')
-  assert.equal(useProgressStore.getState().completedLessons.length, 0)
-  assert.match(document.querySelector('[role="status"]').textContent, /Learning progress reset/)
+  // Settings no longer offers a browser-progress reset or export. Local drafts
+  // and preferences are untouched by rendering Settings.
+  assert.equal(button('Reset All Progress'), undefined)
   assert.equal(localStorage.getItem('platform-report-fixture'), 'Keep my draft')
   assert.match(localStorage.getItem('platform-profile'), /Keep my name/)
   assert.equal(localStorage.getItem('platform-theme'), 'light')

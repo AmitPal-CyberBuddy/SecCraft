@@ -4,9 +4,9 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNo
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, KeyRound, LoaderCircle, LockKeyhole, Mail, RefreshCw, ShieldCheck, Sparkles, UserRound, WifiOff } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
+import { loginErrorMessage } from '@/lib/authErrors'
 import { accountRedirect, supabase, supabaseConfigured } from '@/lib/supabase'
 import { useSession } from '@/lib/session'
-import { generatePassword, passwordGuidance } from '@/lib/passwordGuidance'
 import { accessLabel, ACCOUNT_ADDS_NOTE, isSignedIn, STATE_META } from '@/lib/access'
 import { StateChip } from '@/components/account/StateChip'
 
@@ -14,6 +14,39 @@ interface PublicConfig {
   auth_configured: boolean
   signup_enabled: boolean
   email_verification_required?: boolean
+}
+
+type PasswordTools = typeof import('@/lib/passwordGuidance')
+type PasswordGuidanceResult = ReturnType<PasswordTools['passwordGuidance']>
+const NO_PERSONAL_WORDS: string[] = []
+
+/** Keep the large local password dictionary off sign-in/status routes that never use it. */
+function usePasswordTools(password: string, personalWords: string[] = NO_PERSONAL_WORDS) {
+  const [tools, setTools] = useState<PasswordTools | null>(null)
+  const [loadFailed, setLoadFailed] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    import('@/lib/passwordGuidance')
+      .then(module => { if (active) setTools(module) })
+      .catch(() => { if (active) setLoadFailed(true) })
+    return () => { active = false }
+  }, [])
+
+  const guidance = useMemo<PasswordGuidanceResult>(() => {
+    if (tools) return tools.passwordGuidance(password, personalWords)
+    const validLength = password.length >= 8 && password.length <= 128
+    return {
+      strength: null,
+      score: 0,
+      validLength,
+      feedback: loadFailed
+        ? 'Local password guidance could not load. Use a unique password and a password manager.'
+        : password ? 'Loading the local password-strength estimate…' : 'Use a unique password or several unrelated words.',
+    }
+  }, [tools, password, personalWords, loadFailed])
+
+  return { guidance, generatePassword: tools?.generatePassword, ready: tools !== null }
 }
 
 function AccountFrame({ title, eyebrow, children }: { title: string; eyebrow: string; children: ReactNode }) {
@@ -37,7 +70,7 @@ function AccountFrame({ title, eyebrow, children }: { title: string; eyebrow: st
             <div className="mt-5 text-xl font-bold text-[var(--ink-primary)]">
               Sec<span className="text-[var(--learning)]">Craft</span>
             </div>
-            <p className="mt-3 text-sm leading-6 text-[var(--ink-secondary)]">Explore the catalogue as a visitor. Lessons, labs and assessments are for approved accounts.</p>
+            <p className="mt-3 text-sm leading-6 text-[var(--ink-secondary)]">Explore the public catalogue, selected sample lessons, supplied artifacts and bundled local labs. Approved accounts unlock protected lesson text and knowledge-check prompts; challenge content is not included in this public build yet.</p>
           </div>
           <div className="text-xs leading-5 text-[var(--ink-muted)]">
             Verify your email to request an account. You can explore the catalogue while you wait for approval.
@@ -76,11 +109,11 @@ function NextActions() {
       <p className="text-[10px] font-semibold uppercase tracking-[.16em] text-[var(--ink-muted)]">What still works</p>
       <div className="mt-2.5 flex flex-wrap gap-2">
         {[
-          { to: '/app', label: 'Guest workspace' },
+          { to: '/app', label: 'Dashboard' },
           { to: '/paths', label: 'Learning paths' },
           { to: '/labs', label: 'Labs' },
           { to: '/challenges', label: 'Challenges' },
-          { to: '/sync', label: 'Export your progress' },
+          { to: '/sync', label: 'Account records' },
         ].map(item => (
           <Link
             key={item.to}
@@ -101,6 +134,7 @@ export function LoginPage() {
   const { refreshAccount } = useSession()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -117,8 +151,8 @@ export function LoginPage() {
       if (authError) throw authError
       await refreshAccount()
       navigate('/account')
-    } catch {
-      setError('Sign-in did not complete. That usually means the details are wrong, the email is not verified yet, or the account service is unavailable. Guest learning stays available in the meantime.')
+    } catch (cause) {
+      setError(loginErrorMessage(cause))
     } finally {
       setBusy(false)
     }
@@ -161,13 +195,14 @@ export function LoginPage() {
             <KeyRound className="h-4 w-4 text-[var(--ink-muted)]" aria-hidden="true" />
             <input
               autoComplete="current-password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               required
               value={password}
               onChange={event => setPassword(event.target.value)}
               className="min-w-0 flex-1 bg-transparent text-sm text-[var(--ink-primary)] outline-none placeholder:text-[var(--ink-muted)]"
               placeholder="Your password"
             />
+            <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} onClick={() => setShowPassword(visible => !visible)} className="shrink-0 rounded p-2 text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-color)]">{showPassword ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}</button>
           </span>
         </label>
         <div className="text-right">
@@ -194,34 +229,39 @@ export function SignupPage() {
   const { refreshAccount } = useSession()
   const [searchParams] = useSearchParams()
   const [config, setConfig] = useState<PublicConfig | null>(null)
+  const [configLoading, setConfigLoading] = useState(true)
   const [configError, setConfigError] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [copyStatus, setCopyStatus] = useState('')
-  const guidance = useMemo(() => passwordGuidance(password, [email, email.split('@')[0]]), [password, email])
+  const personalWords = useMemo(() => [email, email.split('@')[0]], [email])
+  const { guidance, generatePassword, ready: passwordToolsReady } = usePasswordTools(password, personalWords)
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState(searchParams.get('sent') === '1')
 
-  useEffect(() => {
-    let current = true
-    apiFetch('/api/v1/public-config')
-      .then(async response => {
-        const body = await response.json().catch(() => null)
-        if (!response.ok || !body || typeof body.auth_configured !== 'boolean' || typeof body.signup_enabled !== 'boolean') {
-          throw new Error('Account configuration is unavailable.')
-        }
-        if (current) setConfig(body as PublicConfig)
-      })
-      .catch(() => {
-        if (current) setConfigError('The account service is not reachable right now. Guest learning is unaffected.')
-      })
-    return () => {
-      current = false
+  const loadConfig = useCallback(async () => {
+    setConfigLoading(true)
+    setConfigError('')
+    try {
+      const response = await apiFetch('/api/v1/public-config')
+      const body = await response.json().catch(() => null)
+      if (!response.ok || !body || typeof body.auth_configured !== 'boolean' || typeof body.signup_enabled !== 'boolean') {
+        throw new Error('Account configuration is unavailable.')
+      }
+      setConfig(body as PublicConfig)
+    } catch {
+      setConfigError('The account service is not reachable right now. Guest learning is unaffected.')
+    } finally {
+      setConfigLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    void loadConfig()
+  }, [loadConfig])
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -276,6 +316,7 @@ export function SignupPage() {
 
   const closed = Boolean(config && !config.signup_enabled)
   const canSubmit = Boolean(supabaseConfigured && config?.auth_configured && config.signup_enabled && !busy)
+  const fieldsDisabled = busy || !supabaseConfigured || Boolean(configError) || closed || Boolean(config && !config.auth_configured)
 
   return (
     <AccountFrame eyebrow="Request access" title="Create your account">
@@ -285,7 +326,12 @@ export function SignupPage() {
 
       {configError && supabaseConfigured && (
         <div className="mb-4">
-          <ServiceUnavailable>{configError}</ServiceUnavailable>
+          <ServiceUnavailable>
+            {configError}{' '}
+            <button type="button" onClick={() => void loadConfig()} disabled={configLoading} className="font-semibold underline underline-offset-2 disabled:opacity-60">
+              {configLoading ? 'Checking…' : 'Re-check account service'}
+            </button>
+          </ServiceUnavailable>
         </div>
       )}
       {!supabaseConfigured && (
@@ -324,6 +370,7 @@ export function SignupPage() {
               autoComplete="email"
               type="email"
               required
+              disabled={fieldsDisabled}
               value={email}
               onChange={event => setEmail(event.target.value)}
               className="min-w-0 flex-1 bg-transparent text-sm text-[var(--ink-primary)] outline-none placeholder:text-[var(--ink-muted)]"
@@ -341,22 +388,25 @@ export function SignupPage() {
               minLength={8}
               maxLength={128}
               required
+              disabled={fieldsDisabled}
               aria-describedby="signup-password-guidance"
               value={password}
               onChange={event => { setPassword(event.target.value); setCopyStatus('') }}
               className="min-w-0 flex-1 bg-transparent text-sm text-[var(--ink-primary)] outline-none placeholder:text-[var(--ink-muted)]"
               placeholder="At least 8 characters"
             />
-            <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} onClick={() => setShowPassword(visible => !visible)} className="shrink-0 rounded p-2 text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-color)]">{showPassword ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}</button>
+            <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} disabled={fieldsDisabled} onClick={() => setShowPassword(visible => !visible)} className="shrink-0 rounded p-2 text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-color)]">{showPassword ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}</button>
           </span>
         </label>
         <div id="signup-password-guidance" className="space-y-2 text-xs text-[var(--ink-secondary)]">
           <PasswordFeedback guidance={guidance} />
-          <button type="button" className="min-h-10 rounded-lg border border-[var(--accent-border)] px-3 font-semibold text-[var(--learning)] hover:bg-[var(--accent-bg)]" onClick={() => {
-            try { setPassword(generatePassword()); setConfirmPassword(''); setShowPassword(true); setCopyStatus(''); setError('') }
-            catch { setError('Secure password generation is unavailable in this browser. Please create a unique password yourself.') }
+          <button type="button" disabled={!passwordToolsReady || fieldsDisabled} className="min-h-10 rounded-lg border border-[var(--accent-border)] px-3 font-semibold text-[var(--learning)] hover:bg-[var(--accent-bg)] disabled:cursor-not-allowed disabled:opacity-60" onClick={() => {
+            try {
+              if (!generatePassword) throw new Error('Password guidance is still loading.')
+              setPassword(generatePassword()); setConfirmPassword(''); setShowPassword(true); setCopyStatus(''); setError('')
+            } catch { setError('Secure password generation is unavailable right now. Please create a unique password yourself.') }
           }}>Suggest a strong password</button>
-          {password && <button type="button" className="ml-2 min-h-10 rounded-lg border border-[var(--line-strong)] px-3 text-[var(--ink-primary)] hover:bg-[var(--panel-raised)]" onClick={async () => {
+          {password && <button type="button" disabled={fieldsDisabled} className="ml-2 min-h-10 rounded-lg border border-[var(--line-strong)] px-3 text-[var(--ink-primary)] hover:bg-[var(--panel-raised)]" onClick={async () => {
             try { await navigator.clipboard.writeText(password); setCopyStatus('Copied. Paste into your password manager and the confirmation field.') }
             catch { setCopyStatus('Copy unavailable. Select the shown password to save it yourself.') }
           }}>Copy password</button>}
@@ -373,6 +423,7 @@ export function SignupPage() {
               minLength={8}
               maxLength={128}
               required
+              disabled={fieldsDisabled}
               value={confirmPassword}
               onChange={event => setConfirmPassword(event.target.value)}
               className="min-w-0 flex-1 bg-transparent text-sm text-[var(--ink-primary)] outline-none placeholder:text-[var(--ink-muted)]"
@@ -475,7 +526,7 @@ export function UpdatePasswordPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [copyStatus, setCopyStatus] = useState('')
-  const guidance = useMemo(() => passwordGuidance(password), [password])
+  const { guidance, generatePassword, ready: passwordToolsReady } = usePasswordTools(password)
   const [confirm, setConfirm] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -533,9 +584,11 @@ export function UpdatePasswordPage() {
         </label>
         <div id="recovery-password-guidance" className="space-y-2 text-xs text-[var(--ink-secondary)]">
           <PasswordFeedback guidance={guidance} />
-          <button type="button" className="min-h-10 rounded-lg border border-[var(--accent-border)] px-3 font-semibold text-[var(--learning)] hover:bg-[var(--accent-bg)]" onClick={() => {
-            try { setPassword(generatePassword()); setConfirm(''); setShowPassword(true); setCopyStatus(''); setError('') }
-            catch { setError('Secure password generation is unavailable in this browser. Please create a unique password yourself.') }
+          <button type="button" disabled={!passwordToolsReady} className="min-h-10 rounded-lg border border-[var(--accent-border)] px-3 font-semibold text-[var(--learning)] hover:bg-[var(--accent-bg)] disabled:cursor-not-allowed disabled:opacity-60" onClick={() => {
+            try {
+              if (!generatePassword) throw new Error('Password guidance is still loading.')
+              setPassword(generatePassword()); setConfirm(''); setShowPassword(true); setCopyStatus(''); setError('')
+            } catch { setError('Secure password generation is unavailable right now. Please create a unique password yourself.') }
           }}>Suggest a strong password</button>
           {password && <button type="button" className="ml-2 min-h-10 rounded-lg border border-[var(--line-strong)] px-3 text-[var(--ink-primary)] hover:bg-[var(--panel-raised)]" onClick={async () => {
             try { await navigator.clipboard.writeText(password); setCopyStatus('Copied. Paste into your password manager and the confirmation field.') }
@@ -573,10 +626,13 @@ export function UpdatePasswordPage() {
  */
 export function AccountStatusPage() {
   const [params] = useSearchParams()
-  const { userState, account, accountError, ready, accountLoading, refreshAccount, signOut, can } = useSession()
+  const { userState, account, accountError, ready, accountLoading, refreshAccount, resendVerificationEmail, signOut, can } = useSession()
   const [checking, setChecking] = useState(false)
+  const [resendBusy, setResendBusy] = useState(false)
+  const [resendMessage, setResendMessage] = useState('')
   const signedIn = ready && !accountLoading && isSignedIn(userState)
   const statusUnavailable = signedIn && !account && (accountError.kind === 'unavailable' || accountError.kind === 'unknown')
+  const emailUnverified = signedIn && accountError.kind === 'unverified'
   const justRegistered = params.get('sent') === '1'
 
   const recheck = useCallback(async () => {
@@ -612,7 +668,7 @@ export function AccountStatusPage() {
     : 'Approval pending'
 
   return (
-    <AccountFrame eyebrow="Account status" title={!ready || accountLoading ? 'Checking account status' : statusUnavailable ? 'Account status unavailable' : signedIn ? headline : 'Check your account'}>
+    <AccountFrame eyebrow="Account status" title={!ready || accountLoading ? 'Checking account status' : statusUnavailable ? 'Account status unavailable' : emailUnverified ? 'Verify your email' : signedIn ? headline : 'Check your account'}>
       {!ready || accountLoading ? (
         <div className="flex items-center gap-2 text-sm text-[var(--ink-secondary)]" role="status" aria-live="polite">
           <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /> Checking account status…
@@ -620,11 +676,48 @@ export function AccountStatusPage() {
       ) : statusUnavailable ? (
         <div className="space-y-4">
           <ServiceUnavailable>{accountError.message}</ServiceUnavailable>
-          <p className="text-sm text-[var(--ink-secondary)]">You are signed in, but the account service has not confirmed approval or owner access. This is not an approval decision. The catalogue and browser-local practice remain available.</p>
+          <p className="text-sm text-[var(--ink-secondary)]">You are signed in, but the account service has not confirmed approval or owner access. This is not an approval decision. The catalogue and content details remain available.</p>
           <div className="flex flex-wrap gap-3">
             <button type="button" onClick={() => void recheck()} disabled={checking} className="inline-flex min-h-11 items-center rounded-xl border border-[var(--line-normal)] px-4 text-sm text-[var(--ink-primary)] disabled:opacity-60">{checking ? 'Checking…' : 'Re-check status'}</button>
             <Link to="/app" className="inline-flex min-h-11 items-center rounded-xl border border-[var(--line-normal)] px-4 text-sm text-[var(--ink-primary)]">Go to workspace</Link>
           </div>
+        </div>
+      ) : emailUnverified ? (
+        <div className="space-y-4">
+          <div className="rounded-xl border border-[var(--warning-border)] bg-[var(--warning-bg)] p-4">
+            <p className="text-sm font-semibold leading-6 text-[var(--attention)]">Confirm your email address</p>
+            <p className="mt-2 text-sm leading-6 text-[var(--ink-secondary)]">
+              Open the verification message sent to your inbox, then re-check this page. Until the address is confirmed,
+              protected lesson text and account records stay unavailable — the catalogue and content details do not.
+            </p>
+            {resendMessage && <p role="status" className="mt-3 text-[12.5px] leading-relaxed text-[var(--ink-secondary)]">{resendMessage}</p>}
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              disabled={resendBusy}
+              onClick={async () => {
+                setResendBusy(true)
+                setResendMessage('')
+                const result = await resendVerificationEmail()
+                setResendMessage(result.message)
+                setResendBusy(false)
+              }}
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl sc-learning-action px-4 text-sm font-bold transition-colors disabled:opacity-60"
+            >
+              {resendBusy ? 'Sending…' : 'Resend verification email'}
+            </button>
+            <button type="button" onClick={() => void recheck()} disabled={checking} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--line-normal)] px-4 text-sm text-[var(--ink-primary)] disabled:opacity-60">
+              <RefreshCw className={`h-4 w-4 ${checking ? 'animate-spin' : ''}`} aria-hidden="true" /> Re-check status
+            </button>
+            <Link to="/paths" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--line-normal)] px-4 text-sm text-[var(--ink-primary)] transition-colors hover:bg-[var(--panel-raised)]">
+              Explore the catalogue
+            </Link>
+            <button type="button" onClick={() => void signOut()} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--line-normal)] px-4 text-sm text-[var(--ink-secondary)] transition-colors hover:bg-[var(--panel-raised)]">
+              <UserRound className="h-4 w-4" aria-hidden="true" /> Sign out
+            </button>
+          </div>
+          <NextActions />
         </div>
       ) : !signedIn ? (
         <div className="space-y-4">
@@ -684,7 +777,7 @@ export function AccountStatusPage() {
               </span>
               {!can('learning-content') && (
                 <span className="text-[11.5px] leading-relaxed text-[var(--ink-muted)]">
-                  Approval switches on lessons, labs, assessments and account-backed records.
+                  Approval unlocks protected lesson text, knowledge-check prompts and account-backed records. Public samples and bundled local labs stay available; challenge content is not included in this public build yet.
                 </span>
               )}
             </div>

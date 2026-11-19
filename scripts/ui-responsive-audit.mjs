@@ -10,7 +10,7 @@ const AxeBuilder = process.env.UI_AUDIT_AXE ? (await load(modules ? '@axe-core/p
 const baseUrl = process.env.UI_AUDIT_URL || 'http://localhost:3000'
 const output = resolve(process.env.UI_AUDIT_OUTPUT || '.cache/ui-audit')
 fs.mkdirSync(output, { recursive:true })
-const defaultRoutes=['/','/about','/how-it-works','/login','/signup','/reset-password','/update-password','/account','/app','/paths','/paths/wireless-pentesting','/paths/android-pentesting','/modules','/paths/android-pentesting/modules','/modules/08-wpa-wpa2','/modules/08-wpa-wpa2?tab=theory','/modules/08-wpa-wpa2?tab=lab&lab=lab-08-rsn','/labs','/challenges','/reference','/reports','/analytics','/achievements','/daily','/profile','/sync','/settings','/admin','/feedback','/admin/feedback','/nonexistent']
+const defaultRoutes=['/','/about','/how-it-works','/login','/signup','/reset-password','/update-password','/account','/app','/paths','/paths/wireless-pentesting','/paths/android-pentesting','/modules','/paths/android-pentesting/modules','/modules/08-wpa-wpa2','/modules/08-wpa-wpa2?tab=theory','/modules/08-wpa-wpa2?tab=lab&lab=lab-08-rsn','/labs','/challenges','/reference','/reports','/profile','/sync','/settings','/admin','/feedback','/admin/feedback','/nonexistent']
 const routes=process.env.UI_AUDIT_ROUTES ? process.env.UI_AUDIT_ROUTES.split(',') : defaultRoutes
 const sizes=(process.env.UI_AUDIT_WIDTHS || '320,390,768,1024,1440,1920').split(',').map(Number)
 const results=[]
@@ -42,7 +42,7 @@ for(const theme of ['dark','light']) for(const width of sizes){
   })
   results.push({route,width,theme,...layout,errors,accessibility})
   if(layout.outside.length||layout.pageOverflow||errors.length||accessibility.length)console.log(JSON.stringify(results.at(-1)))
-  if(process.env.UI_AUDIT_SCREENSHOTS === '1'||layout.outside.length||layout.pageOverflow||errors.length||accessibility.length||([320,1440].includes(width)&&['/app','/login','/settings','/paths','/reports','/analytics','/achievements','/daily','/profile','/','/feedback','/admin/feedback'].includes(route)))await page.screenshot({path:output+'/'+(route.slice(1).replace(/[^a-z0-9-]/gi,'_')||'home')+'-'+width+'-'+theme+'.png',fullPage:true})
+  if(process.env.UI_AUDIT_SCREENSHOTS === '1'||layout.outside.length||layout.pageOverflow||errors.length||accessibility.length||([320,1440].includes(width)&&['/app','/login','/settings','/paths','/reports','/profile','/','/feedback','/admin/feedback'].includes(route)))await page.screenshot({path:output+'/'+(route.slice(1).replace(/[^a-z0-9-]/gi,'_')||'home')+'-'+width+'-'+theme+'.png',fullPage:true})
   fs.writeFileSync(output+'/audit-results.json',JSON.stringify(results,null,2))
   await page.close()
  }

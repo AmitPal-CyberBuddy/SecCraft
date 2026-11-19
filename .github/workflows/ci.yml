@@ -94,6 +94,9 @@ jobs:
         run: npm run build
         working-directory: frontend
 
+      - name: Verify protected quiz material is absent from the frontend bundle
+        run: node scripts/verify-quiz-bundle.mjs
+
       - name: Verify dry-run migration manifest against built output
         run: |
           node scripts/generate-content-migration-manifest.mjs

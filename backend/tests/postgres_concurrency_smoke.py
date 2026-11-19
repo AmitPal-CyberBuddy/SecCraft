@@ -50,7 +50,7 @@ def run() -> None:
                 "SUPABASE_URL": "https://auth-test.invalid",
                 "SUPABASE_ANON_KEY": "public-test-anon-key",
                 "SUPABASE_JWT_ISSUER": "https://auth-test.invalid/auth/v1",
-                "SUPABASE_JWT_SECRET": "test-only-secret-not-for-use",
+                "SUPABASE_JWT_SECRET": "test-only-secret-not-for-use-32bytes",
                 "SUPABASE_REQUIRE_VERIFIED_EMAIL": "false",
                 "FEEDBACK_HMAC_SECRET": "disposable-feedback-test-key-32-bytes-minimum",
             }

@@ -100,15 +100,17 @@ try {
       })
       await page.getByRole('heading', { name: 'Android Component & IPC Boundary Analyzer' }).waitFor()
 
-      // Positive control simulation
-      await page.getByRole('button', { name: /Simulate Execution/i }).click()
-      await page.locator('text=Positive Control Verified').waitFor()
+      // The outcome is explicitly illustrative: no ADB process or device is used.
+      await page.getByRole('button', { name: 'Show illustrative outcome' }).click()
+      await page.getByRole('heading', { name: /Illustrative outcome · no runtime verification/i }).waitFor()
+      await page.getByText(/No ADB command was executed/).waitFor()
+      assert.doesNotMatch(await page.locator('main').textContent(), /Positive Control Verified|Negative Control Verified/)
 
-      // Switch to the fixed build; the toggle resets the previous run, so simulate again.
+      // Switch to the hardened example; it remains an explanation, not a runtime result.
       await page.getByRole('button', { name: 'Build Variant: Vulnerable Target' }).click()
       await page.getByRole('button', { name: 'Build Variant: Fixed & Hardened' }).waitFor()
-      await page.getByRole('button', { name: /Simulate Execution/i }).click()
-      await page.locator('text=Negative Control Verified').waitFor()
+      await page.getByRole('button', { name: 'Show illustrative outcome' }).click()
+      await page.getByText(/No ADB command was executed/).waitFor()
       assert.deepEqual(errors, [])
     }
 

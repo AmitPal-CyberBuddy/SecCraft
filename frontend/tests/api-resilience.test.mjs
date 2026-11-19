@@ -114,20 +114,55 @@ test('guest content falls back for HTTP errors and bounded API timeouts', async 
     }
     const lessonRes = await fetchLesson('android-01-platform', '01-architecture')
     assert.equal(lessonRes.ok, true)
-    assert.equal(lessonAuthHeader, 'Bearer unit-test-access-token', 'lesson endpoint must receive active bearer token')
+    assert.equal(lessonRes.access, 'approved-content')
+    assert.equal(lessonAuthHeader, 'Bearer unit-test-access-token', 'protected lesson endpoint must receive active bearer token')
 
     const lessonText = await fetchLessonContent('android-01-platform', '01-architecture')
     assert.ok(lessonText.includes('Verified lesson content.'))
 
+    let sampleAuthHeader = 'not captured'
+    let protectedSampleFallbacks = 0
+    globalThis.fetch = async (url, init) => {
+      if (String(url).includes('/api/v1/content/samples/lessons/')) {
+        sampleAuthHeader = new Headers(init.headers).get('authorization')
+        return new Response(JSON.stringify({
+          module_id: 'android-01-platform',
+          lesson_id: '01-architecture-sandbox-and-trust-boundaries',
+          content: '# Public sample\n\nA bounded public lesson example.',
+          access: 'public-sample',
+        }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      protectedSampleFallbacks += 1
+      return new Response('{}', { status: 401 })
+    }
+    const sample = await fetchLesson('android-01-platform', '01-architecture-sandbox-and-trust-boundaries')
+    assert.equal(sample.ok, true)
+    assert.equal(sample.access, 'public-sample')
+    assert.match(sample.content, /bounded public lesson example/)
+    assert.equal(sampleAuthHeader, null, 'the explicit public sample route must not wait for or send an account token')
+    assert.equal(protectedSampleFallbacks, 0, 'a successfully loaded public sample must not be fetched again through the protected route')
+
     // 401 unauthenticated
     globalThis.fetch = async () => new Response(JSON.stringify({ detail: 'Authentication required' }), { status: 401 })
     const unauthText = await fetchLessonContent('android-01-platform', '01-architecture')
-    assert.ok(unauthText.includes('Account Required'))
+    assert.ok(unauthText.includes('Approved Account Needed'))
+    assert.match(unauthText, /protected and requires an approved learner account/i)
+    assert.match(unauthText, /public catalogue, supplied samples and bundled local labs remain available/i)
+    assert.doesNotMatch(unauthText, /full lesson curriculum and technical walkthroughs/i)
 
     // 403 pending
     globalThis.fetch = async () => new Response(JSON.stringify({ detail: { code: 'account_pending', message: 'Pending' } }), { status: 403 })
     const pendingText = await fetchLessonContent('android-01-platform', '01-architecture')
     assert.ok(pendingText.includes('Account Approval Pending'))
+    assert.match(pendingText, /public samples and bundled local labs remain available/i)
+
+    // Invalid content responses fail closed instead of rendering an empty or misidentified lesson.
+    globalThis.fetch = async () => new Response(JSON.stringify({ module_id: 'other-module', lesson_id: '01-architecture', content: '' }), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    })
+    const invalidLesson = await fetchLesson('android-01-platform', '01-architecture')
+    assert.equal(invalidLesson.ok, false)
+    assert.equal(invalidLesson.status, 502)
   } finally {
     globalThis.setTimeout = savedSetTimeout
   }

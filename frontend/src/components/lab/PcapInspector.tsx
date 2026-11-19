@@ -24,8 +24,9 @@ interface Frame {
 interface PcapData {
   pcap_id: string
   method: string
-  filter?: string
-  /** Set when a display filter could not be evaluated offline. */
+  /** The effective filter; an empty string means the request was not applied. */
+  filter?: string | null
+  /** Set when a display filter could not be evaluated by the selected parser. */
   note?: string
   frames: Frame[]
   summary: {
@@ -86,33 +87,101 @@ function frameSummary(fr: any): string {
   return bits.join(' | ')
 }
 
-/** Minimal display-filter evaluator for the bundled dataset (the backend does this server-side). */
-function applyDisplayFilter(json: PcapData, filter: string): PcapData {
-  const f = (filter || '').trim()
-  const supported = (fr: any): boolean => {
-    if (!f) return true
-    const m = /^wlan\.fc\.type_subtype==(\d+)$/.exec(f)
-    if (m) return String(fr.subtype) === m[1]
-    if (f === 'eapol') return !!fr.eapol
-    if (f === 'eap') return !!fr.eap
-    if (f === 'radius') return !!fr.radius
-    if (f === 'wps') return !!fr.wps || !!fr.wps_attrs
-    const ssidMatch = /^wlan\.ssid==(.+)$/.exec(f)
-    if (ssidMatch) return fr.ssid === ssidMatch[1]
+const OFFLINE_DATASET_METHODS = new Set([
+  'offline-dataset',
+  'wififorge-labkit',
+  'platform-labkit',
+  'platform-labkit (legacy wififorge-labkit)',
+])
+
+function isOfflineDataset(method?: string | null): boolean {
+  return !!method && OFFLINE_DATASET_METHODS.has(method)
+}
+
+function sourceLabel(method?: string | null): string {
+  if (!method) return 'SOURCE UNKNOWN'
+  if (isOfflineDataset(method)) return 'OFFLINE DATASET'
+  if (method === 'tshark') return 'TSHARK PARSER'
+  if (method === 'scapy') return 'SCAPY PARSER'
+  if (method === 'unavailable') return 'PARSER UNAVAILABLE'
+  return `${method.toUpperCase()} SOURCE`
+}
+
+function sourceHint(method?: string | null): string {
+  if (isOfflineDataset(method)) return 'bundled offline dataset'
+  if (method === 'tshark') return 'local TShark parser'
+  if (method === 'scapy') return 'local Scapy parser'
+  if (method === 'unavailable') return 'no parser available'
+  return `reported source: ${method || 'unknown'}`
+}
+
+function summarizeFrames(frames: Frame[]): PcapData['summary'] {
+  const ssids = [...new Set(frames.map(frame => frame.ssid).filter((value): value is string => !!value))].sort()
+  const bssids = [...new Set(frames.map(frame => frame.bssid).filter((value): value is string => !!value))].sort()
+  const clients = [...new Set(frames
+    .map(frame => frame.sa)
+    .filter((value): value is string => !!value && !bssids.includes(value)))].sort()
+  const channels = [...new Set(frames.map(frame => frame.channel).filter((value): value is number => typeof value === 'number'))].sort((a, b) => a - b)
+  return {
+    total_frames: frames.length,
+    ssids,
+    bssids,
+    clients,
+    channels,
+    beacons: frames.filter(frame => frame.subtype_name?.includes('Beacon')).length,
+    probes: frames.filter(frame => frame.subtype_name?.includes('Probe')).length,
+    eapol: frames.filter(frame => !!frame.eapol).length,
+    deauth: frames.filter(frame => frame.subtype_name?.includes('Deauth')).length,
+    disassoc: frames.filter(frame => frame.subtype_name?.includes('Disassoc')).length,
+    assoc: frames.filter(frame => frame.subtype_name?.includes('Assoc')).length,
+    wps: frames.filter(frame => !!(frame as any).wps).length,
+  }
+}
+
+type OfflineDisplayFilter =
+  | { kind: 'all' | 'eapol' | 'eap' | 'radius' | 'wps' }
+  | { kind: 'subtype'; value: number }
+  | { kind: 'ssid'; value: string }
+
+function parseOfflineDisplayFilter(filter: string): OfflineDisplayFilter | null {
+  const value = (filter || '').trim()
+  if (!value) return { kind: 'all' }
+  const subtype = /^wlan\.fc\.type_subtype\s*==\s*(\d+)$/i.exec(value)
+  if (subtype) return { kind: 'subtype', value: Number(subtype[1]) }
+  const lower = value.toLowerCase()
+  if (lower === 'eapol' || lower === 'eap' || lower === 'radius' || lower === 'wps') return { kind: lower }
+  const ssid = /^wlan\.ssid\s*==\s*(?:"([^"]*)"|([^\s"]+))$/i.exec(value)
+  if (ssid) return { kind: 'ssid', value: ssid[1] ?? ssid[2] }
+  return null
+}
+
+/** Minimal, explicit display-filter evaluator for the bundled dataset. */
+export function applyDisplayFilter(json: PcapData, filter: string): PcapData {
+  const value = (filter || '').trim()
+  const parsed = parseOfflineDisplayFilter(value)
+  const matches = (frame: any): boolean => {
+    if (!parsed || parsed.kind === 'all') return true
+    if (parsed.kind === 'subtype') {
+      const type = Number(frame.type)
+      const subtype = Number(frame.subtype)
+      return Number.isInteger(type) && Number.isInteger(subtype) && type * 16 + subtype === parsed.value
+    }
+    if (parsed.kind === 'eapol') return !!frame.eapol
+    if (parsed.kind === 'eap') return !!frame.eap
+    if (parsed.kind === 'radius') return !!frame.radius
+    if (parsed.kind === 'wps') return !!frame.wps || !!frame.wps_attrs
+    if (parsed.kind === 'ssid') return frame.ssid === parsed.value
     return true
   }
-  const evaluable =
-    !f ||
-    /^wlan\.fc\.type_subtype==\d+$/.test(f) ||
-    ['eapol', 'eap', 'radius', 'wps'].includes(f) ||
-    /^wlan\.ssid==.+$/.test(f)
-  const frames = (json.frames as any[])
-    .filter(supported)
-    .map(fr => ({ ...fr, summary: fr.summary || frameSummary(fr) }))
-  const note = evaluable
-    ? json.note
-    : `Filter "${f}" is only evaluated by the local parser API; the bundled offline dataset shows all frames.`
-  return { ...json, filter: evaluable ? f : '', frames, note }
+  const frames = json.frames
+    .filter(matches)
+    .map(frame => ({ ...frame, summary: frame.summary || frameSummary(frame) }))
+  const note = !parsed
+    ? `Filter “${value}” was not evaluated by the bundled offline dataset; all ${frames.length} frames are shown unfiltered. Connect the local parser API for full display-filter evaluation.`
+    : value && frames.length === 0
+      ? `No frames matched the requested filter “${value}” in the bundled offline dataset.`
+      : json.note
+  return { ...json, filter: parsed ? value : '', frames, summary: summarizeFrames(frames), note }
 }
 
 export function PcapInspector(props: Props) {
@@ -158,7 +227,8 @@ function CaptureInspector({ pcapId, initialFilter = '', onFrameSelect }: Props) 
         await discardResponseBody(res)
         throw new Error(`parser API responded ${res.status}`)
       }
-      publish(await res.json())
+      const result = await res.json() as PcapData
+      publish(result, typeof result.filter === 'string' ? result.filter : f)
     } catch (apiError: any) {
       if (!current()) return
       try {
@@ -231,7 +301,7 @@ function CaptureInspector({ pcapId, initialFilter = '', onFrameSelect }: Props) 
               <div>
                 <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
                   <span className="text-[13px] font-bold text-[var(--ink-primary)] font-mono">{pcapId}.pcapng</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--success)]  shadow-soft" />
+                  <span className={`w-1.5 h-1.5 rounded-full shadow-soft ${data?.method === 'unavailable' ? 'bg-[var(--attention)]' : isOfflineDataset(data?.method) ? 'bg-[var(--learning)]' : 'bg-[var(--success)]'}`} />
                 </div>
                 <div className="text-[11px] text-[var(--ink-muted)] font-mono flex items-center gap-2">
                   <span>Method: {data?.method}</span>
@@ -239,7 +309,7 @@ function CaptureInspector({ pcapId, initialFilter = '', onFrameSelect }: Props) 
                   <span>{data?.summary.total_frames} frames</span>
                   <span className="hidden sm:inline-flex items-center gap-1 ml-1 px-1.5 py-0.5 rounded-full bg-[var(--accent-bg)] border border-[var(--accent-border)] text-[10px] text-[var(--learning)]">
                     <Activity className="w-3 h-3" />
-                    {(data?.method === 'wififorge-labkit' || data?.method === 'platform-labkit' || data?.method === 'platform-labkit (legacy wififorge-labkit)') ? 'OFFLINE DATASET' : 'PARSER API'}
+                    {sourceLabel(data?.method)}
                   </span>
                 </div>
               </div>
@@ -247,11 +317,13 @@ function CaptureInspector({ pcapId, initialFilter = '', onFrameSelect }: Props) 
             <div className="flex items-center gap-1.5 xs:gap-2 min-w-0">
               {data && (
                 <span className={`text-[10px] px-2.5 py-1 rounded-full border font-mono font-medium backdrop-blur-sm tracking-widest ${
-                  (data.method === 'wififorge-labkit' || data.method === 'platform-labkit' || data.method === 'platform-labkit (legacy wififorge-labkit)')
+                  isOfflineDataset(data.method)
                     ? 'bg-[var(--accent-bg)] text-[var(--learning)] border-[var(--accent-border)]'
-                    : 'bg-[var(--success-bg)] text-[var(--success)] border-[var(--success-border)] shadow-soft'
+                    : data.method === 'unavailable'
+                      ? 'bg-[var(--warning-bg)] text-[var(--attention)] border-[var(--warning-border)]'
+                      : 'bg-[var(--success-bg)] text-[var(--success)] border-[var(--success-border)] shadow-soft'
                 }`}>
-                  {(data.method === 'wififorge-labkit' || data.method === 'platform-labkit' || data.method === 'platform-labkit (legacy wififorge-labkit)') ? 'BUNDLED DATASET' : 'LOCAL PARSER API'}
+                  {sourceLabel(data.method)}
                 </span>
               )}
               {error && (
@@ -338,7 +410,7 @@ function CaptureInspector({ pcapId, initialFilter = '', onFrameSelect }: Props) 
       {data?.note && (
         <div className="rounded-2xl bg-[var(--warning-bg)] border border-[var(--warning-border)] p-3.5 text-[11.5px] text-[var(--attention)] flex items-start gap-2">
           <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-          <span>{data.note} Start the local parser API (<span className="font-mono">uvicorn app.main:app --reload</span> in <span className="font-mono">backend/</span>) for full display-filter support.</span>
+          <span>{data.note}{data.method !== 'tshark' && ' Only the supported presets and exact SSID/subtype filters are evaluated without TShark; arbitrary Wireshark expressions are not assumed to match.'}</span>
         </div>
       )}
 
@@ -353,7 +425,7 @@ function CaptureInspector({ pcapId, initialFilter = '', onFrameSelect }: Props) 
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-[var(--panel-raised)] border border-[var(--line-strong)] font-mono text-[var(--ink-secondary)]">{data?.frames.length} shown</span>
           </div>
           <div className="text-[11px] font-mono text-[var(--ink-muted)]">
-            Click to inspect • {(data?.method === 'wififorge-labkit' || data?.method === 'platform-labkit' || data?.method === 'platform-labkit (legacy wififorge-labkit)') ? 'bundled offline dataset' : 'local parser API'}
+            Click to inspect • {sourceHint(data?.method)}
           </div>
         </div>
         <div className="ws-pcap-cards" aria-label="Capture frames" inert={loading} aria-busy={loading}>

@@ -92,12 +92,12 @@ test('access model', async t => {
     for (const state of ['public', 'guest', 'pending', 'rejected', 'suspended']) {
       assert.equal(allows(state, 'learning-content'), false, `${state} must not be shown learning content`)
     }
-    assert.equal(accessLabel('guest'), 'Catalogue access')
-    assert.equal(accessLabel('pending'), 'Catalogue access')
-    assert.equal(accessLabel('rejected'), 'Catalogue access')
-    assert.equal(accessLabel('suspended'), 'Catalogue access')
-    assert.equal(accessLabel('active'), 'Approved learning')
-    assert.equal(accessLabel('owner'), 'Approved learning')
+    assert.equal(accessLabel('guest'), 'Catalogue & practice')
+    assert.equal(accessLabel('pending'), 'Catalogue & practice')
+    assert.equal(accessLabel('rejected'), 'Catalogue & practice')
+    assert.equal(accessLabel('suspended'), 'Catalogue & practice')
+    assert.equal(accessLabel('active'), 'Approved content')
+    assert.equal(accessLabel('owner'), 'Approved content')
 
     /* --- content maturity is a separate vocabulary ----------------------- */
 
@@ -171,8 +171,8 @@ test('access model', async t => {
 
     /* --- vocabulary: no copy may call lessons public or claim secrecy ------ */
 
-    // Lesson text is enforced server-side, but quizzes, answer keys and practice artifacts are not yet
-    // behind that boundary, so copy must not claim the content is secret, locked or encrypted.
+    // Lesson bodies and quiz prompts are server-gated; local progress and self-review artefacts remain
+    // unverified practice, so copy must not claim the content is secret, locked or encrypted.
     const bannedAccessWording = [/Preview Curriculum/i, /Full Curriculum/i, /open to everyone/i, /no account required/i, /readable here/i, /public on this site/i, /preview lessons/i]
     const bannedSecrecyClaims = [/securely locked/i, /protected content/i, /cannot be accessed/i, /encrypted/i, /secure vault/i]
     const copy = [CATALOGUE_NOTE, ACCOUNT_ADDS_NOTE, ...ALL_STATES.flatMap(state => [STATE_META[state].label, STATE_META[state].summary, STATE_META[state].nextAction])]
@@ -182,9 +182,21 @@ test('access model', async t => {
       }
     }
     assert.match(CATALOGUE_NOTE, /catalogue is public/i)
-    assert.match(CATALOGUE_NOTE, /approved accounts/i)
+    assert.match(CATALOGUE_NOTE, /sample artifacts and bundled local lab exercises are available/i)
+    assert.match(CATALOGUE_NOTE, /approved accounts unlock protected lesson text and knowledge-check prompts/i)
+    assert.match(CATALOGUE_NOTE, /challenge prompts and answer keys are omitted from this public build/i)
+    assert.doesNotMatch(CATALOGUE_NOTE, /lessons, labs and assessments are for approved accounts/i)
     assert.match(STATE_META.pending.summary, /awaiting approval/i)
     assert.match(STATE_META.pending.nextAction, /explore the SecCraft catalogue/i)
+  })
+
+  await check('auth error guidance is specific without enumerating accounts', async () => {
+    const { loginErrorMessage } = await load('/src/lib/authErrors.ts')
+    assert.match(loginErrorMessage({ code: 'email_not_confirmed', message: 'Email not confirmed' }), /Confirm your email address before signing in/i)
+    assert.match(loginErrorMessage({ code: 'over_request_rate_limit', message: 'rate limit' }), /Too many sign-in attempts/i)
+    assert.match(loginErrorMessage({ code: 'invalid_credentials', message: 'Invalid login credentials' }), /Check the email and password/i)
+    assert.doesNotMatch(loginErrorMessage({ code: 'invalid_credentials', message: 'Invalid login credentials' }), /account does not exist|no account/i)
+    assert.match(loginErrorMessage(new TypeError('Failed to fetch')), /Account services are unavailable right now/i)
   })
 
   await check('no UI source presents Preview or Full as an access level or calls lesson content public', async () => {
@@ -201,6 +213,25 @@ test('access model', async t => {
     assert.deepEqual(offenders, [], 'access wording from the retired Preview/Full model must not return')
   })
 
+
+  await check('challenge answer keys remain out of the public build and the unavailable state is explicit', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+    const challengePage = readFileSync(join(frontendRoot, 'src/pages/Challenges.tsx'), 'utf8')
+    const challengeDetail = readFileSync(join(frontendRoot, 'src/pages/ChallengeDetail.tsx'), 'utf8')
+    const viteConfig = readFileSync(join(frontendRoot, 'vite.config.ts'), 'utf8')
+    const publicAlias = readFileSync(join(frontendRoot, 'src/content/public-boundary/empty.json'), 'utf8')
+    const boundaryVerifier = readFileSync(join(frontendRoot, '../scripts/verify-public-boundary-build.mjs'), 'utf8')
+    const manifestGenerator = readFileSync(join(frontendRoot, '../scripts/generate-content-migration-manifest.mjs'), 'utf8')
+    assert.match(viteConfig, /@\/content\/challenges\.json[\s\S]*?public-boundary\/empty\.json/)
+    assert.equal(JSON.parse(publicAlias).length, 0)
+    assert.match(boundaryVerifier, /challenge answer/)
+    assert.match(manifestGenerator, /challenge-record[\s\S]*?authenticated delivery\/server-only grading fields/)
+    assert.match(challengePage, /challengeContentIncluded/)
+    assert.match(challengePage, /Challenge content isn’t included in this public build/)
+    assert.match(challengePage, /Authenticated challenge delivery is not available yet/)
+    assert.match(challengeDetail, /Challenge content isn’t included in this public build/)
+  })
 
   await check('account achievements use the backend id field without promoting import trust', async () => {
     const { mapServerAchievements } = await load('/src/lib/useServerProgress.ts')

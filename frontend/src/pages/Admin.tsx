@@ -1,4 +1,5 @@
-import { TextField } from '@/components/common/Controls'
+import { Notice, TextField } from '@/components/common/Controls'
+import { Breadcrumb, StatGrid } from '@/components/common/Workspace'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { AlertTriangle, Check, ClipboardList, LoaderCircle, RefreshCw, Save, UserX, X } from 'lucide-react'
 import { apiFetch } from '@/lib/api'
@@ -182,14 +183,15 @@ export function AdminPage() {
   const canApprove = capacity?.available === true
 
   return <div className="ws-admin sc-owner-page">
+    <Breadcrumb items={[{ label: 'Owner' }, { label: 'Accounts & policy' }]} />
     <header className="sc-owner-intro"><div><p className="sc-library-domain">SecCraft / Owner operations</p><h1>Platform administration</h1><p>Manage enrollment, review learner accounts and inspect recent owner actions. Access and capacity are enforced by the server—not by this screen.</p></div><button type="button" onClick={refresh} disabled={usersLoading || settingsLoading || auditLoading || saving || Boolean(pendingUserId)} className="ws-action ws-action-secondary"><RefreshCw size={16} aria-hidden="true" /> Refresh data</button></header>
-    {(actionError || notice) && <div role={actionError ? 'alert' : 'status'} className={`sc-owner-feedback ${actionError ? 'is-error' : 'is-success'}`}>{actionError || notice}</div>}
+    {(actionError || notice) && <Notice live kind={actionError ? 'error' : 'success'}>{actionError || notice}</Notice>}
 
-    <section className="sc-owner-overview" aria-labelledby="owner-overview"><h2 id="owner-overview">Owner overview</h2><div className="sc-owner-overview-grid">
-      <div><span>Pending approvals</span><strong>{usersLoading || usersError ? 'Unavailable' : filter === 'pending' || filter === 'all' ? `${users.filter(user => user.account_status === 'pending').length}${users.length === PAGE_LIMIT ? '+' : ''}` : 'Switch to Pending'}</strong><small>Current {filter} list only; not a platform-wide total.</small></div>
-      <div><span>Active learners</span><strong>{settingsLoading || settingsError || !settings ? 'Unavailable' : settings.active_approved_users}</strong><small>Server-reported approved non-owner accounts.</small></div>
-      <div><span>Recent owner events</span><strong>{auditLoading || auditError ? 'Unavailable' : audit.length}</strong><small>Up to 50 recent events, not a complete audit export.</small></div>
-    </div></section>
+    <section className="sc-owner-overview" aria-labelledby="owner-overview"><h2 id="owner-overview">Owner overview</h2><StatGrid label="Owner overview" items={[
+      { label: 'Pending approvals', value: usersLoading || usersError ? 'Unavailable' : filter === 'pending' || filter === 'all' ? `${users.filter(user => user.account_status === 'pending').length}${users.length === PAGE_LIMIT ? '+' : ''}` : 'Switch to Pending', detail: `Current ${filter} list only; not a platform-wide total.` },
+      { label: 'Active learners', value: settingsLoading || settingsError || !settings ? 'Unavailable' : settings.active_approved_users, detail: 'Server-reported approved non-owner accounts.' },
+      { label: 'Recent owner events', value: auditLoading || auditError ? 'Unavailable' : audit.length, detail: 'Up to 50 recent events, not a complete audit export.' },
+    ]} /></section>
     <section className="sc-owner-capacity" aria-labelledby="capacity-heading"><div className="sc-owner-section-head"><div><h2 id="capacity-heading">Enrollment capacity</h2><p>Approved non-owner accounts only. Pending, rejected, suspended and owner-allowlisted accounts are excluded.</p></div></div>
       {settingsError ? <p role="alert" className="sc-owner-error">{settingsError} <button type="button" onClick={refresh}>Retry</button></p> : settingsLoading || !settings || !capacity ? <p role="status">Loading enrollment policy…</p> : <div className="sc-capacity-grid"><div><strong>{capacity.label}</strong><p>{capacity.available ? 'Space available for another approval.' : 'Approvals currently fail closed or capacity is full.'}</p></div><div>{settings.approved_user_limit !== null && settings.approved_user_limit > 0 ? <div className="ws-progress" role="progressbar" aria-label="Approved account capacity used" aria-valuemin={0} aria-valuemax={settings.approved_user_limit} aria-valuenow={Math.min(settings.active_approved_users, settings.approved_user_limit)}><span style={{ width: `${capacity.percent}%` }} /></div> : null}<small>{settings.approved_user_limit === null ? 'Set a limit to enable approvals.' : settings.approved_user_limit === 0 ? 'Zero approved-account places configured.' : 'Capacity is rechecked by the server for every approval.'}</small></div></div>}
     </section>

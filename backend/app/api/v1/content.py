@@ -9,7 +9,7 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse, Response
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, field_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -24,6 +24,19 @@ router = APIRouter()
 
 SAFE_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$")
 SAFE_FILENAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\.(pcapng|pcap|zip|json|txt|md)$")
+
+
+class QuizGradeSubmission(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    answers: dict[str, StrictInt] = Field(min_length=1, max_length=100)
+
+    @field_validator("answers")
+    @classmethod
+    def bound_answers(cls, value: dict[str, int]) -> dict[str, int]:
+        if any(not question_id or len(question_id) > 160 or answer < 0 or answer > 100 for question_id, answer in value.items()):
+            raise ValueError("Quiz response fields exceed allowed limits")
+        return value
 
 
 def _validate_id(val: str, name: str = "identifier") -> str:
@@ -279,15 +292,66 @@ def get_module_quiz(
     questions = raw_quizzes.get(module_id, [])
     if not questions:
         raise HTTPException(status_code=404, detail="Quiz questions not found for this module.")
-    # Learner delivery never includes answer keys or solutions. Grading reads server-only records.
+    # Allowlist only learner-visible fields. Future answer/rubric fields stay server-side by default.
     learner_questions = [
-        {key: value for key, value in question.items() if key not in {"correct", "answer", "explanation", "solution", "rationale"}}
+        {key: question[key] for key in ("id", "question", "options") if key in question}
         for question in questions
     ]
     return {
         "module_id": module_id,
         "questions": learner_questions,
         "grading_class": "practice",
+    }
+
+
+@router.post("/quizzes/{module_id}/grade")
+def grade_module_quiz(
+    module_id: str,
+    payload: QuizGradeSubmission,
+    user: UserProfile = Depends(active_profile),
+) -> dict[str, Any]:
+    """Grade one authenticated practice submission without shipping the key with its questions."""
+    _validate_id(module_id, "module_id")
+    raw_quizzes = load_content_json("quizzes.json") or {}
+    questions = raw_quizzes.get(module_id, [])
+    if not questions:
+        raise HTTPException(status_code=404, detail="Quiz questions not found for this module.")
+
+    question_ids = [question.get("id") for question in questions]
+    if any(not isinstance(question_id, str) for question_id in question_ids) or len(set(question_ids)) != len(question_ids):
+        raise HTTPException(status_code=503, detail="Quiz grading data is unavailable.")
+    if set(payload.answers) != set(question_ids):
+        raise HTTPException(status_code=422, detail="Submit one answer for every question.")
+
+    score = 0
+    results = []
+    for question in questions:
+        question_id = question["id"]
+        options = question.get("options")
+        correct_index = question.get("correct")
+        selected_index = payload.answers[question_id]
+        if not isinstance(options, list) or type(correct_index) is not int or not 0 <= correct_index < len(options):
+            raise HTTPException(status_code=503, detail="Quiz grading data is unavailable.")
+        if selected_index >= len(options):
+            raise HTTPException(status_code=422, detail="A selected option is outside the question's choices.")
+        is_correct = selected_index == correct_index
+        score += int(is_correct)
+        results.append({
+            "id": question_id,
+            "selected_index": selected_index,
+            "correct_index": correct_index,
+            "correct": is_correct,
+            "explanation": question.get("explanation", ""),
+        })
+
+    total = len(questions)
+    return {
+        "module_id": module_id,
+        "score": score,
+        "total": total,
+        "passed": score / total >= 0.8,
+        "grading_class": "practice",
+        "results": results,
     }
 
 

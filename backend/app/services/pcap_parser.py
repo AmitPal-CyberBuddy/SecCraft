@@ -13,6 +13,7 @@ this module must never do again.
 """
 
 import json
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -21,9 +22,57 @@ from typing import List, Dict, Any, Optional
 # Try scapy import for fallback
 try:
     from scapy.all import rdpcap, Dot11, Dot11Beacon, Dot11ProbeReq, Dot11ProbeResp, Dot11Auth, Dot11AssoReq, Dot11AssoResp, EAPOL
+    from scapy.layers.eap import EAP
+    from scapy.layers.radius import Radius
     SCAPY_AVAILABLE = True
 except ImportError:
+    EAP = Radius = None
     SCAPY_AVAILABLE = False
+
+
+class UnsupportedDisplayFilter(ValueError):
+    """The active parser cannot truthfully evaluate the requested display filter."""
+
+
+def _parse_display_filter(display_filter: Optional[str]):
+    """Parse the bounded filter subset supported by Scapy and the verified offline datasets."""
+    value = (display_filter or '').strip()
+    if not value:
+        return ('all', None)
+    match = re.fullmatch(r'wlan\.fc\.type_subtype\s*==\s*(\d+)', value, re.IGNORECASE)
+    if match:
+        return ('subtype', int(match.group(1)))
+    if value.lower() in {'eapol', 'eap', 'radius', 'wps'}:
+        return (value.lower(), None)
+    match = re.fullmatch(r'wlan\.ssid\s*==\s*(?:\"([^\"]*)\"|([^\s\"]+))', value, re.IGNORECASE)
+    if match:
+        return ('ssid', match.group(1) if match.group(1) is not None else match.group(2))
+    return None
+
+
+def _matches_display_filter(frame: Dict[str, Any], parsed_filter) -> bool:
+    if parsed_filter is None:
+        return True
+    kind, value = parsed_filter
+    if kind == 'all':
+        return True
+    if kind == 'subtype':
+        try:
+            return int(frame['type']) * 16 + int(frame['subtype']) == value
+        except (KeyError, TypeError, ValueError):
+            return False
+    if kind == 'eapol':
+        return bool(frame.get('eapol'))
+    if kind == 'eap':
+        return bool(frame.get('eap'))
+    if kind == 'radius':
+        return bool(frame.get('radius'))
+    if kind == 'wps':
+        return bool(frame.get('wps') or frame.get('wps_attrs'))
+    if kind == 'ssid':
+        return frame.get('ssid') == value
+    return True
+
 
 def tshark_available() -> bool:
     return shutil.which("tshark") is not None
@@ -51,6 +100,8 @@ def parse_with_tshark(pcap_path: Path, display_filter: Optional[str] = None) -> 
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
         if result.returncode != 0:
+            if display_filter:
+                raise UnsupportedDisplayFilter('TShark could not evaluate the requested display filter.')
             return []
         data = json.loads(result.stdout)
         frames = []
@@ -76,6 +127,8 @@ def parse_with_tshark(pcap_path: Path, display_filter: Optional[str] = None) -> 
                 "raw": pkt
             })
         return frames
+    except UnsupportedDisplayFilter:
+        raise
     except Exception as e:
         print(f"[pcap_parser] tshark failed: {e}")
         return []
@@ -84,6 +137,9 @@ def parse_with_scapy(pcap_path: Path, display_filter: Optional[str] = None) -> L
     """Parse using Scapy — works without tshark, supports deauth/rogue/captive"""
     if not SCAPY_AVAILABLE:
         return []
+    parsed_filter = _parse_display_filter(display_filter)
+    if (display_filter or '').strip() and parsed_filter is None:
+        raise UnsupportedDisplayFilter('Scapy supports only the available filter presets and exact SSID/subtype filters.')
 
     try:
         packets = rdpcap(str(pcap_path))
@@ -190,6 +246,10 @@ def parse_with_scapy(pcap_path: Path, display_filter: Optional[str] = None) -> L
                 sa = None
                 da = None
 
+            # Preserve EAP and RADIUS as distinct protocol facts; EAPOL is only the link-layer wrapper.
+            is_eap = bool(EAP is not None and pkt.haslayer(EAP))
+            is_radius = bool(Radius is not None and pkt.haslayer(Radius))
+
             # Detect EAPOL more robustly: check EAPOL layer, SNAP ethertype 0x888e, or Raw starting with EAPOL version
             is_eapol = False
             try:
@@ -239,6 +299,10 @@ def parse_with_scapy(pcap_path: Path, display_filter: Optional[str] = None) -> L
                 summary_parts.append("Class 3 frame from nonassociated STA")
             if is_eapol:
                 summary_parts.append("EAPOL M?")
+            if is_eap:
+                summary_parts.append("EAP")
+            if is_radius:
+                summary_parts.append("RADIUS")
             summary = " | ".join(summary_parts)
 
             frame_info = {
@@ -254,45 +318,18 @@ def parse_with_scapy(pcap_path: Path, display_filter: Optional[str] = None) -> L
                 "reason": reason,
                 "wps": wps,
                 "eapol": is_eapol or "EAPOL" in subtype_name,
+                "eap": is_eap,
+                "radius": is_radius,
                 "summary": summary
             }
 
-            # Apply simple display filter logic (wireshark-like)
-            if display_filter:
-                df = display_filter
-                # Exact subtype filters
-                if "wlan.fc.type_subtype==8" in df and not (dot11.type == 0 and dot11.subtype == 8):
-                    continue
-                if "wlan.fc.type_subtype==4" in df and not (dot11.type == 0 and dot11.subtype == 4):
-                    continue
-                if "wlan.fc.type_subtype==5" in df and not (dot11.type == 0 and dot11.subtype == 5):
-                    continue
-                if "wlan.fc.type_subtype==12" in df and not (dot11.type == 0 and dot11.subtype == 12):
-                    continue
-                if "wlan.fc.type_subtype==10" in df and not (dot11.type == 0 and dot11.subtype == 10):
-                    continue
-                if "wlan.fc.type_subtype==0" in df and not (dot11.type == 0 and dot11.subtype == 0):
-                    continue
-                if "wlan.fc.type_subtype==1" in df and not (dot11.type == 0 and dot11.subtype == 1):
-                    continue
-                # Generic
-                dflow = df.lower()
-                if "beacon" in dflow and "beacon" not in subtype_name.lower():
-                    continue
-                if "probe" in dflow and "probe" not in subtype_name.lower():
-                    continue
-                if "deauth" in dflow and "deauth" not in subtype_name.lower():
-                    continue
-                if "disassoc" in dflow and "disassoc" not in subtype_name.lower():
-                    continue
-                if "eapol" in dflow and not frame_info["eapol"]:
-                    continue
-                if "wps" in dflow and not wps:
-                    continue
-
+            if not _matches_display_filter(frame_info, parsed_filter):
+                continue
             frames.append(frame_info)
 
         return frames
+    except UnsupportedDisplayFilter:
+        raise
     except Exception as e:
         print(f"[pcap_parser] scapy failed: {e}")
         import traceback
@@ -300,33 +337,15 @@ def parse_with_scapy(pcap_path: Path, display_filter: Optional[str] = None) -> L
         return []
 
 def _apply_display_filter(frames: List[Dict[str, Any]], display_filter: Optional[str]) -> List[Dict[str, Any]]:
-    """Evaluate the display filters the UI offers against the offline dataset.
+    """Evaluate the simple filter subset used by the offline datasets.
 
-    Only the filters the interface actually presents are supported; an unknown filter is reported by
-    leaving the frame list unchanged and is surfaced to the user by the UI, never silently "matched".
+    Unsupported expressions leave frames untouched for offline review, so the response must clear
+    its applied-filter field and explain that the frames are unfiltered.
     """
-    f = (display_filter or "").strip()
-    if not f:
+    parsed_filter = _parse_display_filter(display_filter)
+    if parsed_filter is None:
         return frames
-
-    import re as _re
-
-    m = _re.fullmatch(r"wlan\.fc\.type_subtype==(\d+)", f)
-    if m:
-        return [fr for fr in frames if str(fr.get("subtype")) == m.group(1)]
-    if f == "eapol":
-        return [fr for fr in frames if fr.get("eapol")]
-    if f == "eap":
-        return [fr for fr in frames if fr.get("eap")]
-    if f == "radius":
-        return [fr for fr in frames if fr.get("radius")]
-    if f == "wps":
-        return [fr for fr in frames if fr.get("wps")]
-    m = _re.fullmatch(r'wlan\.ssid=="?(.+?)"?', f)
-    if m:
-        return [fr for fr in frames if fr.get("ssid") == m.group(1)]
-    return frames
-
+    return [frame for frame in frames if _matches_display_filter(frame, parsed_filter)]
 
 def offline_frames(pcap_id: str) -> List[Dict[str, Any]]:
     """Decoded frames from the datasets that ship with the frontend.
@@ -403,36 +422,73 @@ def parse_pcap(pcap_path: Path, display_filter: Optional[str] = None, pcap_id: s
     If none of the three can produce frames, the caller gets an empty frame list plus an explicit
     ``note``. Nothing is invented to fill the response.
     """
+    requested_filter = (display_filter or '').strip() or None
+    applied_filter = requested_filter
     frames: List[Dict[str, Any]] = []
     note: Optional[str] = None
+    filter_issue: Optional[str] = None
+    parser_available = tshark_available() or SCAPY_AVAILABLE
+    method = "tshark" if tshark_available() else ("scapy" if SCAPY_AVAILABLE else "offline-dataset")
 
-    if tshark_available():
-        frames = parse_with_tshark(pcap_path, display_filter)
-        method = "tshark"
-    elif SCAPY_AVAILABLE:
-        frames = parse_with_scapy(pcap_path, display_filter)
-        method = "scapy"
-    else:
-        method = "offline-dataset"
+    try:
+        if tshark_available():
+            frames = parse_with_tshark(pcap_path, requested_filter)
+        elif SCAPY_AVAILABLE:
+            frames = parse_with_scapy(pcap_path, requested_filter)
+    except UnsupportedDisplayFilter as exc:
+        filter_issue = str(exc)
+        applied_filter = None
 
-    # tshark/scapy returned nothing (filter matched no frames, or the file is one of the generated
-    # lab captures whose structure the pinned versions cannot dissect): use the offline dataset.
+    # If a parser produced no frames, use the verified offline dataset when possible. A filter the
+    # fallback cannot evaluate is never labelled as applied: all frames are clearly called unfiltered.
     if not frames:
         offline = offline_frames(pcap_id)
         if offline:
-            frames = _apply_display_filter(offline, display_filter)
             method = "offline-dataset"
-            if tshark_available() or SCAPY_AVAILABLE:
+            parsed_filter = _parse_display_filter(requested_filter)
+            if requested_filter and parsed_filter is None:
+                frames = offline
+                applied_filter = None
+                if filter_issue:
+                    reason = f"{filter_issue} "
+                elif parser_available:
+                    reason = "The local parser returned no frames for this filter; the offline dataset cannot evaluate it. "
+                else:
+                    reason = "The offline dataset cannot evaluate this filter. "
                 note = (
-                    "The installed parser returned no frames for this capture; frames come from the "
-                    "offline dataset generated and verified by scripts/verify-lab-artifacts.py."
+                    f"{reason}All {len(frames)} frames from the verified offline dataset are shown unfiltered; "
+                    "clear the filter or use a supported preset."
                 )
+            else:
+                frames = _apply_display_filter(offline, requested_filter)
+                applied_filter = requested_filter
+                if requested_filter and not frames:
+                    note = (
+                        f"No frames matched the requested filter “{requested_filter}” in the verified offline dataset."
+                    )
+                elif filter_issue:
+                    note = f"{filter_issue} Frames are from the offline dataset generated and verified by scripts/verify-lab-artifacts.py."
+                elif parser_available:
+                    note = (
+                        "The local parser returned no frames for this capture; frames come from the "
+                        "offline dataset generated and verified by scripts/verify-lab-artifacts.py."
+                    )
+                else:
+                    note = "Frames come from the offline dataset generated and verified by scripts/verify-lab-artifacts.py."
         else:
-            method = "unavailable"
-            note = (
-                f"No parser available for {pcap_id or pcap_path.name} and no offline dataset found. "
-                "Install tshark (or scapy) to decode the capture on this machine."
-            )
+            method = "unavailable" if not parser_available else method
+            if filter_issue:
+                note = f"{filter_issue} No offline dataset is available; no filtered result was produced."
+            elif parser_available:
+                note = (
+                    f"The available {method} parser produced no frames for {pcap_id or pcap_path.name}, "
+                    "and no offline dataset is available. Verify the capture and filter or try another parser."
+                )
+            else:
+                note = (
+                    f"No TShark or Scapy parser is available for {pcap_id or pcap_path.name}, "
+                    "and no offline dataset was found. Install TShark (or Scapy) to decode the capture on this machine."
+                )
 
     # Build summary including Phase E
     ssids = list(set([f.get("ssid") for f in frames if f.get("ssid")]))
@@ -460,7 +516,7 @@ def parse_pcap(pcap_path: Path, display_filter: Optional[str] = None, pcap_id: s
         "pcap_id": pcap_id,
         # Expose a basename only; never disclose the server's repository or filesystem path.
         "pcap_path": pcap_path.name,
-        "filter": display_filter,
+        "filter": applied_filter or "",
         "note": note,
         "frames": frames,
         "summary": summary,

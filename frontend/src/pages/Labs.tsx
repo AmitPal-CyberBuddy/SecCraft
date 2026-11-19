@@ -1,11 +1,12 @@
 import { PracticeAvailability } from '@/components/common/PracticeAvailability'
 import { LearningPathScope } from '@/components/common/LearningPathScope'
 import { moduleLink } from '@/lib/learningNavigation'
-import { ViewSwitcher } from '@/components/common/Controls'
+import { ViewSwitcher, SelectField, TextField } from '@/components/common/Controls'
+import { Breadcrumb, EmptyState } from '@/components/common/Workspace'
 import { moduleOrdinal } from '@/content/module-ordinal'
 import { LoadingPanel } from '@/components/common/LoadingPanel'
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
-import { Search, Radio, FileCode, Layers, Terminal, Upload, Shield, Trophy, Clock, ArrowLeft } from 'lucide-react'
+import { Radio, FileCode, Layers, Terminal, Upload, Shield, Trophy, ArrowLeft } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { LABS } from '@/content/labs'
 import { getModulesForPath, getStatsForPath } from '@/content/stats'
@@ -14,7 +15,6 @@ import learningPaths from '@/content/learning-paths.json'
 import platform from '@/content/platform.json'
 import { TERMINAL_COMMAND_COUNT } from '@/components/terminal/commandCount'
 import { TierBadge } from '@/components/common/TierBadge'
-import { useProgressStore } from '@/store/useProgressStore'
 import { apiFetch, discardResponseBody } from '@/lib/api'
 
 const TerminalEmulator = lazy(() => import('@/components/terminal/TerminalEmulator').then(m => ({ default: m.TerminalEmulator })))
@@ -39,7 +39,6 @@ export function Labs() {
 }
 function LabsContent({ effectivePathId }: { effectivePathId: string }) {
   const [searchParams] = useSearchParams()
-  const completedLabs = useProgressStore(s => s.completedLabs)
   const currentPath = learningPaths.find(p => p.id === effectivePathId)!
   const pathModules = useMemo(() => getModulesForPath(effectivePathId), [effectivePathId])
   const pathStats = useMemo(() => getStatsForPath(effectivePathId), [effectivePathId])
@@ -129,7 +128,7 @@ function LabsContent({ effectivePathId }: { effectivePathId: string }) {
 
   return (
     <div className="ws-legacy ws-lab-workspace max-w-[1400px] mx-auto min-w-0 w-full space-y-4 xs:space-y-6 md:space-y-8">
-      <nav className="ws-breadcrumb" aria-label="Breadcrumb"><Link to={`/paths/${effectivePathId}`}>{currentPath.title}</Link><span aria-hidden="true">/</span><span aria-current="page">Labs</span></nav>
+      <Breadcrumb items={[{ label: currentPath.title, to: `/paths/${effectivePathId}` }, { label: 'Labs' }]} />
       <header className="sc-practice-header"><div><p className="sc-library-domain">Practice / {currentPath.category}</p><h1>Security lab library</h1><p>Work through scoped objectives, supplied artifacts and local tools. Record what the evidence supports; completion is not trusted grading.</p></div><div className="sc-practice-summary"><strong>{pathStats.labs}</strong><span>labs in this path</span><small>{currentPath.id === 'android-pentesting' ? 'Original source cases · no prebuilt APK' : `${filteredPcaps.length} supplied captures`} · {currentPath.status === 'available' ? 'Available' : 'Planned'}</small></div></header>
       {effectivePathId === 'wireless-pentesting' && <PracticeAvailability />}
       {/* Tabs — generic */}
@@ -148,20 +147,17 @@ function LabsContent({ effectivePathId }: { effectivePathId: string }) {
         <Suspense fallback={<LoadingPanel label="Loading lab scoring…" />}>
           <div className="space-y-4">
             <div className="sc-sticky-tool z-20 bg-[var(--panel-inset)] backdrop-blur-xl rounded-2xl border border-[var(--line-normal)] p-4 shadow-lg -mx-3 p-3 md:mx-0 md:p-4 xs:p-5">
-              <label htmlFor="scoring-lab" className="text-[11px] font-bold text-[var(--ink-secondary)] uppercase tracking-wide">Lab to score — {currentPath.title}</label>
-              <select
+              <SelectField
                 id="scoring-lab"
+                label={`Lab to score — ${currentPath.title}`}
                 value={selectedLabId}
                 onChange={e => setSelectedLabId(e.target.value)}
-                className="mt-2 w-full px-4 py-3 rounded-xl bg-[var(--panel-inset)] border border-[var(--line-normal)] text-[13px] text-[var(--ink-primary)] focus:border-[var(--accent-border)] focus:outline-none"
+                hint="Pick the lab you are working on: the objective, artefact and method prompts below come from that lab's catalogue entry, so you are never shown another lab's answers."
               >
                 {labsForPath.map(lab => (
                   <option key={lab.id} value={lab.id}>{lab.id} — {lab.title}</option>
                 ))}
-              </select>
-              <p className="text-[11px] text-[var(--ink-secondary)] mt-2">
-                Pick the lab you are working on: the objective, artefact and method prompts below come from that lab's catalogue entry, so you are never shown another lab's answers.
-              </p>
+              </SelectField>
             </div>
             <LabScoring labId={selectedLabId} />
           </div>
@@ -171,31 +167,23 @@ function LabsContent({ effectivePathId }: { effectivePathId: string }) {
       {activeTab === 'artifacts' && (
         <>
           {currentPath.status !== 'available' ? (
-            <div className="rounded-2xl bg-[var(--panel-bg)] border border-[var(--line-normal)] p-8 text-center">
-              <div className="w-12 h-12 rounded-xl bg-[var(--panel-raised)] border border-[var(--line-strong)] flex items-center justify-center mx-auto mb-3">
-                <Clock className="w-6 h-6 text-[var(--ink-secondary)]" />
-              </div>
-              <div className="text-[14px] font-semibold text-[var(--ink-primary)]">This learning path is planned</div>
-              <p className="mt-2 text-[12.5px] text-[var(--ink-secondary)] max-w-[600px] mx-auto leading-relaxed">
-                No labs are available in this planned path yet. Explore an available path to work with its supplied artifacts.
-              </p>
-              <Link to={`/paths/${effectivePathId}`} className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--panel-raised)] border border-[var(--line-strong)] text-[12px] text-[var(--ink-secondary)] hover:bg-[var(--panel-raised)] transition-colors">
-                <ArrowLeft className="w-4 h-4" /> Back to {currentPath.title}
-              </Link> <Link to="/paths" className="mt-4 inline-flex items-center px-4 py-2 text-[var(--learning)] underline">Explore available paths →</Link>
-            </div>
+            <EmptyState
+              title="This learning path is planned"
+              description="No labs are available in this planned path yet. Explore an available path to work with its supplied artifacts."
+              action={<><Link to={`/paths/${effectivePathId}`} className="ws-action ws-action-secondary"><ArrowLeft className="w-4 h-4" /> Back to {currentPath.title}</Link><Link to="/paths" className="ws-action ws-action-secondary">Explore available paths →</Link></>}
+            />
           ) : (
             <>
               <div
                 className="flex flex-col lg:flex-row gap-3 min-w-0"
               >
-                <div className="flex-1 relative group min-w-0">
-                  <Search className="w-4 h-4 text-[var(--ink-secondary)] absolute left-4 top-1/2 -translate-y-1/2 group-hover:text-[var(--ink-secondary)] transition-colors" />
-                  <input
-                    aria-label="Search labs"
+                <div className="flex-1 min-w-0">
+                  <TextField
+                    type="search"
+                    label="Search labs"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     placeholder={`Search labs in ${currentPath.title}, e.g., beacon, handshake, deauth, rogue, captive, Enterprise, EAP...`}
-                    className="w-full pl-11 pr-4 py-3 rounded-xl bg-[var(--panel-bg)] border border-[var(--line-normal)]  text-[13px] text-[var(--ink-primary)] placeholder:text-[var(--ink-secondary)] focus:outline-none focus:border-[var(--accent-border)] focus:bg-[var(--panel-bg)] hover:border-[var(--line-strong)] hover:bg-[var(--panel-raised)] sc-surface-transition min-w-0"
                   />
                 </div>
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin shrink-0">
@@ -221,21 +209,21 @@ function LabsContent({ effectivePathId }: { effectivePathId: string }) {
                 {filteredLabs.map(lab => <article className="ws-catalog-row" key={lab.id}>
                   <span className="ws-row-number">{moduleOrdinal(lab.module)}</span>
                   <div className="ws-row-main">
-                    <div className="ws-row-meta">{currentPath.shortTitle} · {lab.type} · {lab.difficulty} · {lab.status === 'PLANNED' ? 'Planned' : lab.grading === 'answer-checked' ? 'Answer-checked local practice' : 'Self-review'} </div>
-                    <h3>{lab.title}</h3><p>{lab.description}</p><p className="sc-lab-context"><strong>Target:</strong> {lab.pcap ? `supplied ${lab.pcap}.pcapng capture` : currentPath.id === 'android-pentesting' ? 'supplied source case' : 'written or configuration exercise'} · <strong>Mode:</strong> {lab.grading === 'answer-checked' ? 'local answer-check' : 'guided self-review'} · <strong>Environment:</strong> {currentPath.id === 'android-pentesting' ? 'offline source review; owned emulator optional' : lab.status === 'SIMULATED' ? 'supplied evidence; no live target' : 'written exercise; no hosted equipment'}</p><div className="ws-row-meta">{lab.module} · {lab.id}{lab.pcap ? ` · ${lab.pcap}.pcapng` : ' · No capture required'}</div>
+                    <div className="ws-row-meta">{currentPath.shortTitle} · {lab.type} · {lab.difficulty} · {lab.status === 'PLANNED' ? 'Planned' : lab.grading === 'answer-checked' ? 'Answer-checked practice' : 'Self-review'} </div>
+                    <h3>{lab.title}</h3><p>{lab.description}</p><p className="sc-lab-context"><strong>Target:</strong> {lab.pcap ? `supplied ${lab.pcap}.pcapng capture` : currentPath.id === 'android-pentesting' ? 'supplied source case' : 'written or configuration exercise'} · <strong>Mode:</strong> {lab.grading === 'answer-checked' ? 'answer-check' : 'guided self-review'} · <strong>Environment:</strong> {currentPath.id === 'android-pentesting' ? 'offline source review; owned emulator optional' : lab.status === 'SIMULATED' ? 'supplied evidence; no live target' : 'written exercise; no hosted equipment'}</p><div className="ws-row-meta">{lab.module} · {lab.id}{lab.pcap ? ` · ${lab.pcap}.pcapng` : ' · No capture required'}</div>
                   </div>
-                  <div className="ws-row-side"><TierBadge tier={tierByModule.get(lab.module) ?? lab.status} size="xs" /><span className="ws-label">{completedLabs.some(record => record.labId === lab.id && record.moduleId === lab.module) ? 'Completed locally' : lab.status === 'PLANNED' ? 'Planned' : 'Not completed'}</span>
+                  <div className="ws-row-side"><TierBadge tier={tierByModule.get(lab.module) ?? lab.status} size="xs" /><span className="ws-label">{lab.status === 'PLANNED' ? 'Planned' : lab.grading === 'answer-checked' ? 'Answer-checked' : 'Self-review'}</span>
                     {lab.status === 'PLANNED' ? <span className="ws-muted">Not available</span> : <Link to={moduleLink(lab.module, 'lab', lab.id, effectivePathId)} className="ws-row-link">Open lab →</Link>}
                   </div>
                 </article>)}
               </div>
 
               {filteredLabs.length === 0 && (
-                <div className="rounded-2xl bg-[var(--panel-bg)] border border-dashed border-[var(--line-strong)] p-12 text-center">
-                  <div className="w-12 h-12 rounded-xl bg-[var(--panel-raised)] border border-[var(--line-strong)] flex items-center justify-center mx-auto mb-4"><Search className="w-6 h-6 text-[var(--ink-secondary)]" /></div>
-                  <h3 className="font-heading font-semibold text-[16px] text-[var(--ink-secondary)]">No labs found in {currentPath.title}</h3>
-                  <p className="text-[13px] text-[var(--ink-secondary)] mt-2">Try adjusting your search or filters — {labsForPath.length} labs total in this path</p>
-                </div>
+                <EmptyState
+                  title={`No labs found in ${currentPath.title}`}
+                  description={`Try adjusting your search or filters — ${labsForPath.length} labs total in this path`}
+                  action={(searchQuery || filterType) ? <button type="button" className="ws-action ws-action-secondary" onClick={() => { setSearchQuery(''); setFilterType(null) }}>Clear filters</button> : undefined}
+                />
               )}
               <details className="sc-artifact-disclosure" open={pcapQuery ? true : undefined}>
                 <summary>Supplied artifacts and downloads</summary>
@@ -301,7 +289,7 @@ function LabsContent({ effectivePathId }: { effectivePathId: string }) {
         </>
       )}
 
-      <p className="sc-practice-footnote">{currentPath.id === 'android-pentesting' ? 'Android source labs are self-review only (0 graded XP). An optional learner-built APK on an owned emulator is not verified by this platform; no dynamic proficiency is certified.' : 'Supplied evidence practice is available offline. Live hosted labs are not available; physical validation needs your own authorized equipment. Answer-checked local exercises and self-review are not trusted server grading. Evidence tools accept the supported artifact formats shown in the workspace.'}</p>
+      <p className="sc-practice-footnote">{currentPath.id === 'android-pentesting' ? 'Android source labs are self-review only (0 graded XP). An optional learner-built APK on an owned emulator is not verified by this platform; no dynamic proficiency is certified.' : 'Supplied evidence practice is available offline. Live hosted labs are not available; physical validation needs your own authorized equipment. Answer-checked exercises and self-review are not trusted server grading. Evidence tools accept the supported artifact formats shown in the workspace.'}</p>
     </div>
   )
 }

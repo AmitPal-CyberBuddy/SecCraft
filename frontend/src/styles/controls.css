@@ -77,3 +77,69 @@
   .ws-focus-actions > .ws-action { width:100%; }
   .sc-artifact-disclosure { padding:12px; }
 }
+
+/* ── Design-system primitives (Phase 1) ────────────────────────────────────
+   Buttons, badges, cards, section headers, breadcrumbs, stats, filter bars
+   and async states. Pages compose these; they do not re-implement them. */
+
+/* Buttons — one shape, four tones, three sizes. */
+.ws-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:9px 17px; border-radius:var(--radius-control); border:1px solid transparent; font-size:.85rem; font-weight:700; line-height:1.4; text-align:center; cursor:pointer; transition:background-color var(--motion-control) ease-out, border-color var(--motion-control) ease-out; }
+.ws-btn:disabled { opacity:.6; cursor:not-allowed; }
+.ws-btn-primary { background:var(--action-fill); color:var(--action-ink); }
+.ws-btn-primary:not(:disabled):hover { background:var(--action-hover); }
+.ws-btn-primary:not(:disabled):active { background:var(--action-pressed); }
+.ws-btn-secondary { background:transparent; border-color:var(--line-strong); color:var(--ink-primary); }
+.ws-btn-secondary:not(:disabled):hover { background:var(--panel-raised); }
+.ws-btn-secondary:not(:disabled):active { background:var(--nav-active); }
+.ws-btn-ghost { background:transparent; color:var(--ink-secondary); }
+.ws-btn-ghost:not(:disabled):hover { background:var(--panel-raised); color:var(--ink-primary); }
+.ws-btn-danger { background:transparent; border-color:var(--danger-border); color:var(--danger); }
+.ws-btn-danger:not(:disabled):hover { background:var(--danger-bg); }
+.ws-btn-sm { min-height:36px; padding:6px 12px; font-size:.8rem; }
+.ws-btn-lg { min-height:48px; padding:12px 22px; font-size:.9rem; }
+@media(max-width:479px) { .ws-btn { width:100%; } .ws-btn-sm { width:auto; } }
+
+/* Badges — small status labels, always with text. */
+.ws-badge { display:inline-flex; align-items:center; gap:6px; min-height:26px; padding:3px 10px; border:1px solid var(--line-normal); border-radius:999px; font-size:.72rem; font-weight:650; line-height:1.4; white-space:nowrap; }
+.ws-badge-default { color:var(--ink-secondary); background:var(--panel-inset); }
+.ws-badge-learning { color:var(--learning); border-color:var(--accent-border); background:var(--accent-bg); }
+.ws-badge-success { color:var(--success); border-color:var(--success-border); background:var(--success-bg); }
+.ws-badge-warning { color:var(--attention); border-color:var(--warning-border); background:var(--warning-bg); }
+.ws-badge-danger { color:var(--danger); border-color:var(--danger-border); background:var(--danger-bg); }
+.ws-badge-owner { color:var(--owner); border-color:var(--owner-border); background:var(--owner-bg); }
+.ws-badge-muted { color:var(--ink-muted); background:transparent; }
+
+/* Cards — padded surfaces for self-contained blocks. */
+.ws-card { padding:clamp(16px,2.5vw,28px); border:1px solid var(--line-normal); border-radius:var(--radius-panel); background:var(--panel-bg); min-width:0; }
+.ws-card-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+.ws-card-heading h2 { font-size:1.05rem; font-weight:700; line-height:1.35; }
+
+/* Section headers — kicker, title, description, action. */
+.ws-section-header { display:flex; justify-content:space-between; align-items:end; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+.ws-section-header h2 { font-size:clamp(1.3rem,2vw,1.8rem); font-weight:690; margin-top:5px; line-height:1.2; }
+.ws-section-header .ws-muted { margin-top:6px; max-width:70ch; }
+.ws-section-action { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+
+/* Breadcrumbs — consistent trail, current page marked. */
+.ws-breadcrumb-item { display:inline-flex; align-items:center; gap:10px; }
+.ws-breadcrumb-item > span[aria-current="page"] { color:var(--ink-primary); }
+
+/* Stats — big-number grids. */
+.ws-stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:20px 8px; border-top:1px solid var(--line-subtle); }
+.ws-stat { display:flex; flex-direction:column-reverse; justify-content:end; gap:10px; border-bottom:1px solid var(--line-subtle); padding:16px 14px 16px 0; min-width:0; }
+.ws-stat dt { font-size:.76rem; color:var(--ink-secondary); }
+.ws-stat dd { font:700 1.4rem ui-monospace,monospace; color:var(--ink-primary); overflow-wrap:anywhere; }
+.ws-stat dd small { display:block; font:400 .72rem/1.5 inherit; color:var(--ink-muted); margin-top:4px; }
+
+/* Filter bars — search + selects + count + clear. */
+.ws-filter-bar { display:grid; gap:0; }
+.ws-filter-controls { display:flex; flex-wrap:wrap; gap:12px; margin-top:20px; }
+.ws-filter-controls .ws-field { flex:1 1 155px; min-width:0; }
+.ws-filter-controls .ws-field:first-child { flex:2 1 300px; }
+.ws-filter-summary { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin:14px 0; }
+.ws-filter-summary p { font-size:.875rem; color:var(--ink-muted); margin:0; }
+
+/* Error state — mirrors EmptyState rhythm. */
+.ws-error { padding:22px; border:1px solid var(--danger-border); border-left:3px solid var(--danger); color:var(--ink-secondary); border-radius:var(--radius-control); background:var(--panel-inset); font-size:1rem; line-height:1.65; overflow-wrap:anywhere; }
+.ws-error strong { color:var(--ink-primary); }
+.ws-error p { margin-top:8px; }

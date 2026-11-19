@@ -14,7 +14,7 @@
 export type UserState =
   /** Not signed in and not using the learning workspace. */
   | 'public'
-  /** Signed out, but actively using the learning workspace. Progress is browser-local. */
+  /** Signed out, but actively using the learning workspace. */
   | 'guest'
   /** Signed in, email confirmed, waiting for the platform owner to approve access. */
   | 'pending'
@@ -79,7 +79,10 @@ const ALL_STATES: UserState[] = [...LEARNER_STATES, 'owner']
  * visitor who opens a learning URL directly is treated exactly like a guest — no artificial block.
  */
 export const ACCESS_MATRIX: Record<Capability, UserState[]> = {
-  // The catalogue is public. Lessons, labs and assessments (`learning-content`) are for approved accounts.
+  // `learning-content` means protected lesson text and server-delivered knowledge-check prompts.
+  // Public sample artifacts and bundled local lab exercises remain browser practice, not verified
+  // results. Challenge prompts/solution keys are separate protected content and are withheld from
+  // the public build until authenticated delivery is available.
   catalogue: ALL_STATES,
   'guest-workspace': LEARNER_STATES,
   'local-progress': LEARNER_STATES,
@@ -171,52 +174,52 @@ export interface StateDescriptor {
 
 export const STATE_META: Record<UserState, StateDescriptor> = {
   public: {
-    label: 'Visitor',
+    label: 'Not signed in',
     tone: 'neutral',
-    nextAction: 'Explore the catalogue, then request an account to start learning.',
+    nextAction: 'Explore the catalogue and public samples, or request an account for protected lesson text and knowledge checks.',
     summary:
-      'Browse every learning path, module and lesson title. Lessons, labs and assessments are for approved accounts. Anything you practise in this browser stays on this device and is not a record.',
+      'Browse every learning path, module and lesson title. Supplied sample artifacts and bundled local lab exercises are available for practice. Approved accounts unlock protected lesson text and knowledge-check prompts; challenge content is not included in the public build yet. Practice stays on this device and is not a record.',
   },
   guest: {
-    label: 'Visitor',
+    label: 'Not signed in',
     tone: 'guest',
-    nextAction: 'Explore the catalogue, or request an account to start learning.',
+    nextAction: 'Explore the catalogue and public samples, or request an account for protected lesson text and knowledge checks.',
     summary:
-      'You can browse the catalogue. Lessons, labs and assessments are for approved accounts. XP, levels, and achievements here are practice, kept on this device — they are not a record and are not verified.',
+      'You can browse the catalogue and use supplied sample artifacts and bundled local lab exercises for practice. Approved accounts unlock protected lesson text and knowledge-check prompts. Challenge content is not included in the public build yet. Practice stays on this device — it is not a record and is not verified.',
   },
   pending: {
     label: 'Approval pending',
     tone: 'pending',
     nextAction: 'Nothing to do — you can explore the SecCraft catalogue while access is reviewed.',
     summary:
-      'Your email is verified and your request is with the platform owner. Your account is awaiting approval. Lessons, labs and assessments switch on after approval.',
+      'Your email is verified and your request is with the platform owner. Your account is awaiting approval. Protected lesson text and knowledge-check prompts switch on after approval; public samples and bundled local labs remain available. Challenge content is not included in the public build yet.',
   },
   active: {
     label: 'Approved account',
     tone: 'active',
     nextAction: 'Check the account snapshot, or keep going on your current module.',
     summary:
-      'Your account is approved, so lessons, labs, assessments and account-backed progress records are available. Synchronization stays manual.',
+      'Your account is approved, so protected lesson text, knowledge-check prompts and account-backed progress records are available. Sample artifacts and bundled labs are public practice, not verified results. Challenge content is not included in this public build yet.',
   },
   rejected: {
     label: 'Not approved',
     tone: 'danger',
     nextAction: 'You can still explore the catalogue.',
     summary:
-      'This access request was not approved, so lessons, labs and assessments are not available. The public catalogue is unaffected.',
+      'This access request was not approved, so protected lesson text and knowledge-check prompts are unavailable. The public catalogue, supplied samples and bundled local labs remain available; challenge content is not included in the public build yet.',
   },
   suspended: {
     label: 'Suspended',
     tone: 'danger',
     nextAction: 'You can still explore the catalogue — learning access is unavailable.',
     summary:
-      'This account is suspended, so lessons, labs, assessments and account records are unavailable. The public catalogue is unaffected.',
+      'This account is suspended, so protected lesson text, knowledge-check prompts and account records are unavailable. The public catalogue, supplied samples and bundled local labs remain available; challenge content is not included in the public build yet.',
   },
   owner: {
     label: 'Owner',
     tone: 'owner',
     nextAction: 'Review pending requests and platform policy in the owner console.',
-    summary: 'This account is on the server-controlled owner allowlist and can manage enrollment.',
+    summary: 'This account is on the server-controlled owner allowlist and can manage enrollment, protected lesson text and knowledge-check prompts.'
   },
 }
 
@@ -284,28 +287,28 @@ export function standingFor(state: UserState): Standing {
  * ------------------------------------------------------------------ */
 
 export const ACCOUNT_SYNC_NOTE =
-  'Synchronization is manual. SecCraft never uploads your progress on its own, and it never restores it on another device automatically — export a file here and import it there.'
+  'Account records are held on the platform for approved accounts. Sign in to view them.'
 
 export const CROSS_DEVICE_NOTE =
-  'Moving to another device is a deliberate two-step: export the progress file here, then import it there. Imported records stay unverified.'
+  'Account records are held on the platform for approved accounts.'
 
 export const NO_VERIFICATION_CLAIM =
   'Assessment answers are recorded as a digest only. No server rubric grades them, so no score here is a verified result.'
 
 /** What a visitor can see, in one sentence. Use it wherever the public/learning boundary is stated. */
 export const CATALOGUE_NOTE =
-  'The catalogue is public: every learning path, module and lesson title, with its skills and prerequisites. Lessons, labs and assessments are for approved accounts.'
+  'The catalogue is public: every learning path, module and lesson title, with its skills and prerequisites. Supplied sample artifacts and bundled local lab exercises are available for practice. Approved accounts unlock protected lesson text and knowledge-check prompts. Challenge prompts and answer keys are omitted from this public build until authenticated delivery is available; sign in for full learning materials.'
 
 /** What approval changes, in one sentence. */
 export const ACCOUNT_ADDS_NOTE =
-  'An approved account unlocks lessons, labs, assessments and account-backed records. Imported practice stays unverified.'
+  'An approved account unlocks protected lesson text, server-delivered knowledge-check prompts and account-backed records. Public samples and bundled labs remain available as practice. Challenge prompts and answer keys are not included in this public build yet.'
 
 /**
  * The access an account state is shown. Access is not content maturity (see `contentMaturity.ts`),
  * and neither is the lab environment badge.
  */
 export function accessLabel(state: UserState): string {
-  return allows(state, 'learning-content') ? 'Approved learning' : 'Catalogue access'
+  return allows(state, 'learning-content') ? 'Approved content' : 'Catalogue & practice'
 }
 
 /** Shown wherever local XP appears for a non-approved state, so it is never read as standing. */

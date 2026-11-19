@@ -5,7 +5,7 @@ import { TOTAL_CHALLENGES, TOTAL_CHALLENGE_POINTS, TOTAL_LABS, TOTAL_LESSONS, TO
 import modules from '@/content/modules.json'
 import learningPaths from '@/content/learning-paths.json'
 import { AVAILABLE_LABS, LABS } from '@/content/labs'
-import { quizData } from '@/content/quizData'
+import { QUIZ_COUNTS, TOTAL_QUIZZES } from '@/content/quiz-counts'
 import challenges from '@/content/challenges.json'
 import { currentModuleId, LEGACY_MODULE_MAP } from '@/content/legacy-module-map'
 
@@ -81,7 +81,7 @@ export const MAX_XP =
   TOTAL_LESSONS * POINTS.LESSON +
   ANSWER_CHECKED_LABS * POINTS.LAB +
   TOTAL_CHALLENGE_POINTS +
-  Object.keys(quizData).length * (POINTS.QUIZ + POINTS.QUIZ_PERFECT_BONUS) +
+  TOTAL_QUIZZES * (POINTS.QUIZ + POINTS.QUIZ_PERFECT_BONUS) +
   ACHIEVEMENT_POINTS
 
 /** A printable local learning record unlocks only when all path and platform activities are recorded. */
@@ -119,7 +119,7 @@ function normalizePersistedProgress(source: any, discardLegacyLabScores = false,
     return { ...item, completed: true, score, points }
   })
   const quizCandidates = (Array.isArray(input.quizScores) ? input.quizScores : []).filter((item: any) =>
-    item && typeof item === 'object' && Object.prototype.hasOwnProperty.call(quizData, item.moduleId) && !(retirePreviousFinalQuiz && item.moduleId === '20-final-assessment') && item.quizId === 'quiz-01' && item.total === quizData[item.moduleId].length && Number.isFinite(item.score) && Number.isFinite(item.total) && item.total > 0 && item.score / item.total >= 0.8)
+    item && typeof item === 'object' && Object.prototype.hasOwnProperty.call(QUIZ_COUNTS, item.moduleId) && !(retirePreviousFinalQuiz && item.moduleId === '20-final-assessment') && item.quizId === 'quiz-01' && item.total === QUIZ_COUNTS[item.moduleId as keyof typeof QUIZ_COUNTS] && Number.isInteger(item.score) && item.score >= 0 && item.score <= item.total && Number.isInteger(item.total) && item.total > 0 && item.score / item.total >= 0.8)
   const quizScores = unique(quizCandidates, (item: any) => `${item.moduleId}:${item.quizId}`, (item: any) => item.score / item.total)
     .map((item: any) => {
       const score = Math.min(Math.floor(item.score), Math.floor(item.total))
@@ -294,8 +294,14 @@ export const useProgressStore = create<ProgressState>()(
       },
 
       completeQuiz: (moduleId, quizId, score, total) => {
-        if (total <= 0) return { points: 0, isNew: false }
-        const normalizedScore = Math.max(0, Math.min(Math.floor(score), Math.floor(total)))
+        const expectedTotal = Object.hasOwn(QUIZ_COUNTS, moduleId)
+          ? QUIZ_COUNTS[moduleId as keyof typeof QUIZ_COUNTS]
+          : undefined
+        if (quizId !== 'quiz-01' || expectedTotal === undefined || total !== expectedTotal
+          || !Number.isInteger(score) || score < 0 || score > total) {
+          return { points: 0, isNew: false }
+        }
+        const normalizedScore = score
         const existing = get().quizScores.find(q => q.moduleId === moduleId && q.quizId === quizId)
         const passes = normalizedScore / total >= 0.8
         // Failed attempts are practice, not completed quizzes and do not earn XP.
@@ -358,7 +364,7 @@ export const useProgressStore = create<ProgressState>()(
           const meta = (modules as Array<{ id: string; lessons?: unknown[] }>).find(mm => mm.id === m.id)
           const lessonTotal = Math.max(1, Array.isArray(meta?.lessons) ? meta!.lessons!.length : 1)
           const hasLabs = AVAILABLE_LABS.some(lab => lab.module === m.id)
-          const hasQuiz = Object.prototype.hasOwnProperty.call(quizData, m.id)
+          const hasQuiz = Object.prototype.hasOwnProperty.call(QUIZ_COUNTS, m.id)
           const weights = { lessons: 60, labs: hasLabs ? 25 : 0, quiz: hasQuiz ? 15 : 0 }
           const weightTotal = weights.lessons + weights.labs + weights.quiz
           const lessonProgress = Math.min(lessonsDone / lessonTotal, 1) * weights.lessons
@@ -415,7 +421,7 @@ export const useProgressStore = create<ProgressState>()(
         const meta = (modules as Array<{ id: string; lessons?: unknown[] }>).find(m => m.id === moduleId)
         const lessonTotal = Math.max(1, Array.isArray(meta?.lessons) ? meta!.lessons!.length : 1)
         const hasLabs = AVAILABLE_LABS.some(lab => lab.module === moduleId)
-        const hasQuiz = Object.prototype.hasOwnProperty.call(quizData, moduleId)
+        const hasQuiz = Object.prototype.hasOwnProperty.call(QUIZ_COUNTS, moduleId)
         const weights = { lessons: 60, labs: hasLabs ? 25 : 0, quiz: hasQuiz ? 15 : 0 }
         const weightTotal = weights.lessons + weights.labs + weights.quiz
         const lessonProgress = Math.min(lessonsDone / lessonTotal, 1) * weights.lessons
@@ -427,7 +433,7 @@ export const useProgressStore = create<ProgressState>()(
 
       getOverallProgress: () => {
         const state = get()
-        const totalItems = TOTAL_LESSONS + TOTAL_LABS + Object.keys(quizData).length + TOTAL_CHALLENGES
+        const totalItems = TOTAL_LESSONS + TOTAL_LABS + TOTAL_QUIZZES + TOTAL_CHALLENGES
         if (totalItems <= 0) return 0
         const validLabReviews = state.completedLabs.filter(l => AVAILABLE_LABS.some(item => item.id === l.labId && item.module === l.moduleId)).length
         const completed = state.completedLessons.length + validLabReviews + state.quizScores.filter(q => q.completed).length + state.completedChallenges.length
@@ -492,7 +498,7 @@ export const useProgressStore = create<ProgressState>()(
           const lessonsDone = state.completedLessons.filter(l => l.moduleId === m.id).length
           const moduleLabs = AVAILABLE_LABS.filter(lab => lab.module === m.id)
           const labsDone = state.completedLabs.filter(l => l.moduleId === m.id && AVAILABLE_LABS.some(item => item.id === l.labId && item.module === l.moduleId)).length
-          const hasQuiz = Object.prototype.hasOwnProperty.call(quizData, m.id)
+          const hasQuiz = Object.prototype.hasOwnProperty.call(QUIZ_COUNTS, m.id)
           const quizDone = !hasQuiz || state.quizScores.some(q => q.moduleId === m.id && q.completed)
           return lessonsDone >= lessonTotal && labsDone >= moduleLabs.length && quizDone
         }).length

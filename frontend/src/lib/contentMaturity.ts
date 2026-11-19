@@ -1,8 +1,10 @@
 /**
  * Content maturity: how finished a piece of the catalogue is.
  *
- * This is deliberately NOT access. Who may read lessons, labs and assessments is decided by the
- * account state (`allows(state, 'learning-content')` in `access.ts`) and enforced by the API.
+ * This is deliberately NOT access. Who may read protected lesson bodies and server-delivered
+ * knowledge-check prompts is decided by the account state (`allows(state, 'learning-content')` in
+ * `access.ts`) and enforced by the API. Supplied samples and bundled local labs are practice; challenge
+ * prompts and solution keys remain excluded from the public build until an authenticated route exists.
  * Maturity only labels the content itself:
  *
  *   Preview      published, but early or limited; still being built out

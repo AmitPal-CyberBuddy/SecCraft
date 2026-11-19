@@ -17,7 +17,57 @@ test('learning links, URL state and curriculum selection survive navigation', as
   window.HTMLElement.prototype.scrollIntoView = () => {}
   window.HTMLElement.prototype.scrollTo = () => {}
   const oldFetch = globalThis.fetch
-  globalThis.fetch = async () => new Response('{}', { status: 503 })
+  let quizMode = 'offline'
+  let submittedQuiz
+  let sampleLessonRequests = 0
+  const sampleLessonAuthorization = []
+  let protectedLessonRequests = 0
+  const sampleLessonId = '01-architecture-sandbox-and-trust-boundaries'
+  const testQuizQuestions = Array.from({ length: 6 }, (_, index) => ({
+    id: `test-q${index + 1}`,
+    question: `Authenticated practice prompt ${index + 1}`,
+    options: ['Option A', 'Option B', 'Option C', 'Option D'],
+    correct_index: 2,
+  }))
+  globalThis.fetch = async (url, init = {}) => {
+    const path = String(url)
+    if (path.includes('/api/v1/content/samples/lessons/')) {
+      sampleLessonRequests += 1
+      sampleLessonAuthorization.push(new Headers(init.headers).get('authorization'))
+      if (path.endsWith(`android-01-platform/${sampleLessonId}`)) {
+        return new Response(JSON.stringify({
+          module_id: 'android-01-platform', lesson_id: sampleLessonId,
+          content: '# Public architecture sample\n\nA public sample lesson made available without an account.',
+          access: 'public-sample',
+        }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      return new Response(JSON.stringify({ detail: 'Public sample not found.' }), { status: 404 })
+    }
+    if (path.includes('/api/v1/content/lessons/')) {
+      protectedLessonRequests += 1
+      return new Response(JSON.stringify({ detail: 'Bearer access token required.' }), { status: 401, headers: { 'content-type': 'application/json' } })
+    }
+    if (!path.includes('/api/v1/content/quizzes/')) return new Response('{}', { status: 503 })
+    if (path.endsWith('/grade')) {
+      submittedQuiz = JSON.parse(String(init.body))
+      const answers = submittedQuiz.answers
+      return new Response(JSON.stringify({
+        module_id: 'android-03-apk-triage', score: testQuizQuestions.length, total: testQuizQuestions.length,
+        passed: true, grading_class: 'practice',
+        results: testQuizQuestions.map(question => ({
+          id: question.id, selected_index: answers[question.id], correct_index: question.correct_index,
+          correct: answers[question.id] === question.correct_index, explanation: 'Feedback returned after server-side grading.',
+        })),
+      }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    if (quizMode !== 'authorized') return new Response('{}', { status: 503 })
+    return new Response(JSON.stringify({
+      module_id: 'android-03-apk-triage', grading_class: 'practice',
+      questions: testQuizQuestions.map(({ id, question, options }) => ({ id, question, options })),
+    }), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    })
+  }
   const rootPath = fileURLToPath(new URL('../', import.meta.url))
   const vite = await createServer({ root: rootPath, configFile: `${rootPath}/vite.config.ts`, appType: 'custom', logLevel: 'silent', server: { middlewareMode: true } })
   const React = await import('react')
@@ -108,6 +158,18 @@ test('learning links, URL state and curriculum selection survive navigation', as
   assert.equal(merge(emptyLegacy, useProgressStore.getState()).currentLearningPathId, null)
   assert.equal(merge({ ...emptyLegacy, pathChosen: true }, useProgressStore.getState()).currentLearningPathId, 'wireless-pentesting')
   assert.equal(merge({ ...emptyLegacy, currentLearningPathId: 'android-pentesting' }, useProgressStore.getState()).currentModule, null)
+  const invalidQuizState = merge({
+    ...emptyLegacy,
+    pathChosen: true,
+    quizScores: [
+      { moduleId: 'android-03-apk-triage', quizId: 'quiz-01', score: 99, total: 6 },
+      { moduleId: 'android-03-apk-triage', quizId: 'quiz-01', score: 5.5, total: 6 },
+      { moduleId: 'android-03-apk-triage', quizId: 'quiz-01', score: 5, total: 5 },
+      { moduleId: 'android-03-apk-triage', quizId: 'quiz-01', score: 5, total: 6 },
+    ],
+  }, useProgressStore.getState())
+  assert.equal(invalidQuizState.quizScores.length, 1, 'only a whole-number passing score with the exact module question count is retained')
+  assert.equal(invalidQuizState.quizScores[0].score, 5)
   await act(async () => useProgressStore.getState().setCurrentModule(android.id))
   assert.equal(useProgressStore.getState().currentLearningPathId, 'android-pentesting')
   await act(async () => useProgressStore.getState().setCurrentLearningPath('wireless-pentesting'))
@@ -121,4 +183,68 @@ test('learning links, URL state and curriculum selection survive navigation', as
   assert.equal(document.querySelectorAll('.ws-catalog-row').length, 0)
   assert.equal(useProgressStore.getState().currentLearningPathId, 'wireless-pentesting', 'invalid and planned routes never replace a real choice')
 
+  // Protected quiz prompts do not fall back to answer-bearing browser data when the learner API is unavailable.
+  await act(async () => navigate('/paths/android-pentesting/modules/android-04-components?tab=quiz'))
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 140)) })
+  const unavailableQuizTab = [...document.querySelectorAll('[aria-label="Module workspace"] button')].find(button => button.textContent.includes('Quiz'))
+  assert.equal(unavailableQuizTab?.getAttribute('aria-pressed'), 'true')
+  assert.match(document.body.textContent, /Knowledge check unavailable/)
+  assert.match(document.body.textContent, /approved account or check the API connection/i)
+  assert.equal(document.querySelectorAll('input[type="radio"]').length, 0)
+
+  // An approved learner receives answer-free prompts; grading returns feedback only after submission.
+  quizMode = 'authorized'
+  await act(async () => navigate('/paths/android-pentesting/modules/android-03-apk-triage?tab=quiz'))
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 140)) })
+  assert.match(document.body.textContent, /Authenticated practice prompt 1/)
+  assert.equal(document.querySelectorAll('input[type="radio"]').length, 24)
+  const quizGroups = [...document.querySelectorAll('.sc-learning-content fieldset')]
+  assert.equal(quizGroups.length, testQuizQuestions.length)
+  assert.ok(quizGroups.every(group => group.querySelector('legend')?.textContent.trim()), 'every set of quiz choices has a programmatic question label')
+  for (let index = 0; index < testQuizQuestions.length; index++) {
+    const correctDisplayedOption = [...document.querySelectorAll(`input[name="q${index}"]`)]
+      .find(option => option.closest('label')?.textContent.includes('Option C'))
+    assert.ok(correctDisplayedOption)
+    await act(async () => correctDisplayedOption.click())
+  }
+  const submitQuiz = [...document.querySelectorAll('button')].find(button => button.textContent.includes('Submit practice quiz'))
+  assert.ok(submitQuiz)
+  await act(async () => { submitQuiz.click(); await new Promise(resolve => setTimeout(resolve, 0)) })
+  assert.equal(Object.keys(submittedQuiz.answers).length, testQuizQuestions.length)
+  assert.ok(Object.values(submittedQuiz.answers).every(answer => answer === 2), 'the shuffled learner choice maps back to its server-authored option index')
+  assert.match(document.querySelector('.sc-quiz-summary').textContent, /Passed · 6 \/ 6 correct/)
+  assert.match(document.body.textContent, /Practice result, not a verified assessment/)
+  assert.match(document.body.textContent, /Feedback returned after server-side grading/)
+  const quizXp = useProgressStore.getState().getTotalXp()
+  const quizRecords = useProgressStore.getState().quizScores.length
+  for (const [moduleId, quizId, score, total] of [
+    ['unknown-module', 'quiz-01', 6, 6],
+    ['android-03-apk-triage', 'quiz-02', 6, 6],
+    ['android-03-apk-triage', 'quiz-01', 6, 5],
+    ['android-03-apk-triage', 'quiz-01', 5.5, 6],
+  ]) {
+    assert.deepEqual(useProgressStore.getState().completeQuiz(moduleId, quizId, score, total), { points: 0, isNew: false })
+  }
+  assert.equal(useProgressStore.getState().quizScores.length, quizRecords, 'invalid local quiz records do not alter progress')
+  assert.equal(useProgressStore.getState().getTotalXp(), quizXp, 'invalid local quiz records cannot award practice XP')
+
+  // The selected public sample works for a guest without touching the protected lesson route.
+  await act(async () => navigate(`/paths/android-pentesting/modules/android-01-platform?tab=theory&lesson=${sampleLessonId}`))
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 140)) })
+  assert.match(document.body.textContent, /public sample lesson made available without an account/i)
+  assert.match(document.body.textContent, /Public sample/)
+  assert.equal(sampleLessonAuthorization.at(-1), null, 'public lesson samples do not require or send a bearer token')
+  assert.equal(protectedLessonRequests, 0, 'public samples do not fall through to the protected lesson route')
+
+  // Direct entry to a protected lesson explains the real boundary and offers retry/account actions.
+  await act(async () => navigate('/paths/android-pentesting/modules/android-01-platform?tab=theory&lesson=02-components-binder-and-permissions'))
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 140)) })
+  assert.match(document.body.textContent, /Approved account needed/)
+  assert.match(document.body.textContent, /public catalogue, supplied samples and bundled local labs remain available/i)
+  assert.ok([...document.querySelectorAll('a')].some(link => link.textContent.includes('Request or check access')))
+  const requestsBeforeRetry = protectedLessonRequests
+  const retryLesson = [...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Retry lesson')
+  assert.ok(retryLesson)
+  await act(async () => { retryLesson.click(); await new Promise(resolve => setTimeout(resolve, 140)) })
+  assert.ok(protectedLessonRequests > requestsBeforeRetry, 'retry issues a fresh direct lesson request')
 })

@@ -22,7 +22,7 @@ os.environ["PLATFORM_ALLOWED_ORIGINS"] = "http://localhost:3000,http://localhost
 os.environ["SUPABASE_URL"] = "https://auth-test.invalid"
 os.environ["SUPABASE_ANON_KEY"] = "public-test-anon-key"
 os.environ["SUPABASE_JWT_ISSUER"] = "https://auth-test.invalid/auth/v1"
-os.environ["SUPABASE_JWT_SECRET"] = "test-only-secret-not-for-use"
+os.environ["SUPABASE_JWT_SECRET"] = "test-only-secret-not-for-use-32bytes"
 os.environ["SUPABASE_REQUIRE_VERIFIED_EMAIL"] = "false"
 
 import jwt  # noqa: E402
@@ -641,7 +641,6 @@ def test_pcap_lookup_requires_exact_curated_identifier(client: TestClient, tmp_p
     (tmp_path / "outside.pcapng").write_bytes(b"capture")
     (root / "large.pcapng").write_bytes(b"x" * (5 * 1024 * 1024 + 1))
     monkeypatch.setattr(pcaps, "PCAP_DIR", root)
-    monkeypatch.setattr(pcaps, "REPO_CONTENT_DIR", tmp_path / "empty")
     assert pcaps.find_pcap("recon-lab") == root / "recon-lab.pcapng"
     assert pcaps.find_pcap("recon") is None
     assert pcaps.find_pcap("outside") is None

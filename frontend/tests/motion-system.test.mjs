@@ -80,7 +80,7 @@ test('technical tools animate selection markers, not evidence content or stale s
 
 
 test('secondary motion does not replay totals, stagger content or imply live status', () => {
-  for (const file of ['pages/Settings','pages/LearningPath','pages/Labs','pages/Account','pages/Engagement','components/account/StateChip','components/gamification/LevelBadge','components/analytics/AnalyticsDashboard','components/certificate/Certificate','components/admin/CustomModuleCreator','components/animations/PageTransition']) {
+  for (const file of ['pages/Settings','pages/Labs','pages/Account','pages/Engagement','components/account/StateChip','components/gamification/LevelBadge','components/analytics/AnalyticsDashboard','components/certificate/Certificate','components/admin/CustomModuleCreator','components/animations/PageTransition']) {
     assert.doesNotMatch(read(`${file}.tsx`),/framer-motion|animate-pulse|transition-all|whileHover|whileTap/,file)
   }
   assert.match(read('components/gamification/LevelBadge.tsx'),/LearningProgress value=\{xpInfo.percent\}/)

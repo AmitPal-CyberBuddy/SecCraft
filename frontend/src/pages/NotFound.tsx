@@ -15,6 +15,7 @@ export function NotFound() {
       <code className="not-found-route">{route}</code>
       <div className="not-found-actions">
         <Link to="/app" className="not-found-primary"><ArrowLeft className="w-4 h-4" /> Back to workspace</Link>
+        <Link to="/paths" className="not-found-secondary">Browse the catalogue</Link>
         <button type="button" className="not-found-secondary" onClick={() => document.dispatchEvent(new CustomEvent('open-search'))}><Search className="w-4 h-4" /> Search SecCraft</button>
       </div>
     </section>

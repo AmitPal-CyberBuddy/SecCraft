@@ -1,14 +1,47 @@
 @font-face { font-family: "Inter Variable"; font-style: normal; font-weight: 100 900; font-display: swap; src: url("../assets/fonts/InterVariable-latin.woff2") format("woff2"); }
-/* SecCraft: one set of tokens and compositions for the learning workspace. */
+/* ─────────────────────────────────────────────────────────────────────────
+   SecCraft design tokens — single source of truth for the learning workspace.
+   Every surface (pages, tools, account, owner console) reads from here.
+   Sections: 1 surfaces · 2 ink · 3 semantic · 4 controls · 5 type · 6 space
+   · 7 radius/shadow · 8 z-index. Light theme overrides follow below.
+   ───────────────────────────────────────────────────────────────────────── */
 :root {
-  --action-ink:#082f2b; --header-height:102px; --sticky-offset:calc(var(--header-height) + 16px);
+  /* 1 · Surfaces */
   --app-bg:#0d141e; --nav-bg:#101925; --nav-active:#173d3b;
   --panel-bg:#131d2b; --panel-raised:#1d2a3b; --panel-inset:#0e1724;
-  --overlay-bg:#1d2a3b; --line-subtle:#233145; --line-normal:#34445b;
-  --line-strong:#788ca7; --focus-color:#5eead4;
+  --overlay-bg:#1d2a3b; --scrim:rgba(3,7,14,.72);
+  --line-subtle:#233145; --line-normal:#34445b; --line-strong:#788ca7;
+  /* 2 · Ink */
   --ink-primary:#e8eef6; --ink-secondary:#b8c4d4; --ink-muted:#93a4ba;
-  --ink-disabled:#77869b; --learning:#5eead4; --success:#86efac;
-  --attention:#f2cc83; --danger:#fda4af; --owner:#c4b5fd;
+  --ink-disabled:#77869b;
+  /* 3 · Semantic */
+  --learning:#5eead4; --success:#86efac; --attention:#f2cc83;
+  --danger:#fda4af; --owner:#c4b5fd; --info:#93c5fd;
+  --accent-bg:#173d3b; --accent-border:#5eead4;
+  --success-border:#86efac; --warning-border:#f2cc83; --danger-border:#fda4af;
+  --info-border:#93c5fd; --owner-border:#c4b5fd;
+  --on-success:#082b17; --on-warning:#33230b; --on-danger:#390b19; --on-owner:#25123e; --on-info:#112d4f;
+  --info-bg:#162b43; --success-bg:#143022; --warning-bg:#342919; --danger-bg:#3a202c; --owner-bg:#2b2342;
+  --chart-one:#5eead4; --chart-two:#93c5fd; --chart-three:#f2cc83; --chart-four:#c4b5fd;
+  /* 4 · Controls & actions */
+  --control-border:#788ca7; --focus-color:#5eead4;
+  --action-fill:var(--learning); --action-hover:#99f6e4; --action-pressed:#2dd4bf;
+  --action-ink:#082f2b; --link-color:var(--learning); --link-hover:#99f6e4;
+  /* 5 · Type scale (rem — scales with the accessibility font-size setting) */
+  --text-xs:.72rem; --text-sm:.82rem; --text-base:.88rem; --text-md:.95rem;
+  --text-lg:1.05rem; --text-xl:1.25rem; --text-2xl:1.6rem; --text-3xl:2.1rem;
+  --leading-tight:1.15; --leading-normal:1.55; --leading-relaxed:1.7;
+  /* 6 · Spacing scale */
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px;
+  --space-5:20px; --space-6:24px; --space-8:32px; --space-10:40px; --space-12:48px;
+  /* 7 · Radius & shadow */
+  --radius-control:6px; --radius-panel:9px; --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-xl:20px;
+  --shadow-soft:0 4px 20px rgba(0,0,0,.09); --shadow-medium:0 10px 30px rgba(0,0,0,.12);
+  /* 8 · Z-index */
+  --z-header:30; --z-drawer:50; --z-dropdown:60; --z-dialog:100;
+  /* Layout */
+  --header-height:102px; --sticky-offset:calc(var(--header-height) + 16px);
+  --content-max:1400px; --reading-max:74ch;
   /* Compatibility aliases for functional tools still using the base CSS vocabulary. */
   --bg:var(--app-bg); --bg-soft:var(--nav-bg); --card:var(--panel-bg);
   --card-hover:var(--panel-raised); --surface:var(--panel-raised);
@@ -18,21 +51,7 @@
   --text-muted:var(--ink-muted); --text-dim:var(--ink-disabled);
   --violet:var(--owner); --violet-strong:var(--owner); --emerald:var(--success); --amber:var(--attention); --orange:var(--attention); --pink:var(--owner);
   --cyan:var(--learning); --cyan-strong:var(--learning);
-  --shadow-soft:0 4px 20px rgba(0,0,0,.09); --shadow-medium:0 10px 30px rgba(0,0,0,.12);
   --shadow-glow-cyan:none; --shadow-glow-violet:none; --shadow-glow-emerald:none;
-  --accent-bg:#173d3b; --accent-border:#5eead4;
-  --success-border:#86efac; --warning-border:#f2cc83; --danger-border:#fda4af;
-  --info-border:#93c5fd; --owner-border:#c4b5fd;
-  --on-success:#082b17; --on-warning:#33230b; --on-danger:#390b19; --on-owner:#25123e; --on-info:#112d4f;
-  --scrim:rgba(3,7,14,.72);
-  --chart-one:#5eead4; --chart-two:#93c5fd; --chart-three:#f2cc83; --chart-four:#c4b5fd;
-  --control-border:#788ca7;
-  --action-fill:var(--learning); --action-hover:#99f6e4; --action-pressed:#2dd4bf;
-  --link-color:var(--learning); --link-hover:#99f6e4;
-  --info:#93c5fd; --info-bg:#162b43; --success-bg:#143022;
-  --warning-bg:#342919; --danger-bg:#3a202c; --owner-bg:#2b2342;
-  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px;
-  --space-6:24px; --space-8:32px; --radius-control:6px; --radius-panel:9px;
 }
 .light,[data-theme="light"] {
   color-scheme:light;
@@ -54,9 +73,9 @@
   --ink-disabled:#7d8a9c; --learning:#0f766e; --success:#166534;
   --attention:#805316; --danger:#a5263a; --owner:#624398;
 }
-body { background:var(--app-bg); color:var(--ink-primary); background-image:none; font-family:"Inter Variable", Inter, ui-sans-serif,system-ui,sans-serif; }
+body { background:var(--app-bg); color:var(--ink-primary); background-image:none; font-family:"Inter Variable", Inter, ui-sans-serif,system-ui,sans-serif; font-size:14px; line-height:1.6; }
 .ws-shell,.ws-admin-shell { background:var(--app-bg); color:var(--ink-primary); }
-.ws-main { max-width:1460px; margin-inline:auto; }
+.ws-main { max-width:var(--content-max); margin-inline:auto; }
 .ws-main :is(h1,h2,h3) { letter-spacing:-.035em; }
 .ws-main :is(a,button,input,select,textarea):focus-visible,.ws-shell :is(a,button,input,select,textarea):focus-visible,.ws-admin-shell :is(a,button,input,select,textarea):focus-visible { outline:2px solid var(--focus-color); outline-offset:3px; }
 .ws-page-header { display:flex; align-items:end; justify-content:space-between; gap:24px; padding:8px 0 18px; border-bottom:1px solid var(--line-normal); }
@@ -347,3 +366,7 @@ body { background:var(--app-bg); color:var(--ink-primary); background-image:none
   .sc-global-header.sc-topbar,.sc-sticky-tool,.sc-lesson-index,.sc-reading-context { position:static; }
   .sc-header-shell { --sticky-offset:16px; }
 }
+
+.sc-library-actions { display:flex; flex-wrap:wrap; align-items:center; gap:16px; margin-top:16px; }
+
+.ws-tool-actions .ws-action.is-active { background:var(--nav-active); border-color:var(--learning); color:var(--ink-primary); box-shadow:inset 0 -2px var(--learning); }

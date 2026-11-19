@@ -100,3 +100,13 @@ export function toneClasses(tone: StateTone) {
 export function UnavailableStatusChip({ size = 'md' }: { size?: keyof typeof SIZE_CLASS }) {
   return <span className={`inline-flex items-center rounded-full border font-semibold ${SIZE_CLASS[size]} ${TONE_CLASS.neutral}`}>Status unavailable</span>
 }
+
+/** Signed in, but the email address has not been confirmed yet. */
+export function EmailNotVerifiedChip({ size = 'md' }: { size?: keyof typeof SIZE_CLASS }) {
+  return (
+    <span className={`inline-flex shrink-0 items-center rounded-full border font-semibold ${SIZE_CLASS[size]} ${TONE_CLASS.pending}`}>
+      <Fingerprint className="h-3 w-3 shrink-0" aria-hidden="true" />
+      Email not verified
+    </span>
+  )
+}
